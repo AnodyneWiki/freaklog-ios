@@ -15,7 +15,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-               BuildableName = "Journal.app"
+               BuildableName = "Journal FOSS.app"
                BlueprintName = "Journal"
                ReferencedContainer = "container:Journal.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "Journal.app"
+            BuildableName = "Journal FOSS.app"
             BlueprintName = "Journal"
             ReferencedContainer = "container:Journal.xcodeproj">
          </BuildableReference>
@@ -66,7 +66,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "Journal.app"
+            BuildableName = "Journal FOSS.app"
             BlueprintName = "Journal"
             ReferencedContainer = "container:Journal.xcodeproj">
          </BuildableReference>

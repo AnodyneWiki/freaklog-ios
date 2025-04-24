@@ -1745,6 +1745,7 @@
 				EAF76C9E27D8B72900945587 /* XCRemoteSwiftPackageReference "swift-algorithms" */,
 				EAFA4BD22B400BE50056649E /* XCRemoteSwiftPackageReference "WrappingHStack" */,
 				EAC3686A2B6F840100056C56 /* XCRemoteSwiftPackageReference "HorizonCalendar" */,
+				4406C0802DBACD8400600DA5 /* XCRemoteSwiftPackageReference "swift-numerics" */,
 			);
 			productRefGroup = EAE4710426CBA57F009FB0EC /* Products */;
 			projectDirPath = "";
@@ -2474,9 +2475,17 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		4406C0802DBACD8400600DA5 /* XCRemoteSwiftPackageReference "swift-numerics" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://git.ztn.sh/zotan/swift-numerics.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 		EAC3686A2B6F840100056C56 /* XCRemoteSwiftPackageReference "HorizonCalendar" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/airbnb/HorizonCalendar.git";
+			repositoryURL = "https://git.ztn.sh/zotan/HorizonCalendar.git";
 			requirement = {
 				branch = master;
 				kind = branch;
@@ -2484,7 +2493,7 @@
 		};
 		EAF76C9727D899E700945587 /* XCRemoteSwiftPackageReference "AlertToast" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/elai950/AlertToast.git";
+			repositoryURL = "https://git.ztn.sh/zotan/AlertToast.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.0.0;
@@ -2492,7 +2501,7 @@
 		};
 		EAF76C9E27D8B72900945587 /* XCRemoteSwiftPackageReference "swift-algorithms" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-algorithms.git";
+			repositoryURL = "https://git.ztn.sh/zotan/swift-algorithms.git";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 1.0.0;
@@ -2500,7 +2509,7 @@
 		};
 		EAFA4BD22B400BE50056649E /* XCRemoteSwiftPackageReference "WrappingHStack" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ksemianov/WrappingHStack";
+			repositoryURL = "https://git.ztn.sh/zotan/WrappingHStack";
 			requirement = {
 				kind = upToNextMajorVersion;
 				minimumVersion = 0.2.0;
