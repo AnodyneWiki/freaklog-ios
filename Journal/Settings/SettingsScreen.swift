@@ -190,18 +190,10 @@ struct SettingsContent: View {
             }
             Section("Communication") {
                 if isEyeOpen {
-                    NavigationLink(value: GlobalNavigationDestination.shareApp) {
-                        Label("Share App", systemImage: "person.2")
-                    }
-                }
-                Link(destination: URL(string: isEyeOpen ? "https://t.me/+ss8uZhBF6g00MTY8" : "https://t.me/isaakhanimann")!) {
-                    Label("Question, Bug Report", systemImage: "exclamationmark.bubble")
-                }
-                if isEyeOpen {
                     NavigationLink(value: GlobalNavigationDestination.faq) {
                         Label("Frequently Asked Questions", systemImage: "questionmark.square")
                     }
-                    Link(destination: URL(string: "https://github.com/isaakhanimann/psychonautwiki-journal-ios")!) {
+                    Link(destination: URL(string: "https://git.ztn.sh/zotan/pwj-ios")!) {
                         Label("Source Code", systemImage: "doc.text.magnifyingglass")
                     }
                 }

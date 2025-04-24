@@ -16,8 +16,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
                BuildableName = "Journal.app"
-               BlueprintName = "PsychonautWiki Journal"
-               ReferencedContainer = "container:PsychonautWiki Journal.xcodeproj">
+               BlueprintName = "Journal"
+               ReferencedContainer = "container:Journal.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,8 +46,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
             BuildableName = "Journal.app"
-            BlueprintName = "PsychonautWiki Journal"
-            ReferencedContainer = "container:PsychonautWiki Journal.xcodeproj">
+            BlueprintName = "Journal"
+            ReferencedContainer = "container:Journal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <LocationScenarioReference
@@ -67,8 +67,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
             BuildableName = "Journal.app"
-            BlueprintName = "PsychonautWiki Journal"
-            ReferencedContainer = "container:PsychonautWiki Journal.xcodeproj">
+            BlueprintName = "Journal"
+            ReferencedContainer = "container:Journal.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
