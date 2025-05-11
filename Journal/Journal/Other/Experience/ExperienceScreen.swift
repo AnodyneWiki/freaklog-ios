@@ -61,7 +61,7 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
-    @AppStorage("isOpenLastExperienceSiriTipVisible") private var isSiriTipVisible = true
+    @AppStorage("isOpenLastExperienceSiriTipVisible") private var isSiriTipVisible = false
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager

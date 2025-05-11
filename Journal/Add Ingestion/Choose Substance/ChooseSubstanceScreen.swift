@@ -117,7 +117,7 @@ struct ChooseSubstanceContent: View {
     }
 
     @State private var isShowingAddCustomSheet = false
-    @AppStorage("isAddIngestionSiriTipVisible") private var isSiriTipVisible = true
+    @AppStorage("isAddIngestionSiriTipVisible") private var isSiriTipVisible = false
 
     private var screen: some View {
         ScrollView {
