@@ -59,8 +59,8 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = false
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = false
+    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
+    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage("isOpenLastExperienceSiriTipVisible") private var isSiriTipVisible = true
 
     @Environment(\.dismiss) var dismiss

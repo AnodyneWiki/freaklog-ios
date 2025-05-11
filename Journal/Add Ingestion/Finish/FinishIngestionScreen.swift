@@ -53,8 +53,8 @@ struct FinishIngestionScreen: View {
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
     @State private var wantsToStartLiveActivity = true
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually = false
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = false
+    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually = true
+    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     var areYouConsumer: Bool {
