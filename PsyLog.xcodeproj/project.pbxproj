@@ -2463,8 +2463,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://git.ztn.sh/zotan/swift-numerics.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				branch = main;
+				kind = branch;
 			};
 		};
 		EAC3686A2B6F840100056C56 /* XCRemoteSwiftPackageReference "HorizonCalendar" */ = {
@@ -2487,8 +2487,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://git.ztn.sh/zotan/swift-algorithms.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
+				branch = main;
+				kind = branch;
 			};
 		};
 		EAFA4BD22B400BE50056649E /* XCRemoteSwiftPackageReference "WrappingHStack" */ = {
