@@ -368,7 +368,7 @@
 			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EAE4710226CBA57F009FB0EC;
-			remoteInfo = Journal;
+			remoteInfo = PsyLog;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -1402,7 +1402,7 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
-		EACB6E3B27D09C8800940291 /* JournalTests */ = {
+		EACB6E3B27D09C8800940291 /* PsyLogTests */ = {
 			isa = PBXGroup;
 			children = (
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
@@ -1410,7 +1410,7 @@
 				EA98D9102972968100D94E65 /* Roa.json */,
 				EACB6E5627D3483900940291 /* RegexTests.swift */,
 			);
-			path = JournalTests;
+			path = PsyLogTests;
 			sourceTree = "<group>";
 		};
 		EACF43992BA23FFC008D1897 /* Dosage Charts */ = {
@@ -1427,7 +1427,7 @@
 			isa = PBXGroup;
 			children = (
 				EAE4710526CBA57F009FB0EC /* PsyLog */,
-				EACB6E3B27D09C8800940291 /* JournalTests */,
+				EACB6E3B27D09C8800940291 /* PsyLogTests */,
 				EA085DD129607229001638AC /* TimelineWidget */,
 				EAE4710426CBA57F009FB0EC /* Products */,
 				EAA2EC6826E2064D00B4FACF /* Frameworks */,
@@ -1665,7 +1665,7 @@
 				EACB6E3F27D09C8800940291 /* PBXTargetDependency */,
 			);
 			name = PsyLogTests;
-			productName = JournalTests;
+			productName = PsyLogTests;
 			productReference = EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
@@ -1691,7 +1691,7 @@
 				EAFA4BD32B400BE50056649E /* WrappingHStack */,
 				EAC3686B2B6F840100056C56 /* HorizonCalendar */,
 			);
-			productName = Journal;
+			productName = PsyLog;
 			productReference = EAE4710326CBA57F009FB0EC /* PsyLog.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -2219,7 +2219,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Journal.app/Journal";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PsyLog.app/PsyLog";
 			};
 			name = Debug;
 		};
@@ -2239,7 +2239,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Journal.app/Journal";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PsyLog.app/PsyLog";
 			};
 			name = Release;
 		};
