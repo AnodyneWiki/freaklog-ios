@@ -17,8 +17,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EACB6E3927D09C8800940291"
-               BuildableName = "JournalTests.xctest"
-               BlueprintName = "JournalTests"
+               BuildableName = "PsyLogTests.xctest"
+               BlueprintName = "PsyLogTests"
                ReferencedContainer = "container:PsyLog.xcodeproj">
             </BuildableReference>
          </TestableReference>

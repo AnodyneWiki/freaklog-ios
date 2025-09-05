@@ -659,7 +659,7 @@
 		EACB0C1D293FA4F500C605E2 /* SaferScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaferScreen.swift; sourceTree = "<group>"; };
 		EACB0C1F293FED5500C605E2 /* Interactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interactions.swift; sourceTree = "<group>"; };
 		EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSubstanceRow.swift; sourceTree = "<group>"; };
-		EACB6E3A27D09C8800940291 /* JournalTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JournalTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PsyLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EACB6E5127D2592800940291 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
 		EACB6E5627D3483900940291 /* RegexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegexTests.swift; sourceTree = "<group>"; };
 		EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalNavigationDestination.swift; sourceTree = "<group>"; };
@@ -1438,7 +1438,7 @@
 			isa = PBXGroup;
 			children = (
 				EAE4710326CBA57F009FB0EC /* PsyLog.app */,
-				EACB6E3A27D09C8800940291 /* JournalTests.xctest */,
+				EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */,
 				EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */,
 			);
 			name = Products;
@@ -1651,9 +1651,9 @@
 			productReference = EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		EACB6E3927D09C8800940291 /* JournalTests */ = {
+		EACB6E3927D09C8800940291 /* PsyLogTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "JournalTests" */;
+			buildConfigurationList = EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "PsyLogTests" */;
 			buildPhases = (
 				EACB6E3627D09C8800940291 /* Sources */,
 				EACB6E3727D09C8800940291 /* Frameworks */,
@@ -1664,14 +1664,14 @@
 			dependencies = (
 				EACB6E3F27D09C8800940291 /* PBXTargetDependency */,
 			);
-			name = JournalTests;
+			name = PsyLogTests;
 			productName = JournalTests;
-			productReference = EACB6E3A27D09C8800940291 /* JournalTests.xctest */;
+			productReference = EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		EAE4710226CBA57F009FB0EC /* Journal */ = {
+		EAE4710226CBA57F009FB0EC /* PsyLog */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "Journal" */;
+			buildConfigurationList = EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "PsyLog" */;
 			buildPhases = (
 				EAE470FF26CBA57F009FB0EC /* Sources */,
 				EAE4710026CBA57F009FB0EC /* Frameworks */,
@@ -1684,7 +1684,7 @@
 			dependencies = (
 				EA085DDC29607229001638AC /* PBXTargetDependency */,
 			);
-			name = Journal;
+			name = PsyLog;
 			packageProductDependencies = (
 				EAF76C9827D899E700945587 /* AlertToast */,
 				EAF76C9F27D8B72900945587 /* Algorithms */,
@@ -1737,8 +1737,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EAE4710226CBA57F009FB0EC /* Journal */,
-				EACB6E3927D09C8800940291 /* JournalTests */,
+				EAE4710226CBA57F009FB0EC /* PsyLog */,
+				EACB6E3927D09C8800940291 /* PsyLogTests */,
 				EA085DCB29607229001638AC /* TimelineWidgetExtension */,
 			);
 		};
@@ -2139,7 +2139,7 @@
 		};
 		EACB6E3F27D09C8800940291 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EAE4710226CBA57F009FB0EC /* Journal */;
+			target = EAE4710226CBA57F009FB0EC /* PsyLog */;
 			targetProxy = EACB6E3E27D09C8800940291 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -2429,7 +2429,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "JournalTests" */ = {
+		EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "PsyLogTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EACB6E4127D09C8800940291 /* Debug */,
@@ -2447,7 +2447,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "Journal" */ = {
+		EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "PsyLog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EAE4711826CBA582009FB0EC /* Debug */,

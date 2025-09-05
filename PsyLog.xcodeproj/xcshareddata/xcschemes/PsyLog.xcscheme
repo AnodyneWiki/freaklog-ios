@@ -16,7 +16,7 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
                BuildableName = "PsyLog.app"
-               BlueprintName = "Journal"
+               BlueprintName = "PsyLog"
                ReferencedContainer = "container:PsyLog.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
@@ -46,7 +46,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
             BuildableName = "PsyLog.app"
-            BlueprintName = "Journal"
+            BlueprintName = "PsyLog"
             ReferencedContainer = "container:PsyLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
@@ -67,7 +67,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
             BuildableName = "PsyLog.app"
-            BlueprintName = "Journal"
+            BlueprintName = "PsyLog"
             ReferencedContainer = "container:PsyLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
