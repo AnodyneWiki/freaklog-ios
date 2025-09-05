@@ -1,26 +1,10 @@
-// Copyright (c) 2022. Isaak Hanimann.
-// This file is part of PsychonautWiki Journal.
-//
-// PsychonautWiki Journal is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public Licence as published by
-// the Free Software Foundation, either version 3 of the License, or (at
-// your option) any later version.
-//
-// PsychonautWiki Journal is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with PsychonautWiki Journal. If not, see https://www.gnu.org/licenses/gpl-3.0.en.html.
-
 import SwiftUI
 
 struct SaferScreen: View {
     var body: some View {
         List {
             Section("Research") {
-                Text("In advance research the duration, subjective effects and potential adverse effects which the substance or combination of substances are likely to produce.\nRead the info in here and also the PsychonautWiki article. Its best to cross-reference with other sources (Tripsit, Erowid, Wikipedia, Bluelight, Reddit, etc).\nThere is no rush.")
+                Text("In advance research the duration, subjective effects and potential adverse effects which the substance or combination of substances are likely to produce.\nRead the info in here and also the PsychonautWiki article. It is best to cross-reference with other sources (SubstanceSearch, Tripsit, Erowid, Wikipedia, Bluelight, Reddit, etc).\nThere is no rush.")
             }
             Section("Testing") {
                 Text("Test your substance with anonymous and free drug testing services. If those are not available in your country, use reagent testing kits. Don‘t trust your dealer to sell reliable product. Its better to have a tested stash instead of relying on a source spontaneously.")

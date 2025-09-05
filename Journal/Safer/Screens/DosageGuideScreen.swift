@@ -1,19 +1,3 @@
-// Copyright (c) 2022. Isaak Hanimann.
-// This file is part of PsychonautWiki Journal.
-//
-// PsychonautWiki Journal is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public Licence as published by
-// the Free Software Foundation, either version 3 of the License, or (at
-// your option) any later version.
-//
-// PsychonautWiki Journal is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with PsychonautWiki Journal. If not, see https://www.gnu.org/licenses/gpl-3.0.en.html.
-
 import SwiftUI
 
 struct DosageGuideScreen: View {
@@ -33,7 +17,7 @@ struct DosageGuideScreen: View {
                     The user should avoid dosages that they are uncomfortable or unfamiliar with. An inexperienced user should always start at a lower dosage with the goal of working their way up to a normal or common dose. This allows the user to verify that their bodies are compatible with the substance and do not exhibit any allergies or unusual sensitivity.
                     After the initial test, the user may decide to increase the dosage. It is advised to increase the amount in controlled increments, usually adding 1/3 to 1/2 the previous dose. However, some substances are notable tricky to work with. For example, 2C-P is known to have a steep dose-response curve, as little as a few extra milligrams separating a manageable dose and an overdose. Also, 2C-P can have a very slow onset if ingested, and peak effects reportedly do not occur for 3 to 5 hours. So please be patient with new substances! The dose should never be doubled or tripled as this vastly increases the likelihood of either a bad trip or side effects such as anxiety, panic attacks, and psychosis.
                     This minimizes the risk of an accidental negative experience enormously; it is important to remember that everybody reacts differently to every substance depending on factors such as their own personal tolerance, brain chemistry, body weight, metabolism, stomach contents, and personal sensitivity. Another factor to consider is substance purity which can differ between batches of product.
-                    For information on the appropriate dosage for any substance, research should be done using a combination of PsychonautWiki, Erowid, Tripsit, Wikipedia, Bluelight, and Google. If contradictory information about dosage is found, one should always start from the lowest in order minimize the risk.
+                    For information on the appropriate dosage for any substance, research should be done using a combination of PsychonautWiki, SubstanceSearch, Erowid, Tripsit, Wikipedia, Bluelight, and Google. If contradictory information about dosage is found, one should always start from the lowest in order minimize the risk.
                     """)
             }
             Section("Allergy Testing") {
