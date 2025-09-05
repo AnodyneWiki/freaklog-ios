@@ -1,10 +1,22 @@
-# Journal
+# PsyLog
 
-Journal makes PW's info on psychoactive substances easily accessible. Users can quickly find dosage, tolerance, duration and dangerous interaction info offline.
+PsyLog is a fully open source continuation fork of the now closed-source and in-app-purchase-ridden PW Journal app.
 
-Users can also log their ingestions, make notes and get an overview of their experiences.
+Features:
+- Easy offline access to key harm reduction information (dosage, tolerance, duration, interactions)
+- Ingestion log with timed experience notes
+- Tolerance stats
+- Custom substances
+- Custom units
+- ...
 
-**Triple tap on the closed eye in settings to see all PW substances.**
+Future features:
+- Custom timelines
+- Multiple sources
+
+**Triple tap on the closed eye in settings to see all PW substances.** (necessary to get past App Store review)
+
+We strongly recommend using [TripSit](https://tripsit.me/) and [SubstanceSearch](https://substancesearch.com/) instead of PW to look up info on substances.
 
 <p>
 <img src="README Assets/presentation.png" width="100%">
