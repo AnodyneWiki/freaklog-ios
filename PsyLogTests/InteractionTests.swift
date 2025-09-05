@@ -1,4 +1,4 @@
-@testable import Journal
+@testable import PsyLog
 import XCTest
 
 final class InteractionTests: XCTestCase {

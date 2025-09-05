@@ -1,4 +1,4 @@
-@testable import Journal
+@testable import PsyLog
 import XCTest
 
 class RegexTests: XCTestCase {

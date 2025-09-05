@@ -1,5 +1,5 @@
 import CoreData
-@testable import Journal
+@testable import PsyLog
 import XCTest
 
 class DecodingTests: XCTestCase {
