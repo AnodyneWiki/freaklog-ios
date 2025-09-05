@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-               BuildableName = "Journal FOSS.app"
+               BuildableName = "PsyLog.app"
                BlueprintName = "Journal"
-               ReferencedContainer = "container:Journal.xcodeproj">
+               ReferencedContainer = "container:PsyLog.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "Journal FOSS.app"
+            BuildableName = "PsyLog.app"
             BlueprintName = "Journal"
-            ReferencedContainer = "container:Journal.xcodeproj">
+            ReferencedContainer = "container:PsyLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <LocationScenarioReference
@@ -66,9 +66,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "Journal FOSS.app"
+            BuildableName = "PsyLog.app"
             BlueprintName = "Journal"
-            ReferencedContainer = "container:Journal.xcodeproj">
+            ReferencedContainer = "container:PsyLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
