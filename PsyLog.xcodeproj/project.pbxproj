@@ -308,7 +308,6 @@
 		EACB0C20293FED5500C605E2 /* Interactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1F293FED5500C605E2 /* Interactions.swift */; };
 		EACB0C222940888600C605E2 /* SearchSubstanceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */; };
 		EACB6E5227D2592800940291 /* DecodingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB6E5127D2592800940291 /* DecodingTests.swift */; };
-		EACB6E5727D3483900940291 /* RegexTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB6E5627D3483900940291 /* RegexTests.swift */; };
 		EACF43942B9F7B7A008D1897 /* GlobalNavigationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */; };
 		EACF439B2BA24026008D1897 /* DosageStatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439A2BA24026008D1897 /* DosageStatScreen.swift */; };
 		EACF439D2BA247D3008D1897 /* DosageStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439C2BA247D3008D1897 /* DosageStat.swift */; };
@@ -661,7 +660,6 @@
 		EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSubstanceRow.swift; sourceTree = "<group>"; };
 		EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PsyLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EACB6E5127D2592800940291 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
-		EACB6E5627D3483900940291 /* RegexTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RegexTests.swift; sourceTree = "<group>"; };
 		EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalNavigationDestination.swift; sourceTree = "<group>"; };
 		EACF439A2BA24026008D1897 /* DosageStatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosageStatScreen.swift; sourceTree = "<group>"; };
 		EACF439C2BA247D3008D1897 /* DosageStat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosageStat.swift; sourceTree = "<group>"; };
@@ -1408,7 +1406,6 @@
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				EA98D9102972968100D94E65 /* Roa.json */,
-				EACB6E5627D3483900940291 /* RegexTests.swift */,
 			);
 			path = PsyLogTests;
 			sourceTree = "<group>";
@@ -1837,7 +1834,6 @@
 			files = (
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				EACB6E5227D2592800940291 /* DecodingTests.swift in Sources */,
-				EACB6E5727D3483900940291 /* RegexTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
