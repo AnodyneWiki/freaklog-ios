@@ -31,4 +31,6 @@ let namesOfLegalSubstances = [
     "Tyrosine",
 ]
 
+let appName = "PsyLog"
+
 let minimumDistanceForDetectingDragGesture: CGFloat = 20

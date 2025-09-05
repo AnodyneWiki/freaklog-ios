@@ -34,7 +34,7 @@ struct WelcomeScreen: View {
                     .padding(.leading, 10)
                     .onTapGesture(count: 3, perform: toggleEye)
                 VStack(spacing: 20) {
-                    (Text("Welcome to ") + Text("PsychonautWiki Journal").foregroundColor(.accentColor))
+                    (Text("Welcome to ") + Text(appName).foregroundColor(.accentColor))
                         .multilineTextAlignment(.center)
                         .font(.largeTitle.bold())
 
@@ -83,7 +83,7 @@ struct WelcomeScreen: View {
     let features = [
         Feature(
             title: "Risk & Reliability",
-            description: "Any reliance you place on PsychonautWiki Journal is strictly at your own risk. The developer is not liable.",
+            description: "Any reliance you place on " + appName + " is strictly at your own risk. The developer is not liable.",
             image: "brain.head.profile"
         ),
         Feature(
