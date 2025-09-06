@@ -17,5 +17,7 @@ let namesOfLegalSubstances = [
 
 let appName = "PsyLog"
 let contactEmail = "mailto:psylog@zotan.email"
+let repoUrl = "https://git.ztn.sh/psylog/psylog"
+let testflightUrl = "https://testflight.apple.com/join/K3fw3bDG"
 
 let minimumDistanceForDetectingDragGesture: CGFloat = 20

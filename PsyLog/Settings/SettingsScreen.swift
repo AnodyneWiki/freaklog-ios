@@ -177,11 +177,14 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.faq) {
                         Label("Frequently Asked Questions", systemImage: "questionmark.square")
                     }
-                    Link(destination: URL(string: "https://git.ztn.sh/zotan/psylog")!) {
+                    Link(destination: URL(string: repoUrl)!) {
                         Label("Source Code", systemImage: "doc.text.magnifyingglass")
                     }
+                    Link(destination: URL(string: testflightUrl)!) {
+                        Label("Get beta updates", systemImage: "square.and.arrow.down.on.square")
+                    }
                     Link(destination: URL(string: contactEmail)!) {
-                        Label("Report an issue", systemImage: "bubble.left.and.exclamationmark.bubble.right.fill")
+                        Label("Report an issue", systemImage: "bubble.left.and.exclamationmark.bubble.right")
                     }
                 }
             }
