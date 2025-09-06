@@ -2160,7 +2160,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 11.11;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug.TimelineWidget";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2189,7 +2189,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 11.11;
+				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.TimelineWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -2377,7 +2377,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 11.11;
+				MARKETING_VERSION = 1.0;
 				MY_BUNDLE_DISPLAY_NAME = Debug;
 				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug";
 				PRODUCT_NAME = PsyLog;
@@ -2404,7 +2404,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 11.11;
+				MARKETING_VERSION = 1.0;
 				MY_BUNDLE_DISPLAY_NAME = PsyLog;
 				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog;
 				PRODUCT_NAME = PsyLog;
