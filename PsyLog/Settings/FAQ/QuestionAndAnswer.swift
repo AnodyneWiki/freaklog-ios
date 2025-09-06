@@ -7,28 +7,32 @@ struct QuestionAndAnswer: Identifiable, Hashable {
 
     static let list: [QuestionAndAnswer] = [
         QuestionAndAnswer(
-            question: "Why is an interaction or other info on a substance present in the PsychonautWiki article but not in the app?",
-            answer: "Either the info is not annotated correctly in the article, the PsychonautWiki API does not parse the info correctly or the app does not import the info from the API correctly. In any case please report the bug through the app."
+            question: "Why was the app renamed to PsyLog?",
+            answer: "This was done for several reasons - for one, to separate the app from the (implied) PW trademark, as well as to allow for data aggregation from other sources without causing confusion."
+       ),
+        QuestionAndAnswer(
+            question: "Why is an interaction or other info on a substance present in a data source but not in the app?",
+            answer: "This is a bug - please report it by pressing 'Report an issue' in the settings tab."
         ),
         QuestionAndAnswer(
             question: "When does the app show an interaction warning?",
-            answer: "If there is an interaction with a substance that was logged less than 2 days ago or there is an interaction with any of the following: \(InteractionChecker.additionalInteractionsToCheck.joined(separator: ", "))."
+            answer: "If there is an interaction with a substance that was logged less than 2 days ago, or there is an interaction with any of the following: \(InteractionChecker.additionalInteractionsToCheck.joined(separator: ", "))."
         ),
         QuestionAndAnswer(
-            question: "How can one change or add info on a substance (duration, dose, interactions and effects)?",
-            answer: "By editing the corresponding PsychonautWiki article."
+            question: "How can I change or add info on a substance (duration, dose, interactions and effects)?",
+            answer: "By submitting corrections to the respective data source."
         ),
         QuestionAndAnswer(
-            question: "How often are substances updated?",
-            answer: "On every new version of the app."
+            question: "How often are the data sources updated?",
+            answer: "On every new version of the app. In the future, this may be replaced with an in-app data updater."
         ),
         QuestionAndAnswer(
             question: "How is the timeline drawn?",
-            answer: "The onset duration range from PsychonautWiki defines when the curve starts going up, the comeup how long it goes up for, the peak how long it stays up and the offset how long it takes to come down to baseline. The peak and offset durations are linearly interpolated based on the dose if possible, else it just chooses the middle value of the range. If some of the durations are missing it draws a dotted line. E.g. if the onset and total time is given it draws a line along the bottom for the onset and then it draws a dotted curve to the end of the total time."
+            answer: "The onset duration range from the data source defines when the curve starts going up, the comeup how long it goes up for, the peak how long it stays up and the offset how long it takes to come down to baseline. The peak and offset durations are linearly interpolated based on the dose if possible, else it just chooses the middle value of the range. If some of the durations are missing, it draws a dotted line - e.g. if the onset and total time is given, it draws a line along the bottom for the onset, and then it draws a dotted curve to the end of the total time."
         ),
         QuestionAndAnswer(
-            question: "Why does the timeline not cumulate the curves of different ingestions together?",
-            answer: "One can not add two curves together because one ingestion might build up tolerance, influencing the curve of the other ingestion. The curve can only be drawn based on data that is available through PsychonautWiki."
+            question: "Why does the timeline not stack the curves of redoses?",
+            answer: "Since there is no way to determine exact effect or blood concentration from multiple ingestions, this is disabled by default. If you are aware of the possible inaccuracies, you can disable 'Draw redoses individually' in the settings tab."
         ),
     ]
 }
