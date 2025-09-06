@@ -43,13 +43,13 @@ struct WelcomeScreen: View {
                     }
                 }
             }
-            Text("Your data is kept offline at all times")
+            Text("Your data is kept locally on your device at all times")
                 .font(.footnote)
                 .foregroundColor(.secondary)
             Button(action: {
                 isShowingWelcome.toggle()
             }, label: {
-                Text("I understand")
+                Text("I Agree")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
             })
