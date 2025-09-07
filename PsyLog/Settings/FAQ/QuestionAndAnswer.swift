@@ -11,6 +11,10 @@ struct QuestionAndAnswer: Identifiable, Hashable {
             answer: "This was done for several reasons - for one, to separate the app from the (implied) PW trademark, as well as to allow for data aggregation from other sources without causing confusion."
        ),
         QuestionAndAnswer(
+            question: "Will this app always remain free?",
+            answer: "Yes. We will never introduce any in-app purchases, subscriptions, or otherwise charge for features or the app as a whole."
+       ),
+        QuestionAndAnswer(
             question: "Why is an interaction or other info on a substance present in a data source but not in the app?",
             answer: "This is a bug - please report it by pressing 'Report an issue' in the settings tab."
         ),
