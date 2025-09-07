@@ -6,6 +6,10 @@ struct PersistenceController {
     static var preview: PersistenceController = .init(inMemory: true)
 
     let container: NSPersistentContainer
+    
+    @State
+    private var isInitialized = false
+
     static let needsToSeeWelcomeKey = "needsToSeeWelcome"
     static let isEyeOpenKey1 = "isEyeOpen"
     static let isEyeOpenKey2 = "isEyeOpen2"
@@ -19,6 +23,7 @@ struct PersistenceController {
     static let independentSubstanceHeightKey = "independentSubstanceHeight"
     static let lastIngestionTimeOfExperienceWhereAddIngestionTappedKey = "lastIngestionTimeOfExperienceWhereAddIngestionTapped"
     static let clonedIngestionTimeKey = "clonedIngestionTimeKey"
+
     var viewContext: NSManagedObjectContext {
         container.viewContext
     }
@@ -32,15 +37,54 @@ struct PersistenceController {
 #if APP_WIDGET
         description?.setOption(true as NSNumber, forKey: NSReadOnlyPersistentStoreOption)
 #endif
+
         if inMemory {
-            description?.url = URL(fileURLWithPath: "/dev/null")
+            loadInMemoryStores(description: description)
+            isInitialized = true
         }
+    }
+
+    // Tries to load data from persistent store, if it's available
+    public func loadData(_ app: UIApplication) {
+        tryLoadPersistentStores(app)
+    }
+
+    // Loads data from the in-memory store (only used for development)
+    private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
+        description?.url = URL(fileURLWithPath: "/dev/null")
+
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("Failed to load Core Data stack: \(error)")
+                fatalError("Failed to load in-memory Core Data stack: \(error)")
             }
         }
+
         viewContext.automaticallyMergesChangesFromParent = true
+    }
+
+    // Tries to load data from the persistent store, if it's available.
+    // Specially handles the case of the app being prewarmed before first unlock, to supress erroneous app crashes.
+    // There is likely a better way to fix it, but neither I nor the internet seems to know it.
+    private func tryLoadPersistentStores(_ app: UIApplication) {
+        if isInitialized { return }
+
+        container.loadPersistentStores { _, error in
+            if let error = error {
+                let nsError = error as NSError
+                if (nsError.domain == "NSCocoaErrorDomain" && nsError.code == 256 && nsError.userInfo["NSSQLiteErrorDomain"] as? Int == 23) {
+                    NSLog("Can't load core data stack due to BFU state")
+                    NSLog("Cannot continue.")
+                    // We want to end execution (since we can't continue) but not crash (to prevent the crash dialog)
+                    exit(0)
+                }
+                else {
+                    fatalError("Failed to load Core Data stack: \(error)")
+                }
+            }
+        }
+
+        viewContext.automaticallyMergesChangesFromParent = true
+        return
     }
 
     func deleteEverything() throws {
@@ -235,3 +279,4 @@ struct PersistenceController {
         return results?.first
     }
 }
+

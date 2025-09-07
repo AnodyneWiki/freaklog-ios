@@ -3,6 +3,8 @@ import AlertToast
 
 @main
 struct JournalApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+
     @StateObject private var toastViewModel = ToastViewModel()
     @StateObject private var locationManager = LocationManager()
     @StateObject private var authenticator = Authenticator()
