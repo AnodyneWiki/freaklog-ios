@@ -108,7 +108,7 @@ struct ContentScreen: View {
             UserDefaults.standard.set(nil, forKey: PersistenceController.clonedIngestionTimeKey)
             maybeRequestAppRating()
         }) {
-            JournalAuthenticatorWrapperView(authenticator: authenticator) {
+            AuthenticatorWrapper(authenticator: authenticator) {
                 ChooseSubstanceScreen()
             }
         }

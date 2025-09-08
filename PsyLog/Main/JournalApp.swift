@@ -12,7 +12,7 @@ struct JournalApp: App {
 
     var body: some Scene {
         WindowGroup {
-            JournalAuthenticatorWrapperView(authenticator: authenticator) {
+            AuthenticatorWrapper(authenticator: authenticator) {
                 LaunchAnimationWrapperView {
                     ContentView()
                         .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
