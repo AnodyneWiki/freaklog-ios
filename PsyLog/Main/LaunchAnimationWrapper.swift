@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct LaunchAnimationWrapperView<Content: View>: View {
+struct LaunchAnimationWrapper<Content: View>: View {
     @ViewBuilder
     public let content: Content
     

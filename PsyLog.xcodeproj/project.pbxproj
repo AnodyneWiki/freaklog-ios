@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
-		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapperView.swift */; };
+		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFA2E6F68EA008D7FDD /* LaunchScreenLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = 44E43DF92E6F68E9008D7FDD /* LaunchScreenLogo.png */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
@@ -399,7 +399,7 @@
 
 /* Begin PBXFileReference section */
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapperView.swift; sourceTree = "<group>"; };
+		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DF92E6F68E9008D7FDD /* LaunchScreenLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LaunchScreenLogo.png; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
@@ -1194,7 +1194,7 @@
 		EA8AEA6F27E1CC3A00B30A16 /* Main */ = {
 			isa = PBXGroup;
 			children = (
-				44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapperView.swift */,
+				44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */,
 				EAF21C222BBB3A15000BFB0A /* Navigation */,
 				EA8AEA7027E1CC5100B30A16 /* Content */,
 				EAE4710626CBA57F009FB0EC /* JournalApp.swift */,
@@ -1944,7 +1944,7 @@
 				EA4189F12963219100DEA663 /* LiveActivityButton.swift in Sources */,
 				EA47E64927CA136C00F6E10F /* Tolerance.swift in Sources */,
 				EA48F89229DD50B8007DA8C5 /* RatingCodable.swift in Sources */,
-				44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapperView.swift in Sources */,
+				44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */,
 				EA527A8629427F56009C142D /* ToxicitySection.swift in Sources */,
 				EA47E65127CA136C00F6E10F /* RoaDose.swift in Sources */,
 				EA48F89C29E7D86A007DA8C5 /* StomachFullness.swift in Sources */,
