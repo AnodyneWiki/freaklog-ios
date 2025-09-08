@@ -13,18 +13,20 @@ struct JournalApp: App {
     var body: some Scene {
         WindowGroup {
             JournalAuthenticatorWrapperView(authenticator: authenticator) {
-                ContentView()
-                    .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
-                    .environmentObject(toastViewModel)
-                    .environmentObject(authenticator)
-                    .environmentObject(locationManager)
-                    .accentColor(Color.blue)
-                    .toast(isPresenting: $toastViewModel.isShowingToast, duration: 1) {
-                        AlertToast(
-                            displayMode: .alert,
-                            type: toastViewModel.isSuccessToast ? .complete(.green) : .error(.red),
-                            title: toastViewModel.toastMessage)
-                    }
+                LaunchAnimationWrapperView {
+                    ContentView()
+                        .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
+                        .environmentObject(toastViewModel)
+                        .environmentObject(authenticator)
+                        .environmentObject(locationManager)
+                        .accentColor(Color.blue)
+                        .toast(isPresenting: $toastViewModel.isShowingToast, duration: 1) {
+                            AlertToast(
+                                displayMode: .alert,
+                                type: toastViewModel.isSuccessToast ? .complete(.green) : .error(.red),
+                                title: toastViewModel.toastMessage)
+                        }
+                }
             }
         }
         .onChange(of: scenePhase) { phase in

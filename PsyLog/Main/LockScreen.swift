@@ -5,7 +5,7 @@ struct LockScreen: View {
     let isFaceIDEnabled: Bool
     var body: some View {
         VStack(spacing: 0) {
-            Image(decorative: isEyeOpen ? "Eye Open" : "Eye Closed")
+            Image(decorative: "Eye Closed")
                 .resizable()
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 150, height: 150, alignment: .top)
