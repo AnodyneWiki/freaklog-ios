@@ -25,11 +25,11 @@ struct LaunchAnimationWrapperView<Content: View>: View {
                         .fill(.black)
                         .frame(width: width)
                         .onAppear {
-                            withAnimation(.timingCurve(0, 0.9, 0.2, 1, duration: 1).delay(0.25)) {
+                            withAnimation(.timingCurve(0.1, 0.9, 0.2, 1, duration: 0.75)) {
                                 self.width = 48
                             }
 
-                            withAnimation(.easeInOut.delay(0.75)) {
+                            withAnimation(.easeInOut.delay(0.375)) {
                                 showContent = true
                             }
                         }
