@@ -58,7 +58,7 @@ struct DosesSection: View {
 
             if substance.name == "MDMA" {
                 Section("Oral Max Dose Calculator") {
-                    MDMAMaxDoseCalculator(onChangeOfMax: { _ in })
+                    MDMAMaxDoseCalculator(showResult: true, onChangeOfMax: { _ in })
                 }
                 MDMAOptimalDoseSection()
                 MDMAPillsSection()

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct MDMAMaxDoseCalculator: View {
+    let showResult: Bool
     let onChangeOfMax: (Double) -> Void
     @State private var bodyWeightInKg = 75.0
     @State private var gender = Gender.male
@@ -32,7 +33,9 @@ struct MDMAMaxDoseCalculator: View {
 
     var body: some View {
         VStack {
-            Text(suggestedDoseText).font(.title.bold())
+            if (showResult) {
+                Text(suggestedDoseText).font(.title.bold())
+            }
             Picker("Gender", selection: $gender) {
                 Text("Male").tag(Gender.male)
                 Text("Female").tag(Gender.female)
@@ -61,6 +64,6 @@ struct MDMAMaxDoseCalculator: View {
 
 #Preview {
     List {
-        MDMAMaxDoseCalculator(onChangeOfMax: { _ in })
+        MDMAMaxDoseCalculator(showResult: true, onChangeOfMax: { _ in })
     }
 }

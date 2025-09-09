@@ -57,7 +57,7 @@ struct ChooseMDMADoseScreen: View {
     private var screen: some View {
         Form {
             Section("Max Dose Calculator") {
-                MDMAMaxDoseCalculator { newMaxDose in
+                MDMAMaxDoseCalculator(showResult: false) { newMaxDose in
                     mdmaDoseInMg = newMaxDose
                     doseText = newMaxDose.asRoundedReadableString
                 }
