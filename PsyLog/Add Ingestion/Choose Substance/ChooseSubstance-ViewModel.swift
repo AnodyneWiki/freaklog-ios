@@ -1,4 +1,4 @@
-import CoreData
+@preconcurrency import CoreData //FIXME
 import Foundation
 
 // swiftlint:disable function_body_length
@@ -110,17 +110,15 @@ extension ChooseSubstanceScreen {
         }
 
         public nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-            Task {
-                await MainActor.run(body: {
-                    guard let custs = controller.fetchedObjects as? [CustomSubstance] else { return }
-                    self.customSubstanceModels = custs.map { cust in
-                        CustomSubstanceModel(
-                            name: cust.nameUnwrapped,
-                            description: cust.explanationUnwrapped,
-                            units: cust.unitsUnwrapped
-                        )
-                    }
-                })
+            Task { @MainActor in
+                guard let custs = controller.fetchedObjects as? [CustomSubstance] else { return }
+                self.customSubstanceModels = custs.map { cust in
+                    CustomSubstanceModel(
+                        name: cust.nameUnwrapped,
+                        description: cust.explanationUnwrapped,
+                        units: cust.unitsUnwrapped
+                    )
+                }
             }
         }
     }

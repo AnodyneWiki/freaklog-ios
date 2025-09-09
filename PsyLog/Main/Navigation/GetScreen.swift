@@ -1,5 +1,6 @@
 import SwiftUI
 
+@MainActor
 func getScreen(from destination: GlobalNavigationDestination) -> some View {
     Group {
         switch destination {

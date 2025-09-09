@@ -2,7 +2,7 @@ import SwiftUI
 
 class Navigator: ObservableObject {
 
-    static let shared = Navigator()
+    @MainActor static let shared = Navigator()
 
     @Published var statsTabPath = NavigationPath()
     @Published var journalTabPath = NavigationPath()
@@ -26,6 +26,7 @@ class Navigator: ObservableObject {
         selectedCategories.removeAll()
     }
 
+    @MainActor
     var binding: Binding<Tab> {
         Binding {
             self.selectedTab

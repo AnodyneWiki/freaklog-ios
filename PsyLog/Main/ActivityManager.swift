@@ -92,7 +92,7 @@ class ActivityManager: ObservableObject {
         }
     }
 
-    private func updateActivity(
+    private nonisolated func updateActivity(
         activity: Activity<TimelineWidgetAttributes>,
         substanceGroups: [SubstanceIngestionGroup],
         everythingForEachRating: [EverythingForOneRating],

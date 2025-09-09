@@ -2,8 +2,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct JournalFile: FileDocument, Codable {
-    static var readableContentTypes = [UTType.json]
-    static var writableContentTypes = [UTType.json]
+    static let readableContentTypes = [UTType.json]
+    static let writableContentTypes = [UTType.json]
     var experiences: [ExperienceCodable]
     var substanceCompanions: [CompanionCodable]
     var customSubstances: [CustomSubstanceCodable]

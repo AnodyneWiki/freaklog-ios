@@ -1,4 +1,4 @@
-import CoreData
+@preconcurrency import CoreData
 
 extension SprayCalculatorScreen {
     @MainActor
@@ -96,8 +96,8 @@ extension SprayCalculatorScreen {
         }
 
         public nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-            guard let sprays = controller.fetchedObjects as? [Spray] else { return }
             Task { @MainActor in
+                guard let sprays = controller.fetchedObjects as? [Spray] else { return }
                 assignToSprayModels(sprays: sprays)
             }
         }

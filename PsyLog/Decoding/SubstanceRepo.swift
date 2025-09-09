@@ -1,7 +1,7 @@
 import CoreData
 import Foundation
 
-class SubstanceRepo {
+struct SubstanceRepo {
     static let shared = SubstanceRepo()
 
     let substances: [Substance]

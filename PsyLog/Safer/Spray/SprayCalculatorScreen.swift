@@ -131,7 +131,7 @@ struct SprayCalculatorScreenContent: View {
     }
 }
 
-private let sprays = [
+@MainActor private let sprays = [
     SprayModel(name: "Small Spray", numSprays: 32, contentInMl: 5, spray: nil),
     SprayModel(name: "Big Spray", numSprays: 50, contentInMl: 10, spray: nil),
 ]

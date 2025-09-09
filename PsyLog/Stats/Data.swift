@@ -13,7 +13,7 @@ struct SubstanceCount: Identifiable, Hashable {
     let experienceCount: Int
 }
 
-struct SubstanceData: Hashable, Equatable {
+struct SubstanceData: Hashable, Equatable, Sendable {
     static func == (lhs: SubstanceData, rhs: SubstanceData) -> Bool {
         lhs.years == rhs.years
     }
@@ -27,7 +27,7 @@ struct SubstanceData: Hashable, Equatable {
     let last30Days: [SubstanceCount]
     let last12Months: [SubstanceCount]
     let years: [SubstanceCount]
-    let colorMapping: (String) -> Color
+    let colorMapping: @Sendable (String) -> Color
 }
 
 extension SubstanceData {
@@ -146,7 +146,7 @@ struct SubstanceExperienceCountForYear: Hashable {
     let experienceCount: Double
 }
 
-struct ExperienceData: Hashable, Equatable {
+struct ExperienceData: Hashable, Equatable, Sendable {
     static func == (lhs: ExperienceData, rhs: ExperienceData) -> Bool {
         lhs.years == rhs.years
     }
@@ -160,7 +160,7 @@ struct ExperienceData: Hashable, Equatable {
     let last30Days: [SubstanceExperienceCountForDay]
     let last12Months: [SubstanceExperienceCountForMonth]
     let years: [SubstanceExperienceCountForYear]
-    let colorMapping: (String) -> Color
+    let colorMapping: @Sendable (String) -> Color
 
     var last30DaysTotal: Double {
         last30Days.map { $0.experienceCount }.reduce(0, +)

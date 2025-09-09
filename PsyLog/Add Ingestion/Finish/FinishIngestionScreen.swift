@@ -1,4 +1,4 @@
-import CoreData
+@preconcurrency import CoreData //FIXME
 import SwiftUI
 
 // swiftlint:disable type_body_length function_body_length file_length

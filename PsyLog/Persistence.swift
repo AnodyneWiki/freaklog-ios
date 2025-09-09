@@ -1,9 +1,9 @@
-import CoreData
+@preconcurrency import CoreData //FIXME
 import SwiftUI
 
 struct PersistenceController {
     static let shared = PersistenceController()
-    static var preview: PersistenceController = .init(inMemory: true)
+    static let preview: PersistenceController = .init(inMemory: true)
 
     let container: NSPersistentContainer
     

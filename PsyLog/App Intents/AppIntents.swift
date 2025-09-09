@@ -3,7 +3,7 @@ import AppIntents
 
 struct OpenLastExperienceIntent: AppIntent {
 
-    static var title: LocalizedStringResource = "Open Last Experience"
+    static let title: LocalizedStringResource = "Open Last Experience"
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -11,12 +11,12 @@ struct OpenLastExperienceIntent: AppIntent {
         return .result()
     }
 
-    static var openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = true
 }
 
 struct SearchSubstancesIntent: AppIntent {
 
-    static var title: LocalizedStringResource = "Search Substance"
+    static let title: LocalizedStringResource = "Search Substance"
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -24,12 +24,12 @@ struct SearchSubstancesIntent: AppIntent {
         return .result()
     }
 
-    static var openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = true
 }
 
 struct AddIngestionIntent: AppIntent {
 
-    static var title: LocalizedStringResource = "Add Ingestion"
+    static let title: LocalizedStringResource = "Add Ingestion"
 
     @MainActor
     func perform() async throws -> some IntentResult {
@@ -37,7 +37,7 @@ struct AddIngestionIntent: AppIntent {
         return .result()
     }
 
-    static var openAppWhenRun: Bool = true
+    static let openAppWhenRun: Bool = true
 }
 
 
@@ -73,5 +73,5 @@ struct JournalAutoShortcuts: AppShortcutsProvider {
         )
     }
 
-    static var shortcutTileColor: ShortcutTileColor = .blue
+    static let shortcutTileColor: ShortcutTileColor = .blue
 }

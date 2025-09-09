@@ -1,4 +1,4 @@
-import CoreLocation
+@preconcurrency import CoreLocation //FIXME
 import Foundation
 
 @MainActor
