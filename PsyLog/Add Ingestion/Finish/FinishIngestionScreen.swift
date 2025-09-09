@@ -60,9 +60,9 @@ struct FinishIngestionScreen: View {
 
     var doneButton: some View {
         DoneButton {
-            Task {
+            Task { @MainActor in
                 do {
-                    try await addIngestionWithExperience()
+                    try addIngestionWithExperience()
                     Task { @MainActor in
                         toastViewModel.showSuccessToast()
                         generateSuccessHaptic()
@@ -253,9 +253,9 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    func addIngestionWithExperience() async throws {
+    func addIngestionWithExperience() throws {
         let context = PersistenceController.shared.viewContext
-        try await context.perform {
+        try context.performAndWait {
             if let existingExperience = selectedExperience {
                 createIngestionWithCompanion(
                     with: existingExperience,
