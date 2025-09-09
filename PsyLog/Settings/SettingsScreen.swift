@@ -220,7 +220,7 @@ struct SettingsContent: View {
             isPresented: $isExporting,
             document: journalFile,
             contentType: .json,
-            defaultFilename: "Journal \(Date().asDateString)"
+            defaultFilename: "\(appName) \(Date().ISO8601Format(.iso8601(timeZone: TimeZone.current, dateSeparator: .dash, dateTimeSeparator: .standard, timeSeparator: .omitted)))"
         ) { result in
             if case .success = result {
                 toastViewModel.showSuccessToast(message: "Export Successful")
