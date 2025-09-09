@@ -28,7 +28,7 @@
 		EA085DD329607229001638AC /* TimelineWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DD229607229001638AC /* TimelineWidgetBundle.swift */; };
 		EA085DD529607229001638AC /* TimelineWidgetLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DD429607229001638AC /* TimelineWidgetLiveActivity.swift */; };
 		EA085DD929607229001638AC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EA085DD829607229001638AC /* Assets.xcassets */; };
-		EA085DDD29607229001638AC /* TimelineWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EA085DDD29607229001638AC /* LiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EA085DCC29607229001638AC /* LiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		EA085DE429616E45001638AC /* TimelineWidgetAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */; };
 		EA085DE529616E48001638AC /* TimelineWidgetAttributes.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */; };
 		EA085DFD29619E1E001638AC /* RoaDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63927CA136C00F6E10F /* RoaDuration.swift */; };
@@ -380,7 +380,7 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
-				EA085DDD29607229001638AC /* TimelineWidgetExtension.appex in Embed Foundation Extensions */,
+				EA085DDD29607229001638AC /* LiveActivityExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -414,7 +414,7 @@
 		EA039AC92A6C6691006DFAFE /* DurationChip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationChip.swift; sourceTree = "<group>"; };
 		EA03ABC22B39AAF100DB8D0D /* EditCustomUnitsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCustomUnitsScreen.swift; sourceTree = "<group>"; };
 		EA03ABC52B39BE9200DB8D0D /* CustomUnitsChooseDoseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomUnitsChooseDoseScreen.swift; sourceTree = "<group>"; };
-		EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = TimelineWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		EA085DCC29607229001638AC /* LiveActivityExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = LiveActivityExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		EA085DCD29607229001638AC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		EA085DCF29607229001638AC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		EA085DD229607229001638AC /* TimelineWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineWidgetBundle.swift; sourceTree = "<group>"; };
@@ -1441,7 +1441,7 @@
 			children = (
 				EAE4710326CBA57F009FB0EC /* PsyLog.app */,
 				EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */,
-				EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */,
+				EA085DCC29607229001638AC /* LiveActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1637,9 +1637,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		EA085DCB29607229001638AC /* TimelineWidgetExtension */ = {
+		EA085DCB29607229001638AC /* LiveActivityExtension */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "TimelineWidgetExtension" */;
+			buildConfigurationList = EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "LiveActivityExtension" */;
 			buildPhases = (
 				EA085DC829607229001638AC /* Sources */,
 				EA085DC929607229001638AC /* Frameworks */,
@@ -1649,9 +1649,9 @@
 			);
 			dependencies = (
 			);
-			name = TimelineWidgetExtension;
+			name = LiveActivityExtension;
 			productName = TimelineWidgetExtension;
-			productReference = EA085DCC29607229001638AC /* TimelineWidgetExtension.appex */;
+			productReference = EA085DCC29607229001638AC /* LiveActivityExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		EACB6E3927D09C8800940291 /* PsyLogTests */ = {
@@ -1742,7 +1742,7 @@
 			targets = (
 				EAE4710226CBA57F009FB0EC /* PsyLog */,
 				EACB6E3927D09C8800940291 /* PsyLogTests */,
-				EA085DCB29607229001638AC /* TimelineWidgetExtension */,
+				EA085DCB29607229001638AC /* LiveActivityExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -2138,7 +2138,7 @@
 /* Begin PBXTargetDependency section */
 		EA085DDC29607229001638AC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EA085DCB29607229001638AC /* TimelineWidgetExtension */;
+			target = EA085DCB29607229001638AC /* LiveActivityExtension */;
 			targetProxy = EA085DDB29607229001638AC /* PBXContainerItemProxy */;
 		};
 		EACB6E3F27D09C8800940291 /* PBXTargetDependency */ = {
@@ -2160,7 +2160,7 @@
 				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TimelineWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2169,7 +2169,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug.TimelineWidget";
+				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug.LiveActivity";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2189,7 +2189,7 @@
 				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = TimelineWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -2198,7 +2198,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.TimelineWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.LiveActivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2426,7 +2426,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "TimelineWidgetExtension" */ = {
+		EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "LiveActivityExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EA085DDF29607229001638AC /* Debug */,
