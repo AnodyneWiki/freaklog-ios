@@ -3,13 +3,12 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 54;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
 		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
-		44E43DFA2E6F68EA008D7FDD /* LaunchScreenLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = 44E43DF92E6F68E9008D7FDD /* LaunchScreenLogo.png */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
 		EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9927E5E72000077FB2 /* WebViewScreen.swift */; };
@@ -78,7 +77,6 @@
 		EA2C94B52AAD98A000864BEC /* FullTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2C94B42AAD98A000864BEC /* FullTimeline.swift */; };
 		EA2D19652B11D3BA00B270A2 /* SubstanceIngestionGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19642B11D3BA00B270A2 /* SubstanceIngestionGroup.swift */; };
 		EA2D19662B11D46900B270A2 /* SubstanceRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63527CA136C00F6E10F /* SubstanceRepo.swift */; };
-		EA2D19672B11D9B000B270A2 /* substances.json in Resources */ = {isa = PBXBuildFile; fileRef = EAE4723426CC42F7009FB0EC /* substances.json */; };
 		EA2D19692B11E85300B270A2 /* ChooseOtherRouteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19682B11E85300B270A2 /* ChooseOtherRouteScreen.swift */; };
 		EA2D196B2B11E8AE00B270A2 /* RouteBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D196A2B11E8AE00B270A2 /* RouteBox.swift */; };
 		EA302E442B2F3349007F113F /* CustomUnitsChooseSubstanceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E432B2F3349007F113F /* CustomUnitsChooseSubstanceScreen.swift */; };
@@ -338,8 +336,6 @@
 		EAE4722326CBA664009FB0EC /* ChooseDoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A826CBA664009FB0EC /* ChooseDoseScreen.swift */; };
 		EAE4722526CBA664009FB0EC /* JournalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471AA26CBA664009FB0EC /* JournalScreen.swift */; };
 		EAE4722626CBA664009FB0EC /* ExperienceRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471AB26CBA664009FB0EC /* ExperienceRow.swift */; };
-		EAE4722E26CBAE5B009FB0EC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EAE4712726CBA663009FB0EC /* Assets.xcassets */; };
-		EAE4723526CC42F7009FB0EC /* substances.json in Resources */ = {isa = PBXBuildFile; fileRef = EAE4723426CC42F7009FB0EC /* substances.json */; };
 		EAE480932973EF5900B600EF /* CumulativeDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE480922973EF5900B600EF /* CumulativeDose.swift */; };
 		EAE48097297433D100B600EF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EAE48096297433D100B600EF /* LaunchScreen.storyboard */; };
 		EAEA92232B4E780200F3049D /* Inflection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA92222B4E780200F3049D /* Inflection.swift */; };
@@ -400,7 +396,6 @@
 /* Begin PBXFileReference section */
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
-		44E43DF92E6F68E9008D7FDD /* LaunchScreenLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = LaunchScreenLogo.png; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
@@ -676,7 +671,6 @@
 		EAE4710626CBA57F009FB0EC /* JournalApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalApp.swift; sourceTree = "<group>"; };
 		EAE4711D26CBA663009FB0EC /* WelcomeScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
 		EAE4712226CBA663009FB0EC /* Feature.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Feature.swift; sourceTree = "<group>"; };
-		EAE4712726CBA663009FB0EC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EAE4712926CBA663009FB0EC /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Goya.xcdatamodel; sourceTree = "<group>"; };
@@ -695,7 +689,6 @@
 		EAE471A826CBA664009FB0EC /* ChooseDoseScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChooseDoseScreen.swift; sourceTree = "<group>"; };
 		EAE471AA26CBA664009FB0EC /* JournalScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JournalScreen.swift; sourceTree = "<group>"; };
 		EAE471AB26CBA664009FB0EC /* ExperienceRow.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ExperienceRow.swift; sourceTree = "<group>"; };
-		EAE4723426CC42F7009FB0EC /* substances.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = substances.json; sourceTree = "<group>"; };
 		EAE480922973EF5900B600EF /* CumulativeDose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CumulativeDose.swift; sourceTree = "<group>"; };
 		EAE48096297433D100B600EF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EAEA92222B4E780200F3049D /* Inflection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Inflection.swift; sourceTree = "<group>"; };
@@ -709,6 +702,10 @@
 		EAF76CA827D90CF900945587 /* SubstanceColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceColor.swift; sourceTree = "<group>"; };
 		EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationRoute.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		44E43E022E71E9E9008D7FDD /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Assets; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		EA085DC929607229001638AC /* Frameworks */ = {
@@ -1203,7 +1200,6 @@
 				EAE48096297433D100B600EF /* LaunchScreen.storyboard */,
 				EA014FA327EA1AD300077FB2 /* ToastViewModel.swift */,
 				EA968AFC2962C9B000779DD9 /* ActivityManager.swift */,
-				44E43DF92E6F68E9008D7FDD /* LaunchScreenLogo.png */,
 				44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */,
 			);
 			path = Main;
@@ -1449,6 +1445,7 @@
 		EAE4710526CBA57F009FB0EC /* PsyLog */ = {
 			isa = PBXGroup;
 			children = (
+				44E43E022E71E9E9008D7FDD /* Assets */,
 				441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */,
 				EA39B2052BB981E0000B1C4E /* App Intents */,
 				EAF76CA727D90CE500945587 /* Enums */,
@@ -1465,10 +1462,8 @@
 				EAE4715E26CBA664009FB0EC /* CoreDataHelpers */,
 				EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */,
 				EAE4718026CBA664009FB0EC /* Persistence.swift */,
-				EAE4723426CC42F7009FB0EC /* substances.json */,
 				EAC23793276750C500109622 /* Global Functions.swift */,
 				EA4189ED2962E67600DEA663 /* Constants.swift */,
-				EAE4712726CBA663009FB0EC /* Assets.xcassets */,
 				EA35ABCC2BADA220004352F2 /* PrivacyInfo.xcprivacy */,
 				EAF5D366270B3A6E00E78909 /* PsyLog.entitlements */,
 				EAE4715926CBA664009FB0EC /* Info.plist */,
@@ -1687,6 +1682,9 @@
 			dependencies = (
 				EA085DDC29607229001638AC /* PBXTargetDependency */,
 			);
+			fileSystemSynchronizedGroups = (
+				44E43E022E71E9E9008D7FDD /* Assets */,
+			);
 			name = PsyLog;
 			packageProductDependencies = (
 				EAF76C9827D899E700945587 /* AlertToast */,
@@ -1752,7 +1750,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EA2D19672B11D9B000B270A2 /* substances.json in Resources */,
 				EA085DD929607229001638AC /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -1770,10 +1767,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EAE48097297433D100B600EF /* LaunchScreen.storyboard in Resources */,
-				44E43DFA2E6F68EA008D7FDD /* LaunchScreenLogo.png in Resources */,
-				EAE4722E26CBAE5B009FB0EC /* Assets.xcassets in Resources */,
 				EA3E74612BADA9D500162354 /* PrivacyInfo.xcprivacy in Resources */,
-				EAE4723526CC42F7009FB0EC /* substances.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
