@@ -186,7 +186,7 @@ struct SettingsContent: View {
                     Link(destination: URL(string: communityUrl)!) {
                         Label("Join the community", systemImage: "bubble.left.and.text.bubble.right")
                     }
-                    Link(destination: URL(string: contactEmail)!) {
+                    Link(destination: URL(string: supportUrl)!) {
                         Label("Report an issue", systemImage: "bubble.left.and.exclamationmark.bubble.right")
                     }
                 }

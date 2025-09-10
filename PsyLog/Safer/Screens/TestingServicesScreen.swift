@@ -170,7 +170,7 @@ struct TestingServicesScreen: View {
                 )
             }
             Section {
-                Link(destination: URL(string: contactEmail)!) {
+                Link(destination: URL(string: supportUrl)!) {
                     Label("Report missing service", systemImage: "plus.bubble.fill")
                 }.foregroundColor(.red)
             }
