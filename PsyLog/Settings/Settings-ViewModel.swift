@@ -152,7 +152,7 @@ extension SettingsScreen {
             }
         }
 
-        // Converts v12 exports, if necessary. Credits to <> (replace with actual name once confirmed that credit is wanted and we have a name)
+        // Converts v12 exports, if necessary.
         private func tryConvertFile(_ data: Data) -> Data {
             print("Trying to convert file")
             // Attempt to parse the JSON data into a mutable dictionary.
