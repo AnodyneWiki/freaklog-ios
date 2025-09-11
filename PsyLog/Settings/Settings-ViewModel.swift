@@ -27,6 +27,7 @@ extension SettingsScreen {
         // swiftlint:disable cyclomatic_complexity function_body_length
         func importData(data: Data) {
             do {
+                let data = tryConvertFile(data)
                 let file = try JSONDecoder().decode(JournalFile.self, from: data)
                 try PersistenceController.shared.deleteEverything()
                 let context = PersistenceController.shared.viewContext
@@ -148,6 +149,192 @@ extension SettingsScreen {
                 let desc = error.localizedDescription
                 print("Some other error – \(desc)")
                 showErrorToast(message: "Import Failed")
+            }
+        }
+
+        // Converts v12 exports, if necessary. Credits to <> (replace with actual name once confirmed that credit is wanted and we have a name)
+        private func tryConvertFile(_ data: Data) -> Data {
+            print("Trying to convert file")
+            // Attempt to parse the JSON data into a mutable dictionary.
+            guard
+                var jsonObject = try? JSONSerialization.jsonObject(
+                    with: data,
+                    options: .mutableContainers
+                ) as? [String: Any]
+            else {
+                // If it's not valid JSON, return the original data.
+                return data
+            }
+            
+            guard let exportSource = jsonObject["exportSource"] as? String,
+                  exportSource == "iOS Journal"
+                    || exportSource == "Android Journal"
+            else {
+                return data
+            }
+            
+            print("Converting from v12+ iOS Journal")
+            
+            jsonObject.removeValue(forKey: "exportSource")
+            
+            let customUnits =
+            (jsonObject["customUnits"] as? [[String: Any]]) ?? []
+            
+            // Transform 'customUnits' into the old 'customSubstances' format.
+            let customSubstances = customUnits.map { unit -> [String: Any] in
+                let name = unit["name"] as? String ?? ""
+                let units = unit["unit"] as? String ?? ""
+                let description = unit["note"] as? String ?? ""
+                return [
+                    "name": name,
+                    "units": units,
+                    "description": description,
+                ]
+            }
+            jsonObject["customSubstances"] = customSubstances
+            
+            // Build list of substance companions
+            var companionObject = (jsonObject["substanceCompanions"] as? [[String: String]]) ?? []
+            
+            let companions: [String] = companionObject.map { companion in
+                companion["substanceName"] ?? ""
+            }.filter { substance in
+                substance != ""
+            }
+            
+            // First pass: Build an initial map of Int ID -> (substanceName, nested customUnitId)
+            var customUnitSubstancesMap:
+            [Int: (substanceName: String?, customUnitId: Int?)] = [:]
+            for unit in customUnits {
+                let idInt: Int
+                
+                // Convert ID to Int, handling both String and Int cases
+                if let id = unit["id"] as? Int {
+                    idInt = id
+                } else if let id = unit["id"] as? String,
+                          let convertedId = Int(id)
+                {
+                    idInt = convertedId
+                } else {
+                    continue
+                }
+                
+                let name = unit["name"] as? String
+                
+                if let color = unit["color"] as? String {
+                    if let name = name {
+                        if (!companions.contains(name)) {
+                            let companion: [String: String] = ["substanceName": name, "color": color]
+                            companionObject.append(companion)
+                        }
+                    }
+                }
+                
+                if let doseComponents = unit["doseComponents"]
+                    as? [[String: Any]],
+                   let firstComponent = doseComponents.first
+                {
+                    let substanceName =
+                    firstComponent["substanceName"] as? String
+                    
+                    // Handle customUnitId as Int or string
+                    let customUnitIdInt: Int?
+                    if let customUnitId = firstComponent["customUnitId"] as? Int
+                    {
+                        customUnitIdInt = customUnitId
+                    } else if let customUnitId = firstComponent["customUnitId"]
+                                as? String, let convertedId = Int(customUnitId)
+                    {
+                        customUnitIdInt = convertedId
+                    } else {
+                        customUnitIdInt = nil
+                    }
+                    
+                    customUnitSubstancesMap[idInt] = (
+                        substanceName, customUnitIdInt
+                    )
+                } else {
+                    customUnitSubstancesMap[idInt] = (name, nil)
+                }
+            }
+            
+            jsonObject.updateValue(companionObject, forKey: "substanceCompanions")
+            
+            // Second pass: Resolve the nested references into a final, simple mapping.
+            var resolvedMapping: [Int: String] = [:]
+            for (key, value) in customUnitSubstancesMap {
+                if let nestedId = value.customUnitId,
+                   let resolvedValue = customUnitSubstancesMap[nestedId]
+                {
+                    resolvedMapping[key] =
+                    resolvedValue.substanceName ?? value.substanceName
+                    ?? "Unknown Substance"
+                } else {
+                    resolvedMapping[key] =
+                    value.substanceName ?? "Unknown Substance"
+                }
+            }
+            jsonObject.removeValue(forKey: "customUnits")
+            
+            // Update ingestions within experiences to use the resolved substance names.
+            if var experiences = jsonObject["experiences"] as? [[String: Any]] {
+                for i in 0..<experiences.count {
+                    var experience = experiences[i]
+                    if var ingestions = experience["ingestions"]
+                        as? [[String: Any]]
+                    {
+                        if ingestions.isEmpty {
+                            continue
+                        }
+                        for j in 0..<ingestions.count {
+                            var ingestion = ingestions[j]
+                            
+                            // Check for missing/null substanceName
+                            if ingestion["substanceName"] == nil
+                                || (ingestion["substanceName"] as? NSNull)
+                                != nil {
+                                
+                                let customUnitIdInt: Int?
+                                if let intId = ingestion["customUnitId"] as? Int
+                                {
+                                    customUnitIdInt = intId
+                                } else if let stringId = ingestion[
+                                    "customUnitId"
+                                ] as? String, let convertedId = Int(stringId) {
+                                    customUnitIdInt = convertedId
+                                } else {
+                                    customUnitIdInt = nil
+                                }
+                                
+                                if let customUnitId = customUnitIdInt,
+                                   let resolvedName = resolvedMapping[
+                                    customUnitId
+                                   ]
+                                {
+                                    ingestion["substanceName"] = resolvedName
+                                } else {
+                                    ingestion["substanceName"] =
+                                    "Unknown Substance3"
+                                }
+                            }
+                            ingestions[j] = ingestion
+                        }
+                        experience["ingestions"] = ingestions
+                        experiences[i] = experience
+                    }
+                }
+                jsonObject["experiences"] = experiences
+            }
+            
+            do {
+                let finalData = try JSONSerialization.data(
+                    withJSONObject: jsonObject
+                )
+                print("Successfully re-serialized converted JSON.")
+                return finalData
+            } catch {
+                print("Failed to re-serialize converted JSON: \(error)")
+                return data
             }
         }
         // swiftlint:enable cyclomatic_complexity function_body_length
