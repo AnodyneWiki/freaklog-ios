@@ -704,6 +704,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		440D42F52E74A40D00C73035 /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = Assets; path = ../PsyLog/Assets; sourceTree = "<group>"; };
 		44E43E022E71E9E9008D7FDD /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Assets; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -787,6 +788,7 @@
 				EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */,
 				EA085DD829607229001638AC /* Assets.xcassets */,
 				EA085DDA29607229001638AC /* Info.plist */,
+				440D42F52E74A40D00C73035 /* Assets */,
 			);
 			path = TimelineWidget;
 			sourceTree = "<group>";
@@ -1643,6 +1645,9 @@
 			buildRules = (
 			);
 			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				440D42F52E74A40D00C73035 /* Assets */,
 			);
 			name = LiveActivityExtension;
 			productName = TimelineWidgetExtension;
