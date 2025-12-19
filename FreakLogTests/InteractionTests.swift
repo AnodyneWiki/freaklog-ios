@@ -1,4 +1,4 @@
-@testable import PsyLog
+@testable import FreakLog
 import XCTest
 
 final class InteractionTests: XCTestCase {

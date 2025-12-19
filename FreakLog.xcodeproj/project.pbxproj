@@ -319,7 +319,7 @@
 		EAD089D42AADA01A006EAA48 /* FullTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2C94B42AAD98A000864BEC /* FullTimeline.swift */; };
 		EAD1D0022B52709500EC0D70 /* CustomUnitsArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0012B52709500EC0D70 /* CustomUnitsArchiveScreen.swift */; };
 		EAD1D0042B5271BD00EC0D70 /* CustomUnitRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0032B5271BD00EC0D70 /* CustomUnitRow.swift */; };
-		EAE4710726CBA57F009FB0EC /* PsyLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4710626CBA57F009FB0EC /* PsyLog.swift */; };
+		EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4710626CBA57F009FB0EC /* FreakLog.swift */; };
 		EAE471B226CBA664009FB0EC /* WelcomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4711D26CBA663009FB0EC /* WelcomeScreen.swift */; };
 		EAE471B626CBA664009FB0EC /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712226CBA663009FB0EC /* Feature.swift */; };
 		EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712926CBA663009FB0EC /* ContentView.swift */; };
@@ -368,7 +368,7 @@
 			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = EAE4710226CBA57F009FB0EC;
-			remoteInfo = PsyLog;
+			remoteInfo = FreakLog;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -665,7 +665,7 @@
 		EACB0C1D293FA4F500C605E2 /* SaferScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaferScreen.swift; sourceTree = "<group>"; };
 		EACB0C1F293FED5500C605E2 /* Interactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interactions.swift; sourceTree = "<group>"; };
 		EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchSubstanceRow.swift; sourceTree = "<group>"; };
-		EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PsyLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		EACB6E3A27D09C8800940291 /* FreakLogTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FreakLogTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		EACB6E5127D2592800940291 /* DecodingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DecodingTests.swift; sourceTree = "<group>"; };
 		EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalNavigationDestination.swift; sourceTree = "<group>"; };
 		EACF439A2BA24026008D1897 /* DosageStatScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosageStatScreen.swift; sourceTree = "<group>"; };
@@ -673,8 +673,8 @@
 		EACF91C62887410500E7149C /* PW Version 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 2.xcdatamodel"; sourceTree = "<group>"; };
 		EAD1D0012B52709500EC0D70 /* CustomUnitsArchiveScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomUnitsArchiveScreen.swift; sourceTree = "<group>"; };
 		EAD1D0032B5271BD00EC0D70 /* CustomUnitRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomUnitRow.swift; sourceTree = "<group>"; };
-		EAE4710326CBA57F009FB0EC /* PsyLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PsyLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		EAE4710626CBA57F009FB0EC /* PsyLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PsyLog.swift; sourceTree = "<group>"; };
+		EAE4710326CBA57F009FB0EC /* FreakLog.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreakLog.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EAE4710626CBA57F009FB0EC /* FreakLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FreakLog.swift; sourceTree = "<group>"; };
 		EAE4711D26CBA663009FB0EC /* WelcomeScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = WelcomeScreen.swift; sourceTree = "<group>"; };
 		EAE4712226CBA663009FB0EC /* Feature.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Feature.swift; sourceTree = "<group>"; };
 		EAE4712926CBA663009FB0EC /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -701,7 +701,7 @@
 		EAF21C232BBB3A1F000BFB0A /* Tab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tab.swift; sourceTree = "<group>"; };
 		EAF21C252BBB3A3B000BFB0A /* Navigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Navigator.swift; sourceTree = "<group>"; };
 		EAF21C272BBB3A6F000BFB0A /* GetScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GetScreen.swift; sourceTree = "<group>"; };
-		EAF5D366270B3A6E00E78909 /* PsyLog.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = PsyLog.entitlements; sourceTree = "<group>"; };
+		EAF5D366270B3A6E00E78909 /* FreakLog.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FreakLog.entitlements; sourceTree = "<group>"; };
 		EAF76C8F27D7A5A000945587 /* AcknowledgeInteractionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgeInteractionsView.swift; sourceTree = "<group>"; };
 		EAF76C9C27D8B10500945587 /* InteractionType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionType.swift; sourceTree = "<group>"; };
 		EAF76CA327D8F72700945587 /* ExperiencesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiencesList.swift; sourceTree = "<group>"; };
@@ -710,7 +710,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		440D42F52E74A40D00C73035 /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = Assets; path = ../PsyLog/Assets; sourceTree = "<group>"; };
+		440D42F52E74A40D00C73035 /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = Assets; path = ../FreakLog/Assets; sourceTree = "<group>"; };
 		44E43E022E71E9E9008D7FDD /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Assets; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
@@ -1411,14 +1411,14 @@
 			path = Settings;
 			sourceTree = "<group>";
 		};
-		EACB6E3B27D09C8800940291 /* PsyLogTests */ = {
+		EACB6E3B27D09C8800940291 /* FreakLogTests */ = {
 			isa = PBXGroup;
 			children = (
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				EA98D9102972968100D94E65 /* Roa.json */,
 			);
-			path = PsyLogTests;
+			path = FreakLogTests;
 			sourceTree = "<group>";
 		};
 		EACF43992BA23FFC008D1897 /* Dosage Charts */ = {
@@ -1434,8 +1434,8 @@
 		EAE470FA26CBA57F009FB0EC = {
 			isa = PBXGroup;
 			children = (
-				EAE4710526CBA57F009FB0EC /* PsyLog */,
-				EACB6E3B27D09C8800940291 /* PsyLogTests */,
+				EAE4710526CBA57F009FB0EC /* FreakLog */,
+				EACB6E3B27D09C8800940291 /* FreakLogTests */,
 				EA085DD129607229001638AC /* TimelineWidget */,
 				EAE4710426CBA57F009FB0EC /* Products */,
 				EAA2EC6826E2064D00B4FACF /* Frameworks */,
@@ -1445,14 +1445,14 @@
 		EAE4710426CBA57F009FB0EC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				EAE4710326CBA57F009FB0EC /* PsyLog.app */,
-				EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */,
+				EAE4710326CBA57F009FB0EC /* FreakLog.app */,
+				EACB6E3A27D09C8800940291 /* FreakLogTests.xctest */,
 				EA085DCC29607229001638AC /* LiveActivityExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		EAE4710526CBA57F009FB0EC /* PsyLog */ = {
+		EAE4710526CBA57F009FB0EC /* FreakLog */ = {
 			isa = PBXGroup;
 			children = (
 				44E43E022E71E9E9008D7FDD /* Assets */,
@@ -1473,13 +1473,13 @@
 				EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */,
 				EAE4718026CBA664009FB0EC /* Persistence.swift */,
 				EAC23793276750C500109622 /* Global Functions.swift */,
-				EAE4710626CBA57F009FB0EC /* PsyLog.swift */,
+				EAE4710626CBA57F009FB0EC /* FreakLog.swift */,
 				EA4189ED2962E67600DEA663 /* Constants.swift */,
 				EA35ABCC2BADA220004352F2 /* PrivacyInfo.xcprivacy */,
-				EAF5D366270B3A6E00E78909 /* PsyLog.entitlements */,
+				EAF5D366270B3A6E00E78909 /* FreakLog.entitlements */,
 				EAE4715926CBA664009FB0EC /* Info.plist */,
 			);
-			path = PsyLog;
+			path = FreakLog;
 			sourceTree = "<group>";
 		};
 		EAE4711B26CBA663009FB0EC /* Welcome Screen */ = {
@@ -1663,9 +1663,9 @@
 			productReference = EA085DCC29607229001638AC /* LiveActivityExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
-		EACB6E3927D09C8800940291 /* PsyLogTests */ = {
+		EACB6E3927D09C8800940291 /* FreakLogTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "PsyLogTests" */;
+			buildConfigurationList = EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "FreakLogTests" */;
 			buildPhases = (
 				EACB6E3627D09C8800940291 /* Sources */,
 				EACB6E3727D09C8800940291 /* Frameworks */,
@@ -1676,14 +1676,14 @@
 			dependencies = (
 				EACB6E3F27D09C8800940291 /* PBXTargetDependency */,
 			);
-			name = PsyLogTests;
-			productName = PsyLogTests;
-			productReference = EACB6E3A27D09C8800940291 /* PsyLogTests.xctest */;
+			name = FreakLogTests;
+			productName = FreakLogTests;
+			productReference = EACB6E3A27D09C8800940291 /* FreakLogTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		EAE4710226CBA57F009FB0EC /* PsyLog */ = {
+		EAE4710226CBA57F009FB0EC /* FreakLog */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "PsyLog" */;
+			buildConfigurationList = EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "FreakLog" */;
 			buildPhases = (
 				EAE470FF26CBA57F009FB0EC /* Sources */,
 				EAE4710026CBA57F009FB0EC /* Frameworks */,
@@ -1699,15 +1699,15 @@
 			fileSystemSynchronizedGroups = (
 				44E43E022E71E9E9008D7FDD /* Assets */,
 			);
-			name = PsyLog;
+			name = FreakLog;
 			packageProductDependencies = (
 				EAF76C9827D899E700945587 /* AlertToast */,
 				EAF76C9F27D8B72900945587 /* Algorithms */,
 				EAFA4BD32B400BE50056649E /* WrappingHStack */,
 				EAC3686B2B6F840100056C56 /* HorizonCalendar */,
 			);
-			productName = PsyLog;
-			productReference = EAE4710326CBA57F009FB0EC /* PsyLog.app */;
+			productName = FreakLog;
+			productReference = EAE4710326CBA57F009FB0EC /* FreakLog.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1718,7 +1718,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastSwiftUpdateCheck = 1420;
-				LastUpgradeCheck = 1600;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					EA085DCB29607229001638AC = {
 						CreatedOnToolsVersion = 14.2;
@@ -1732,7 +1732,7 @@
 					};
 				};
 			};
-			buildConfigurationList = EAE470FE26CBA57F009FB0EC /* Build configuration list for PBXProject "PsyLog" */;
+			buildConfigurationList = EAE470FE26CBA57F009FB0EC /* Build configuration list for PBXProject "FreakLog" */;
 			compatibilityVersion = "Xcode 9.3";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -1752,8 +1752,8 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				EAE4710226CBA57F009FB0EC /* PsyLog */,
-				EACB6E3927D09C8800940291 /* PsyLogTests */,
+				EAE4710226CBA57F009FB0EC /* FreakLog */,
+				EACB6E3927D09C8800940291 /* FreakLogTests */,
 				EA085DCB29607229001638AC /* LiveActivityExtension */,
 			);
 		};
@@ -1908,7 +1908,7 @@
 				0DC6D8732EF43F5000287DC2 /* WebhookPickerScreen.swift in Sources */,
 				EA4B8A1D2A9B3540009918DE /* EditTimedNoteScreen.swift in Sources */,
 				EA8AEA8127E2154D00B30A16 /* DoseRangeType.swift in Sources */,
-				EAE4710726CBA57F009FB0EC /* PsyLog.swift in Sources */,
+				EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */,
 				EABD92092941EA4B0073303A /* TotalTimeline.swift in Sources */,
 				EA41C61D295AF236000DA021 /* InteractionsGroup.swift in Sources */,
 				EA48F88A29DD501F007DA8C5 /* LocationCodable.swift in Sources */,
@@ -2154,7 +2154,7 @@
 		};
 		EACB6E3F27D09C8800940291 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = EAE4710226CBA57F009FB0EC /* PsyLog */;
+			target = EAE4710226CBA57F009FB0EC /* FreakLog */;
 			targetProxy = EACB6E3E27D09C8800940291 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -2168,7 +2168,6 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
@@ -2179,7 +2178,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug.LiveActivity";
+				PRODUCT_BUNDLE_IDENTIFIER = "woof.freaklog-debug.LiveActivity";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2195,7 +2194,6 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
@@ -2206,7 +2204,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.LiveActivity;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.LiveActivity;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -2221,14 +2219,13 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PsyLog.app/PsyLog";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FreakLog.app/FreakLog";
 			};
 			name = Debug;
 		};
@@ -2239,14 +2236,13 @@
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.2;
-				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog.tests;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PsyLog.app/PsyLog";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/FreakLog.app/FreakLog";
 			};
 			name = Release;
 		};
@@ -2286,6 +2282,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 82DVJK2UZ6;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2309,6 +2306,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
@@ -2351,6 +2349,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 82DVJK2UZ6;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -2373,6 +2372,7 @@
 					/dev/null,
 				);
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -2386,22 +2386,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconDebug;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = PsyLog/PsyLog.entitlements;
+				CODE_SIGN_ENTITLEMENTS = FreakLog/FreakLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = PsyLog/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PsyLog;
+				INFOPLIST_FILE = FreakLog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MY_BUNDLE_DISPLAY_NAME = Debug;
-				PRODUCT_BUNDLE_IDENTIFIER = "pw.zotan.psylog-debug";
-				PRODUCT_NAME = PsyLog;
+				PRODUCT_BUNDLE_IDENTIFIER = "woof.freaklog-debug";
+				PRODUCT_NAME = FreakLog;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -2412,22 +2411,21 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
-				CODE_SIGN_ENTITLEMENTS = PsyLog/PsyLog.entitlements;
+				CODE_SIGN_ENTITLEMENTS = FreakLog/FreakLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = C5N8YZD37S;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
-				INFOPLIST_FILE = PsyLog/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = PsyLog;
+				INFOPLIST_FILE = FreakLog/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MY_BUNDLE_DISPLAY_NAME = PsyLog;
-				PRODUCT_BUNDLE_IDENTIFIER = pw.zotan.psylog;
-				PRODUCT_NAME = PsyLog;
+				MY_BUNDLE_DISPLAY_NAME = FreakLog;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog;
+				PRODUCT_NAME = FreakLog;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -2444,7 +2442,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "PsyLogTests" */ = {
+		EACB6E4027D09C8800940291 /* Build configuration list for PBXNativeTarget "FreakLogTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EACB6E4127D09C8800940291 /* Debug */,
@@ -2453,7 +2451,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAE470FE26CBA57F009FB0EC /* Build configuration list for PBXProject "PsyLog" */ = {
+		EAE470FE26CBA57F009FB0EC /* Build configuration list for PBXProject "FreakLog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EAE4711526CBA582009FB0EC /* Debug */,
@@ -2462,7 +2460,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "PsyLog" */ = {
+		EAE4711726CBA582009FB0EC /* Build configuration list for PBXNativeTarget "FreakLog" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				EAE4711826CBA582009FB0EC /* Debug */,

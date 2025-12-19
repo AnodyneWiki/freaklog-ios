@@ -2,7 +2,7 @@ import SwiftUI
 import AlertToast
 
 @main
-struct PsyLog: App {
+struct FreakLog: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     @StateObject private var toastViewModel = ToastViewModel()

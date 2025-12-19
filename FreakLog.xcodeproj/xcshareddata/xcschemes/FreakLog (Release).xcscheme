@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1600"
+   LastUpgradeVersion = "2620"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -15,25 +15,25 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-               BuildableName = "PsyLog.app"
-               BlueprintName = "PsyLog"
-               ReferencedContainer = "container:PsyLog.xcodeproj">
+               BuildableName = "FreakLog.app"
+               BlueprintName = "FreakLog"
+               ReferencedContainer = "container:FreakLog.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
-      buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      buildConfiguration = "Release"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       shouldUseLaunchSchemeArgsEnv = "YES">
       <Testables>
       </Testables>
    </TestAction>
    <LaunchAction
-      buildConfiguration = "Debug"
-      selectedDebuggerIdentifier = "Xcode.DebuggerFoundation.Debugger.LLDB"
-      selectedLauncherIdentifier = "Xcode.DebuggerFoundation.Launcher.LLDB"
+      buildConfiguration = "Release"
+      selectedDebuggerIdentifier = ""
+      selectedLauncherIdentifier = "Xcode.IDEFoundation.Launcher.PosixSpawn"
       launchStyle = "0"
       useCustomWorkingDirectory = "NO"
       ignoresPersistentStateOnLaunch = "NO"
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "PsyLog.app"
-            BlueprintName = "PsyLog"
-            ReferencedContainer = "container:PsyLog.xcodeproj">
+            BuildableName = "FreakLog.app"
+            BlueprintName = "FreakLog"
+            ReferencedContainer = "container:FreakLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <LocationScenarioReference
@@ -66,14 +66,14 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "EAE4710226CBA57F009FB0EC"
-            BuildableName = "PsyLog.app"
-            BlueprintName = "PsyLog"
-            ReferencedContainer = "container:PsyLog.xcodeproj">
+            BuildableName = "FreakLog.app"
+            BlueprintName = "FreakLog"
+            ReferencedContainer = "container:FreakLog.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
    <AnalyzeAction
-      buildConfiguration = "Debug">
+      buildConfiguration = "Release">
    </AnalyzeAction>
    <ArchiveAction
       buildConfiguration = "Release"

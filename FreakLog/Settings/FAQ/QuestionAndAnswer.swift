@@ -7,7 +7,7 @@ struct QuestionAndAnswer: Identifiable, Hashable {
 
     static let list: [QuestionAndAnswer] = [
         QuestionAndAnswer(
-            question: "Why was the app renamed to PsyLog?",
+            question: "Why was the app renamed to FreakLog?",
             answer: "This was done for several reasons - for one, to separate the app from the (implied) PW trademark, as well as to allow for data aggregation from other sources without causing confusion."
        ),
         QuestionAndAnswer(

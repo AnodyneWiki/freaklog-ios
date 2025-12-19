@@ -1,8 +1,8 @@
-# PsyLog
+# FreakLog
 
 [<img src="README Assets/badges/testflight.png" width="200px" alt="Available on TestFlight">](https://testflight.apple.com/join/K3fw3bDG)
 
-PsyLog is a fully open source continuation fork of the now closed-source and in-app-purchase-ridden PW Journal app.
+FreakLog is a fully open source continuation fork of the now closed-source and in-app-purchase-ridden PW Journal app.
 
 Features:
 - Easy offline access to key harm reduction information (dosage, tolerance, duration, interactions)

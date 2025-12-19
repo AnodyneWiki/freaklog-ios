@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1600"
+   LastUpgradeVersion = "2620"
    version = "1.3">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -17,9 +17,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "EACB6E3927D09C8800940291"
-               BuildableName = "PsyLogTests.xctest"
-               BlueprintName = "PsyLogTests"
-               ReferencedContainer = "container:PsyLog.xcodeproj">
+               BuildableName = "FreakLogTests.xctest"
+               BlueprintName = "FreakLogTests"
+               ReferencedContainer = "container:FreakLog.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
