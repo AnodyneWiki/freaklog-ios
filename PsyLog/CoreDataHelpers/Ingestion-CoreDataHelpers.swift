@@ -25,6 +25,10 @@ extension Ingestion: Comparable {
         StomachFullness(rawValue: stomachFullness ?? "")
     }
 
+    var injectionSiteUnwrapped: String {
+        injectionSite ?? ""
+    }
+
     var doseUnwrapped: Double? {
         if dose == 0 {
             return nil

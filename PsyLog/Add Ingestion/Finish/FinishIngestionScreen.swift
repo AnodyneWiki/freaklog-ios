@@ -29,6 +29,10 @@ struct FinishIngestionScreen: View {
     @State private var enteredTitle = ""
     @State private var consumerName = ""
     @State private var selectedStomachFullness = StomachFullness.empty
+    @State private var selectedNostril: Nostril?
+    @State private var selectedVein: Vein?
+    @State private var selectedMuscle: Muscle?
+    @State private var selectedSubQSite: SubcutaneousSite?
     @State private var alreadyUsedColors = [SubstanceColor]()
     @State private var otherColors = [SubstanceColor]()
     @State private var foundCompanion: SubstanceCompanion?
@@ -115,11 +119,7 @@ struct FinishIngestionScreen: View {
                         Label(displayedName, systemImage: "person")
                     }
                 }
-                if arguments.administrationRoute == .oral {
-                    StomachFullnessPicker(stomachFullness: $selectedStomachFullness)
-                        .pickerStyle(.navigationLink)
-                        .labelsHidden()
-                }
+                routeSpecificPickers
                 Button {
                     sheetToShow = .editNote
                 } label: {
@@ -253,6 +253,47 @@ struct FinishIngestionScreen: View {
         }
     }
 
+    @ViewBuilder
+    var routeSpecificPickers: some View {
+        switch arguments.administrationRoute {
+        case .oral:
+            StomachFullnessPicker(stomachFullness: $selectedStomachFullness)
+                .pickerStyle(.navigationLink)
+                .labelsHidden()
+        case .insufflated:
+            NostrilPicker(selection: $selectedNostril)
+                .pickerStyle(.navigationLink)
+                .labelsHidden()
+        case .intravenous:
+            VeinPicker(selection: $selectedVein)
+                .pickerStyle(.navigationLink)
+                .labelsHidden()
+        case .intramuscular:
+            MusclePicker(selection: $selectedMuscle)
+                .pickerStyle(.navigationLink)
+                .labelsHidden()
+        case .subcutaneous:
+            SubQSitePicker(selection: $selectedSubQSite)
+                .pickerStyle(.navigationLink)
+                .labelsHidden()
+        default:
+            EmptyView()
+        }
+    }
+
+    func getSiteString() -> String {
+        if arguments.administrationRoute == .insufflated, let val = selectedNostril {
+            return val.rawValue
+        } else if arguments.administrationRoute == .intravenous, let val = selectedVein {
+            return val.rawValue
+        } else if arguments.administrationRoute == .intramuscular, let val = selectedMuscle {
+            return val.rawValue
+        } else if arguments.administrationRoute == .subcutaneous, let val = selectedSubQSite {
+            return val.rawValue
+        }
+        return ""
+    }
+
     func addIngestionWithExperience() throws {
         let context = PersistenceController.shared.viewContext
         try context.performAndWait {
@@ -361,6 +402,12 @@ struct FinishIngestionScreen: View {
             ingestion.stomachFullness = selectedStomachFullness.rawValue
         } else {
             ingestion.stomachFullness = nil
+        }
+        let siteString = getSiteString()
+        if !siteString.isEmpty {
+            ingestion.injectionSite = siteString
+        } else {
+            ingestion.injectionSite = nil
         }
         ingestion.experience = experience
         let companion = createOrUpdateCompanion(with: context)

@@ -63,7 +63,8 @@ private struct IngestionRowContent<Content: View>: View {
 
     private var routeTextWithSpace: Text {
         let routeText = isEyeOpen ? ingestion.administrationRouteUnwrapped.rawValue : ""
-        return Text(" " + routeText).foregroundColor(.secondary)
+        let injectionSiteText = isEyeOpen && !ingestion.injectionSiteUnwrapped.isEmpty ? " (\(ingestion.injectionSiteUnwrapped.lowercased()))" : ""
+        return Text(" " + routeText + injectionSiteText).foregroundColor(.secondary)
     }
 
     private var doseRow: some View {

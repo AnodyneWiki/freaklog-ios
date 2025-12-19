@@ -16,6 +16,10 @@ struct EditIngestionScreen: View {
     @State private var stomachFullness = StomachFullness.empty
     @State private var selectedCustomUnit: CustomUnit? = nil
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
+    @State private var selectedNostril: Nostril?
+    @State private var selectedVein: Vein?
+    @State private var selectedMuscle: Muscle?
+    @State private var selectedSubQSite: SubcutaneousSite?
 
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
 
@@ -64,6 +68,10 @@ struct EditIngestionScreen: View {
             note: $note,
             stomachFullness: $stomachFullness,
             consumerName: $consumerName,
+            selectedNostril: $selectedNostril,
+            selectedVein: $selectedVein,
+            selectedMuscle: $selectedMuscle,
+            selectedSubQSite: $selectedSubQSite,
             save: save,
             delete: delete,
             isEyeOpen: isEyeOpen,
@@ -89,6 +97,21 @@ struct EditIngestionScreen: View {
             selectedExperience = ingestion.experience
             if let fullness = ingestion.stomachFullnessUnwrapped {
                 stomachFullness = fullness
+            }
+            let site = ingestion.injectionSiteUnwrapped
+            if !site.isEmpty {
+                switch ingestion.administrationRouteUnwrapped {
+                case .insufflated:
+                    selectedNostril = Nostril(rawValue: site)
+                case .intravenous:
+                    selectedVein = Vein(rawValue: site)
+                case .intramuscular:
+                    selectedMuscle = Muscle(rawValue: site)
+                case .subcutaneous:
+                    selectedSubQSite = SubcutaneousSite(rawValue: site)
+                default:
+                    break
+                }
             }
             setExperiencesBasedOnTime()
         }
@@ -124,6 +147,12 @@ struct EditIngestionScreen: View {
         if ingestion.administrationRouteUnwrapped == .oral {
             ingestion.stomachFullness = stomachFullness.rawValue
         }
+        let siteString = getSiteString()
+        if !siteString.isEmpty {
+            ingestion.injectionSite = siteString
+        } else {
+            ingestion.injectionSite = nil
+        }
         if wantsToForceNewExperience || selectedExperience == nil {
             let context = PersistenceController.shared.viewContext
             let newExperience = Experience(context: context)
@@ -145,6 +174,19 @@ struct EditIngestionScreen: View {
         PersistenceController.shared.saveViewContext()
         dismiss()
     }
+
+    private func getSiteString() -> String {
+        if ingestion.administrationRouteUnwrapped == .insufflated, let val = selectedNostril {
+            return val.rawValue
+        } else if ingestion.administrationRouteUnwrapped == .intravenous, let val = selectedVein {
+            return val.rawValue
+        } else if ingestion.administrationRouteUnwrapped == .intramuscular, let val = selectedMuscle {
+            return val.rawValue
+        } else if ingestion.administrationRouteUnwrapped == .subcutaneous, let val = selectedSubQSite {
+            return val.rawValue
+        }
+        return ""
+    }
 }
 
 // MARK: - EditIngestionContent
@@ -165,6 +207,10 @@ struct EditIngestionContent: View {
     @Binding var note: String
     @Binding var stomachFullness: StomachFullness
     @Binding var consumerName: String
+    @Binding var selectedNostril: Nostril?
+    @Binding var selectedVein: Vein?
+    @Binding var selectedMuscle: Muscle?
+    @Binding var selectedSubQSite: SubcutaneousSite?
     let save: () -> Void
     let delete: () -> Void
     let isEyeOpen: Bool
@@ -289,6 +335,22 @@ struct EditIngestionContent: View {
                         StomachFullnessPicker(stomachFullness: $stomachFullness)
                             .pickerStyle(.menu)
                     }
+                    if route == .insufflated {
+                        NostrilPicker(selection: $selectedNostril)
+                            .pickerStyle(.menu)
+                    }
+                    if route == .intravenous {
+                        VeinPicker(selection: $selectedVein)
+                            .pickerStyle(.menu)
+                    }
+                    if route == .intramuscular {
+                        MusclePicker(selection: $selectedMuscle)
+                            .pickerStyle(.menu)
+                    }
+                    if route == .subcutaneous {
+                        SubQSitePicker(selection: $selectedSubQSite)
+                            .pickerStyle(.menu)
+                    }
                 }.listRowSeparator(.hidden)
                 Section {
                     Toggle("Hide in timeline", isOn: $isHidden).tint(.accentColor)
@@ -355,6 +417,10 @@ struct EditIngestionContent: View {
         note: .constant("These are my notes"),
         stomachFullness: .constant(.full),
         consumerName: .constant("Marc"),
+        selectedNostril: .constant(nil),
+        selectedVein: .constant(nil),
+        selectedMuscle: .constant(nil),
+        selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
         isEyeOpen: true,
@@ -382,6 +448,10 @@ struct EditIngestionContent: View {
         note: .constant("These are my notes"),
         stomachFullness: .constant(.full),
         consumerName: .constant("Marc"),
+        selectedNostril: .constant(nil),
+        selectedVein: .constant(nil),
+        selectedMuscle: .constant(nil),
+        selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
         isEyeOpen: true,
