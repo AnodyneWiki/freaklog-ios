@@ -165,11 +165,18 @@ struct EditIngestionScreen: View {
             ingestion.experience = selectedExperience
         }
         PersistenceController.shared.saveViewContext()
+        Task {
+            await FinishIngestionScreen.editWebhookMessageIfNeeded(for: ingestion)
+        }
         ingestion.experience?.objectWillChange.send()
         dismiss()
     }
 
     private func delete() {
+        let webhookMessageId = ingestion.webhookMessageIdUnwrapped
+        Task {
+            await FinishIngestionScreen.deleteWebhookMessage(messageId: webhookMessageId)
+        }
         PersistenceController.shared.viewContext.delete(ingestion)
         PersistenceController.shared.saveViewContext()
         dismiss()

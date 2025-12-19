@@ -16,15 +16,14 @@ extension AddCustomSubstanceView {
         func saveCustom(onComplete: (() -> Void)) {
             assert(isEverythingNeededDefined, "Tried to save custom substance without defining the necessary fields")
             let context = PersistenceController.shared.viewContext
+            let nameValue = name
+            let unitsValue = units
+            let explanationValue = explanation
             context.performAndWait {
                 let custom = CustomSubstance(context: context)
-                custom.name = name
-                custom.units = units
-                if explanation.isEmpty {
-                    custom.explanation = nil
-                } else {
-                    custom.explanation = explanation
-                }
+                custom.name = nameValue
+                custom.units = unitsValue
+                custom.explanation = explanationValue.isEmpty ? nil : explanationValue
                 try? context.save()
                 onComplete()
             }

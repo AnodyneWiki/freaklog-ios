@@ -340,11 +340,29 @@ extension SettingsScreen {
         // swiftlint:enable cyclomatic_complexity function_body_length
 
         func deleteEverything() {
-            do {
-                try PersistenceController.shared.deleteEverything()
-                showSuccessToast(message: "Delete Successful")
-            } catch {
-                showErrorToast(message: "Delete Failed")
+            Task {
+                do {
+                    let context = PersistenceController.shared.viewContext
+                    let fetchRequest = Ingestion.fetchRequest()
+                    let allIngestions = try context.fetch(fetchRequest)
+
+                    await withTaskGroup(of: Void.self) { group in
+                        for ingestion in allIngestions {
+                            group.addTask {
+                                await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
+                            }
+                        }
+                    }
+
+                    try PersistenceController.shared.deleteEverything()
+                    await MainActor.run {
+                        showSuccessToast(message: "Delete Successful")
+                    }
+                } catch {
+                    await MainActor.run {
+                        showErrorToast(message: "Delete Failed")
+                    }
+                }
             }
         }
 

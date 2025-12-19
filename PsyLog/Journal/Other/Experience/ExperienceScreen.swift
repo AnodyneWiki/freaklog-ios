@@ -434,6 +434,19 @@ struct ExperienceScreen: View {
     }
 
     private func delete() {
+        let webhookMessageIds = experience.ingestionsSorted.compactMap { ingestion -> String? in
+            let messageId = ingestion.webhookMessageIdUnwrapped
+            return messageId.isEmpty ? nil : messageId
+        }
+        Task {
+            await withTaskGroup(of: Void.self) { group in
+                for messageId in webhookMessageIds {
+                    group.addTask {
+                        await FinishIngestionScreen.deleteWebhookMessage(messageId: messageId)
+                    }
+                }
+            }
+        }
         PersistenceController.shared.viewContext.delete(experience)
         PersistenceController.shared.saveViewContext()
         if #available(iOS 16.2, *) {

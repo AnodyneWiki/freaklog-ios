@@ -29,6 +29,14 @@ extension Ingestion: Comparable {
         injectionSite ?? ""
     }
 
+    var consumerNameUnwrapped: String {
+        consumerName ?? ""
+    }
+
+    var webhookMessageIdUnwrapped: String {
+        webhookMessageId ?? ""
+    }
+
     var doseUnwrapped: Double? {
         if dose == 0 {
             return nil

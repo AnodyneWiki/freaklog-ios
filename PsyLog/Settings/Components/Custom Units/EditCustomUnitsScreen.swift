@@ -72,6 +72,16 @@ struct EditCustomUnitsScreen: View {
     }
 
     private func delete() {
+        let ingestions = (customUnit.ingestions as? Set<Ingestion>) ?? []
+        Task {
+            await withTaskGroup(of: Void.self) { group in
+                for ingestion in ingestions {
+                    group.addTask {
+                        await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
+                    }
+                }
+            }
+        }
         PersistenceController.shared.viewContext.delete(customUnit)
         PersistenceController.shared.saveViewContext()
         dismiss()

@@ -45,6 +45,13 @@ struct FinishIngestionScreen: View {
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
+    @AppStorage("webhookURL") private var webhookURL = ""
+    @AppStorage("webhookName") private var webhookName = ""
+    @AppStorage("isWebhookEnabled") private var isWebhookEnabled = false
+    @AppStorage("webhookTemplate") private var webhookTemplate = WebhookService.defaultTemplate
+    @AppStorage("isSubstanceHyperlinked") private var isSubstanceHyperlinked = false
+    @AppStorage("substanceInfoUrl") private var substanceInfoUrl = ""
+
     var areYouConsumer: Bool {
         consumerName.isEmpty || consumerName.trimmingCharacters(in: .whitespaces).isEmpty
     }
@@ -181,6 +188,17 @@ struct FinishIngestionScreen: View {
                     }
                 }
             }
+            Section {
+                NavigationLink {
+                    WebhookPickerScreen()
+                } label: {
+                    HStack {
+                        Text("Webhook")
+                        Spacer()
+                        Text(isWebhookEnabled ? "On" : "Off").foregroundColor(.secondary)
+                    }
+                }
+            }
         }
         .onAppear {
             wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
@@ -296,13 +314,20 @@ struct FinishIngestionScreen: View {
 
     func addIngestionWithExperience() throws {
         let context = PersistenceController.shared.viewContext
+        var createdIngestion: Ingestion?
+        var isActivityActive = false
+        if #available(iOS 16.2, *) {
+            isActivityActive = ActivityManager.shared.isActivityActive
+        }
+        let selectedLocationValue = locationManager.selectedLocation
+
         try context.performAndWait {
             if let existingExperience = selectedExperience {
-                createIngestionWithCompanion(
+                createdIngestion = createIngestionWithCompanion(
                     with: existingExperience,
                     and: context)
                 if #available(iOS 16.2, *) {
-                    if existingExperience.isCurrent, ActivityManager.shared.isActivityActive {
+                    if existingExperience.isCurrent, isActivityActive {
                         Task {
                             await ActivityManager.shared.startOrUpdateActivity(
                                 substanceGroups: getSubstanceIngestionGroups(ingestions: existingExperience.myIngestionsSorted),
@@ -333,14 +358,14 @@ struct FinishIngestionScreen: View {
                 }
                 newExperience.title = title
                 newExperience.text = ""
-                if let location = locationManager.selectedLocation {
+                if let location = selectedLocationValue {
                     let newLocation = ExperienceLocation(context: context)
                     newLocation.name = location.name
                     newLocation.latitude = location.latitude ?? 0
                     newLocation.longitude = location.longitude ?? 0
                     newLocation.experience = newExperience
                 }
-                createIngestionWithCompanion(
+                createdIngestion = createIngestionWithCompanion(
                     with: newExperience,
                     and: context)
                 if #available(iOS 16.2, *) {
@@ -358,6 +383,48 @@ struct FinishIngestionScreen: View {
                 }
             }
             try context.save()
+
+            if isWebhookEnabled && !webhookURL.isEmpty {
+                let effectiveUserName: String = areYouConsumer ?
+                    (webhookName.isEmpty ? "You" : webhookName) : consumerName
+                let substance = arguments.substanceName
+                let dose = arguments.dose ?? 0
+                let isEstimate = arguments.isEstimate
+                let route = arguments.administrationRoute.rawValue
+                let note = enteredNote
+                let site = getSiteString().lowercased()
+                let url = webhookURL
+                let template = webhookTemplate
+                let currentIngestion = createdIngestion
+
+                let units: String
+                if let customUnit = arguments.customUnit {
+                    units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
+                } else {
+                    units = arguments.units ?? ""
+                }
+
+                Task.detached {
+                    let result = await WebhookService.sendWebhook(
+                        url: url,
+                        user: effectiveUserName,
+                        substance: substance,
+                        dose: dose,
+                        units: units,
+                        isEstimate: isEstimate,
+                        route: route,
+                        site: site,
+                        note: note,
+                        template: template,
+                        isHyperlinked: isSubstanceHyperlinked,
+                        substanceInfoUrl: substanceInfoUrl
+                    )
+
+                    if result.success, let messageId = result.messageId, let ingestion = currentIngestion {
+                        try? await FinishIngestionScreen.updateIngestionWithWebhookMessageId(ingestion: ingestion, messageId: messageId)
+                    }
+                }
+            }
         }
     }
 
@@ -373,9 +440,10 @@ struct FinishIngestionScreen: View {
         }
     }
 
+    @discardableResult
     private func createIngestionWithCompanion(
         with experience: Experience,
-        and context: NSManagedObjectContext)
+        and context: NSManagedObjectContext) -> Ingestion
     {
         let ingestion = Ingestion(context: context)
         ingestion.identifier = UUID()
@@ -409,9 +477,11 @@ struct FinishIngestionScreen: View {
         } else {
             ingestion.injectionSite = nil
         }
+        ingestion.webhookMessageId = nil
         ingestion.experience = experience
         let companion = createOrUpdateCompanion(with: context)
         ingestion.substanceCompanion = companion
+        return ingestion
     }
 
     private static func getClosestExperience(from experiences: [Experience], date: Date) -> Experience? {
@@ -443,6 +513,90 @@ struct FinishIngestionScreen: View {
 
     func generateFailedHaptic() {
         generator.notificationOccurred(.error)
+    }
+
+    static func updateIngestionWithWebhookMessageId(ingestion: Ingestion, messageId: String) async throws {
+        let ingestionObjectID = ingestion.objectID
+        let context = PersistenceController.shared.viewContext
+        try await context.perform {
+            if let ingestionInContext = context.object(with: ingestionObjectID) as? Ingestion {
+                ingestionInContext.webhookMessageId = messageId
+                try context.save()
+            }
+        }
+    }
+
+    static func editWebhookMessageIfNeeded(for ingestion: Ingestion) async {
+        let ingestionObjectID = ingestion.objectID
+        let context = PersistenceController.shared.viewContext
+        var messageId: String = ""
+
+        await context.perform {
+            if let ingestionInContext = context.object(with: ingestionObjectID) as? Ingestion {
+                messageId = ingestionInContext.webhookMessageIdUnwrapped
+            }
+        }
+
+        guard !messageId.isEmpty else { return }
+
+        let isWebhookEnabled = UserDefaults.standard.bool(forKey: "isWebhookEnabled")
+        guard isWebhookEnabled else { return }
+
+        let webhookURL = UserDefaults.standard.string(forKey: "webhookURL") ?? ""
+        let webhookName = UserDefaults.standard.string(forKey: "webhookName") ?? ""
+        let webhookTemplate = UserDefaults.standard.string(forKey: "webhookTemplate") ?? WebhookService.defaultTemplate
+        let isHyperlinked = UserDefaults.standard.bool(forKey: "isSubstanceHyperlinked")
+        let substanceInfoUrl = UserDefaults.standard.string(forKey: "substanceInfoUrl") ?? ""
+
+        guard !webhookURL.isEmpty else { return }
+
+        let effectiveUserName = ingestion.consumerNameUnwrapped.isEmpty ? (webhookName.isEmpty ? "You" : webhookName) : ingestion.consumerNameUnwrapped
+        let substanceName = ingestion.substanceNameUnwrapped
+        let dose = ingestion.doseUnwrapped ?? 0
+        let isEstimate = ingestion.isEstimate
+        let route = ingestion.administrationRouteUnwrapped.rawValue
+        let site = ingestion.injectionSiteUnwrapped
+        let note = ingestion.noteUnwrapped
+
+        let units: String
+        if let customUnit = ingestion.customUnit {
+            units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
+        } else {
+            units = ingestion.unitsUnwrapped
+        }
+
+        _ = await WebhookService.editWebhook(
+            url: webhookURL,
+            messageId: messageId,
+            user: effectiveUserName,
+            substance: substanceName,
+            dose: dose,
+            units: units,
+            isEstimate: isEstimate,
+            route: route,
+            site: site,
+            note: note,
+            template: webhookTemplate,
+            isHyperlinked: isHyperlinked,
+            substanceInfoUrl: substanceInfoUrl
+        )
+    }
+
+    static func deleteWebhookMessageIfNeeded(for ingestion: Ingestion) async {
+        let messageId = ingestion.webhookMessageIdUnwrapped
+        await deleteWebhookMessage(messageId: messageId)
+    }
+
+    static func deleteWebhookMessage(messageId: String) async {
+        guard !messageId.isEmpty else { return }
+
+        let isWebhookEnabled = UserDefaults.standard.bool(forKey: "isWebhookEnabled")
+        guard isWebhookEnabled else { return }
+
+        let webhookURL = UserDefaults.standard.string(forKey: "webhookURL") ?? ""
+        guard !webhookURL.isEmpty else { return }
+
+        _ = await WebhookService.deleteWebhookMessage(url: webhookURL, messageId: messageId)
     }
 }
 
