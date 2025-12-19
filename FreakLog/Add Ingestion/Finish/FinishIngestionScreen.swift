@@ -280,20 +280,16 @@ struct FinishIngestionScreen: View {
                 .labelsHidden()
         case .insufflated:
             NostrilPicker(selection: $selectedNostril)
-                .pickerStyle(.navigationLink)
-                .labelsHidden()
+                .pickerStyle(.menu)
         case .intravenous:
             VeinPicker(selection: $selectedVein)
-                .pickerStyle(.navigationLink)
-                .labelsHidden()
+                .pickerStyle(.menu)
         case .intramuscular:
             MusclePicker(selection: $selectedMuscle)
-                .pickerStyle(.navigationLink)
-                .labelsHidden()
+                .pickerStyle(.menu)
         case .subcutaneous:
             SubQSitePicker(selection: $selectedSubQSite)
-                .pickerStyle(.navigationLink)
-                .labelsHidden()
+                .pickerStyle(.menu)
         default:
             EmptyView()
         }
