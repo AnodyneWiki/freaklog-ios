@@ -3,9 +3,16 @@ import SwiftUI
 struct FabPosition<Screen: View, Button: View>: View {
     @ViewBuilder let button: Button
     @ViewBuilder let screen: Screen
+    let alignment: Alignment
+
+    init(alignment: Alignment = .bottom, @ViewBuilder button: () -> Button, @ViewBuilder screen: () -> Screen) {
+        self.alignment = alignment
+        self.button = button()
+        self.screen = screen()
+    }
 
     var body: some View {
-        ZStack(alignment: .bottom) {
+        ZStack(alignment: alignment) {
             screen
             button.padding(20)
         }
@@ -13,7 +20,7 @@ struct FabPosition<Screen: View, Button: View>: View {
 }
 
 #Preview {
-    FabPosition {
+    FabPosition(alignment: .bottomTrailing) {
         Button {} label: {
             Label("New Ingestion", systemImage: "plus")
                 .labelStyle(FabLabelStyle())

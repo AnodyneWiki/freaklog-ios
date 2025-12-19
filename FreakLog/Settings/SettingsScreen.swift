@@ -12,6 +12,7 @@ struct SettingsScreen: View {
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
 
@@ -22,12 +23,22 @@ struct SettingsScreen: View {
     private func setLockTimeOption(option: LockTimeOption) {
         lockTimeOptionString = option.rawValue
     }
+    
+    private var fabButtonPosition: FabButtonPosition {
+        FabButtonPosition(rawValue: fabButtonPositionString) ?? .center
+    }
 
     var body: some View {
         let timeOptionBinding = Binding {
             lockTimeOption
         } set: { newValue in
             setLockTimeOption(option: newValue)
+        }
+        
+        let fabPositionBinding = Binding {
+            fabButtonPosition
+        } set: { newValue in
+            fabButtonPositionString = newValue.rawValue
         }
 
         SettingsContent(
@@ -54,7 +65,8 @@ struct SettingsScreen: View {
             isShowingToast: $viewModel.isShowingToast,
             isSuccessToast: $viewModel.isShowingSuccessToast,
             toastMessage: $viewModel.toastMessage,
-            lockTimeOption: timeOptionBinding
+            lockTimeOption: timeOptionBinding,
+            fabButtonPosition: fabPositionBinding
         )
     }
 }
@@ -80,6 +92,7 @@ struct SettingsContent: View {
     @Binding var isSuccessToast: Bool
     @Binding var toastMessage: String
     @Binding var lockTimeOption: LockTimeOption
+    @Binding var fabButtonPosition: FabButtonPosition
 
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingImportAlert = false
@@ -109,6 +122,13 @@ struct SettingsContent: View {
                     }
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
+                    }
+                    Picker(selection: $fabButtonPosition) {
+                        ForEach(FabButtonPosition.allCases) { position in
+                            Text(position.text).tag(position)
+                        }
+                    } label: {
+                        Label("Button Position", systemImage: "arrow.left.and.right.square")
                     }
                     Group {
                         Toggle("Hide dosage dots", isOn: $isHidingDosageDots)
@@ -285,7 +305,8 @@ struct SettingsContent: View {
         isShowingToast: .constant(false),
         isSuccessToast: .constant(false),
         toastMessage: .constant(""),
-        lockTimeOption: .constant(.after5Minutes)
+        lockTimeOption: .constant(.after5Minutes),
+        fabButtonPosition: .constant(.center)
     )
     .accentColor(Color.blue)
 }

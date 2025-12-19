@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */; };
 		0D9BFC562EF4A92100039340 /* InjectionSites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC552EF4A91F00039340 /* InjectionSites.swift */; };
 		0D9BFC582EF4A94200039340 /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC572EF4A93E00039340 /* WebhookService.swift */; };
 		0DC6D8732EF43F5000287DC2 /* WebhookPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */; };
@@ -397,6 +398,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FabButtonPosition.swift; sourceTree = "<group>"; };
 		0D9BFC552EF4A91F00039340 /* InjectionSites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionSites.swift; sourceTree = "<group>"; };
 		0D9BFC572EF4A93E00039340 /* WebhookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookService.swift; sourceTree = "<group>"; };
 		0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPickerScreen.swift; sourceTree = "<group>"; };
@@ -1636,6 +1638,7 @@
 				EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */,
 				EA8AEA8027E2154D00B30A16 /* DoseRangeType.swift */,
 				EA014FAF27EC6E0400077FB2 /* UnitPickerOptions.swift */,
+				0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */,
 			);
 			path = Enums;
 			sourceTree = "<group>";
@@ -2112,6 +2115,7 @@
 				EA2A69A529714ED600B3A474 /* SaferRoutesScreen.swift in Sources */,
 				EAB7946F2D017B1200ED37C8 /* TimeRangeDrawable.swift in Sources */,
 				EAE4722626CBA664009FB0EC /* ExperienceRow.swift in Sources */,
+				0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */,
 				EABD91FD294105830073303A /* TimelineModel.swift in Sources */,
 				EABDA72E28881B4800A23DB3 /* StatsScreen.swift in Sources */,
 				EAC4BFFC2B890ADA00293B44 /* ChooseCustomUnitScreen.swift in Sources */,

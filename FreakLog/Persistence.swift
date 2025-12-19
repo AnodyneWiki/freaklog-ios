@@ -23,6 +23,7 @@ struct PersistenceController {
     static let independentSubstanceHeightKey = "independentSubstanceHeight"
     static let lastIngestionTimeOfExperienceWhereAddIngestionTappedKey = "lastIngestionTimeOfExperienceWhereAddIngestionTapped"
     static let clonedIngestionTimeKey = "clonedIngestionTimeKey"
+    static let fabButtonPositionKey = "fabButtonPosition"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext
