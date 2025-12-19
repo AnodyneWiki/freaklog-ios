@@ -197,7 +197,7 @@ struct ExperienceScreen: View {
                     }
                     if !experience.myCumulativeDoses.isEmpty && isEyeOpen {
                         Section("Your Cumulative Dose") {
-                            ForEach(experience.myCumulativeDoses) { cumulative in
+                            ForEach(experience.myCumulativeDoses.sorted(by: { $0.substanceName < $1.substanceName })) { cumulative in
                                 if let substance = SubstanceRepo.shared.getSubstance(name: cumulative.substanceName) {
                                     NavigationLink(value: GlobalNavigationDestination.dose(substance: substance)) {
                                         CumulativeDoseRow(
