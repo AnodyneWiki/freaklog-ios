@@ -36,6 +36,7 @@ struct WebhookPickerScreen: View {
                     footer: Text("If enabled, the substance name becomes a clickable markdown link.")
                 ) {
                     Toggle("Hyperlink Substance Name", isOn: $isSubstanceHyperlinked)
+                        .tint(.accentColor)
 
                     if isSubstanceHyperlinked {
                         TextField("Base URL", text: $substanceInfoUrl)
