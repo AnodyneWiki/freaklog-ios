@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */; };
+		0D3477A62EF62F60004CDCB4 /* TabSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */; };
+		0D3477A82EF62FA6004CDCB4 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A72EF62FA6004CDCB4 /* TabManager.swift */; };
 		0D9BFC562EF4A92100039340 /* InjectionSites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC552EF4A91F00039340 /* InjectionSites.swift */; };
 		0D9BFC582EF4A94200039340 /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC572EF4A93E00039340 /* WebhookService.swift */; };
 		0DC6D8732EF43F5000287DC2 /* WebhookPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */; };
@@ -399,6 +401,8 @@
 
 /* Begin PBXFileReference section */
 		0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FabButtonPosition.swift; sourceTree = "<group>"; };
+		0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSettingsScreen.swift; sourceTree = "<group>"; };
+		0D3477A72EF62FA6004CDCB4 /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		0D9BFC552EF4A91F00039340 /* InjectionSites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionSites.swift; sourceTree = "<group>"; };
 		0D9BFC572EF4A93E00039340 /* WebhookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookService.swift; sourceTree = "<group>"; };
 		0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPickerScreen.swift; sourceTree = "<group>"; };
@@ -1408,6 +1412,7 @@
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
 				EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */,
+				0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */,
 				EA41C620295C1E9E000DA021 /* Settings-ViewModel.swift */,
 			);
 			path = Settings;
@@ -1624,6 +1629,7 @@
 		EAF21C222BBB3A15000BFB0A /* Navigation */ = {
 			isa = PBXGroup;
 			children = (
+				0D3477A72EF62FA6004CDCB4 /* TabManager.swift */,
 				EAF21C232BBB3A1F000BFB0A /* Tab.swift */,
 				EAF21C252BBB3A3B000BFB0A /* Navigator.swift */,
 				EAF21C272BBB3A6F000BFB0A /* GetScreen.swift */,
@@ -1884,6 +1890,7 @@
 				EAC25C002955FD190002D68F /* DosageGuideScreen.swift in Sources */,
 				EA60483D2A188FFB005C6A4B /* SprayModel.swift in Sources */,
 				EABD920B2941FB160073303A /* OnsetTotalTimeline.swift in Sources */,
+				0D3477A62EF62F60004CDCB4 /* TabSettingsScreen.swift in Sources */,
 				EA39B2072BB98211000B1C4E /* AppIntents.swift in Sources */,
 				EA03ABC62B39BE9200DB8D0D /* CustomUnitsChooseDoseScreen.swift in Sources */,
 				EACF439B2BA24026008D1897 /* DosageStatScreen.swift in Sources */,
@@ -2107,6 +2114,7 @@
 				EA1DE59E2949CB5800FEE975 /* SubstanceBox.swift in Sources */,
 				EA48F85A29DB182C007DA8C5 /* AddRatingScreen.swift in Sources */,
 				EA418A0429675FE800DEA663 /* ExperiencePickerScreen.swift in Sources */,
+				0D3477A82EF62FA6004CDCB4 /* TabManager.swift in Sources */,
 				EABD921929422C580073303A /* NoTimeline.swift in Sources */,
 				EA418A31296C056500DEA663 /* Array-Unique.swift in Sources */,
 				EA1DE5A02949CEFD00FEE975 /* CustomSubstanceBox.swift in Sources */,

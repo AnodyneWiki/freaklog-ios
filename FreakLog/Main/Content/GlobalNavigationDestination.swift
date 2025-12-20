@@ -41,4 +41,5 @@ enum GlobalNavigationDestination: Hashable {
     case customUnits
     case faq
     case customUnitsArchive
+    case tabSettings
 }

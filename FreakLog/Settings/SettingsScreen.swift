@@ -123,6 +123,9 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.tabSettings) {
+                        Label("Customize Tabs", systemImage: "rectangle.stack")
+                    }
                     Picker(selection: $fabButtonPosition) {
                         ForEach(FabButtonPosition.allCases) { position in
                             Text(position.text).tag(position)

@@ -48,58 +48,27 @@ struct ContentScreen: View {
     let isEyeOpen: Bool
 
     @ObservedObject var navigator = Navigator.shared
+    @ObservedObject var tabManager = TabManager.shared
     @FocusState var isSearchFocused: Bool
     @EnvironmentObject var authenticator: Authenticator
 
     var body: some View {
         Group {
-            if isEyeOpen {
-                TabView(selection: navigator.binding) {
-                    statsTab
-
-                    journalTab
-
-                    NavigationStack(path: $navigator.substancesTabPath) {
-                        SearchScreen(
-                            isSearchFocused: _isSearchFocused,
-                            searchText: $navigator.substanceSearchText,
-                            selectedCategories: $navigator.selectedCategories,
-                            clearCategories: navigator.clearCategories)
-                        .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused}
-                        .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
-                        .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
-                        .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                            getScreen(from: destination)
-                        }
-                    }
-                    .tabItem {
-                        Label("Substances", systemImage: "pills")
-                    }
-                    .tag(Tab.substances)
-
-                    NavigationStack(path: $navigator.saferTabPath) {
-                        SaferScreen()
-                            .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                                getScreen(from: destination)
-                            }
-                    }
-                    .tabItem {
-                        Label("Safer", systemImage: "cross.case")
-                    }
-                    .tag(Tab.safer)
-
-                    settingsTab
+            TabView(selection: navigator.binding) {
+                ForEach(filteredTabs) { tab in
+                    view(for: tab)
                 }
-                .onOpenURL { url in
-                    if url.absoluteString == openLatestExperience {
-                        navigator.openLatestActiveExperience()
-                    }
+            }
+            .onOpenURL { url in
+                if url.absoluteString == openLatestExperience {
+                    navigator.openLatestActiveExperience()
                 }
-            } else {
-                TabView(selection: navigator.binding) {
-                    statsTab
-                    journalTab
-                    settingsTab
+            }
+            .onChange(of: filteredTabs) { _ in
+                if !filteredTabs.contains(navigator.selectedTab) {
+                    if let firstTab = filteredTabs.first {
+                        navigator.selectedTab = firstTab
+                    }
                 }
             }
         }
@@ -111,6 +80,30 @@ struct ContentScreen: View {
             AuthenticatorWrapper(authenticator: authenticator) {
                 ChooseSubstanceScreen()
             }
+        }
+    }
+
+    var filteredTabs: [Tab] {
+        let baseTabs = tabManager.enabledTabs
+        
+        return baseTabs.filter { tab in
+            isEyeOpen || (tab != .substances && tab != .safer)
+        }
+    }
+
+    @ViewBuilder
+    func view(for tab: Tab) -> some View {
+        switch tab {
+        case .stats:
+            statsTab
+        case .journal:
+            journalTab
+        case .substances:
+            substancesTab
+        case .safer:
+            saferTab
+        case .settings:
+            settingsTab
         }
     }
 
@@ -160,6 +153,39 @@ struct ContentScreen: View {
             Label("Journal", systemImage: "book")
         }
         .tag(Tab.journal)
+    }
+
+    var substancesTab: some View {
+        NavigationStack(path: $navigator.substancesTabPath) {
+            SearchScreen(
+                isSearchFocused: _isSearchFocused,
+                searchText: $navigator.substanceSearchText,
+                selectedCategories: $navigator.selectedCategories,
+                clearCategories: navigator.clearCategories)
+            .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused}
+            .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
+            .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
+            .navigationDestination(for: GlobalNavigationDestination.self) { destination in
+                getScreen(from: destination)
+            }
+        }
+        .tabItem {
+            Label("Substances", systemImage: "pills")
+        }
+        .tag(Tab.substances)
+    }
+    
+    var saferTab: some View {
+        NavigationStack(path: $navigator.saferTabPath) {
+            SaferScreen()
+                .navigationDestination(for: GlobalNavigationDestination.self) { destination in
+                    getScreen(from: destination)
+                }
+        }
+        .tabItem {
+            Label("Safer", systemImage: "cross.case")
+        }
+        .tag(Tab.safer)
     }
 
     var settingsTab: some View {
