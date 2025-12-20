@@ -6,8 +6,7 @@ struct PersistenceController {
     static let preview: PersistenceController = .init(inMemory: true)
 
     let container: NSPersistentContainer
-    
-    @State
+
     private var isInitialized = false
 
     static let needsToSeeWelcomeKey = "needsToSeeWelcome"
@@ -52,7 +51,10 @@ struct PersistenceController {
 
     // Loads data from the in-memory store (only used for development)
     private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
-        description?.url = URL(fileURLWithPath: "/dev/null")
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        container.persistentStoreDescriptions = [description]
+
 
         container.loadPersistentStores { _, error in
             if let error = error {
