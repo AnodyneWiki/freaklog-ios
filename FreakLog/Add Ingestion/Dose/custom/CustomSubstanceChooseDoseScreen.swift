@@ -49,10 +49,6 @@ struct CustomSubstanceChooseDoseScreen: View {
         )
     }
 
-    private var unknownDoseLink: some View {
-        NavigationLink("Use Unknown Dose", value: getDestinationArguments(dose: nil))
-    }
-
     @FocusState private var isEstimatedDeviationFocused: Bool
 
     private var screen: some View {
@@ -97,7 +93,6 @@ struct CustomSubstanceChooseDoseScreen: View {
                 if let dose, let doseDeviation {
                     StandardDeviationConfidenceIntervalExplanation(mean: dose, standardDeviation: doseDeviation, unit: arguments.units)
                 }
-                unknownDoseLink
             }.listRowSeparator(.hidden)
         }
         .task {

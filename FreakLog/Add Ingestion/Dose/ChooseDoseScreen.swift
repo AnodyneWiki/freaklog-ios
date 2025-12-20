@@ -188,16 +188,6 @@ struct ChooseDoseScreenContent: View {
         .listRowSeparator(.hidden)
     }
 
-    private var unknownDoseLink: some View {
-        NavigationLink("Use unknown dose", value: FinishIngestionScreenArguments(
-            substanceName: substance.name,
-            administrationRoute: administrationRoute,
-            dose: nil,
-            units: selectedUnits,
-            isEstimate: isEstimate,
-            estimatedDoseStandardDeviation: nil))
-    }
-
     var customUnitPrompt: String {
         if substance.name == "Cannabis" && administrationRoute == .smoked {
             "Prefer to log weight of bud, hash or log another unit related to joint, vaporizer or bong?"
@@ -243,9 +233,6 @@ struct ChooseDoseScreenContent: View {
                             Text("Log \(customUnit.pluralizableUnit.plural) (\(customUnit.nameUnwrapped))")
                         }
                     }
-                }
-                Section {
-                    unknownDoseLink
                 }
                 if substance.name == "Nicotine" {
                     Section("Nicotine Content vs Dose") {

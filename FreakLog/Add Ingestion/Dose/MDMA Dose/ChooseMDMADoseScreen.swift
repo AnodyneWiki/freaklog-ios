@@ -41,16 +41,6 @@ struct ChooseMDMADoseScreen: View {
         }
     }
 
-    private var unknownDoseLink: some View {
-        NavigationLink("Use Unknown Dose", value: FinishIngestionScreenArguments(
-            substanceName: mdma.name,
-            administrationRoute: .oral,
-            dose: nil,
-            units: units,
-            isEstimate: false,
-            estimatedDoseStandardDeviation: nil))
-    }
-
     @FocusState private var isEstimatedDeviationFocused: Bool
     @State private var isAddCustomUnitSheetShown = false
 
@@ -98,7 +88,6 @@ struct ChooseMDMADoseScreen: View {
                         Text(units)
                     }
                 }
-                unknownDoseLink
             }.listRowSeparator(.hidden)
             Section("Prefer to log pill?") {
                 Button("Add a custom unit") {
