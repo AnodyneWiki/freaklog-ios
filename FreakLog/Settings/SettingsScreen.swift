@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
+    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
 
@@ -49,6 +50,7 @@ struct SettingsScreen: View {
             areRedosesDrawnIndividually: $areRedosesDrawnIndividually,
             areSubstanceHeightsIndependent: $areSubstanceHeightsIndependent,
             shouldAutomaticallyStartLiveActivity: $shouldAutomaticallyStartLiveActivity,
+            isICloudSyncEnabled: $isICloudSyncEnabled,
             isFaceIDAvailable: authenticator.isFaceIDEnabled,
             hasToUnlockApp: $hasToUnlockApp,
             isExporting: $viewModel.isExporting,
@@ -66,7 +68,18 @@ struct SettingsScreen: View {
             isSuccessToast: $viewModel.isShowingSuccessToast,
             toastMessage: $viewModel.toastMessage,
             lockTimeOption: timeOptionBinding,
-            fabButtonPosition: fabPositionBinding
+            fabButtonPosition: fabPositionBinding,
+            onICloudSyncChanged: { newValue in
+                // Switch iCloud sync without restart
+                PersistenceController.shared.setICloudSyncEnabled(newValue)
+
+                // Show confirmation message
+                viewModel.toastMessage = newValue ?
+                    "iCloud sync enabled" :
+                    "iCloud sync disabled"
+                viewModel.isShowingToast = true
+                viewModel.isShowingSuccessToast = true
+            }
         )
     }
 }
@@ -79,6 +92,7 @@ struct SettingsContent: View {
     @Binding var areRedosesDrawnIndividually: Bool
     @Binding var areSubstanceHeightsIndependent: Bool
     @Binding var shouldAutomaticallyStartLiveActivity: Bool
+    @Binding var isICloudSyncEnabled: Bool
     let isFaceIDAvailable: Bool
     @Binding var hasToUnlockApp: Bool
     @State var isImporting = false
@@ -93,6 +107,7 @@ struct SettingsContent: View {
     @Binding var toastMessage: String
     @Binding var lockTimeOption: LockTimeOption
     @Binding var fabButtonPosition: FabButtonPosition
+    let onICloudSyncChanged: (Bool) -> Void
 
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingImportAlert = false
@@ -114,6 +129,29 @@ struct SettingsContent: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
+                Toggle("iCloud Sync", isOn: $isICloudSyncEnabled.animation())
+                    .tint(Color.accentColor)
+                    .onChange(of: isICloudSyncEnabled) { newValue in
+                        // Show restart required message
+                        // Note: We can't dynamically switch between local and CloudKit storage
+                        // as it requires a complete Core Data stack restart
+                        onICloudSyncChanged(newValue)
+                    }
+                if isICloudSyncEnabled {
+                    HStack {
+                        Image(systemName: PersistenceController.shared.iCloudSyncStatus.icon)
+                            .foregroundColor(syncStatusColor)
+                        Text(PersistenceController.shared.iCloudSyncStatus.description)
+                            .foregroundColor(.secondary)
+                        Spacer()
+                        if let lastSync = PersistenceController.shared.lastSyncDate {
+                            Text(lastSync, style: .relative)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
             }
             if isEyeOpen {
                 Section("UI") {
@@ -185,13 +223,13 @@ struct SettingsContent: View {
                     isPresented: $isShowingDeleteConfirmation,
                     titleVisibility: .visible,
                     actions: {
-                        Button("Delete", role: .destructive) {
+                        Button("Delete from All Devices", role: .destructive) {
                             deleteEverything()
                         }
                         Button("Cancel", role: .cancel) {}
                     },
                     message: {
-                        Text("This will delete all your experiences, ingestions, custom substances and sprays.")
+                        Text("This will permanently delete all your experiences, ingestions, custom substances and sprays.\n\n⚠️ If iCloud sync is enabled, this will remove your data from ALL your devices.")
                     }
                 )
             }
@@ -281,6 +319,19 @@ struct SettingsContent: View {
         isEyeOpen ? "Eye Open" : "Eye Closed"
     }
 
+    private var syncStatusColor: Color {
+        switch PersistenceController.shared.iCloudSyncStatus {
+        case .disabled:
+            return .secondary
+        case .synced:
+            return .green
+        case .pendingChanges:
+            return .orange
+        case .syncing:
+            return .blue
+        }
+    }
+
     private func toggleEye() {
         isEyeOpen.toggle()
         NotificationCenter.default.post(name: Notification.eyeName, object: nil)
@@ -297,6 +348,7 @@ struct SettingsContent: View {
         areRedosesDrawnIndividually: .constant(false),
         areSubstanceHeightsIndependent: .constant(false),
         shouldAutomaticallyStartLiveActivity: .constant(false),
+        isICloudSyncEnabled: .constant(false),
         isFaceIDAvailable: true,
         hasToUnlockApp: .constant(false),
         isImporting: false,
@@ -309,7 +361,10 @@ struct SettingsContent: View {
         isSuccessToast: .constant(false),
         toastMessage: .constant(""),
         lockTimeOption: .constant(.after5Minutes),
-        fabButtonPosition: .constant(.center)
+        fabButtonPosition: .constant(.center),
+        onICloudSyncChanged: { _ in
+            // Preview action - no-op
+        }
     )
     .accentColor(Color.blue)
 }

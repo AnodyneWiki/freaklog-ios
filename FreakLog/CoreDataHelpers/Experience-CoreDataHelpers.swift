@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreData
 
 extension Experience: Comparable {
     public static func < (lhs: Experience, rhs: Experience) -> Bool {

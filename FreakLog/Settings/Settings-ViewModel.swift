@@ -356,8 +356,17 @@ extension SettingsScreen {
                     }
 
                     try PersistenceController.shared.deleteEverything()
+
+                    // Trigger iCloud sync to propagate deletion to all devices
+                    PersistenceController.shared.triggerCloudKitSync()
+
                     await MainActor.run {
-                        showSuccessToast(message: "Delete Successful")
+                        let isICloudEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
+                        if isICloudEnabled {
+                            showSuccessToast(message: "Deleted from all devices")
+                        } else {
+                            showSuccessToast(message: "Delete Successful")
+                        }
                     }
                 } catch {
                     await MainActor.run {

@@ -380,6 +380,9 @@ struct FinishIngestionScreen: View {
             }
             try context.save()
 
+            // Trigger iCloud sync after saving the ingestion
+            PersistenceController.shared.triggerCloudKitSync()
+
             if isWebhookEnabled && !webhookURL.isEmpty {
                 let effectiveUserName: String = areYouConsumer ?
                     (webhookName.isEmpty ? "You" : webhookName) : consumerName
