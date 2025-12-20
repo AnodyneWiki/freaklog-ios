@@ -469,9 +469,9 @@ struct FinishIngestionScreen: View {
         }
         let siteString = getSiteString()
         if !siteString.isEmpty {
-            ingestion.injectionSite = siteString
+            ingestion.administrationSite = siteString
         } else {
-            ingestion.injectionSite = nil
+            ingestion.administrationSite = nil
         }
         ingestion.webhookMessageId = nil
         ingestion.experience = experience
@@ -551,7 +551,7 @@ struct FinishIngestionScreen: View {
         let dose = ingestion.doseUnwrapped ?? 0
         let isEstimate = ingestion.isEstimate
         let route = ingestion.administrationRouteUnwrapped.rawValue
-        let site = ingestion.injectionSiteUnwrapped
+        let site = ingestion.administrationSiteUnwrapped
         let note = ingestion.noteUnwrapped
 
         let units: String

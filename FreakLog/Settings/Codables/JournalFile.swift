@@ -34,7 +34,8 @@ struct JournalFile: FileDocument, Codable {
                         notes: ingestion.noteUnwrapped,
                         stomachFullness: ingestion.stomachFullnessUnwrapped,
                         consumerName: ingestion.consumerName,
-                        customUnitId: ingestion.customUnit?.idForAndroid
+                        customUnitId: ingestion.customUnit?.idForAndroid,
+                        administrationSite: ingestion.administrationSite
                     )
                 )
                 let doesCompanionAlreadyExist = companionsToStore.contains { com in

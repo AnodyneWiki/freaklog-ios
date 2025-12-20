@@ -14,6 +14,7 @@ struct IngestionCodable: Codable {
     let stomachFullness: StomachFullness?
     let consumerName: String?
     let customUnitId: Int32?
+    let administrationSite: String?
 
     enum CodingKeys: String, CodingKey {
         case substanceName
@@ -29,6 +30,7 @@ struct IngestionCodable: Codable {
         case stomachFullness
         case consumerName
         case customUnitId
+        case administrationSite
     }
 
     init(
@@ -44,7 +46,8 @@ struct IngestionCodable: Codable {
         notes: String,
         stomachFullness: StomachFullness?,
         consumerName: String?,
-        customUnitId: Int32?
+        customUnitId: Int32?,
+        administrationSite: String?
     ) {
         self.substanceName = substanceName
         self.time = time
@@ -59,6 +62,7 @@ struct IngestionCodable: Codable {
         self.stomachFullness = stomachFullness
         self.consumerName = consumerName
         self.customUnitId = customUnitId
+        self.administrationSite = administrationSite
     }
 
     init(from decoder: Decoder) throws {
@@ -98,6 +102,7 @@ struct IngestionCodable: Codable {
         }
         consumerName = try values.decodeIfPresent(String.self, forKey: .consumerName)
         customUnitId = try values.decodeIfPresent(Int32.self, forKey: .customUnitId)
+        administrationSite = try values.decodeIfPresent(String.self, forKey: .administrationSite)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -125,5 +130,6 @@ struct IngestionCodable: Codable {
         try container.encode(stomachFullness?.rawValue.uppercased(), forKey: .stomachFullness)
         try container.encode(consumerName, forKey: .consumerName)
         try container.encode(customUnitId, forKey: .customUnitId)
+        try container.encode(administrationSite, forKey: .administrationSite)
     }
 }

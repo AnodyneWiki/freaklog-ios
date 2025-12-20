@@ -42,7 +42,7 @@
         <attribute name="administrationRoute" optional="YES" attributeType="String"/>
         <attribute name="color" optional="YES" attributeType="String"/>
         <attribute name="consumerName" optional="YES" attributeType="String"/>
-        <attribute name="injectionSite" optional="YES" attributeType="String"/>
+        <attribute name="administrationSite" optional="YES" attributeType="String"/>
         <attribute name="creationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <attribute name="dose" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="endTime" optional="YES" attributeType="Date" usesScalarValueType="NO"/>

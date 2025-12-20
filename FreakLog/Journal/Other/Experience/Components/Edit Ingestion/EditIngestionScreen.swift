@@ -98,7 +98,7 @@ struct EditIngestionScreen: View {
             if let fullness = ingestion.stomachFullnessUnwrapped {
                 stomachFullness = fullness
             }
-            let site = ingestion.injectionSiteUnwrapped
+            let site = ingestion.administrationSiteUnwrapped
             if !site.isEmpty {
                 switch ingestion.administrationRouteUnwrapped {
                 case .insufflated:
@@ -149,9 +149,9 @@ struct EditIngestionScreen: View {
         }
         let siteString = getSiteString()
         if !siteString.isEmpty {
-            ingestion.injectionSite = siteString
+            ingestion.administrationSite = siteString
         } else {
-            ingestion.injectionSite = nil
+            ingestion.administrationSite = nil
         }
         if wantsToForceNewExperience || selectedExperience == nil {
             let context = PersistenceController.shared.viewContext

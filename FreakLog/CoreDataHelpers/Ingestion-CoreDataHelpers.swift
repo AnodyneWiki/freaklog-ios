@@ -25,8 +25,8 @@ extension Ingestion: Comparable {
         StomachFullness(rawValue: stomachFullness ?? "")
     }
 
-    var injectionSiteUnwrapped: String {
-        injectionSite ?? ""
+    var administrationSiteUnwrapped: String {
+        administrationSite ?? ""
     }
 
     var consumerNameUnwrapped: String {
