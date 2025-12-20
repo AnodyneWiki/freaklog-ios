@@ -84,7 +84,7 @@ struct WebhookService {
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else { return false }
-            return (200...299).contains(httpResponse.statusCode)
+            return httpResponse.statusCode == 204
         } catch {
             return false
         }

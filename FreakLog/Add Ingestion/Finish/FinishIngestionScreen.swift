@@ -583,16 +583,16 @@ struct FinishIngestionScreen: View {
         await deleteWebhookMessage(messageId: messageId)
     }
 
-    static func deleteWebhookMessage(messageId: String) async {
-        guard !messageId.isEmpty else { return }
+    static func deleteWebhookMessage(messageId: String) async -> Bool {
+        guard !messageId.isEmpty else { return false }
 
         let isWebhookEnabled = UserDefaults.standard.bool(forKey: "isWebhookEnabled")
-        guard isWebhookEnabled else { return }
+        guard isWebhookEnabled else { return false }
 
         let webhookURL = UserDefaults.standard.string(forKey: "webhookURL") ?? ""
-        guard !webhookURL.isEmpty else { return }
+        guard !webhookURL.isEmpty else { return false }
 
-        _ = await WebhookService.deleteWebhookMessage(url: webhookURL, messageId: messageId)
+        return await WebhookService.deleteWebhookMessage(url: webhookURL, messageId: messageId)
     }
 }
 

@@ -42,6 +42,7 @@ struct EditIngestionScreen: View {
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var wantsToForceNewExperience = false
     @State private var selectedExperience: Experience?
+    @State private var hasWebhookMessageState: Bool = false
 
     func setExperiencesBasedOnTime() {
         let fetchRequest = Experience.fetchRequest()
@@ -74,6 +75,8 @@ struct EditIngestionScreen: View {
             selectedSubQSite: $selectedSubQSite,
             save: save,
             delete: delete,
+            deleteWebhookMessage: deleteWebhookMessage,
+            hasWebhookMessage: $hasWebhookMessageState,
             isEyeOpen: isEyeOpen,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
@@ -114,6 +117,7 @@ struct EditIngestionScreen: View {
                 }
             }
             setExperiencesBasedOnTime()
+            hasWebhookMessageState = !ingestion.webhookMessageIdUnwrapped.isEmpty
         }
         .onChange(of: time) { _ in
             setExperiencesBasedOnTime()
@@ -182,6 +186,17 @@ struct EditIngestionScreen: View {
         dismiss()
     }
 
+    private func deleteWebhookMessage() async -> Bool {
+        let webhookMessageId = ingestion.webhookMessageIdUnwrapped
+        let success = await FinishIngestionScreen.deleteWebhookMessage(messageId: webhookMessageId)
+        if success {
+            ingestion.webhookMessageId = nil
+            hasWebhookMessageState = false
+            PersistenceController.shared.saveViewContext()
+        }
+        return success
+    }
+
     private func getSiteString() -> String {
         if ingestion.administrationRouteUnwrapped == .insufflated, let val = selectedNostril {
             return val.rawValue
@@ -220,6 +235,8 @@ struct EditIngestionContent: View {
     @Binding var selectedSubQSite: SubcutaneousSite?
     let save: () -> Void
     let delete: () -> Void
+    let deleteWebhookMessage: () async -> Bool
+    @Binding var hasWebhookMessage: Bool
     let isEyeOpen: Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
@@ -370,6 +387,18 @@ struct EditIngestionContent: View {
                     Button(action: delete) {
                         Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
                     }
+                    if hasWebhookMessage {
+                        Button(action: {
+                            Task {
+                                let success = await deleteWebhookMessage()
+                                if success {
+                                    hasWebhookMessage = false
+                                }
+                            }
+                        }) {
+                            Label("Delete Webhook Message", systemImage: "trash").foregroundColor(.red)
+                        }
+                    }
                 }
             }
             .sheet(isPresented: $isConsumerSheetPresented, content: {
@@ -430,6 +459,8 @@ struct EditIngestionContent: View {
         selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
+        deleteWebhookMessage: { return true },
+        hasWebhookMessage: .constant(false),
         isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
@@ -461,6 +492,8 @@ struct EditIngestionContent: View {
         selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
+        deleteWebhookMessage: { return true },
+        hasWebhookMessage: .constant(false),
         isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
