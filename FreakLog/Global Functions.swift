@@ -3,8 +3,10 @@ import UIKit
 
 @MainActor
 func playHapticFeedback() {
+    #if !targetEnvironment(simulator)
     let impactMed = UIImpactFeedbackGenerator(style: .medium)
     impactMed.impactOccurred()
+    #endif
 }
 
 // swiftlint:disable force_cast

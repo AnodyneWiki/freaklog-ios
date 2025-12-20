@@ -504,11 +504,15 @@ struct FinishIngestionScreen: View {
     private let generator = UINotificationFeedbackGenerator()
 
     func generateSuccessHaptic() {
+        #if !targetEnvironment(simulator)
         generator.notificationOccurred(.success)
+        #endif
     }
 
     func generateFailedHaptic() {
+        #if !targetEnvironment(simulator)
         generator.notificationOccurred(.error)
+        #endif
     }
 
     static func updateIngestionWithWebhookMessageId(ingestion: Ingestion, messageId: String) async throws {
