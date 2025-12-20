@@ -7,7 +7,7 @@ class Navigator: ObservableObject {
     @Published var statsTabPath = NavigationPath()
     @Published var journalTabPath = NavigationPath()
     @Published var substancesTabPath = NavigationPath()
-    @Published var saferTabPath = NavigationPath()
+    @Published var rewindTabPath = NavigationPath()
     @Published var settingsTabPath = NavigationPath()
 
     @Published var isShowingAddIngestionSheet = false
@@ -53,9 +53,9 @@ class Navigator: ObservableObject {
                         self.clearCategories()
                         self.isSubstanceSearchFocused = true
                     }
-                case .safer:
-                    if !self.saferTabPath.isEmpty {
-                        self.saferTabPath.removeLast()
+                case .rewind:
+                    if !self.rewindTabPath.isEmpty {
+                        self.rewindTabPath.removeLast()
                     }
                 case .settings:
                     if !self.settingsTabPath.isEmpty {

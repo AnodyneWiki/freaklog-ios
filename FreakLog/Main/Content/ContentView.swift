@@ -77,16 +77,16 @@ struct ContentScreen: View {
                     }
                     .tag(Tab.substances)
 
-                    NavigationStack(path: $navigator.saferTabPath) {
-                        SaferScreen()
+                    NavigationStack(path: $navigator.rewindTabPath) {
+                        RewindScreen()
                             .navigationDestination(for: GlobalNavigationDestination.self) { destination in
                                 getScreen(from: destination)
                             }
                     }
                     .tabItem {
-                        Label("Safer", systemImage: "cross.case")
+                        Label("Rewind", systemImage: "calendar.badge.clock")
                     }
-                    .tag(Tab.safer)
+                    .tag(Tab.rewind)
 
                     settingsTab
                 }
