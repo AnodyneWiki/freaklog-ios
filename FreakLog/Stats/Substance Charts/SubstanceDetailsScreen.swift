@@ -23,25 +23,27 @@ struct SubstanceDetailsScreen: View {
                     .padding(.vertical, 5)
                 if let maxCount = data.first?.experienceCount {
                     ForEach(data) { elem in
-                        VStack(alignment: .leading, spacing: 3) {
-                            HStack {
-                                Text(elem.substanceName)
-                                    .font(.headline)
-                                Spacer()
-                                Text(elem.experienceCount.with(pluralizableUnit: PluralizableUnit(singular: "experience", plural: "experiences")))
-                                    .font(.subheadline)
-                                    .foregroundColor(.secondary)
+                        NavigationLink(value: GlobalNavigationDestination.dosageStat(substanceName: elem.substanceName)) {
+                            VStack(alignment: .leading, spacing: 3) {
+                                HStack {
+                                    Text(elem.substanceName)
+                                        .font(.headline)
+                                    Spacer()
+                                    Text(elem.experienceCount.with(pluralizableUnit: PluralizableUnit(singular: "experience", plural: "experiences")))
+                                        .font(.subheadline)
+                                        .foregroundColor(.secondary)
+                                }
+                                let widthRatio = Double(elem.experienceCount) / Double(maxCount)
+                                GeometryReader { geometry in
+                                    Rectangle()
+                                        .fill(substanceData.colorMapping(elem.substanceName))
+                                        .cornerRadius(5, corners: [.topRight, .bottomRight])
+                                        .frame(
+                                            width: geometry.size.width * widthRatio
+                                        )
+                                }
+                                .frame(height: 20)
                             }
-                            let widthRatio = Double(elem.experienceCount) / Double(maxCount)
-                            GeometryReader { geometry in
-                                Rectangle()
-                                    .fill(substanceData.colorMapping(elem.substanceName))
-                                    .cornerRadius(5, corners: [.topRight, .bottomRight])
-                                    .frame(
-                                        width: geometry.size.width * widthRatio
-                                    )
-                            }
-                            .frame(height: 20)
                         }
                     }
                 } else {
