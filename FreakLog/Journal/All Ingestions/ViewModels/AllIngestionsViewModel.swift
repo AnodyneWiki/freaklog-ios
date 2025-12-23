@@ -3,7 +3,7 @@ import CoreData
 import Combine
 
 /// A ViewModel managing basic pagination and grouping of `Ingestion` records from Core Data.
-final class AllIngestionsViewModel: ObservableObject {
+final class AllIngestionsViewModel: NSObject, ObservableObject {
     
     // MARK: - Published Properties
     
@@ -18,13 +18,15 @@ final class AllIngestionsViewModel: ObservableObject {
     private let pageSize = 50
     private var currentOffset = 0
     private var cancellables = Set<AnyCancellable>()
+    private var fetchedResultsController: NSFetchedResultsController<Ingestion>?
 
     // MARK: - Initialization
     
     init(context: NSManagedObjectContext = PersistenceController.shared.viewContext) {
         self.context = context
+        super.init()
         setupSearchObserver()
-        fetchNextBatch()
+        setupFetchedResultsController()
     }
 
     // MARK: - Public API
@@ -35,7 +37,7 @@ final class AllIngestionsViewModel: ObservableObject {
         currentOffset = 0
         hasReachedEnd = false
         isLoading = false
-        fetchNextBatch()
+        setupFetchedResultsController()
     }
 
     /// Fetches the next batch of results from Core Data.
@@ -43,16 +45,18 @@ final class AllIngestionsViewModel: ObservableObject {
         guard !isLoading && !hasReachedEnd else { return }
 
         isLoading = true
-
-        let request = createFetchRequest()
-        request.fetchLimit = pageSize
-        request.fetchOffset = currentOffset
-
+        currentOffset += pageSize
+        
+        // Update fetch limit and perform fetch
+        fetchedResultsController?.fetchRequest.fetchLimit = currentOffset
+        
         do {
-            let newIngestions = try context.fetch(request)
-            processFetchedResults(newIngestions)
+            try fetchedResultsController?.performFetch()
+            if let results = fetchedResultsController?.fetchedObjects {
+                processFetchedResults(results)
+            }
         } catch {
-            print("ERROR: [AllIngestionsViewModel] Failed to fetch: \(error.localizedDescription)")
+            print("ERROR: [AllIngestionsViewModel] Failed to fetch next batch: \(error.localizedDescription)")
         }
 
         isLoading = false
@@ -68,6 +72,30 @@ final class AllIngestionsViewModel: ObservableObject {
                 self?.resetAndFetch()
             }
             .store(in: &cancellables)
+    }
+
+    private func setupFetchedResultsController() {
+        let request = createFetchRequest()
+        request.fetchLimit = pageSize
+        currentOffset = pageSize
+        
+        fetchedResultsController = NSFetchedResultsController(
+            fetchRequest: request,
+            managedObjectContext: context,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        fetchedResultsController?.delegate = self
+        
+        do {
+            try fetchedResultsController?.performFetch()
+            if let results = fetchedResultsController?.fetchedObjects {
+                sections = []
+                processFetchedResults(results)
+            }
+        } catch {
+            print("ERROR: [AllIngestionsViewModel] Failed to initial fetch: \(error.localizedDescription)")
+        }
     }
 
     private func createFetchRequest() -> NSFetchRequest<Ingestion> {
@@ -87,21 +115,22 @@ final class AllIngestionsViewModel: ObservableObject {
     }
 
     private func processFetchedResults(_ results: [Ingestion]) {
-        if results.isEmpty {
+        if results.isEmpty && currentOffset > pageSize {
             hasReachedEnd = true
             return
         }
 
         groupIngestions(results)
-        currentOffset += results.count
         
-        if results.count < pageSize {
+        if results.count < currentOffset {
             hasReachedEnd = true
+        } else {
+            hasReachedEnd = false
         }
     }
 
     private func groupIngestions(_ newIngestions: [Ingestion]) {
-        var updatedSections = sections
+        var updatedSections: [IngestionSection] = []
 
         for ingestion in newIngestions {
             let date = ingestion.timeUnwrapped
@@ -132,4 +161,16 @@ final class AllIngestionsViewModel: ObservableObject {
         formatter.timeStyle = .none
         return formatter
     }()
+}
+
+// MARK: - NSFetchedResultsControllerDelegate
+
+extension AllIngestionsViewModel: NSFetchedResultsControllerDelegate {
+    func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
+        if let results = controller.fetchedObjects as? [Ingestion] {
+            DispatchQueue.main.async {
+                self.processFetchedResults(results)
+            }
+        }
+    }
 }
