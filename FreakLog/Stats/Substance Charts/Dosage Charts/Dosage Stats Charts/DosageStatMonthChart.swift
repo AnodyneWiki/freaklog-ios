@@ -3,30 +3,26 @@ import Charts
 
 struct DosageStatMonthChart: View {
 
-    let last12Months: [MonthDosage]
+    let monthDosages: [MonthDosage]
     let substanceName: String
     let substanceColor: SubstanceColor
     let unit: String
     let isAverageShown: Bool
 
     var averageDosage: Double {
-        let sum = last12Months.map({$0.dosage}).reduce(0, +)
-        return sum/12
+        let sum = monthDosages.map({$0.dosage}).reduce(0, +)
+        return monthDosages.isEmpty ? 0 : sum/Double(monthDosages.count)
     }
 
 
     var body: some View {
-        if !last12Months.isEmpty {
-            VStack(alignment: .leading) {
-                VStack(alignment: .leading) {
-                    Text("Dosage by month")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Text("Last 12 Months")
-                        .font(.title2.bold())
-                        .foregroundColor(.primary)
-                }
-                Chart(last12Months, id: \.month) {
+        if !monthDosages.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Dosage in \(unit)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Chart(monthDosages, id: \.month) {
                     if isAverageShown {
                         BarMark(
                             x: .value("Month", $0.month, unit: .month),
@@ -49,16 +45,20 @@ struct DosageStatMonthChart: View {
                         )
                         .foregroundStyle(substanceColor.swiftUIColor)
                     }
-                }.chartYAxisLabel("Dosage in \(unit)")
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .month, count: 1)) { value in
-                            AxisValueLabel(format: .dateTime.month())
-                        }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .month, count: 1)) { value in
+                        AxisValueLabel(format: .dateTime.month())
                     }
-                    .frame(height: 240)
+                }
+                .chartScrollingCompatibility(
+                    visibleDomainLength: 12 * 30.5 * 24 * 60 * 60,
+                    initialScrollX: monthDosages.last?.month
+                )
+                .frame(height: 240)
             }
         } else {
-            Text("No \(substanceName) ingestions in the last 12 months").foregroundStyle(.secondary)
+            Text("No \(substanceName) ingestions").foregroundStyle(.secondary)
         }
     }
 }
@@ -67,7 +67,7 @@ private let oneMonth: TimeInterval = 30*24*60*60
 
 #Preview {
     DosageStatMonthChart(
-        last12Months: [
+        monthDosages: [
             MonthDosage(month: .now.addingTimeInterval(-2*oneMonth), dosage: 20),
             MonthDosage(month: .now.addingTimeInterval(-3*oneMonth), dosage: 35),
             MonthDosage(month: .now.addingTimeInterval(-6*oneMonth), dosage: 70),

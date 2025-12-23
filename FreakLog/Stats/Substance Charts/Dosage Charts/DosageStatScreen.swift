@@ -34,53 +34,53 @@ struct DosageStatScreen: View {
     @State private var unknownDoseEstimate = 0.0
     @State private var isAverageShown = false
 
-    enum StatTimeRangeOption: String, CaseIterable {
-        case last30Days = "30D"
-        case last26Weeks = "26W"
-        case last12Months = "12M"
-        case allYears = "Y"
+    enum DosageResolution: String, CaseIterable {
+        case day = "D"
+        case week = "W"
+        case month = "M"
+        case year = "Y"
     }
 
-    @State private var selectedTimeRangeOption = StatTimeRangeOption.last26Weeks
+    @State private var selectedResolution = DosageResolution.week
 
     var body: some View {
         List {
             if doAllIngestionsHaveSameUnitEqualToSubstance {
                 Section {
-                    Picker("Time range", selection: $selectedTimeRangeOption) {
-                        ForEach(StatTimeRangeOption.allCases, id: \.rawValue) { timeRange in
-                            Text(timeRange.rawValue).tag(timeRange)
+                    Picker("Resolution", selection: $selectedResolution) {
+                        ForEach(DosageResolution.allCases, id: \.rawValue) { resolution in
+                            Text(resolution.rawValue).tag(resolution)
                         }
                     }.pickerStyle(.segmented)
 
-                    switch selectedTimeRangeOption {
-                    case .last30Days:
+                    switch selectedResolution {
+                    case .day:
                         DosageStatDayChart(
-                            last30Days: dosageStat?.last30Days ?? [],
+                            dayDosages: dosageStat?.dayDosages ?? [],
                             substanceName: substanceName,
                             substanceColor: substanceColor,
                             unit: unit,
                             isAverageShown: isAverageShown
                         )
-                    case .last26Weeks:
+                    case .week:
                         DosageStatWeekChart(
-                            last26Weeks: dosageStat?.last26Weeks ?? [],
+                            weekDosages: dosageStat?.weekDosages ?? [],
                             substanceName: substanceName,
                             substanceColor: substanceColor,
                             unit: unit,
                             isAverageShown: isAverageShown
                         )
-                    case .last12Months:
+                    case .month:
                         DosageStatMonthChart(
-                            last12Months: dosageStat?.last12Months ?? [],
+                            monthDosages: dosageStat?.monthDosages ?? [],
                             substanceName: substanceName,
                             substanceColor: substanceColor,
                             unit: unit,
                             isAverageShown: isAverageShown
                         )
-                    case .allYears:
+                    case .year:
                         DosageStatYearChart(
-                            years: dosageStat?.years ?? [],
+                            yearDosages: dosageStat?.yearDosages ?? [],
                             substanceName: substanceName,
                             substanceColor: substanceColor,
                             unit: unit,
@@ -140,119 +140,50 @@ struct DosageStatScreen: View {
             ing.doseUnwrapped == nil
         })
         dosageStat = DosageStat(
-            last30Days: getDayDosages(),
-            last26Weeks: getWeekDosages(),
-            last12Months: getMonthDosages(),
-            years: getYearDosages())
+            dayDosages: getDayDosages(),
+            weekDosages: getWeekDosages(),
+            monthDosages: getMonthDosages(),
+            yearDosages: getYearDosages())
     }
 
     private func getDayDosages() -> [DayDosage] {
-        let last30Days = ingestions.wrappedValue.prefix { ing in
-            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: .now) <= 30
+        let doseInstances = convertToDoseInstances(ingestions: ingestions.wrappedValue)
+        let grouped = Dictionary(grouping: doseInstances) { instance in
+            Calendar.current.startOfDay(for: instance.date)
         }
-
-        let doseInstances = convertToDoseInstances(ingestions: last30Days)
-
-        let doseInstancesGroupedByDay = Dictionary(grouping: doseInstances) { instanceDose in
-            let components = Calendar.current.dateComponents([.day, .month], from: instanceDose.date)
-            if let day = components.day, let month = components.month {
-                return String(day) + String(month)
-            } else {
-                return ""
-            }
-        }.values
-
-        let dayDosages = doseInstancesGroupedByDay.compactMap { (doseInstances: [DoseInstance]) in
-            if let summedUp = sumUpInstanceDosages(doseInstances: doseInstances) {
-                return DayDosage(day: summedUp.date, dosage: summedUp.dose)
-            } else {
-                return nil
-            }
-        }
-        return dayDosages
+        return grouped.map { (date, instances) in
+            DayDosage(day: date, dosage: instances.map(\.dose).reduce(0, +))
+        }.sorted { $0.day < $1.day }
     }
 
     private func getWeekDosages() -> [WeekDosage] {
-        let last26Weeks = ingestions.wrappedValue.prefix { ing in
-            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: .now) <= 26*7
+        let doseInstances = convertToDoseInstances(ingestions: ingestions.wrappedValue)
+        let grouped = Dictionary(grouping: doseInstances) { instance in
+            Calendar.current.dateInterval(of: .weekOfYear, for: instance.date)?.start ?? instance.date
         }
-
-        let doseInstances = convertToDoseInstances(ingestions: last26Weeks)
-
-        let doseInstancesGroupedByWeek = Dictionary(grouping: doseInstances) { instanceDose in
-            let components = Calendar.current.dateComponents([.weekOfYear], from: instanceDose.date)
-            if let weekOfYear = components.weekOfYear {
-                return String(weekOfYear)
-            } else {
-                return ""
-            }
-        }.values
-
-        let weekDosages = doseInstancesGroupedByWeek.compactMap { (doseInstances: [DoseInstance]) in
-            if let summedUp = sumUpInstanceDosages(doseInstances: doseInstances) {
-                return WeekDosage(week: summedUp.date, dosage: summedUp.dose)
-            } else {
-                return nil
-            }
-        }
-        return weekDosages
+        return grouped.map { (date, instances) in
+            WeekDosage(week: date, dosage: instances.map(\.dose).reduce(0, +))
+        }.sorted { $0.week < $1.week }
     }
 
     private func getMonthDosages() -> [MonthDosage] {
-        let last12Months = ingestions.wrappedValue.prefix { ing in
-            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: .now) <= 365
+        let doseInstances = convertToDoseInstances(ingestions: ingestions.wrappedValue)
+        let grouped = Dictionary(grouping: doseInstances) { instance in
+            Calendar.current.dateInterval(of: .month, for: instance.date)?.start ?? instance.date
         }
-
-        let instanceDosages = convertToDoseInstances(ingestions: last12Months)
-
-        let doseInstancesGroupedByMonth = Dictionary(grouping: instanceDosages) { instanceDose in
-            let components = Calendar.current.dateComponents([.month, .year], from: instanceDose.date)
-            if let month = components.month, let year = components.year {
-                return String(month) + String(year)
-            } else {
-                return ""
-            }
-        }
-
-        let monthDosages = doseInstancesGroupedByMonth.values.compactMap { (doseInstances: [DoseInstance]) in
-            if let summedUp = sumUpInstanceDosages(doseInstances: doseInstances) {
-                return MonthDosage(month: summedUp.date, dosage: summedUp.dose)
-            } else {
-                return nil
-            }
-        }
-        return monthDosages
+        return grouped.map { (date, instances) in
+            MonthDosage(month: date, dosage: instances.map(\.dose).reduce(0, +))
+        }.sorted { $0.month < $1.month }
     }
 
     private func getYearDosages() -> [YearDosage] {
         let doseInstances = convertToDoseInstances(ingestions: ingestions.wrappedValue)
-
-        let doseInstancesGroupedByYear = Dictionary(grouping: doseInstances) { instanceDose in
-            let components = Calendar.current.dateComponents([.year], from: instanceDose.date)
-            if let year = components.year {
-                return String(year)
-            } else {
-                return ""
-            }
-        }.values
-
-        let yearDosages = doseInstancesGroupedByYear.compactMap { (doseInstances: [DoseInstance]) in
-            if let summedUp = sumUpInstanceDosages(doseInstances: doseInstances) {
-                return YearDosage(year: summedUp.date, dosage: summedUp.dose)
-            } else {
-                return nil
-            }
+        let grouped = Dictionary(grouping: doseInstances) { instance in
+            Calendar.current.dateInterval(of: .year, for: instance.date)?.start ?? instance.date
         }
-        return yearDosages
-    }
-
-    private func sumUpInstanceDosages(doseInstances: [DoseInstance]) -> DoseInstance? {
-        let summedDosage = doseInstances.map({$0.dose}).reduce(0.0, +)
-        if let date = doseInstances.first?.date, summedDosage > 0 {
-            return DoseInstance(date: date, dose: summedDosage)
-        } else {
-            return nil
-        }
+        return grouped.map { (date, instances) in
+            YearDosage(year: date, dosage: instances.map(\.dose).reduce(0, +))
+        }.sorted { $0.year < $1.year }
     }
 
     private func convertToDoseInstances(ingestions: any Collection<Ingestion>) -> [DoseInstance] {

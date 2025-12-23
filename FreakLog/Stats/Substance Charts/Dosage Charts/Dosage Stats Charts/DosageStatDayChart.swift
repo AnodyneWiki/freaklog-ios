@@ -3,29 +3,25 @@ import Charts
 
 struct DosageStatDayChart: View {
 
-    let last30Days: [DayDosage]
+    let dayDosages: [DayDosage]
     let substanceName: String
     let substanceColor: SubstanceColor
     let unit: String
     let isAverageShown: Bool
 
     var averageDosage: Double {
-        let sum = last30Days.map({$0.dosage}).reduce(0, +)
-        return sum/30
+        let sum = dayDosages.map({$0.dosage}).reduce(0, +)
+        return dayDosages.isEmpty ? 0 : sum/Double(dayDosages.count)
     }
 
     var body: some View {
-        if !last30Days.isEmpty {
-            VStack(alignment: .leading) {
-                VStack(alignment: .leading) {
-                    Text("Dosage by day")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Text("Last 30 Days")
-                        .font(.title2.bold())
-                        .foregroundColor(.primary)
-                }
-                Chart(last30Days, id: \.day) {
+        if !dayDosages.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Dosage in \(unit)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Chart(dayDosages, id: \.day) {
                     if isAverageShown {
                         BarMark(
                             x: .value("Day", $0.day, unit: .day),
@@ -48,18 +44,22 @@ struct DosageStatDayChart: View {
                         )
                         .foregroundStyle(substanceColor.swiftUIColor)
                     }
-                }.chartYAxisLabel("Dosage in \(unit)")
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .day, count: 2)) { value in
-                            AxisValueLabel(format: .dateTime.day())
-                            AxisGridLine()
-                            AxisTick()
-                        }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .day, count: 2)) { value in
+                        AxisValueLabel(format: .dateTime.day())
+                        AxisGridLine()
+                        AxisTick()
                     }
-                    .frame(height: 240)
+                }
+                .chartScrollingCompatibility(
+                    visibleDomainLength: 30 * 24 * 60 * 60,
+                    initialScrollX: dayDosages.last?.day
+                )
+                .frame(height: 240)
             }
         } else {
-            Text("No \(substanceName) ingestions in the last 30 days").foregroundStyle(.secondary)
+            Text("No \(substanceName) ingestions").foregroundStyle(.secondary)
         }
     }
 }
@@ -68,7 +68,7 @@ private let oneDay: TimeInterval = 24*60*60
 
 #Preview {
     DosageStatDayChart(
-        last30Days: [
+        dayDosages: [
             DayDosage(day: .now.addingTimeInterval(-2*oneDay), dosage: 20),
             DayDosage(day: .now.addingTimeInterval(-3*oneDay), dosage: 35),
             DayDosage(day: .now.addingTimeInterval(-6*oneDay), dosage: 70),

@@ -1,10 +1,10 @@
 import Foundation
 
 struct DosageStat {
-    let last30Days: [DayDosage]
-    let last26Weeks: [WeekDosage]
-    let last12Months: [MonthDosage]
-    let years: [YearDosage]
+    let dayDosages: [DayDosage]
+    let weekDosages: [WeekDosage]
+    let monthDosages: [MonthDosage]
+    let yearDosages: [YearDosage]
 }
 
 struct DayDosage: Hashable {

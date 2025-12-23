@@ -20,6 +20,7 @@
 		A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */; };
 		A15CA2B42EFAFED200D90023 /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
 		A15CA2B52EFAFED200D90023 /* ChameleonHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */; };
+		A15CA2C32EFB1B9300D90023 /* ChartScrollingHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2C22EFB1B9300D90023 /* ChartScrollingHelper.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
 		EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9927E5E72000077FB2 /* WebViewScreen.swift */; };
 		EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
@@ -415,6 +416,7 @@
 		A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsViewModel.swift; sourceTree = "<group>"; };
 		A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChameleonHeader.swift; sourceTree = "<group>"; };
 		A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsView.swift; sourceTree = "<group>"; };
+		A15CA2C22EFB1B9300D90023 /* ChartScrollingHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartScrollingHelper.swift; sourceTree = "<group>"; };
 		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
@@ -1478,6 +1480,7 @@
 		EACF43992BA23FFC008D1897 /* Dosage Charts */ = {
 			isa = PBXGroup;
 			children = (
+				A15CA2C22EFB1B9300D90023 /* ChartScrollingHelper.swift */,
 				EACF439A2BA24026008D1897 /* DosageStatScreen.swift */,
 				EACF439C2BA247D3008D1897 /* DosageStat.swift */,
 				EA8039B72BA6CEA10097E743 /* Dosage Stats Charts */,
@@ -2083,6 +2086,7 @@
 				EA6048292A1411CF005C6A4B /* RegularDoseAndUnit.swift in Sources */,
 				EA418A0229673FFF00DEA663 /* MDMAPillsSection.swift in Sources */,
 				EACF43942B9F7B7A008D1897 /* GlobalNavigationDestination.swift in Sources */,
+				A15CA2C32EFB1B9300D90023 /* ChartScrollingHelper.swift in Sources */,
 				EA418A33296C755400DEA663 /* EditLocationLinkAndMap.swift in Sources */,
 				EAC25C08295608E20002D68F /* AdministrationRouteScreen.swift in Sources */,
 				EABD92112942131E0073303A /* OnsetComeupPeakTotalTimeline.swift in Sources */,

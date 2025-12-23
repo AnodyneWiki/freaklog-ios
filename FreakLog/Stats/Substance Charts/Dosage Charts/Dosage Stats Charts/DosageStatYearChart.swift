@@ -3,7 +3,7 @@ import Charts
 
 struct DosageStatYearChart: View {
 
-    let years: [YearDosage]
+    let yearDosages: [YearDosage]
     let substanceName: String
     let substanceColor: SubstanceColor
     let unit: String
@@ -11,7 +11,7 @@ struct DosageStatYearChart: View {
 
     var numberOfYears: Int {
         let calendar = Calendar.current
-        let firstYearDate = years.sorted { lhs, rhs in
+        let firstYearDate = yearDosages.sorted { lhs, rhs in
             lhs.year < rhs.year
         }.first?.year ?? Date.now
         let firstYear = calendar.dateComponents([.year], from: firstYearDate).year ?? 0
@@ -20,7 +20,7 @@ struct DosageStatYearChart: View {
     }
 
     var averageDosage: Double {
-        let sum = years.map({$0.dosage}).reduce(0, +)
+        let sum = yearDosages.map({$0.dosage}).reduce(0, +)
         if numberOfYears > 0 {
             return sum/Double(numberOfYears)
         } else {
@@ -29,17 +29,13 @@ struct DosageStatYearChart: View {
     }
 
     var body: some View {
-        if !years.isEmpty {
-            VStack(alignment: .leading) {
-                VStack(alignment: .leading) {
-                    Text("Dosage by year")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Text("All Years")
-                        .font(.title2.bold())
-                        .foregroundColor(.primary)
-                }
-                Chart(years, id: \.year) {
+        if !yearDosages.isEmpty {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Dosage in \(unit)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
+                Chart(yearDosages, id: \.year) {
                     if isAverageShown {
                         BarMark(
                             x: .value("Year", $0.year, unit: .year),
@@ -62,13 +58,17 @@ struct DosageStatYearChart: View {
                         )
                         .foregroundStyle(substanceColor.swiftUIColor)
                     }
-                }.chartYAxisLabel("Dosage in \(unit)")
-                    .chartXAxis {
-                        AxisMarks(values: .stride(by: .year, count: 1)) { value in
-                            AxisValueLabel(format: .dateTime.year())
-                        }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .year, count: 1)) { value in
+                        AxisValueLabel(format: .dateTime.year())
                     }
-                    .frame(height: 240)
+                }
+                .chartScrollingCompatibility(
+                    visibleDomainLength: 5 * 365 * 24 * 60 * 60,
+                    initialScrollX: yearDosages.last?.year
+                )
+                .frame(height: 240)
             }
         } else {
             Text("No \(substanceName) ingestions").foregroundStyle(.secondary)
@@ -80,7 +80,7 @@ private let oneYear: TimeInterval = 365*24*60*60
 
 #Preview {
     DosageStatYearChart(
-        years: [
+        yearDosages: [
             YearDosage(year: .now.addingTimeInterval(-oneYear), dosage: 20),
             YearDosage(year: .now.addingTimeInterval(-1*oneYear), dosage: 35),
             YearDosage(year: .now.addingTimeInterval(-3*oneYear), dosage: 70),
