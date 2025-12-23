@@ -627,6 +627,7 @@
 		EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptySectionForPadding.swift; sourceTree = "<group>"; };
 		EAB165B127E49ACC003DF79D /* Notification-EyeName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notification-EyeName.swift"; sourceTree = "<group>"; };
 		EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 7.xcdatamodel"; sourceTree = "<group>"; };
+		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EAB7946E2D017B1200ED37C8 /* TimeRangeDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRangeDrawable.swift; sourceTree = "<group>"; };
 		EAB794712D017E8600ED37C8 /* IngestionRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionRange.swift; sourceTree = "<group>"; };
 		EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimePointOrRangePicker.swift; sourceTree = "<group>"; };
@@ -2553,6 +2554,7 @@
 		EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */,
 				EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */,
 				EAA2C9B82B288CD50045C8DF /* PW Version 6.xcdatamodel */,
 				EA4B8A102A9B1D10009918DE /* PW Version 5.xcdatamodel */,
@@ -2562,7 +2564,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */;
+			currentVersion = B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

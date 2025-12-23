@@ -13,6 +13,7 @@ struct SettingsScreen: View {
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
+    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = true
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
 
@@ -49,6 +50,7 @@ struct SettingsScreen: View {
             areRedosesDrawnIndividually: $areRedosesDrawnIndividually,
             areSubstanceHeightsIndependent: $areSubstanceHeightsIndependent,
             shouldAutomaticallyStartLiveActivity: $shouldAutomaticallyStartLiveActivity,
+            isICloudSyncEnabled: $isICloudSyncEnabled,
             isFaceIDAvailable: authenticator.isFaceIDEnabled,
             hasToUnlockApp: $hasToUnlockApp,
             isExporting: $viewModel.isExporting,
@@ -79,6 +81,7 @@ struct SettingsContent: View {
     @Binding var areRedosesDrawnIndividually: Bool
     @Binding var areSubstanceHeightsIndependent: Bool
     @Binding var shouldAutomaticallyStartLiveActivity: Bool
+    @Binding var isICloudSyncEnabled: Bool
     let isFaceIDAvailable: Bool
     @Binding var hasToUnlockApp: Bool
     @State var isImporting = false
@@ -99,7 +102,10 @@ struct SettingsContent: View {
 
     var body: some View {
         List {
-            Section("Privacy") {
+            Section(
+                header: Text("Privacy"),
+                footer: Text("iCloud Sync setting takes effect after restarting the app.")
+            ) {
                 if isFaceIDAvailable {
                     Toggle("Require App Unlock", isOn: $hasToUnlockApp.animation()).tint(Color.accentColor)
                 } else {
@@ -114,6 +120,7 @@ struct SettingsContent: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
+                Toggle("iCloud Sync", isOn: $isICloudSyncEnabled.animation()).tint(Color.accentColor)
             }
             if isEyeOpen {
                 Section("UI") {
@@ -297,6 +304,7 @@ struct SettingsContent: View {
         areRedosesDrawnIndividually: .constant(false),
         areSubstanceHeightsIndependent: .constant(false),
         shouldAutomaticallyStartLiveActivity: .constant(false),
+        isICloudSyncEnabled: .constant(true),
         isFaceIDAvailable: true,
         hasToUnlockApp: .constant(false),
         isImporting: false,

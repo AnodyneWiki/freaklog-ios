@@ -23,6 +23,7 @@ struct PersistenceController {
     static let lastIngestionTimeOfExperienceWhereAddIngestionTappedKey = "lastIngestionTimeOfExperienceWhereAddIngestionTapped"
     static let clonedIngestionTimeKey = "clonedIngestionTimeKey"
     static let fabButtonPositionKey = "fabButtonPosition"
+    static let isICloudSyncEnabledKey = "isICloudSyncEnabled"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext
@@ -31,8 +32,35 @@ struct PersistenceController {
     private static let modelName = "Main"
 
     init(inMemory: Bool = false) {
-        container = NSPersistentContainer(name: PersistenceController.modelName)
+        let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
+
+        if isICloudSyncEnabled && !inMemory {
+            container = NSPersistentCloudKitContainer(name: PersistenceController.modelName)
+        } else {
+            container = NSPersistentContainer(name: PersistenceController.modelName)
+        }
+
         let description = container.persistentStoreDescriptions.first
+
+        if !inMemory {
+            // Always enable history tracking to prevent compatibility issues when switching sync modes
+            description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+
+            if isICloudSyncEnabled {
+                // Configure CloudKit container options
+                #if DEBUG
+                let containerIdentifier = "iCloud.woof.freaklog-debug"
+                #else
+                let containerIdentifier = "iCloud.woof.freaklog"
+                #endif
+
+                let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+                description?.cloudKitContainerOptions = cloudKitContainerOptions
+
+                // Set additional store options for CloudKit sync
+                description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+            }
+        }
 
 #if APP_WIDGET
         description?.setOption(true as NSNumber, forKey: NSReadOnlyPersistentStoreOption)
@@ -41,6 +69,16 @@ struct PersistenceController {
         if inMemory {
             loadInMemoryStores(description: description)
             isInitialized = true
+        }
+
+        // Configure view context
+        if isICloudSyncEnabled && !inMemory {
+            // Configure view context for CloudKit sync
+            viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+            viewContext.automaticallyMergesChangesFromParent = true
+        } else {
+            // Configure view context for local storage
+            viewContext.automaticallyMergesChangesFromParent = true
         }
     }
 
@@ -55,13 +93,13 @@ struct PersistenceController {
         description.type = NSInMemoryStoreType
         container.persistentStoreDescriptions = [description]
 
-
         container.loadPersistentStores { _, error in
             if let error = error {
                 fatalError("Failed to load in-memory Core Data stack: \(error)")
             }
         }
 
+        // Configure view context for in-memory stores (no CloudKit sync)
         viewContext.automaticallyMergesChangesFromParent = true
     }
 
@@ -86,7 +124,6 @@ struct PersistenceController {
             }
         }
 
-        viewContext.automaticallyMergesChangesFromParent = true
         return
     }
 
@@ -230,6 +267,39 @@ struct PersistenceController {
             for timedNote in allTimedNotes {
                 timedNote.colorAsText = timedNote.colorAsText?.uppercased()
             }
+            try? viewContext.save()
+        }
+    }
+
+    func migrateRemoveDuplicateCompanions() {
+        viewContext.performAndWait {
+            let companionFetchRequest = SubstanceCompanion.fetchRequest()
+            let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
+
+            // Group companions by substanceName
+            var companionsByName: [String: [SubstanceCompanion]] = [:]
+            for companion in allCompanions {
+                guard let name = companion.substanceName else { continue }
+                companionsByName[name, default: []].append(companion)
+            }
+
+            // For each substance name with multiple companions, keep one and reassign ingestions
+            for (_, companions) in companionsByName where companions.count > 1 {
+                let keeper = companions[0] // Keep the first one
+                let duplicates = companions[1...]
+
+                for duplicate in duplicates {
+                    // Reassign all ingestions from duplicate to keeper
+                    if let ingestions = duplicate.ingestions as? Set<Ingestion> {
+                        for ingestion in ingestions {
+                            ingestion.substanceCompanion = keeper
+                        }
+                    }
+                    // Delete the duplicate
+                    viewContext.delete(duplicate)
+                }
+            }
+
             try? viewContext.save()
         }
     }
