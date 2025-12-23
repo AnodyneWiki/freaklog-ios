@@ -235,6 +235,10 @@ struct StatsScreenContent: View {
 
     var body: some View {
         List {
+            Section {
+                TimelineOverview()
+            }
+
             if isEyeOpen {
                 Section {
                     NavigationLink(value: GlobalNavigationDestination.toleranceChart) {

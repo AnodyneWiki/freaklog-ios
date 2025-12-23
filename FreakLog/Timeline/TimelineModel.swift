@@ -45,10 +45,13 @@ struct TimelineModel: Hashable {
         everythingForEachRating: [EverythingForOneRating],
         everythingForEachTimedNote: [EverythingForOneTimedNote],
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        forcedStartTime: Date? = nil,
+        forcedTotalWidth: TimeInterval? = nil,
+        globalSubstanceMaxes: [String: Double]? = nil
     ) {
 
-        let startTime = Self.getStartTime(
+        let startTime = forcedStartTime ?? Self.getStartTime(
             substanceGroups: substanceGroups,
             everythingForEachRating: everythingForEachRating,
             everythingForEachTimedNote: everythingForEachTimedNote
@@ -65,6 +68,10 @@ struct TimelineModel: Hashable {
                         nil
                     }
                 }
+                
+                let localMax = routeGroup.ingestions.map({$0.strengthRelativeToCommonDose}).max() ?? 1
+                let maxStrength = globalSubstanceMaxes?[substanceGroup.substanceName] ?? localMax
+                
                 let group = RoaGroup(
                     color: substanceGroup.color,
                     roaDuration: routeGroup.roaDuration,
@@ -74,7 +81,8 @@ struct TimelineModel: Hashable {
                             endTime: ingestion.endTime,
                             horizontalWeight: ingestion.horizontalWeight,
                             strengthRelativeToCommonDose: ingestion.strengthRelativeToCommonDose,
-                            onsetDelayInHours: ingestion.onsetDelayInHours
+                            onsetDelayInHours: ingestion.onsetDelayInHours,
+                            forcedMaxStrengthOfSubstance: maxStrength
                         )
                     },
                     ingestionRanges: ingestionRanges
@@ -134,7 +142,7 @@ struct TimelineModel: Hashable {
         let widthOfTimelinesAndRatings = groupDrawables.map { group in
             group.endRelativeToStartInSeconds
         } + ratingDrawables.map { $0.distanceFromStart } + timedNoteDrawables.map { $0.distanceFromStart } + timeRangeDrawables.map { $0.endInSeconds }
-        let maxWidth: TimeInterval = (widthOfTimelinesAndRatings.max() ?? sixHours)
+        let maxWidth: TimeInterval = forcedTotalWidth ?? (widthOfTimelinesAndRatings.max() ?? sixHours)
         totalWidth = maxWidth
         axisDrawable = AxisDrawable(startTime: startTime, widthInSeconds: maxWidth)
     }

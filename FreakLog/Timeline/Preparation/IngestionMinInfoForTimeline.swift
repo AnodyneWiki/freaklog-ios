@@ -1,6 +1,7 @@
 import Foundation
 
 struct SubstanceGroupWithRepoInfo {
+    let substanceName: String
     let color: SubstanceColor
     let routeGroups: [RouteGroupWithRepoInfo]
 }
@@ -69,6 +70,7 @@ func getSubstanceGroupWithRepoInfo(substanceIngestionGroups: [SubstanceIngestion
             )
         }
         return SubstanceGroupWithRepoInfo(
+            substanceName: substanceIngestionGroup.substanceName,
             color: substanceIngestionGroup.color,
             routeGroups: routeGroups
         )

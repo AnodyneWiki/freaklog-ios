@@ -40,7 +40,7 @@ struct GroupDrawable {
         }).min() ?? .now
         self.startInSeconds = startGraph.distance(to: startDate)
         self.hasDurationInfo = roaDuration != nil
-        let nonNormalizedMaxOfRoute = weightedLines.map({$0.strengthRelativeToCommonDose}).max() ?? 1
+        let nonNormalizedMaxOfRoute = weightedLines.first?.forcedMaxStrengthOfSubstance ?? (weightedLines.map({$0.strengthRelativeToCommonDose}).max() ?? 1)
         let weightedLinesForPointIngestions = weightedLines.filter { $0.endTime == nil}
         let weightedLinesForRangeIngestions = weightedLines.filter { $0.endTime != nil}
 
