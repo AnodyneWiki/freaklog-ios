@@ -164,8 +164,6 @@
 		EA48F89229DD50B8007DA8C5 /* RatingCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */; };
 		EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */; };
 		EA48F89A29E70F17007DA8C5 /* String-CaseInsensitiveContains.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */; };
-		EA48F89C29E7D86A007DA8C5 /* StomachFullness.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89B29E7D86A007DA8C5 /* StomachFullness.swift */; };
-		EA48F89E29E8B879007DA8C5 /* StomachFullnessPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89D29E8B879007DA8C5 /* StomachFullnessPicker.swift */; };
 		EA48F8A029E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */; };
 		EA48F8A229E98E88007DA8C5 /* TimeDisplayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */; };
 		EA48F8A429E991C6007DA8C5 /* DateDifference.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A329E991C6007DA8C5 /* DateDifference.swift */; };
@@ -527,8 +525,6 @@
 		EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingCodable.swift; sourceTree = "<group>"; };
 		EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionTests.swift; sourceTree = "<group>"; };
 		EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String-CaseInsensitiveContains.swift"; sourceTree = "<group>"; };
-		EA48F89B29E7D86A007DA8C5 /* StomachFullness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StomachFullness.swift; sourceTree = "<group>"; };
-		EA48F89D29E8B879007DA8C5 /* StomachFullnessPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StomachFullnessPicker.swift; sourceTree = "<group>"; };
 		EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgeSaferUseScreen.swift; sourceTree = "<group>"; };
 		EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeDisplayStyle.swift; sourceTree = "<group>"; };
 		EA48F8A329E991C6007DA8C5 /* DateDifference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DateDifference.swift; sourceTree = "<group>"; };
@@ -928,7 +924,6 @@
 				0D9BFC572EF4A93E00039340 /* WebhookService.swift */,
 				0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */,
 				EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */,
-				EA48F89D29E8B879007DA8C5 /* StomachFullnessPicker.swift */,
 				EA48F8B729EE8A15007DA8C5 /* Choose Location */,
 				EAB1659427E302BC003DF79D /* ColorPickerScreen.swift */,
 				EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */,
@@ -1540,7 +1535,6 @@
 				EAB1659D27E34AD5003DF79D /* CustomSubstance-CoreDataHelpers.swift */,
 				EABDA72A2887ECFB00A23DB3 /* SubstanceCompanion-CoreDataHelpers.swift */,
 				EAF76CA827D90CF900945587 /* SubstanceColor.swift */,
-				EA48F89B29E7D86A007DA8C5 /* StomachFullness.swift */,
 			);
 			path = CoreDataHelpers;
 			sourceTree = "<group>";
@@ -1969,14 +1963,12 @@
 				44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */,
 				EA527A8629427F56009C142D /* ToxicitySection.swift in Sources */,
 				EA47E65127CA136C00F6E10F /* RoaDose.swift in Sources */,
-				EA48F89C29E7D86A007DA8C5 /* StomachFullness.swift in Sources */,
 				EA8A2CB22B468AEF0050554C /* CustomUnitDoseRow.swift in Sources */,
 				EA039AC02A5E75CE006DFAFE /* ToleranceTextsScreen.swift in Sources */,
 				EA6048372A16CE9F005C6A4B /* AddSprayScreen.swift in Sources */,
 				EA48F8A029E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift in Sources */,
 				EA557B392942A1A2005740B4 /* EditNotesScreen.swift in Sources */,
 				EA60482E2A162225005C6A4B /* String-CleanSearch.swift in Sources */,
-				EA48F89E29E8B879007DA8C5 /* StomachFullnessPicker.swift in Sources */,
 				EAC25BFD2955F23A0002D68F /* ReagentTestingScreen.swift in Sources */,
 				EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,

@@ -28,7 +28,6 @@ struct FinishIngestionScreen: View {
     @State private var enteredNote = ""
     @State private var enteredTitle = ""
     @State private var consumerName = ""
-    @State private var selectedStomachFullness = StomachFullness.empty
     @State private var selectedNostril: Nostril?
     @State private var selectedVein: Vein?
     @State private var selectedMuscle: Muscle?
@@ -275,9 +274,7 @@ struct FinishIngestionScreen: View {
     var routeSpecificPickers: some View {
         switch arguments.administrationRoute {
         case .oral:
-            StomachFullnessPicker(stomachFullness: $selectedStomachFullness)
-                .pickerStyle(.navigationLink)
-                .labelsHidden()
+            EmptyView()
         case .insufflated:
             NostrilPicker(selection: $selectedNostril)
                 .pickerStyle(.menu)
@@ -461,11 +458,6 @@ struct FinishIngestionScreen: View {
         ingestion.color = selectedColor.rawValue
         if !areYouConsumer {
             ingestion.consumerName = consumerName
-        }
-        if arguments.administrationRoute == .oral {
-            ingestion.stomachFullness = selectedStomachFullness.rawValue
-        } else {
-            ingestion.stomachFullness = nil
         }
         let siteString = getSiteString()
         if !siteString.isEmpty {

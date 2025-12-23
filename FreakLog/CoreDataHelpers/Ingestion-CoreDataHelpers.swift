@@ -21,10 +21,6 @@ extension Ingestion: Comparable {
         AdministrationRoute(rawValue: administrationRoute ?? "oral") ?? .oral
     }
 
-    var stomachFullnessUnwrapped: StomachFullness? {
-        StomachFullness(rawValue: stomachFullness ?? "")
-    }
-
     var administrationSiteUnwrapped: String {
         administrationSite ?? ""
     }
@@ -130,7 +126,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.oral.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = StomachFullness.full.rawValue
         return ingestion
     }
 
@@ -144,7 +139,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -157,7 +151,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -170,7 +163,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = "This is a longer note that might not fit on one line and it needs to be able to handle this"
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -183,7 +175,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.oral.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = StomachFullness.full.rawValue
         return ingestion
     }
 
@@ -197,7 +188,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -211,7 +201,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -225,7 +214,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = ""
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -239,7 +227,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = "Quantitatively estimated custom unit"
-        ingestion.stomachFullness = nil
         return ingestion
     }
 
@@ -254,7 +241,6 @@ extension Ingestion: Comparable {
         ingestion.administrationRoute = AdministrationRoute.insufflated.rawValue
         ingestion.time = .now
         ingestion.note = "Everything estimated quantitatively"
-        ingestion.stomachFullness = nil
         return ingestion
     }
 }

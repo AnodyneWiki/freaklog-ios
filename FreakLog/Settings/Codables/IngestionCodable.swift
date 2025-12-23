@@ -11,7 +11,6 @@ struct IngestionCodable: Codable {
     let isDoseAnEstimate: Bool
     let units: String
     let notes: String
-    let stomachFullness: StomachFullness?
     let consumerName: String?
     let customUnitId: Int32?
     let administrationSite: String?
@@ -27,7 +26,6 @@ struct IngestionCodable: Codable {
         case isDoseAnEstimate
         case units
         case notes
-        case stomachFullness
         case consumerName
         case customUnitId
         case administrationSite
@@ -44,7 +42,6 @@ struct IngestionCodable: Codable {
         isDoseAnEstimate: Bool,
         units: String,
         notes: String,
-        stomachFullness: StomachFullness?,
         consumerName: String?,
         customUnitId: Int32?,
         administrationSite: String?
@@ -59,7 +56,6 @@ struct IngestionCodable: Codable {
         self.isDoseAnEstimate = isDoseAnEstimate
         self.units = units
         self.notes = notes
-        self.stomachFullness = stomachFullness
         self.consumerName = consumerName
         self.customUnitId = customUnitId
         self.administrationSite = administrationSite
@@ -91,15 +87,6 @@ struct IngestionCodable: Codable {
         isDoseAnEstimate = try values.decode(Bool.self, forKey: .isDoseAnEstimate)
         units = try values.decode(String.self, forKey: .units)
         notes = try values.decode(String.self, forKey: .notes)
-        if let fullnessString = try values.decodeIfPresent(String.self, forKey: .stomachFullness) {
-            if let fullness = StomachFullness(rawValue: fullnessString.lowercased()) {
-                stomachFullness = fullness
-            } else {
-                stomachFullness = nil
-            }
-        } else {
-            stomachFullness = nil
-        }
         consumerName = try values.decodeIfPresent(String.self, forKey: .consumerName)
         customUnitId = try values.decodeIfPresent(Int32.self, forKey: .customUnitId)
         administrationSite = try values.decodeIfPresent(String.self, forKey: .administrationSite)
@@ -127,7 +114,6 @@ struct IngestionCodable: Codable {
         try container.encode(isDoseAnEstimate, forKey: .isDoseAnEstimate)
         try container.encode(units, forKey: .units)
         try container.encode(notes, forKey: .notes)
-        try container.encode(stomachFullness?.rawValue.uppercased(), forKey: .stomachFullness)
         try container.encode(consumerName, forKey: .consumerName)
         try container.encode(customUnitId, forKey: .customUnitId)
         try container.encode(administrationSite, forKey: .administrationSite)

@@ -79,7 +79,6 @@ extension SettingsScreen {
                         newIngestion.isEstimate = ingestionCodable.isDoseAnEstimate
                         newIngestion.units = ingestionCodable.units
                         newIngestion.note = ingestionCodable.notes
-                        newIngestion.stomachFullness = ingestionCodable.stomachFullness?.rawValue
                         newIngestion.consumerName = ingestionCodable.consumerName
                         newIngestion.administrationSite = ingestionCodable.administrationSite
                         newExperience.addToIngestions(newIngestion)

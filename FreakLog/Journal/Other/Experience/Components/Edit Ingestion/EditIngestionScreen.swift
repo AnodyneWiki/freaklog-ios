@@ -13,7 +13,6 @@ struct EditIngestionScreen: View {
     @State private var estimatedDoseStandardDeviation: Double?
     @State private var note = ""
     @State private var consumerName = ""
-    @State private var stomachFullness = StomachFullness.empty
     @State private var selectedCustomUnit: CustomUnit? = nil
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedNostril: Nostril?
@@ -67,7 +66,6 @@ struct EditIngestionScreen: View {
             isEstimate: $isEstimate,
             estimatedDoseStandardDeviation: $estimatedDoseStandardDeviation,
             note: $note,
-            stomachFullness: $stomachFullness,
             consumerName: $consumerName,
             selectedNostril: $selectedNostril,
             selectedVein: $selectedVein,
@@ -98,9 +96,6 @@ struct EditIngestionScreen: View {
             consumerName = ingestion.consumerName ?? ""
             selectedCustomUnit = ingestion.customUnit
             selectedExperience = ingestion.experience
-            if let fullness = ingestion.stomachFullnessUnwrapped {
-                stomachFullness = fullness
-            }
             let site = ingestion.administrationSiteUnwrapped
             if !site.isEmpty {
                 switch ingestion.administrationRouteUnwrapped {
@@ -147,9 +142,6 @@ struct EditIngestionScreen: View {
             ingestion.consumerName = nil
         } else {
             ingestion.consumerName = consumerName
-        }
-        if ingestion.administrationRouteUnwrapped == .oral {
-            ingestion.stomachFullness = stomachFullness.rawValue
         }
         let siteString = getSiteString()
         if !siteString.isEmpty {
@@ -227,7 +219,6 @@ struct EditIngestionContent: View {
     @Binding var isEstimate: Bool
     @Binding var estimatedDoseStandardDeviation: Double?
     @Binding var note: String
-    @Binding var stomachFullness: StomachFullness
     @Binding var consumerName: String
     @Binding var selectedNostril: Nostril?
     @Binding var selectedVein: Vein?
@@ -355,10 +346,6 @@ struct EditIngestionContent: View {
                             Label(displayedName, systemImage: "person")
                         }
                     }
-                    if route == .oral, isEyeOpen {
-                        StomachFullnessPicker(stomachFullness: $stomachFullness)
-                            .pickerStyle(.menu)
-                    }
                     if route == .insufflated {
                         NostrilPicker(selection: $selectedNostril)
                             .pickerStyle(.menu)
@@ -451,7 +438,6 @@ struct EditIngestionContent: View {
         isEstimate: .constant(false),
         estimatedDoseStandardDeviation: .constant(nil),
         note: .constant("These are my notes"),
-        stomachFullness: .constant(.full),
         consumerName: .constant("Marc"),
         selectedNostril: .constant(nil),
         selectedVein: .constant(nil),
@@ -484,7 +470,6 @@ struct EditIngestionContent: View {
         isEstimate: .constant(false),
         estimatedDoseStandardDeviation: .constant(nil),
         note: .constant("These are my notes"),
-        stomachFullness: .constant(.full),
         consumerName: .constant("Marc"),
         selectedNostril: .constant(nil),
         selectedVein: .constant(nil),

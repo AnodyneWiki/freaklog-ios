@@ -6,7 +6,6 @@ struct DurationSection: View {
 
     @State private var selectedTime = Date()
     @State private var timelineModel: TimelineModel?
-    @State private var stomachFullness = StomachFullness.empty
     @State private var hiddenRoutes: [AdministrationRoute] = []
 
     @AppStorage(PersistenceController.timeDisplayStyleDurationSectionKey) private var timeDisplayStyleDurationSectionText: String = SaveableTimeDisplayStyle.auto.rawValue
@@ -71,9 +70,6 @@ struct DurationSection: View {
         .onChange(of: hiddenRoutes) { _ in
             updateModel()
         }
-        .onChange(of: stomachFullness) { _ in
-            updateModel()
-        }
 
     }
 
@@ -88,25 +84,6 @@ struct DurationSection: View {
                 VStack(alignment: .leading) {
                     Text(info.route.rawValue.localizedCapitalized).font(.headline)
                     OneRoaDurationRow(duration: info.roaDuration, color: info.route.color)
-                    if info.route == .oral {
-                        Spacer().frame(height: 5)
-                        VStack(alignment: .leading) {
-                            Text("Stomach Fullness Delay").font(.footnote.weight(.medium))
-                            Picker("Stomach Fullness", selection: $stomachFullness) {
-                                ForEach(StomachFullness.allCases) { option in
-                                    Text(option.text)
-                                }
-                            }.pickerStyle(.segmented)
-                            Text("Onset delayed by ~\(stomachFullness.onsetDelayForOralInHours.asRoundedReadableString) hours.").font(.footnote)
-                        }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 8)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(uiColor: UIColor.systemGray6))
-                        )
-                        Text(TimelineDisclaimers.capsule).font(.footnote)
-                    }
                 }
             }
             .swipeActions(edge: .leading) {
@@ -143,7 +120,7 @@ struct DurationSection: View {
                                     dose: substance.doseInfos.first(where: { $0.route == info.route})?.roaDose.getStrengthRelativeToCommonDose(dose: firstAverageCommonDose),
                                     time: selectedTime,
                                     endTime: nil,
-                                    onsetDelayInHours: info.route == .oral ? stomachFullness.onsetDelayForOralInHours : 0
+                                    onsetDelayInHours: 0
                                 ),
                             ]
                         ),

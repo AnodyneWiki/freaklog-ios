@@ -17,7 +17,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cocaine",
@@ -28,7 +27,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -51,7 +49,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -74,7 +71,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -97,7 +93,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -120,7 +115,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -143,7 +137,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -166,7 +159,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location":
@@ -200,7 +192,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cocaine",
@@ -211,7 +202,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cocaine",
@@ -222,7 +212,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -245,7 +234,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -268,7 +256,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -291,7 +278,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -314,7 +300,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -337,7 +322,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -360,7 +344,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Ketamine",
@@ -371,7 +354,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -394,7 +376,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -417,7 +398,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -440,7 +420,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -463,7 +442,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -486,7 +464,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -509,7 +486,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -532,7 +508,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cannabis",
@@ -543,7 +518,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -566,7 +540,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cannabis",
@@ -577,7 +550,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -600,7 +572,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -623,7 +594,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -646,7 +616,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -669,7 +638,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -692,7 +660,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -715,7 +682,6 @@
                     "isDoseAnEstimate": false,
                     "units": "µg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -738,7 +704,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -761,7 +726,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -784,7 +748,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -807,7 +770,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -830,7 +792,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cannabis",
@@ -841,7 +802,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -864,7 +824,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -887,7 +846,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 },
                 {
                     "substanceName": "Cannabis",
@@ -898,7 +856,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -921,7 +878,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location":
@@ -955,7 +911,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -978,7 +933,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location":
@@ -1017,7 +971,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null
                 }
             ],
             "location": null,
@@ -1046,7 +999,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": "EMPTY"
                 },
                 {
                     "substanceName": "Ketamine",
@@ -1057,7 +1009,6 @@
                     "isDoseAnEstimate": false,
                     "units": "mg",
                     "notes": "",
-                    "stomachFullness": null,
                     "consumerName": "Marc"
                 }
             ],

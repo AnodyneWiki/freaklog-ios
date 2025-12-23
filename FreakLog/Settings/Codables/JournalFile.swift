@@ -32,7 +32,6 @@ struct JournalFile: FileDocument, Codable {
                         isDoseAnEstimate: ingestion.isEstimate,
                         units: ingestion.unitsUnwrapped,
                         notes: ingestion.noteUnwrapped,
-                        stomachFullness: ingestion.stomachFullnessUnwrapped,
                         consumerName: ingestion.consumerName,
                         customUnitId: ingestion.customUnit?.idForAndroid,
                         administrationSite: ingestion.administrationSite
