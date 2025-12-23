@@ -5,7 +5,7 @@ struct TimelineScreen: View {
     let timeDisplayStyle: TimeDisplayStyle
     @State private var zoomLevel = 1.0
     @State private var isOrientationLandscape = false
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     var body: some View {
         VStack {

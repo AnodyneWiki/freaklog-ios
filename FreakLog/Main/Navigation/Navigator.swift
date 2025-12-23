@@ -85,7 +85,7 @@ class Navigator: ObservableObject {
 
     func maybeSearchForSubstance() {
         selectedTab = .substances
-        let isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)
+        let isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceConfiguration.Keys.isEyeOpenKey2)
         if isEyeOpen {
             substancesTabPath.removeLast(substancesTabPath.count)
             clearCategories()

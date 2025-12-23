@@ -5,7 +5,7 @@ import AppIntents
 struct ExperienceScreen: View {
     @ObservedObject var experience: Experience
 
-    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
+    @AppStorage(PersistenceConfiguration.Keys.timeDisplayStyle) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
 
     private var saveableTimeDisplayStyle: Binding<SaveableTimeDisplayStyle> {
         Binding(
@@ -39,14 +39,14 @@ struct ExperienceScreen: View {
     @State private var sheetToShow: SheetOption?
     @State private var hiddenIngestions: [ObjectIdentifier] = []
     @State private var hiddenRatings: [ObjectIdentifier] = []
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
-    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
-    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingDosageDots) var isHidingDosageDots: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingToleranceChartInExperience) var isHidingToleranceChartInExperience: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingSubstanceInfoInExperience) var isHidingSubstanceInfoInExperience: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.areRedosesDrawnIndividually) var areRedosesDrawnIndividually: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.independentSubstanceHeight) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage("isOpenLastExperienceSiriTipVisible") private var isSiriTipVisible = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
+    @AppStorage(PersistenceConfiguration.Keys.fabButtonPosition) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
 
     var fabAlignment: Alignment {
         (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
@@ -137,7 +137,7 @@ struct ExperienceScreen: View {
     }
 
     private func addIngestion() {
-        UserDefaults.standard.set(experience.ingestionsSorted.last?.time?.timeIntervalSince1970, forKey: PersistenceController.lastIngestionTimeOfExperienceWhereAddIngestionTappedKey)
+        UserDefaults.standard.set(experience.ingestionsSorted.last?.time?.timeIntervalSince1970, forKey: PersistenceConfiguration.Keys.lastIngestionTimeOfExperienceWhereAddIngestionTapped)
         Navigator.shared.showAddIngestionFullScreenCover() // can't use Navigator as environment object because for some reason this messes up the layout of this screen
     }
 

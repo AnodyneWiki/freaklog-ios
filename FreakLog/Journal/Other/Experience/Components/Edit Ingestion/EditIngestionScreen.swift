@@ -21,7 +21,7 @@ struct EditIngestionScreen: View {
     @State private var selectedMuscle: Muscle?
     @State private var selectedSubQSite: SubcutaneousSite?
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     @Environment(\.dismiss) var dismiss
 
@@ -422,7 +422,7 @@ struct EditIngestionContent: View {
     }
 
     private func addIngestionAtSameTime() {
-        UserDefaults.standard.set(time.timeIntervalSince1970, forKey: PersistenceController.clonedIngestionTimeKey)
+        UserDefaults.standard.set(time.timeIntervalSince1970, forKey: PersistenceConfiguration.Keys.clonedIngestionTime)
         Navigator.shared.showAddIngestionFullScreenCover()
     }
 

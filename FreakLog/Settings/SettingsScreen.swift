@@ -3,17 +3,17 @@ import SwiftUI
 import AppIntents
 
 struct SettingsScreen: View {
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
-    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
-    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingDosageDots) var isHidingDosageDots: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingToleranceChartInExperience) var isHidingToleranceChartInExperience: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isHidingSubstanceInfoInExperience) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(Authenticator.hasToUnlockKey) var hasToUnlockApp: Bool = false
     @AppStorage(Authenticator.lockTimeOptionKey) var lockTimeOptionString: String = LockTimeOption.after5Minutes.rawValue
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
-    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
-    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.areRedosesDrawnIndividually) var areRedosesDrawnIndividually: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.shouldAutomaticallyStartLiveActivity) var shouldAutomaticallyStartLiveActivity: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.independentSubstanceHeight) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.fabButtonPosition) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
+    @AppStorage(PersistenceConfiguration.Keys.isICloudSyncEnabled) var isICloudSyncEnabled: Bool = false
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
 

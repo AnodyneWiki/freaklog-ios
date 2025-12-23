@@ -8,8 +8,8 @@ struct JournalScreen: View {
 
     @State private var isTimeRelative = false
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.fabButtonPosition) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
 
     var fabAlignment: Alignment {
         (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment

@@ -9,7 +9,7 @@ struct DurationSection: View {
     @State private var stomachFullness = StomachFullness.empty
     @State private var hiddenRoutes: [AdministrationRoute] = []
 
-    @AppStorage(PersistenceController.timeDisplayStyleDurationSectionKey) private var timeDisplayStyleDurationSectionText: String = SaveableTimeDisplayStyle.auto.rawValue
+    @AppStorage(PersistenceConfiguration.Keys.timeDisplayStyleDurationSection) private var timeDisplayStyleDurationSectionText: String = SaveableTimeDisplayStyle.auto.rawValue
 
     private var saveableTimeDisplayStyle: SaveableTimeDisplayStyle {
         SaveableTimeDisplayStyle(rawValue: timeDisplayStyleDurationSectionText) ?? .auto

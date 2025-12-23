@@ -3,7 +3,7 @@ import SwiftUI
 struct CustomSubstanceChooseRouteScreen: View {
     let arguments: CustomSubstanceChooseRouteScreenArguments
     let dismiss: () -> Void
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     var body: some View {
         screen.toolbar {

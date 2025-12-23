@@ -2,7 +2,7 @@ import SwiftUI
 
 struct WelcomeScreen: View {
     @Binding var isShowingWelcome: Bool
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     var imageName: String {
         isEyeOpen ? "Eye Open" : "Eye Closed"

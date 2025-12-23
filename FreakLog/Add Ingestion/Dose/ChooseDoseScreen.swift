@@ -12,7 +12,7 @@ struct ChooseDoseScreen: View {
     @State private var isEstimate = false
     @State private var isShowingNext = false
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen = false
 
     var body: some View {
         ChooseDoseScreenContent(

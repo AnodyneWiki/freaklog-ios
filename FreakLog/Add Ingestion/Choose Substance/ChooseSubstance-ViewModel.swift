@@ -31,7 +31,7 @@ extension ChooseSubstanceScreen {
         }
 
         override init() {
-            isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)
+            isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceConfiguration.Keys.isEyeOpenKey2)
             let customUnits = Self.getCustomUnits()
             allPossibleSuggestions = getSuggestions(sortedIngestions: Self.getSortedIngestions(), customUnits: customUnits)
             let request = CustomSubstance.fetchRequest()
@@ -105,7 +105,7 @@ extension ChooseSubstanceScreen {
 
         private func openEyeAndAnimate() {
             isEyeOpen = true
-            UserDefaults.standard.set(true, forKey: PersistenceController.isEyeOpenKey2)
+            UserDefaults.standard.set(true, forKey: PersistenceConfiguration.Keys.isEyeOpenKey2)
             isShowingOpenEyeToast = true
         }
 

@@ -21,7 +21,7 @@ struct StatsScreen: View {
     @State private var substancesInIngestionsButNotToleranceChart: [String] = []
     @State private var substancesConsumedInLastYear: [SubstanceCompanion] = []
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     var body: some View {
         Group {

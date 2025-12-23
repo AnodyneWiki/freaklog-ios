@@ -4,9 +4,9 @@ import StoreKit
 import CoreData
 
 struct ContentView: View {
-    @AppStorage(PersistenceController.needsToSeeWelcomeKey) var needsToSeeWelcome: Bool = true
-    @AppStorage(PersistenceController.isEyeOpenKey1) var isEyeOpen1: Bool = false
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen2: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.needsToSeeWelcome) var needsToSeeWelcome: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey1) var isEyeOpen1: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen2: Bool = false
     @AppStorage("hasBeenMigrated2") var hasBeenMigrated2: Bool = false
     @AppStorage("hasBeenMigrated3") var hasBeenMigrated3: Bool = false
     @AppStorage("hasBeenMigrated4") var hasBeenMigrated4: Bool = false
@@ -20,24 +20,24 @@ struct ContentView: View {
             }
             .onAppear {
                 if !hasBeenMigrated2 {
-                    PersistenceController.shared.migrateCompanionsAndExperienceSortDates()
+                    MigrationManager(viewContext: PersistenceController.shared.viewContext).migrateCompanionsAndExperienceSortDates()
                     hasBeenMigrated2 = true
                     isEyeOpen2 = isEyeOpen1
                 }
                 if !hasBeenMigrated3 {
-                    PersistenceController.shared.migrateIngestionNamesAndUnits()
+                    MigrationManager(viewContext: PersistenceController.shared.viewContext).migrateIngestionNamesAndUnits()
                     hasBeenMigrated3 = true
                 }
                 if !hasBeenMigrated4 {
-                    PersistenceController.shared.migrateColors()
+                    MigrationManager(viewContext: PersistenceController.shared.viewContext).migrateColors()
                     hasBeenMigrated4 = true
                 }
                 if !hasBeenMigrated5 {
-                    PersistenceController.shared.migrateBenzydamineUnits()
+                    MigrationManager(viewContext: PersistenceController.shared.viewContext).migrateBenzydamineUnits()
                     hasBeenMigrated5 = true
                 }
                 if !hasBeenMigrated6 {
-                    PersistenceController.shared.migrateCannabisAndMushroomUnits()
+                    MigrationManager(viewContext: PersistenceController.shared.viewContext).migrateCannabisAndMushroomUnits()
                     hasBeenMigrated6 = true
                 }
             }
@@ -73,8 +73,8 @@ struct ContentScreen: View {
             }
         }
         .fullScreenCover(isPresented: $navigator.isShowingAddIngestionSheet, onDismiss: {
-            UserDefaults.standard.set(nil, forKey: PersistenceController.lastIngestionTimeOfExperienceWhereAddIngestionTappedKey)
-            UserDefaults.standard.set(nil, forKey: PersistenceController.clonedIngestionTimeKey)
+            UserDefaults.standard.set(nil, forKey: PersistenceConfiguration.Keys.lastIngestionTimeOfExperienceWhereAddIngestionTapped)
+            UserDefaults.standard.set(nil, forKey: PersistenceConfiguration.Keys.clonedIngestionTime)
             maybeRequestAppRating()
         }) {
             AuthenticatorWrapper(authenticator: authenticator) {

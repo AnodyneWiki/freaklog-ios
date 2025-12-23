@@ -11,7 +11,7 @@ struct CustomUnitsChooseDoseScreen: View {
     @State private var isEstimate = false
     @State private var estimatedDoseStandardDeviation: Double?
     @FocusState private var isDoseFieldFocused: Bool
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) var isEyeOpen = false
 
     var body: some View {
         Form {

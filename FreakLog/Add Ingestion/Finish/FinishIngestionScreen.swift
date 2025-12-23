@@ -41,9 +41,9 @@ struct FinishIngestionScreen: View {
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
     @State private var wantsToStartLiveActivity = true
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually = true
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
-    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
+    @AppStorage(PersistenceConfiguration.Keys.areRedosesDrawnIndividually) var areRedosesDrawnIndividually = true
+    @AppStorage(PersistenceConfiguration.Keys.independentSubstanceHeight) var areSubstanceHeightsIndependent = true
+    @AppStorage(PersistenceConfiguration.Keys.shouldAutomaticallyStartLiveActivity) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @AppStorage("webhookURL") private var webhookURL = ""
     @AppStorage("webhookName") private var webhookName = ""
@@ -218,8 +218,8 @@ struct FinishIngestionScreen: View {
             }
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
-            let lastIngestionTimeIntervalSince1970 = UserDefaults.standard.double(forKey: PersistenceController.lastIngestionTimeOfExperienceWhereAddIngestionTappedKey)
-            let clonedIngestionTimeIntervalSince1970 = UserDefaults.standard.double(forKey: PersistenceController.clonedIngestionTimeKey)
+            let lastIngestionTimeIntervalSince1970 = UserDefaults.standard.double(forKey: PersistenceConfiguration.Keys.lastIngestionTimeOfExperienceWhereAddIngestionTapped)
+            let clonedIngestionTimeIntervalSince1970 = UserDefaults.standard.double(forKey: PersistenceConfiguration.Keys.clonedIngestionTime)
             if clonedIngestionTimeIntervalSince1970 != 0 {
                 let clonedTime = Date(timeIntervalSince1970: clonedIngestionTimeIntervalSince1970)
                 selectedTime = clonedTime
@@ -380,8 +380,7 @@ struct FinishIngestionScreen: View {
             }
             try context.save()
 
-            // Trigger iCloud sync after saving the ingestion
-            PersistenceController.shared.triggerCloudKitSync()
+            // CloudKit sync happens automatically with NSPersistentCloudKitContainer
 
             if isWebhookEnabled && !webhookURL.isEmpty {
                 let effectiveUserName: String = areYouConsumer ?

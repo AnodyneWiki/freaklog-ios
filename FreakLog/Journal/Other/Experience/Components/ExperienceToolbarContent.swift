@@ -7,7 +7,7 @@ struct ExperienceToolbarContent: View {
     @Binding var isShowingDeleteConfirmation: Bool
     let addIngestion: () -> Void
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen: Bool = false
+    @AppStorage(PersistenceConfiguration.Keys.isEyeOpenKey2) private var isEyeOpen: Bool = false
 
     var body: some View {
         Group {
