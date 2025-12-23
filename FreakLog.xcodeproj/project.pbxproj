@@ -16,6 +16,10 @@
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
 		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
+		A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */; };
+		A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */; };
+		A15CA2B42EFAFED200D90023 /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
+		A15CA2B52EFAFED200D90023 /* ChameleonHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
 		EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9927E5E72000077FB2 /* WebViewScreen.swift */; };
 		EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
@@ -407,6 +411,11 @@
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
+		A15CA2A92EFAFED200D90023 /* IngestionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSection.swift; sourceTree = "<group>"; };
+		A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsViewModel.swift; sourceTree = "<group>"; };
+		A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChameleonHeader.swift; sourceTree = "<group>"; };
+		A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsView.swift; sourceTree = "<group>"; };
+		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
 		EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowLabelView.swift; sourceTree = "<group>"; };
@@ -623,7 +632,6 @@
 		EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptySectionForPadding.swift; sourceTree = "<group>"; };
 		EAB165B127E49ACC003DF79D /* Notification-EyeName.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Notification-EyeName.swift"; sourceTree = "<group>"; };
 		EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 7.xcdatamodel"; sourceTree = "<group>"; };
-		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EAB7946E2D017B1200ED37C8 /* TimeRangeDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRangeDrawable.swift; sourceTree = "<group>"; };
 		EAB794712D017E8600ED37C8 /* IngestionRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionRange.swift; sourceTree = "<group>"; };
 		EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimePointOrRangePicker.swift; sourceTree = "<group>"; };
@@ -748,6 +756,49 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		A15CA2AA2EFAFED200D90023 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A15CA2A92EFAFED200D90023 /* IngestionSection.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A15CA2AC2EFAFED200D90023 /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		A15CA2AE2EFAFED200D90023 /* Components */ = {
+			isa = PBXGroup;
+			children = (
+				A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */,
+			);
+			path = Components;
+			sourceTree = "<group>";
+		};
+		A15CA2B02EFAFED200D90023 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A15CA2AE2EFAFED200D90023 /* Components */,
+				A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A15CA2B12EFAFED200D90023 /* All Ingestions */ = {
+			isa = PBXGroup;
+			children = (
+				A15CA2AA2EFAFED200D90023 /* Models */,
+				A15CA2AC2EFAFED200D90023 /* ViewModels */,
+				A15CA2B02EFAFED200D90023 /* Views */,
+			);
+			path = "All Ingestions";
+			sourceTree = "<group>";
+		};
 		EA014F9627E5DC6500077FB2 /* Web */ = {
 			isa = PBXGroup;
 			children = (
@@ -1560,6 +1611,7 @@
 		EAE4718726CBA664009FB0EC /* Journal */ = {
 			isa = PBXGroup;
 			children = (
+				A15CA2B12EFAFED200D90023 /* All Ingestions */,
 				EAC39DC029784D0D0012823D /* Other */,
 				EAE471AA26CBA664009FB0EC /* JournalScreen.swift */,
 				EAC3686D2B6F843800056C56 /* JournalCalendarScreen.swift */,
@@ -2022,6 +2074,10 @@
 				EA4B8A252A9CFD34009918DE /* ConsumerWithIngestions.swift in Sources */,
 				EABD921729421E960073303A /* OnsetComeupPeakTimeline.swift in Sources */,
 				EAA2C9BC2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift in Sources */,
+				A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */,
+				A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */,
+				A15CA2B42EFAFED200D90023 /* IngestionSection.swift in Sources */,
+				A15CA2B52EFAFED200D90023 /* ChameleonHeader.swift in Sources */,
 				EA7F230F2B8E095700EA6734 /* RelativeTimeText.swift in Sources */,
 				EA8447E427CD14AD00B10DD3 /* SubstanceScreen.swift in Sources */,
 				EA6048292A1411CF005C6A4B /* RegularDoseAndUnit.swift in Sources */,

@@ -15,6 +15,8 @@ struct JournalScreen: View {
         (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
     }
 
+    @State private var selectedTab = 0
+
     var body: some View {
         FabPosition(alignment: fabAlignment) {
             if !isSearchPresented {
@@ -25,56 +27,81 @@ struct JournalScreen: View {
                 }
             }
         } screen: {
-            ExperiencesList(
-                searchText: searchText,
-                isFavoriteFilterEnabled: isFavoriteFilterEnabled,
-                isTimeRelative: isTimeRelative
-            )
+            Group {
+                if selectedTab == 0 {
+                    ExperiencesList(
+                        searchText: searchText,
+                        isFavoriteFilterEnabled: isFavoriteFilterEnabled,
+                        isTimeRelative: isTimeRelative
+                    )
+                } else {
+                    AllIngestionsView(searchText: $searchText)
+                }
+            }
             .scrollDismissesKeyboard(.interactively)
             .modify {
+                let prompt = selectedTab == 0 ? "Search experiences" : "Search"
                 if #available(iOS 17.0, *) {
-                    $0.searchable(text: $searchText, isPresented: $isSearchPresented, prompt: "Search experiences")
+                    $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .navigationBarDrawer, prompt: prompt)
                 } else {
-                    $0.searchable(text: $searchText, prompt: "Search experiences")
+                    $0.searchable(text: $searchText, placement: .navigationBarDrawer, prompt: prompt)
                 }
             }
             .disableAutocorrection(true)
         }
+        .navigationTitle("Journal")
         .toolbar {
-            ToolbarItemGroup(placement: .navigationBarLeading) {
-                favoriteButton
-                Menu {
-                    Button {
-                        isTimeRelative = false
-                    } label: {
-                        let option = SaveableTimeDisplayStyle.regular
-                        if isTimeRelative {
-                            Text(option.text)
-                        } else {
-                            Label(option.text, systemImage: "checkmark")
-                        }
-                    }
-                    Button {
-                        isTimeRelative = true
-                    } label: {
-                        let option = SaveableTimeDisplayStyle.relativeToNow
-                        if isTimeRelative {
-                            Label(option.text, systemImage: "checkmark")
-                        } else {
-                            Text(option.text)
-                        }
-                    }
-                } label: {
-                    Label("Time Display", systemImage: "timer")
+            ToolbarItem(placement: .principal) {
+                Picker("View", selection: $selectedTab) {
+                    Text("Experiences").tag(0)
+                    Text("All Ingestions").tag(1)
                 }
+                .pickerStyle(.segmented)
+                .frame(maxWidth: 220)
+            }
+            ToolbarItem(placement: .navigationBarLeading) {
+                favoriteButton
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                NavigationLink(value: GlobalNavigationDestination.calendar) {
-                    Label("Calendar", systemImage: "calendar")
+                HStack(spacing: 8) {
+                    timeDisplayMenu
+                    calendarLink
                 }
             }
         }
-        .navigationTitle("Journal")
+    }
+
+    private var timeDisplayMenu: some View {
+        Menu {
+            Button {
+                isTimeRelative = false
+            } label: {
+                let option = SaveableTimeDisplayStyle.regular
+                if isTimeRelative {
+                    Text(option.text)
+                } else {
+                    Label(option.text, systemImage: "checkmark")
+                }
+            }
+            Button {
+                isTimeRelative = true
+            } label: {
+                let option = SaveableTimeDisplayStyle.relativeToNow
+                if isTimeRelative {
+                    Label(option.text, systemImage: "checkmark")
+                } else {
+                    Text(option.text)
+                }
+            }
+        } label: {
+            Label("Time Display", systemImage: "timer")
+        }
+    }
+
+    private var calendarLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.calendar) {
+            Label("Calendar", systemImage: "calendar")
+        }
     }
 
     private var favoriteButton: some View {
