@@ -1,28 +1,13 @@
 import Foundation
 
 struct DosageStat {
-    let dayDosages: [DayDosage]
-    let weekDosages: [WeekDosage]
-    let monthDosages: [MonthDosage]
-    let yearDosages: [YearDosage]
+    let dayDosages: [DosagePoint]
+    let weekDosages: [DosagePoint]
+    let monthDosages: [DosagePoint]
+    let yearDosages: [DosagePoint]
 }
 
-struct DayDosage: Hashable {
-    let day: Date
-    let dosage: Double
-}
-
-struct WeekDosage: Hashable {
-    let week: Date
-    let dosage: Double
-}
-
-struct MonthDosage: Hashable {
-    let month: Date
-    let dosage: Double
-}
-
-struct YearDosage: Hashable {
-    let year: Date
+struct DosagePoint: Hashable {
+    let date: Date
     let dosage: Double
 }
