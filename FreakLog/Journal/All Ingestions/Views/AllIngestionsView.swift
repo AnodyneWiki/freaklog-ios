@@ -7,6 +7,9 @@ struct AllIngestionsView: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
 
+    @State private var ingestionToEdit: Ingestion?
+    @State private var hiddenIngestions: [ObjectIdentifier] = []
+
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
@@ -23,6 +26,22 @@ struct AllIngestionsView: View {
             }
         }
         .coordinateSpace(name: "scroll")
+        .sheet(item: $ingestionToEdit) { ingestion in
+            let isHidden = Binding(
+                get: { hiddenIngestions.contains(ingestion.id) },
+                set: { newIsHidden in
+                    if newIsHidden {
+                        hiddenIngestions.append(ingestion.id)
+                    } else {
+                        hiddenIngestions.removeAll { $0 == ingestion.id }
+                    }
+                }
+            )
+            EditIngestionScreen(
+                ingestion: ingestion,
+                isHidden: isHidden
+            )
+        }
         .onChange(of: searchText) { newValue in
             viewModel.searchText = newValue
         }
@@ -39,17 +58,22 @@ private extension AllIngestionsView {
     @ViewBuilder
     func sectionContent(_ section: IngestionSection) -> some View {
         ForEach(section.ingestions) { ingestion in
-            IngestionRow(
-                ingestion: ingestion,
-                isEyeOpen: isEyeOpen,
-                isHidingDosageDots: isHidingDosageDots,
-                timeText: {
-                    Text(ingestion.timeUnwrapped, style: .time)
-                }
-            )
-            .padding(.vertical, 8)
-            .padding(.horizontal)
-            .background(Color(UIColor.systemBackground))
+            Button {
+                ingestionToEdit = ingestion
+            } label: {
+                IngestionRow(
+                    ingestion: ingestion,
+                    isEyeOpen: isEyeOpen,
+                    isHidingDosageDots: isHidingDosageDots,
+                    timeText: {
+                        Text(ingestion.timeUnwrapped, style: .time)
+                    }
+                )
+                .padding(.vertical, 8)
+                .padding(.horizontal)
+                .background(Color(UIColor.systemBackground))
+            }
+            .buttonStyle(.plain)
             
             if ingestion != section.ingestions.last {
                 Divider()
