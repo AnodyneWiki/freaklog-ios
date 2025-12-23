@@ -964,6 +964,7 @@
 				EA41C626295EB65C000DA021 /* SubstanceOverview.swift */,
 				EA41C628295EB6E2000DA021 /* SubstanceDetailsScreen.swift */,
 				EAEA92222B4E780200F3049D /* Inflection.swift */,
+				EACF43992BA23FFC008D1897 /* Dosage Charts */,
 			);
 			path = "Substance Charts";
 			sourceTree = "<group>";
@@ -1157,7 +1158,6 @@
 		EA60482F2A1623EC005C6A4B /* Stats */ = {
 			isa = PBXGroup;
 			children = (
-				EACF43992BA23FFC008D1897 /* Dosage Charts */,
 				EA6D44EB2A50470000BF2E8A /* Tolerance */,
 				EA41C630295F88F0000DA021 /* Experience Charts */,
 				EA418A052968D62F00DEA663 /* Substance Charts */,
