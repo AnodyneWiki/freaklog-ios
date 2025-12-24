@@ -13,10 +13,6 @@ struct ChooseLocationScreenContent: View {
     let experienceLocations: [Location]
     @Environment(\.isSearching) private var isSearching
     @Environment(\.dismissSearch) private var dismissSearch
-    @State private var region = MKCoordinateRegion(
-        center: CLLocationCoordinate2D(latitude: 51.507222, longitude: -0.1275),
-        span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-    )
 
     var body: some View {
         List {
@@ -59,20 +55,9 @@ struct ChooseLocationScreenContent: View {
                     if let lat = selectedLocation?.latitude, let long = selectedLocation?.longitude {
                         let pinLocation = CLLocationCoordinate2D(latitude: lat, longitude: long)
                         ZStack(alignment: .topTrailing) {
-                            Map(coordinateRegion: $region, annotationItems: [pinLocation]) {
-                                MapMarker(coordinate: $0)
-                            }
-                            .onAppear {
-                                DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.3) {
-                                    withAnimation {
-                                        region = MKCoordinateRegion(
-                                            center: pinLocation,
-                                            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
-                                        )
-                                    }
-                                }
-                            }
-                            .frame(height: 200)
+                            ExperienceLocationMap(coordinate: pinLocation)
+                                .id(pinLocation.id)
+                                .frame(height: 200)
                             Button {
                                 withAnimation {
                                     selectedLocation = Location(name: selectedLocationName, longitude: nil, latitude: nil)
@@ -127,7 +112,7 @@ struct ChooseLocationScreenContent: View {
                     }
                 }
             }
-            if authorizationStatus != .authorizedWhenInUse {
+            if authorizationStatus != .authorizedWhenInUse && authorizationStatus != .authorizedAlways {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     Section {
                         Button {
@@ -149,6 +134,25 @@ struct ChooseLocationScreenContent: View {
 extension CLLocationCoordinate2D: @retroactive Identifiable {
     public var id: String {
         "\(latitude)-\(longitude)"
+    }
+}
+
+struct ExperienceLocationMap: View {
+    let coordinate: CLLocationCoordinate2D
+    @State private var region: MKCoordinateRegion
+
+    init(coordinate: CLLocationCoordinate2D) {
+        self.coordinate = coordinate
+        _region = State(initialValue: MKCoordinateRegion(
+            center: coordinate,
+            span: MKCoordinateSpan(latitudeDelta: 0.5, longitudeDelta: 0.5)
+        ))
+    }
+
+    var body: some View {
+        Map(coordinateRegion: $region, annotationItems: [coordinate]) {
+            MapMarker(coordinate: $0)
+        }
     }
 }
 

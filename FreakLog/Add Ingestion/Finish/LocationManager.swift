@@ -23,6 +23,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         experienceLocations = sortedLocations.map { loc in
             Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
         }.unique
+        self.authorizationStatus = manager.authorizationStatus
     }
 
     func requestPermission() {
@@ -30,7 +31,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     func maybeRequestLocation() {
-        if authorizationStatus == .authorizedWhenInUse {
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
             manager.requestLocation()
         }
     }
@@ -65,7 +66,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         Task { @MainActor in
             let before = self.authorizationStatus
             let after = manager.authorizationStatus
-            let didJustNowGivePermission = before == CLAuthorizationStatus.notDetermined && after == .authorizedWhenInUse
+            let didJustNowGivePermission = before == CLAuthorizationStatus.notDetermined && (after == .authorizedWhenInUse || after == .authorizedAlways)
             if didJustNowGivePermission {
                 manager.requestLocation()
                 self.shouldUpdateSelectedLocation = true
