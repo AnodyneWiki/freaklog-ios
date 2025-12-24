@@ -443,25 +443,19 @@ struct ExperienceScreen: View {
     }
 
     private func delete() {
-        let webhookMessageIds = experience.ingestionsSorted.compactMap { ingestion -> String? in
-            let messageId = ingestion.webhookMessageIdUnwrapped
-            return messageId.isEmpty ? nil : messageId
-        }
+        let ingestions = experience.ingestionsSorted
+        print("Experience delete: ingestions count \(ingestions.count)")
         Task {
-            await withTaskGroup(of: Void.self) { group in
-                for messageId in webhookMessageIds {
-                    group.addTask {
-                        await FinishIngestionScreen.deleteWebhookMessage(messageId: messageId)
-                    }
+            await FinishIngestionScreen.deleteWebhookMessages(for: ingestions)
+            await MainActor.run {
+                PersistenceController.shared.viewContext.delete(experience)
+                PersistenceController.shared.saveViewContext()
+                if #available(iOS 16.2, *) {
+                    stopLiveActivity()
                 }
+                dismiss()
             }
         }
-        PersistenceController.shared.viewContext.delete(experience)
-        PersistenceController.shared.saveViewContext()
-        if #available(iOS 16.2, *) {
-            stopLiveActivity()
-        }
-        dismiss()
     }
 }
 // swiftlint:enable type_body_length

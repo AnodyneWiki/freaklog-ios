@@ -69,7 +69,10 @@ struct SettingsScreen: View {
                 viewModel.importData(data: data)
             },
             deleteEverything: {
-                viewModel.deleteEverything()
+                Task {
+                    viewModel.deleteEverything()
+                    await WebhookManager.shared.deleteAllPresetsAndMessages()
+                }
             },
             isShowingToast: $viewModel.isShowingToast,
             isSuccessToast: $viewModel.isShowingSuccessToast,
@@ -138,6 +141,9 @@ struct SettingsContent: View {
                     }
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
+                    }
+                    NavigationLink(value: GlobalNavigationDestination.webhookSettings) {
+                        Label("Webhooks", systemImage: "network")
                     }
                     NavigationLink(value: GlobalNavigationDestination.tabSettings) {
                         Label("Customize Tabs", systemImage: "rectangle.stack")

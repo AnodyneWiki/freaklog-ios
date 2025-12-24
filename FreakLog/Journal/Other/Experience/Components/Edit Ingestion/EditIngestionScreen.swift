@@ -41,7 +41,6 @@ struct EditIngestionScreen: View {
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var wantsToForceNewExperience = false
     @State private var selectedExperience: Experience?
-    @State private var hasWebhookMessageState: Bool = false
 
     func setExperiencesBasedOnTime() {
         let fetchRequest = Experience.fetchRequest()
@@ -53,6 +52,7 @@ struct EditIngestionScreen: View {
 
     var body: some View {
         EditIngestionContent(
+            ingestion: ingestion,
             substanceName: ingestion.substanceNameUnwrapped,
             roaDose: roaDose,
             customUnit: $selectedCustomUnit,
@@ -74,7 +74,6 @@ struct EditIngestionScreen: View {
             save: save,
             delete: delete,
             deleteWebhookMessage: deleteWebhookMessage,
-            hasWebhookMessage: $hasWebhookMessageState,
             isEyeOpen: isEyeOpen,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
@@ -112,7 +111,6 @@ struct EditIngestionScreen: View {
                 }
             }
             setExperiencesBasedOnTime()
-            hasWebhookMessageState = !ingestion.webhookMessageIdUnwrapped.isEmpty
         }
         .onChange(of: time) { _ in
             setExperiencesBasedOnTime()
@@ -161,29 +159,31 @@ struct EditIngestionScreen: View {
             ingestion.experience = selectedExperience
         }
         PersistenceController.shared.saveViewContext()
-        Task {
-            await FinishIngestionScreen.editWebhookMessageIfNeeded(for: ingestion)
-        }
         ingestion.experience?.objectWillChange.send()
         dismiss()
     }
 
     private func delete() {
-        let webhookMessageId = ingestion.webhookMessageIdUnwrapped
         Task {
-            await FinishIngestionScreen.deleteWebhookMessage(messageId: webhookMessageId)
+            await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
+            await MainActor.run {
+                PersistenceController.shared.viewContext.delete(ingestion)
+                PersistenceController.shared.saveViewContext()
+                dismiss()
+            }
         }
-        PersistenceController.shared.viewContext.delete(ingestion)
-        PersistenceController.shared.saveViewContext()
-        dismiss()
     }
 
-    private func deleteWebhookMessage() async -> Bool {
-        let webhookMessageId = ingestion.webhookMessageIdUnwrapped
-        let success = await FinishIngestionScreen.deleteWebhookMessage(messageId: webhookMessageId)
+    private func deleteWebhookMessage(_ message: WebhookMessage) async -> Bool {
+        guard let preset = message.webhookPreset,
+              let messageId = message.messageId else {
+            return false
+        }
+
+        let success = await WebhookService.deleteWebhookMessage(for: preset, messageId: messageId)
         if success {
-            ingestion.webhookMessageId = nil
-            hasWebhookMessageState = false
+            let context = PersistenceController.shared.viewContext
+            context.delete(message)
             PersistenceController.shared.saveViewContext()
         }
         return success
@@ -206,6 +206,7 @@ struct EditIngestionScreen: View {
 // MARK: - EditIngestionContent
 
 struct EditIngestionContent: View {
+    @ObservedObject var ingestion: Ingestion
     let substanceName: String
     let roaDose: RoaDose?
     @Binding var customUnit: CustomUnit?
@@ -226,8 +227,7 @@ struct EditIngestionContent: View {
     @Binding var selectedSubQSite: SubcutaneousSite?
     let save: () -> Void
     let delete: () -> Void
-    let deleteWebhookMessage: () async -> Bool
-    @Binding var hasWebhookMessage: Bool
+    let deleteWebhookMessage: (WebhookMessage) async -> Bool
     let isEyeOpen: Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
@@ -374,19 +374,34 @@ struct EditIngestionContent: View {
                     Button(action: delete) {
                         Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
                     }
-                    if hasWebhookMessage {
-                        Button(action: {
-                            Task {
-                                let success = await deleteWebhookMessage()
-                                if success {
-                                    hasWebhookMessage = false
+                }
+                if !ingestion.webhookMessagesSorted.isEmpty {
+                    Section("Sent Webhooks") {
+                        ForEach(ingestion.webhookMessagesSorted, id: \.objectID) { message in
+                            HStack {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(message.presetNameUnwrapped)
+                                    if let date = message.creationDate {
+                                        Text(date, style: .time)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
+                                Spacer()
+                                Button(role: .destructive) {
+                                    Task {
+                                        _ = await deleteWebhookMessage(message)
+                                    }
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                                .buttonStyle(.borderless)
                             }
-                        }) {
-                            Label("Delete Webhook Message", systemImage: "trash").foregroundColor(.red)
                         }
                     }
                 }
+
             }
             .sheet(isPresented: $isConsumerSheetPresented, content: {
                 EditConsumerScreen(consumerName: $consumerName)
@@ -423,6 +438,7 @@ struct EditIngestionContent: View {
 
 #Preview("Edit regular ingestion") {
     EditIngestionContent(
+        ingestion: Ingestion.knownDosePreviewSample,
         substanceName: "MDMA",
         roaDose: SubstanceRepo.shared.getSubstance(name: "MDMA")!.getDose(for: .oral)!,
         customUnit: .constant(nil),
@@ -445,8 +461,7 @@ struct EditIngestionContent: View {
         selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
-        deleteWebhookMessage: { return true },
-        hasWebhookMessage: .constant(false),
+        deleteWebhookMessage: { _ in return true },
         isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
@@ -457,6 +472,7 @@ struct EditIngestionContent: View {
 
 #Preview("Edit custom unit ingestion") {
     EditIngestionContent(
+        ingestion: Ingestion.customUnitPreviewSample,
         substanceName: "Ketamine",
         roaDose: SubstanceRepo.shared.getSubstance(name: "Ketamine")!.getDose(for: .oral)!,
         customUnit: .constant(CustomUnit.previewSample),
@@ -477,8 +493,7 @@ struct EditIngestionContent: View {
         selectedSubQSite: .constant(nil),
         save: { },
         delete: { },
-        deleteWebhookMessage: { return true },
-        hasWebhookMessage: .constant(false),
+        deleteWebhookMessage: { _ in return true },
         isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),

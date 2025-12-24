@@ -32,9 +32,9 @@ struct ExperienceRow: View {
             }
             .swipeActions(allowsFullSwipe: false) {
                 Button(role: .destructive) {
-                    if #available(iOS 16.2, *) {
-                        if experience.isCurrent {
-                            Task {
+                    Task {
+                        if #available(iOS 16.2, *) {
+                            if experience.isCurrent {
                                 await ActivityManager.shared.stopActivity(
                                     substanceGroups: getSubstanceIngestionGroups(ingestions: experience.ingestionsSorted),
                                     everythingForEachRating: experience.ratingsWithTimeSorted.map { shulgin in
@@ -54,9 +54,13 @@ struct ExperienceRow: View {
                                 )
                             }
                         }
+                        let ingestions = experience.ingestions?.allObjects as? [Ingestion] ?? []
+                        await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
+                        await MainActor.run {
+                            PersistenceController.shared.viewContext.delete(experience)
+                            PersistenceController.shared.saveViewContext()
+                        }
                     }
-                    PersistenceController.shared.viewContext.delete(experience)
-                    PersistenceController.shared.saveViewContext()
                 } label: {
                     Label("Delete", systemImage: "trash.fill")
                 }

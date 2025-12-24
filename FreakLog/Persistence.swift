@@ -25,6 +25,11 @@ struct PersistenceController {
     static let fabButtonPositionKey = "fabButtonPosition"
     static let isICloudSyncEnabledKey = "isICloudSyncEnabled"
     static let dynamicExperienceRangeHoursKey = "dynamicExperienceRangeHours"
+    static let sendWebhooksEnabledKey = "sendWebhooksEnabled"
+    static let webhookUsernameKey = "webhookUsername"
+    static let webhookTemplateKey = "webhookTemplate"
+    static let webhookIsHyperlinkedKey = "webhookIsHyperlinked"
+    static let webhookSubstanceInfoUrlKey = "webhookSubstanceInfoUrl"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext
@@ -353,4 +358,3 @@ struct PersistenceController {
         return results?.first
     }
 }
-

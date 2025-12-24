@@ -7,12 +7,18 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0D235F2E2EF9B92800D9309D /* WebhookPresetEditScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */; };
+		0D235F322EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */; };
+		0D235F332EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */; };
+		0D235F342EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */; };
 		0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */; };
 		0D3477A62EF62F60004CDCB4 /* TabSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */; };
 		0D3477A82EF62FA6004CDCB4 /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A72EF62FA6004CDCB4 /* TabManager.swift */; };
 		0D9BFC562EF4A92100039340 /* InjectionSites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC552EF4A91F00039340 /* InjectionSites.swift */; };
 		0D9BFC582EF4A94200039340 /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC572EF4A93E00039340 /* WebhookService.swift */; };
-		0DC6D8732EF43F5000287DC2 /* WebhookPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */; };
+		0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */; };
+		0DC49ACF2EFB58B6000A9A0D /* WebhookManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */; };
+		0DC49AD12EFB5C94000A9A0D /* WebhookArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */; };
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
 		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
@@ -333,7 +339,6 @@
 		EAE471DE26CBA664009FB0EC /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
 		EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
 		EAE471E926CBA664009FB0EC /* Experience-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */; };
-		EAE471EB26CBA664009FB0EC /* Ingestion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4716726CBA664009FB0EC /* Ingestion-CoreDataHelpers.swift */; };
 		EAE4720026CBA664009FB0EC /* Date-String.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4717D26CBA664009FB0EC /* Date-String.swift */; };
 		EAE4720326CBA664009FB0EC /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4718026CBA664009FB0EC /* Persistence.swift */; };
 		EAE4720926CBA664009FB0EC /* IngestionRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4718926CBA664009FB0EC /* IngestionRow.swift */; };
@@ -403,12 +408,18 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPresetEditScreen.swift; sourceTree = "<group>"; };
+		0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ingestion-CoreDataHelpers.swift"; sourceTree = "<group>"; };
+		0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebhookMessage-CoreDataHelpers.swift"; sourceTree = "<group>"; };
+		0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebhookPreset-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FabButtonPosition.swift; sourceTree = "<group>"; };
 		0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabSettingsScreen.swift; sourceTree = "<group>"; };
 		0D3477A72EF62FA6004CDCB4 /* TabManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabManager.swift; sourceTree = "<group>"; };
 		0D9BFC552EF4A91F00039340 /* InjectionSites.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InjectionSites.swift; sourceTree = "<group>"; };
 		0D9BFC572EF4A93E00039340 /* WebhookService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookService.swift; sourceTree = "<group>"; };
-		0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPickerScreen.swift; sourceTree = "<group>"; };
+		0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhooksScreen.swift; sourceTree = "<group>"; };
+		0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookManager.swift; sourceTree = "<group>"; };
+		0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookArchiveScreen.swift; sourceTree = "<group>"; };
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
@@ -421,7 +432,6 @@
 		A15CA2F82EFB688300D90023 /* DynamicExperienceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicExperienceScreen.swift; sourceTree = "<group>"; };
 		A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceLogic.swift; sourceTree = "<group>"; };
 		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
-		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
 		EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowLabelView.swift; sourceTree = "<group>"; };
@@ -801,6 +811,14 @@
 			path = "All Ingestions";
 			sourceTree = "<group>";
 		};
+		0DC49ACE2EFB58B6000A9A0D /* Webhooks */ = {
+			isa = PBXGroup;
+			children = (
+				0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */,
+			);
+			path = Webhooks;
+			sourceTree = "<group>";
+		};
 		EA014F9627E5DC6500077FB2 /* Web */ = {
 			isa = PBXGroup;
 			children = (
@@ -976,7 +994,6 @@
 			children = (
 				0D9BFC552EF4A91F00039340 /* InjectionSites.swift */,
 				0D9BFC572EF4A93E00039340 /* WebhookService.swift */,
-				0DC6D8722EF43F4900287DC2 /* WebhookPickerScreen.swift */,
 				EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */,
 				EA48F8B729EE8A15007DA8C5 /* Choose Location */,
 				EAB1659427E302BC003DF79D /* ColorPickerScreen.swift */,
@@ -1451,8 +1468,11 @@
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
 				EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */,
+				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
+				0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */,
 				0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */,
 				EA41C620295C1E9E000DA021 /* Settings-ViewModel.swift */,
+				0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */,
 			);
 			path = Settings;
 			sourceTree = "<group>";
@@ -1502,6 +1522,7 @@
 		EAE4710526CBA57F009FB0EC /* FreakLog */ = {
 			isa = PBXGroup;
 			children = (
+				0DC49ACE2EFB58B6000A9A0D /* Webhooks */,
 				44E43E022E71E9E9008D7FDD /* Assets */,
 				441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */,
 				EA39B2052BB981E0000B1C4E /* App Intents */,
@@ -1570,6 +1591,9 @@
 			isa = PBXGroup;
 			children = (
 				A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */,
+				0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */,
+				0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */,
+				0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */,
 				EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */,
 				EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */,
 				EA6048332A16C70A005C6A4B /* Spray-CoreDataHelpers.swift */,
@@ -1912,6 +1936,7 @@
 				EA4B8A122A9B1F23009918DE /* TimedNote-CoreDataHelpers.swift in Sources */,
 				EA50E4E4294B70A400B8D1FC /* EditIngestionScreen.swift in Sources */,
 				EAACB08D2947C83A0050E002 /* CustomSubstanceChooseRouteScreen.swift in Sources */,
+				0DC49AD12EFB5C94000A9A0D /* WebhookArchiveScreen.swift in Sources */,
 				EA41C619295AE60C000DA021 /* InteractionPairRow.swift in Sources */,
 				EA116CDB29FBA381007D8BF6 /* SelectRatingSection.swift in Sources */,
 				EA48F86629DC1AE9007DA8C5 /* RatingDrawable.swift in Sources */,
@@ -1958,7 +1983,6 @@
 				EAE4722326CBA664009FB0EC /* ChooseDoseScreen.swift in Sources */,
 				0D9BFC562EF4A92100039340 /* InjectionSites.swift in Sources */,
 				0D9BFC582EF4A94200039340 /* WebhookService.swift in Sources */,
-				0DC6D8732EF43F5000287DC2 /* WebhookPickerScreen.swift in Sources */,
 				EA4B8A1D2A9B3540009918DE /* EditTimedNoteScreen.swift in Sources */,
 				EA8AEA8127E2154D00B30A16 /* DoseRangeType.swift in Sources */,
 				EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */,
@@ -2020,6 +2044,7 @@
 				EAC25BFD2955F23A0002D68F /* ReagentTestingScreen.swift in Sources */,
 				EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,
+				0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */,
 				EAF76C9027D7A5A000945587 /* AcknowledgeInteractionsView.swift in Sources */,
 				EAB1659E27E34AD5003DF79D /* CustomSubstance-CoreDataHelpers.swift in Sources */,
 				EAC25C06295604B00002D68F /* SaferHallucinogenScreen.swift in Sources */,
@@ -2039,6 +2064,7 @@
 				EAE4720926CBA664009FB0EC /* IngestionRow.swift in Sources */,
 				EA039ACA2A6C6691006DFAFE /* DurationChip.swift in Sources */,
 				EA4189EE2962E67600DEA663 /* Constants.swift in Sources */,
+				0DC49ACF2EFB58B6000A9A0D /* WebhookManager.swift in Sources */,
 				EA039AC52A6BAA10006DFAFE /* Date-Format.swift in Sources */,
 				EAF76CA427D8F72700945587 /* ExperiencesList.swift in Sources */,
 				EAA9C37D2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift in Sources */,
@@ -2047,6 +2073,7 @@
 				EAA9C3702A5067A200869E5A /* ToleranceWindow.swift in Sources */,
 				EA2D19652B11D3BA00B270A2 /* SubstanceIngestionGroup.swift in Sources */,
 				EAA9C3962A5944EB00869E5A /* ToleranceTimeOption.swift in Sources */,
+				0D235F2E2EF9B92800D9309D /* WebhookPresetEditScreen.swift in Sources */,
 				EA47E64D27CA136C00F6E10F /* RoaDuration.swift in Sources */,
 				EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */,
 				EA4B8A2F2AA6E231009918DE /* TimedNoteCodable.swift in Sources */,
@@ -2076,6 +2103,9 @@
 				EA8447E427CD14AD00B10DD3 /* SubstanceScreen.swift in Sources */,
 				EA6048292A1411CF005C6A4B /* RegularDoseAndUnit.swift in Sources */,
 				EA418A0229673FFF00DEA663 /* MDMAPillsSection.swift in Sources */,
+				0D235F322EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift in Sources */,
+				0D235F332EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift in Sources */,
+				0D235F342EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift in Sources */,
 				EACF43942B9F7B7A008D1897 /* GlobalNavigationDestination.swift in Sources */,
 				A15CA2C32EFB1B9300D90023 /* ChartScrollingHelper.swift in Sources */,
 				EA418A33296C755400DEA663 /* EditLocationLinkAndMap.swift in Sources */,
@@ -2145,7 +2175,6 @@
 				EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */,
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
-				EAE471EB26CBA664009FB0EC /* Ingestion-CoreDataHelpers.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,
 				EAA9C3792A50A54E00869E5A /* ToleranceChartOverView.swift in Sources */,
 				EA55CEBB2A3F292B00FE1A44 /* Dot.swift in Sources */,
@@ -2598,7 +2627,6 @@
 		EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
-				B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */,
 				EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */,
 				EAA2C9B82B288CD50045C8DF /* PW Version 6.xcdatamodel */,
 				EA4B8A102A9B1D10009918DE /* PW Version 5.xcdatamodel */,
@@ -2608,7 +2636,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */;
+			currentVersion = EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

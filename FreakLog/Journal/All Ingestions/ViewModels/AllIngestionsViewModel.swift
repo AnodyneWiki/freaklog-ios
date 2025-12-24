@@ -64,11 +64,19 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
 
     /// Deletes an ingestion from Core Data.
     func delete(_ ingestion: Ingestion) {
-        context.delete(ingestion)
-        do {
-            try context.save()
-        } catch {
-            print("ERROR: [AllIngestionsViewModel] Failed to delete ingestion: \(error.localizedDescription)")
+        let objectID = ingestion.objectID
+        Task {
+            await FinishIngestionScreen.deleteWebhookMessageIfNeeded(forID: objectID)
+            await MainActor.run {
+                if let ingestionToDelete = try? context.existingObject(with: objectID) as? Ingestion {
+                    context.delete(ingestionToDelete)
+                    do {
+                        try context.save()
+                    } catch {
+                        print("ERROR: [AllIngestionsViewModel] Failed to delete ingestion: \(error.localizedDescription)")
+                    }
+                }
+            }
         }
     }
 

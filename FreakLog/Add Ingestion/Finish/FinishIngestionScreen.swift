@@ -44,12 +44,15 @@ struct FinishIngestionScreen: View {
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
-    @AppStorage("webhookURL") private var webhookURL = ""
-    @AppStorage("webhookName") private var webhookName = ""
-    @AppStorage("isWebhookEnabled") private var isWebhookEnabled = false
-    @AppStorage("webhookTemplate") private var webhookTemplate = WebhookService.defaultTemplate
-    @AppStorage("isSubstanceHyperlinked") private var isSubstanceHyperlinked = false
-    @AppStorage("substanceInfoUrl") private var substanceInfoUrl = ""
+    @FetchRequest(
+        sortDescriptors: [NSSortDescriptor(keyPath: \WebhookPreset.name, ascending: true)],
+        predicate: NSPredicate(format: "isEnabled == YES"),
+        animation: .default
+    )
+    private var enabledWebhookPresets: FetchedResults<WebhookPreset>
+
+    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
+    @State private var selectedWebhookPresetIDs: Set<UUID> = []
 
     var areYouConsumer: Bool {
         consumerName.isEmpty || consumerName.trimmingCharacters(in: .whitespaces).isEmpty
@@ -187,14 +190,31 @@ struct FinishIngestionScreen: View {
                     }
                 }
             }
-            Section {
-                NavigationLink {
-                    WebhookPickerScreen()
-                } label: {
-                    HStack {
-                        Text("Webhook")
-                        Spacer()
-                        Text(isWebhookEnabled ? "On" : "Off").foregroundColor(.secondary)
+            if !enabledWebhookPresets.isEmpty {
+                Section("Webhooks") {
+                    Toggle("Send Webhooks", isOn: $isWebhookSectionExpanded.animation())
+                        .tint(.accentColor)
+
+                    if isWebhookSectionExpanded {
+                        ForEach(enabledWebhookPresets, id: \.objectID) { preset in
+                            HStack {
+                                Text(preset.nameUnwrapped.isEmpty ? "Unnamed" : preset.nameUnwrapped)
+                                Spacer()
+                                if selectedWebhookPresetIDs.contains(preset.idUnwrapped) {
+                                    Image(systemName: "checkmark")
+                                        .foregroundColor(.accentColor)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                let presetId = preset.idUnwrapped
+                                if selectedWebhookPresetIDs.contains(presetId) {
+                                    selectedWebhookPresetIDs.remove(presetId)
+                                } else {
+                                    selectedWebhookPresetIDs.insert(presetId)
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -202,6 +222,18 @@ struct FinishIngestionScreen: View {
         .onAppear {
             wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
             generator.prepare()
+            // Preserve previously selected presets; if none stored, default to all enabled
+            if selectedWebhookPresetIDs.isEmpty {
+                selectedWebhookPresetIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
+            }
+        }
+        .onChange(of: enabledWebhookPresets.count) { _ in
+            let availableIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
+            // Drop selections that no longer exist and default to all when empty
+            selectedWebhookPresetIDs = selectedWebhookPresetIDs.intersection(availableIDs)
+            if selectedWebhookPresetIDs.isEmpty {
+                selectedWebhookPresetIDs = availableIDs
+            }
         }
         .navigationBarTitle("Finish Ingestion")
         .sheet(item: $sheetToShow, content: { sheet in
@@ -377,19 +409,11 @@ struct FinishIngestionScreen: View {
             }
             try context.save()
 
-            if isWebhookEnabled && !webhookURL.isEmpty {
-                let effectiveUserName: String = areYouConsumer ?
-                    (webhookName.isEmpty ? "You" : webhookName) : consumerName
-                let substance = arguments.substanceName
-                let dose = arguments.dose ?? 0
-                let isEstimate = arguments.isEstimate
-                let route = arguments.administrationRoute.rawValue
-                let note = enteredNote
-                let site = getSiteString().lowercased()
-                let url = webhookURL
-                let template = webhookTemplate
-                let currentIngestion = createdIngestion
+            if isWebhookSectionExpanded,
+               !selectedWebhookPresetIDs.isEmpty,
+               let ingestion = createdIngestion {
 
+                let dose = arguments.dose ?? 0
                 let units: String
                 if let customUnit = arguments.customUnit {
                     units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
@@ -397,26 +421,27 @@ struct FinishIngestionScreen: View {
                     units = arguments.units ?? ""
                 }
 
-                Task.detached {
-                    let result = await WebhookService.sendWebhook(
-                        url: url,
-                        user: effectiveUserName,
-                        substance: substance,
-                        dose: dose,
-                        units: units,
-                        isEstimate: isEstimate,
-                        route: route,
-                        site: site,
-                        note: note,
-                        template: template,
-                        isHyperlinked: isSubstanceHyperlinked,
-                        substanceInfoUrl: substanceInfoUrl
-                    )
+                let snapshot = WebhookManager.WebhookDataSnapshot(
+                    user: areYouConsumer ? "" : consumerName,
+                    substance: arguments.substanceName,
+                    dose: dose,
+                    units: units,
+                    isEstimate: arguments.isEstimate,
+                    route: arguments.administrationRoute.rawValue,
+                    site: getSiteString().lowercased(),
+                    note: enteredNote
+                )
 
-                    if result.success, let messageId = result.messageId, let ingestion = currentIngestion {
-                        try? await FinishIngestionScreen.updateIngestionWithWebhookMessageId(ingestion: ingestion, messageId: messageId)
-                    }
-                }
+                let presetObjectIDs = enabledWebhookPresets
+                    .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
+                    .map { $0.objectID }
+                let ingestionObjectID = ingestion.objectID
+                
+                WebhookManager.shared.sendWebhooks(
+                    ingestionObjectID: ingestionObjectID,
+                    presetObjectIDs: presetObjectIDs,
+                    dataSnapshot: snapshot
+                )
             }
         }
     }
@@ -519,76 +544,19 @@ struct FinishIngestionScreen: View {
     }
 
     static func editWebhookMessageIfNeeded(for ingestion: Ingestion) async {
-        let ingestionObjectID = ingestion.objectID
-        let context = PersistenceController.shared.viewContext
-        var messageId: String = ""
+        await WebhookManager.shared.editWebhookMessages(for: ingestion)
+    }
 
-        await context.perform {
-            if let ingestionInContext = context.object(with: ingestionObjectID) as? Ingestion {
-                messageId = ingestionInContext.webhookMessageIdUnwrapped
-            }
-        }
-
-        guard !messageId.isEmpty else { return }
-
-        let isWebhookEnabled = UserDefaults.standard.bool(forKey: "isWebhookEnabled")
-        guard isWebhookEnabled else { return }
-
-        let webhookURL = UserDefaults.standard.string(forKey: "webhookURL") ?? ""
-        let webhookName = UserDefaults.standard.string(forKey: "webhookName") ?? ""
-        let webhookTemplate = UserDefaults.standard.string(forKey: "webhookTemplate") ?? WebhookService.defaultTemplate
-        let isHyperlinked = UserDefaults.standard.bool(forKey: "isSubstanceHyperlinked")
-        let substanceInfoUrl = UserDefaults.standard.string(forKey: "substanceInfoUrl") ?? ""
-
-        guard !webhookURL.isEmpty else { return }
-
-        let effectiveUserName = ingestion.consumerNameUnwrapped.isEmpty ? (webhookName.isEmpty ? "You" : webhookName) : ingestion.consumerNameUnwrapped
-        let substanceName = ingestion.substanceNameUnwrapped
-        let dose = ingestion.doseUnwrapped ?? 0
-        let isEstimate = ingestion.isEstimate
-        let route = ingestion.administrationRouteUnwrapped.rawValue
-        let site = ingestion.administrationSiteUnwrapped
-        let note = ingestion.noteUnwrapped
-
-        let units: String
-        if let customUnit = ingestion.customUnit {
-            units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
-        } else {
-            units = ingestion.unitsUnwrapped
-        }
-
-        _ = await WebhookService.editWebhook(
-            url: webhookURL,
-            messageId: messageId,
-            user: effectiveUserName,
-            substance: substanceName,
-            dose: dose,
-            units: units,
-            isEstimate: isEstimate,
-            route: route,
-            site: site,
-            note: note,
-            template: webhookTemplate,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl
-        )
+    static func deleteWebhookMessages(for ingestions: [Ingestion]) async {
+        await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
     }
 
     static func deleteWebhookMessageIfNeeded(for ingestion: Ingestion) async {
-        let messageId = ingestion.webhookMessageIdUnwrapped
-        await deleteWebhookMessage(messageId: messageId)
+        await WebhookManager.shared.deleteWebhookMessages(for: [ingestion])
     }
 
-    static func deleteWebhookMessage(messageId: String) async -> Bool {
-        guard !messageId.isEmpty else { return false }
-
-        let isWebhookEnabled = UserDefaults.standard.bool(forKey: "isWebhookEnabled")
-        guard isWebhookEnabled else { return false }
-
-        let webhookURL = UserDefaults.standard.string(forKey: "webhookURL") ?? ""
-        guard !webhookURL.isEmpty else { return false }
-
-        return await WebhookService.deleteWebhookMessage(url: webhookURL, messageId: messageId)
+    static func deleteWebhookMessageIfNeeded(forID ingestionID: NSManagedObjectID) async {
+        await WebhookManager.shared.deleteWebhookMessages(forIngestionObjectIDs: [ingestionID])
     }
 }
 

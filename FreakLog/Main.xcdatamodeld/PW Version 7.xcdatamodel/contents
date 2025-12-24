@@ -58,6 +58,7 @@
         <relationship name="customUnit" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CustomUnit" inverseName="ingestions" inverseEntity="CustomUnit"/>
         <relationship name="experience" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Experience" inverseName="ingestions" inverseEntity="Experience"/>
         <relationship name="substanceCompanion" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SubstanceCompanion" inverseName="ingestions" inverseEntity="SubstanceCompanion"/>
+        <relationship name="webhookMessages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="WebhookMessage" inverseName="ingestion" inverseEntity="WebhookMessage"/>
     </entity>
     <entity name="ShulginRating" representedClassName="ShulginRating" syncable="YES" codeGenerationType="class">
         <attribute name="creationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
@@ -89,5 +90,21 @@
         <attribute name="note" optional="YES" attributeType="String"/>
         <attribute name="time" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
         <relationship name="experience" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Experience" inverseName="timedNotes" inverseEntity="Experience"/>
+    </entity>
+    <entity name="WebhookMessage" representedClassName="WebhookMessage" syncable="YES" codeGenerationType="class">
+        <attribute name="creationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="messageId" optional="YES" attributeType="String"/>
+        <relationship name="ingestion" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ingestion" inverseName="webhookMessages" inverseEntity="Ingestion"/>
+        <relationship name="webhookPreset" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="WebhookPreset" inverseName="messages" inverseEntity="WebhookPreset"/>
+    </entity>
+    <entity name="WebhookPreset" representedClassName="WebhookPreset" syncable="YES" codeGenerationType="class">
+        <attribute name="creationDate" optional="YES" attributeType="Date" usesScalarValueType="NO"/>
+        <attribute name="id" optional="YES" attributeType="UUID" usesScalarValueType="NO"/>
+        <attribute name="isArchived" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValueString="NO"/>
+        <attribute name="isEnabled" optional="YES" attributeType="Boolean" usesScalarValueType="YES" defaultValueString="YES"/>
+        <attribute name="name" optional="YES" attributeType="String"/>
+        <attribute name="url" optional="YES" attributeType="String"/>
+        <relationship name="messages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="WebhookMessage" inverseName="webhookPreset" inverseEntity="WebhookMessage"/>
     </entity>
 </model>

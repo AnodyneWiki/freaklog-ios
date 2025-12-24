@@ -29,10 +29,6 @@ extension Ingestion: Comparable {
         consumerName ?? ""
     }
 
-    var webhookMessageIdUnwrapped: String {
-        webhookMessageId ?? ""
-    }
-
     var doseUnwrapped: Double? {
         if dose == 0 {
             return nil
@@ -115,6 +111,15 @@ extension Ingestion: Comparable {
 
     var substanceColor: SubstanceColor {
         substanceCompanion?.color ?? .red
+    }
+
+    var webhookMessagesSorted: [WebhookMessage] {
+        let set = webhookMessages as? Set<WebhookMessage> ?? []
+        return set.sorted { lhs, rhs in
+            let lDate = lhs.creationDate ?? Date.distantPast
+            let rDate = rhs.creationDate ?? Date.distantPast
+            return lDate < rDate
+        }
     }
 
     static var knownDosePreviewSample: Ingestion {

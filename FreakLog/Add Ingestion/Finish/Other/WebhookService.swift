@@ -7,7 +7,7 @@ struct WebhookResult {
 }
 
 struct WebhookService {
-    static let defaultTemplate = "{user}: [{dose} {unit} ]{substance} via {route}[ ({site})][\n> {note}]"
+    static let defaultTemplate = "[{user}: ][{dose} {unit} ]{substance} via {route}[ ({site})][\n> {note}]"
 
     static func sendWebhook(
         url: String,
@@ -81,16 +81,28 @@ struct WebhookService {
         var request = URLRequest(url: requestUrl)
         request.httpMethod = "DELETE"
 
-        do {
-            let (_, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else { return false }
-            return httpResponse.statusCode == 204
-        } catch {
-            return false
+        let maxRetries = 3
+        for attempt in 0..<maxRetries {
+            do {
+                let (_, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 204 {
+                    return true
+                }
+                // If 404, it's already gone, consider success
+                if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 404 {
+                    return true
+                }
+            } catch {
+                if attempt < maxRetries - 1 {
+                    let delay = Double(1 << attempt)
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
+            }
         }
+        return false
     }
 
-    private static func sendWebhookWithRetry(
+    static func sendWebhookWithRetry(
         url: String,
         user: String,
         substance: String,
@@ -206,10 +218,13 @@ struct WebhookService {
         return nil
     }
 
+    private static let templateRegex: NSRegularExpression? = {
+        try? NSRegularExpression(pattern: "\\[([^\\[\\]]+)\\]", options: [])
+    }()
+
     static func processTemplate(_ template: String, values: [String: String]) -> String {
         var processed = template
-        let pattern = "\\[([^\\[\\]]+)\\]"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+        guard let regex = templateRegex else {
             return template
         }
         let range = NSRange(processed.startIndex..<processed.endIndex, in: processed)
@@ -245,5 +260,85 @@ struct WebhookService {
         }
 
         return processed
+    }
+}
+
+extension WebhookService {
+    static func sendWebhook(
+        for preset: WebhookPreset,
+        user: String,
+        substance: String,
+        dose: Double,
+        units: String,
+        isEstimate: Bool,
+        route: String,
+        site: String,
+        note: String
+    ) async -> WebhookResult {
+        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
+        let effectiveUser = user.isEmpty ? globalUsername : user
+
+        let template = UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? defaultTemplate
+        let isHyperlinked = UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey)
+        let substanceInfoUrl = UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
+
+        return await sendWebhookWithRetry(
+            url: preset.urlUnwrapped,
+            user: effectiveUser,
+            substance: substance,
+            dose: dose,
+            units: units,
+            isEstimate: isEstimate,
+            route: route,
+            site: site,
+            note: note,
+            template: template,
+            isHyperlinked: isHyperlinked,
+            substanceInfoUrl: substanceInfoUrl,
+            isEdit: false,
+            messageId: nil
+        )
+    }
+
+    static func editWebhook(
+        for preset: WebhookPreset,
+        messageId: String,
+        user: String,
+        substance: String,
+        dose: Double,
+        units: String,
+        isEstimate: Bool,
+        route: String,
+        site: String,
+        note: String
+    ) async -> WebhookResult {
+        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
+        let effectiveUser = user.isEmpty ? globalUsername : user
+
+        let template = UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? defaultTemplate
+        let isHyperlinked = UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey)
+        let substanceInfoUrl = UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
+
+        return await sendWebhookWithRetry(
+            url: preset.urlUnwrapped,
+            user: effectiveUser,
+            substance: substance,
+            dose: dose,
+            units: units,
+            isEstimate: isEstimate,
+            route: route,
+            site: site,
+            note: note,
+            template: template,
+            isHyperlinked: isHyperlinked,
+            substanceInfoUrl: substanceInfoUrl,
+            isEdit: true,
+            messageId: messageId
+        )
+    }
+
+    static func deleteWebhookMessage(for preset: WebhookPreset, messageId: String) async -> Bool {
+        guard !messageId.isEmpty else { return false }
+        return await deleteWebhookMessage(url: preset.urlUnwrapped, messageId: messageId)
     }
 }

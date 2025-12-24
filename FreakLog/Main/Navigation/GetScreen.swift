@@ -65,6 +65,10 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             EditColorsScreen()
         case .customUnits:
             CustomUnitsScreen()
+        case .webhookSettings:
+            WebhooksScreen()
+        case .webhookArchive:
+            WebhookArchiveScreen()
         case .faq:
             FAQView()
         case .customUnitsArchive:
