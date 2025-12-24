@@ -6,7 +6,6 @@ import SwiftUI
 struct FinishIngestionScreen: View {
     enum SheetOption: Identifiable {
         case editTitle
-        case editNote
         case editLocation
         case editConsumer
 
@@ -130,15 +129,6 @@ struct FinishIngestionScreen: View {
                 }
                 routeSpecificPickers
                 Button {
-                    sheetToShow = .editNote
-                } label: {
-                    if enteredNote.isEmpty {
-                        Label("Add Note", systemImage: "plus")
-                    } else {
-                        Label(enteredNote, systemImage: "pencil").lineLimit(1)
-                    }
-                }
-                Button {
                     sheetToShow = .editLocation
                 } label: {
                     if let locationName = locationManager.selectedLocation?.name {
@@ -151,6 +141,10 @@ struct FinishIngestionScreen: View {
             .listRowSeparator(.hidden)
             .onChange(of: selectedTime) { _ in
                 selectExperienceBasedOnCurrentTime()
+            }
+            Section("Notes") {
+                TextField("Enter Note", text: $enteredNote, axis: .vertical)
+                    .autocapitalization(.sentences)
             }
             if selectedExperience == nil {
                 Section("New Experience") {
@@ -241,8 +235,6 @@ struct FinishIngestionScreen: View {
             switch sheet {
             case .editTitle:
                 ExperienceTitleScreen(title: $enteredTitle)
-            case .editNote:
-                IngestionNoteScreen(note: $enteredNote)
             case .editLocation:
                 ChooseLocationScreen(locationManager: locationManager, onDone: { })
             case .editConsumer:

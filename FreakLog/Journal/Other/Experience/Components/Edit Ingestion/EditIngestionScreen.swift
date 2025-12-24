@@ -395,15 +395,6 @@ struct EditIngestionContent: View {
                             Label(displayedName, systemImage: "person")
                         }
                     }
-                    Button {
-                        sheetToShow = .editLocation
-                    } label: {
-                        if let locationName = locationManager.selectedLocation?.name {
-                            Label(locationName, systemImage: "mappin")
-                        } else {
-                            Label("Add Location", systemImage: "plus")
-                        }
-                    }
                     if route == .insufflated {
                         NostrilPicker(selection: $selectedNostril)
                             .pickerStyle(.menu)
@@ -419,6 +410,15 @@ struct EditIngestionContent: View {
                     if route == .subcutaneous {
                         SubQSitePicker(selection: $selectedSubQSite)
                             .pickerStyle(.menu)
+                    }
+                    Button {
+                        sheetToShow = .editLocation
+                    } label: {
+                        if let locationName = locationManager.selectedLocation?.name {
+                            Label(locationName, systemImage: "mappin")
+                        } else {
+                            Label("Add Location", systemImage: "plus")
+                        }
                     }
                 }.listRowSeparator(.hidden)
                 Section {
