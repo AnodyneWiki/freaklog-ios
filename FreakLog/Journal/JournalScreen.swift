@@ -15,7 +15,8 @@ struct JournalScreen: View {
         (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
     }
 
-    @State private var selectedTab = 0
+    @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = true
+    @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: Int = JournalViewOption.allIngestions.rawValue
 
     var body: some View {
         FabPosition(alignment: fabAlignment) {
@@ -28,19 +29,22 @@ struct JournalScreen: View {
             }
         } screen: {
             Group {
-                if selectedTab == 0 {
+                if selectedTab == JournalViewOption.experiences.rawValue {
                     ExperiencesList(
                         searchText: searchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
                         isTimeRelative: isTimeRelative
                     )
                 } else {
-                    AllIngestionsView(searchText: $searchText)
+                    AllIngestionsView(
+                        searchText: $searchText,
+                        isTimeRelative: isTimeRelative
+                    )
                 }
             }
             .scrollDismissesKeyboard(.interactively)
             .modify {
-                let prompt = selectedTab == 0 ? "Search experiences" : "Search"
+                let prompt = selectedTab == JournalViewOption.experiences.rawValue ? "Search experiences" : "Search"
                 if #available(iOS 17.0, *) {
                     $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .navigationBarDrawer, prompt: prompt)
                 } else {
@@ -51,13 +55,16 @@ struct JournalScreen: View {
         }
         .navigationTitle("Journal")
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Picker("View", selection: $selectedTab) {
-                    Text("Experiences").tag(0)
-                    Text("All Ingestions").tag(1)
+            if !isHidingJournalTabSwitcher {
+                ToolbarItem(placement: .principal) {
+                    Picker("View", selection: $selectedTab) {
+                        ForEach(JournalViewOption.allCases) { option in
+                            Text(option.text).tag(option.rawValue)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(maxWidth: 220)
                 }
-                .pickerStyle(.segmented)
-                .frame(maxWidth: 220)
             }
             ToolbarItem(placement: .navigationBarLeading) {
                 favoriteButton

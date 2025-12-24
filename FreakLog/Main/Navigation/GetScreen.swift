@@ -75,6 +75,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             CustomUnitsArchiveScreen()
         case .tabSettings:
             TabSettingsScreen()
+        case .journalSettings:
+            JournalSettingsScreen()
         case let .timeline(timelineModel, timeDisplayStyle):
             TimelineScreen(timelineModel: timelineModel, timeDisplayStyle: timeDisplayStyle)
         case .explainExperience:

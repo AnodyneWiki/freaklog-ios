@@ -3,6 +3,7 @@ import SwiftUI
 struct AllIngestionsView: View {
     @StateObject private var viewModel = AllIngestionsViewModel()
     @Binding var searchText: String
+    var isTimeRelative: Bool
     
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
@@ -76,7 +77,11 @@ private extension AllIngestionsView {
                         isEyeOpen: isEyeOpen,
                         isHidingDosageDots: isHidingDosageDots,
                         timeText: {
-                            Text(ingestion.timeUnwrapped, style: .time)
+                            if isTimeRelative {
+                                RelativeTimeText(date: ingestion.timeUnwrapped)
+                            } else {
+                                Text(ingestion.timeUnwrapped, style: .time)
+                            }
                         }
                     )
                     .padding(.vertical, 8)

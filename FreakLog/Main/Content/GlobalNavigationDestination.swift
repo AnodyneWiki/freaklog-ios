@@ -45,4 +45,5 @@ enum GlobalNavigationDestination: Hashable {
     case tabSettings
     case webhookSettings
     case webhookArchive
+    case journalSettings
 }

@@ -30,6 +30,8 @@ struct PersistenceController {
     static let webhookTemplateKey = "webhookTemplate"
     static let webhookIsHyperlinkedKey = "webhookIsHyperlinked"
     static let webhookSubstanceInfoUrlKey = "webhookSubstanceInfoUrl"
+    static let defaultJournalViewKey = "defaultJournalView"
+    static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext
