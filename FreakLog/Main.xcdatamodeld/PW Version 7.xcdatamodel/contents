@@ -28,7 +28,7 @@
         <attribute name="text" optional="YES" attributeType="String"/>
         <attribute name="title" optional="YES" attributeType="String"/>
         <relationship name="ingestions" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="Ingestion" inverseName="experience" inverseEntity="Ingestion"/>
-        <relationship name="location" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="ExperienceLocation" inverseName="experience" inverseEntity="ExperienceLocation"/>
+        <relationship name="legacyLocation" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="ExperienceLocation" inverseName="legacyExperience" inverseEntity="ExperienceLocation"/>
         <relationship name="ratings" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="ShulginRating" inverseName="experience" inverseEntity="ShulginRating"/>
         <relationship name="timedNotes" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="TimedNote" inverseName="experience" inverseEntity="TimedNote"/>
     </entity>
@@ -36,7 +36,8 @@
         <attribute name="latitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="longitude" optional="YES" attributeType="Double" defaultValueString="0.0" usesScalarValueType="YES"/>
         <attribute name="name" optional="YES" attributeType="String"/>
-        <relationship name="experience" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Experience" inverseName="location" inverseEntity="Experience"/>
+        <relationship name="legacyExperience" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Experience" inverseName="legacyLocation" inverseEntity="Experience"/>
+        <relationship name="ingestion" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Ingestion" inverseName="location" inverseEntity="Ingestion"/>
     </entity>
     <entity name="Ingestion" representedClassName="Ingestion" syncable="YES" codeGenerationType="class">
         <attribute name="administrationRoute" optional="YES" attributeType="String"/>
@@ -57,6 +58,7 @@
         <attribute name="webhookMessageId" optional="YES" attributeType="String"/>
         <relationship name="customUnit" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="CustomUnit" inverseName="ingestions" inverseEntity="CustomUnit"/>
         <relationship name="experience" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="Experience" inverseName="ingestions" inverseEntity="Experience"/>
+        <relationship name="location" optional="YES" maxCount="1" deletionRule="Cascade" destinationEntity="ExperienceLocation" inverseName="ingestion" inverseEntity="ExperienceLocation"/>
         <relationship name="substanceCompanion" optional="YES" maxCount="1" deletionRule="Nullify" destinationEntity="SubstanceCompanion" inverseName="ingestions" inverseEntity="SubstanceCompanion"/>
         <relationship name="webhookMessages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="WebhookMessage" inverseName="ingestion" inverseEntity="WebhookMessage"/>
     </entity>
@@ -77,11 +79,7 @@
         <attribute name="colorAsText" optional="YES" attributeType="String"/>
         <attribute name="substanceName" optional="YES" attributeType="String"/>
         <relationship name="ingestions" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="Ingestion" inverseName="substanceCompanion" inverseEntity="Ingestion"/>
-        <uniquenessConstraints>
-            <uniquenessConstraint>
-                <constraint value="substanceName"/>
-            </uniquenessConstraint>
-        </uniquenessConstraints>
+
     </entity>
     <entity name="TimedNote" representedClassName="TimedNote" syncable="YES" codeGenerationType="class">
         <attribute name="colorAsText" optional="YES" attributeType="String"/>

@@ -21,7 +21,7 @@ struct AddLocationScreen: View {
             newLocation.name = selectedLocation.name
             newLocation.latitude = selectedLocation.latitude ?? 0
             newLocation.longitude = selectedLocation.longitude ?? 0
-            newLocation.experience = experience
+            newLocation.legacyExperience = experience
             PersistenceController.shared.saveViewContext()
         }
     }

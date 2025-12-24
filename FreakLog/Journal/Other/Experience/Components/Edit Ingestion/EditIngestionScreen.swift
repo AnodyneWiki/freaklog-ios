@@ -23,6 +23,18 @@ struct EditIngestionScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
 
     @Environment(\.dismiss) var dismiss
+    @EnvironmentObject private var locationManager: LocationManager
+
+    @State private var sheetToShow: SheetOption?
+
+    enum SheetOption: Identifiable {
+        case editLocation
+        case editConsumer
+
+        var id: Self {
+            self
+        }
+    }
 
     @FetchRequest(
         sortDescriptors: []
@@ -78,8 +90,15 @@ struct EditIngestionScreen: View {
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
             wantsToForceNewExperience: $wantsToForceNewExperience,
-            experiencesWithinLargerRange: experiencesWithinLargerRange
+            experiencesWithinLargerRange: experiencesWithinLargerRange,
+            sheetToShow: $sheetToShow
         ).onFirstAppear {
+            locationManager.selectedLocation = ingestion.location != nil ? Location(
+                name: ingestion.locationUnwrapped?.nameUnwrapped ?? "Unknown",
+                longitude: ingestion.locationUnwrapped?.longitudeUnwrapped,
+                latitude: ingestion.locationUnwrapped?.latitudeUnwrapped
+            ) : nil
+            locationManager.selectedLocationName = ingestion.locationUnwrapped?.nameUnwrapped ?? ""
             time = ingestion.timeUnwrapped
             if let eTime = ingestion.endTime {
                 endTime = eTime
@@ -115,6 +134,14 @@ struct EditIngestionScreen: View {
         .onChange(of: time) { _ in
             setExperiencesBasedOnTime()
         }
+        .sheet(item: $sheetToShow, content: { sheet in
+            switch sheet {
+            case .editLocation:
+                ChooseLocationScreen(locationManager: locationManager, onDone: { })
+            case .editConsumer:
+                EditConsumerScreen(consumerName: $consumerName)
+            }
+        })
     }
 
     private func save() {
@@ -147,6 +174,26 @@ struct EditIngestionScreen: View {
         } else {
             ingestion.administrationSite = nil
         }
+
+        if let selectedLocation = locationManager.selectedLocation {
+            if let existingLocation = ingestion.location {
+                existingLocation.name = selectedLocation.name
+                existingLocation.latitude = selectedLocation.latitude ?? 0
+                existingLocation.longitude = selectedLocation.longitude ?? 0
+            } else {
+                let newLocation = ExperienceLocation(context: PersistenceController.shared.viewContext)
+                newLocation.name = selectedLocation.name
+                newLocation.latitude = selectedLocation.latitude ?? 0
+                newLocation.longitude = selectedLocation.longitude ?? 0
+                ingestion.location = newLocation
+            }
+        } else {
+            if let existingLocation = ingestion.location {
+                PersistenceController.shared.viewContext.delete(existingLocation)
+                ingestion.location = nil
+            }
+        }
+
         if wantsToForceNewExperience || selectedExperience == nil {
             let context = PersistenceController.shared.viewContext
             let newExperience = Experience(context: context)
@@ -233,7 +280,9 @@ struct EditIngestionContent: View {
     @Binding var selectedExperience: Experience?
     @Binding var wantsToForceNewExperience: Bool
     let experiencesWithinLargerRange: [Experience]
+    @Binding var sheetToShow: EditIngestionScreen.SheetOption?
 
+    @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -340,10 +389,19 @@ struct EditIngestionContent: View {
                         Text("Consumer")
                         Spacer()
                         Button {
-                            isConsumerSheetPresented.toggle()
+                            sheetToShow = .editConsumer
                         } label: {
                             let displayedName = areYouConsumer ? "You" : consumerName
                             Label(displayedName, systemImage: "person")
+                        }
+                    }
+                    Button {
+                        sheetToShow = .editLocation
+                    } label: {
+                        if let locationName = locationManager.selectedLocation?.name {
+                            Label(locationName, systemImage: "mappin")
+                        } else {
+                            Label("Add Location", systemImage: "plus")
                         }
                     }
                     if route == .insufflated {
@@ -403,9 +461,6 @@ struct EditIngestionContent: View {
                 }
 
             }
-            .sheet(isPresented: $isConsumerSheetPresented, content: {
-                EditConsumerScreen(consumerName: $consumerName)
-            })
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(action: save, label: {
@@ -428,12 +483,9 @@ struct EditIngestionContent: View {
         Navigator.shared.showAddIngestionFullScreenCover()
     }
 
-    @State private var isConsumerSheetPresented = false
-
     private var areYouConsumer: Bool {
         consumerName.trimmingCharacters(in: .whitespaces).isEmpty
     }
-
 }
 
 #Preview("Edit regular ingestion") {
@@ -466,8 +518,9 @@ struct EditIngestionContent: View {
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
         wantsToForceNewExperience: .constant(false),
-        experiencesWithinLargerRange: []
-    )
+        experiencesWithinLargerRange: [],
+        sheetToShow: .constant(nil)
+    ).environmentObject(LocationManager())
 }
 
 #Preview("Edit custom unit ingestion") {
@@ -498,6 +551,8 @@ struct EditIngestionContent: View {
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
         wantsToForceNewExperience: .constant(false),
-        experiencesWithinLargerRange: [])
+        experiencesWithinLargerRange: [],
+        sheetToShow: .constant(nil)
+    ).environmentObject(LocationManager())
 }
 

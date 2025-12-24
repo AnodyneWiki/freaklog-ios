@@ -138,6 +138,15 @@ struct FinishIngestionScreen: View {
                         Label(enteredNote, systemImage: "pencil").lineLimit(1)
                     }
                 }
+                Button {
+                    sheetToShow = .editLocation
+                } label: {
+                    if let locationName = locationManager.selectedLocation?.name {
+                        Label(locationName, systemImage: "mappin")
+                    } else {
+                        Label("Add Location", systemImage: "plus")
+                    }
+                }
             }
             .listRowSeparator(.hidden)
             .onChange(of: selectedTime) { _ in
@@ -152,15 +161,6 @@ struct FinishIngestionScreen: View {
                             Label("Add Title", systemImage: "plus")
                         } else {
                             Label(enteredTitle, systemImage: "pencil").lineLimit(1)
-                        }
-                    }
-                    Button {
-                        sheetToShow = .editLocation
-                    } label: {
-                        if let locationName = locationManager.selectedLocation?.name {
-                            Label(locationName, systemImage: "mappin")
-                        } else {
-                            Label("Add Location", systemImage: "plus")
                         }
                     }
                     if #available(iOS 16.2, *) {
@@ -350,6 +350,7 @@ struct FinishIngestionScreen: View {
             if let existingExperience = selectedExperience {
                 createdIngestion = createIngestionWithCompanion(
                     with: existingExperience,
+                    location: selectedLocationValue,
                     and: context)
                 if #available(iOS 16.2, *) {
                     if existingExperience.isCurrent, isActivityActive {
@@ -383,15 +384,9 @@ struct FinishIngestionScreen: View {
                 }
                 newExperience.title = title
                 newExperience.text = ""
-                if let location = selectedLocationValue {
-                    let newLocation = ExperienceLocation(context: context)
-                    newLocation.name = location.name
-                    newLocation.latitude = location.latitude ?? 0
-                    newLocation.longitude = location.longitude ?? 0
-                    newLocation.experience = newExperience
-                }
                 createdIngestion = createIngestionWithCompanion(
                     with: newExperience,
+                    location: selectedLocationValue,
                     and: context)
                 if #available(iOS 16.2, *) {
                     if newExperience.isCurrent, self.wantsToStartLiveActivity {
@@ -461,6 +456,7 @@ struct FinishIngestionScreen: View {
     @discardableResult
     private func createIngestionWithCompanion(
         with experience: Experience,
+        location: Location?,
         and context: NSManagedObjectContext) -> Ingestion
     {
         let ingestion = Ingestion(context: context)
@@ -492,6 +488,13 @@ struct FinishIngestionScreen: View {
         }
         ingestion.webhookMessageId = nil
         ingestion.experience = experience
+        if let location {
+            let newLocation = ExperienceLocation(context: context)
+            newLocation.name = location.name
+            newLocation.latitude = location.latitude ?? 0
+            newLocation.longitude = location.longitude ?? 0
+            ingestion.location = newLocation
+        }
         let companion = createOrUpdateCompanion(with: context)
         ingestion.substanceCompanion = companion
         return ingestion
@@ -561,3 +564,5 @@ struct FinishIngestionScreen: View {
 }
 
 // swiftlint:enable type_body_length function_body_length file_length
+
+

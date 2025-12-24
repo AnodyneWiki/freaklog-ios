@@ -13,6 +13,10 @@ extension Experience: Comparable {
         creationDate ?? Date()
     }
 
+    var location: ExperienceLocation? {
+        ingestionsSorted.first?.location ?? legacyLocation
+    }
+
     var titleUnwrapped: String {
         title ?? creationDateUnwrappedString
     }

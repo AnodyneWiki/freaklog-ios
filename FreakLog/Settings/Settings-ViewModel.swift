@@ -81,6 +81,19 @@ extension SettingsScreen {
                         newIngestion.note = ingestionCodable.notes
                         newIngestion.consumerName = ingestionCodable.consumerName
                         newIngestion.administrationSite = ingestionCodable.administrationSite
+                        if let ingestionLocation = ingestionCodable.location {
+                            let newLocation = ExperienceLocation(context: context)
+                            newLocation.name = ingestionLocation.name
+                            newLocation.latitude = ingestionLocation.latitude ?? 0
+                            newLocation.longitude = ingestionLocation.longitude ?? 0
+                            newIngestion.location = newLocation
+                        } else if let experienceLocation = experienceCodable.location {
+                            let newLocation = ExperienceLocation(context: context)
+                            newLocation.name = experienceLocation.name
+                            newLocation.latitude = experienceLocation.latitude ?? 0
+                            newLocation.longitude = experienceLocation.longitude ?? 0
+                            newIngestion.location = newLocation
+                        }
                         newExperience.addToIngestions(newIngestion)
                         // add companion to ingestion
                         if let companion = companionDict[ingestionCodable.substanceName] {
@@ -121,7 +134,7 @@ extension SettingsScreen {
                         newLocation.name = location.name
                         newLocation.latitude = location.latitude ?? 0
                         newLocation.longitude = location.longitude ?? 0
-                        newLocation.experience = newExperience
+                        newExperience.legacyLocation = newLocation
                     }
                 }
                 for customCodable in file.customSubstances {

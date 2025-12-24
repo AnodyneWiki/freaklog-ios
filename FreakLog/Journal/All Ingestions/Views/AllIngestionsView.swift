@@ -100,7 +100,8 @@ private extension AllIngestionsView {
                     EffectTimeline(
                         timelineModel: timelineModel,
                         height: 200,
-                        timeDisplayStyle: viewTimeDisplayStyle
+                        timeDisplayStyle: viewTimeDisplayStyle,
+                        isShowingTopLabels: false
                     )
                     .padding(.top, 8)
                     

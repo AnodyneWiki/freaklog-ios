@@ -13,6 +13,10 @@ extension Ingestion: Comparable {
         note ?? ""
     }
 
+    var locationUnwrapped: ExperienceLocation? {
+        location
+    }
+
     var substanceNameUnwrapped: String {
         substanceName ?? "Unknown"
     }

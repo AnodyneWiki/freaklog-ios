@@ -42,7 +42,17 @@ private struct IngestionRowContent<Content: View>: View {
         HStack {
             ColorRectangle(color: substanceColor.swiftUIColor)
             VStack(alignment: .leading) {
-                timeText.font(.caption)
+                HStack {
+                    timeText.font(.caption)
+                    Spacer()
+                    if let location = ingestion.locationUnwrapped {
+                        Group {
+                            Text(Image(systemName: "mappin")) + Text(" ") + Text(location.nameUnwrapped)
+                        }
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    }
+                }
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.primary)
@@ -93,6 +103,7 @@ private struct IngestionRowContent<Content: View>: View {
                         Text(routeText.localizedCapitalized).foregroundColor(.secondary)
                     }
                 }
+                
             }
             Spacer()
             if let numDotsUnwrap = ingestion.numberOfDots, !isHidingDosageDots {

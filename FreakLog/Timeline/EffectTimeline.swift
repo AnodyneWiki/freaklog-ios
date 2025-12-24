@@ -5,6 +5,7 @@ struct EffectTimeline: View {
     var height: Double = 200
     let timeDisplayStyle: TimeDisplayStyle
     var isShowingCurrentTime = true
+    var isShowingTopLabels = true
     var spaceToLabels = 5.0
     private let lineWidth: Double = 5
     private var halfLineWidth: Double {
@@ -15,7 +16,9 @@ struct EffectTimeline: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            timeLabels
+            if isShowingTopLabels {
+                timeLabels
+            }
             TimelineView(.everyMinute) { timeline in
                 let timelineDate = timeline.date
                 Canvas { context, size in
