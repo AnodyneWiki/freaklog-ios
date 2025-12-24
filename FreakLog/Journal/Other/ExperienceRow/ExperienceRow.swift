@@ -3,7 +3,7 @@ import SwiftUI
 
 struct ExperienceRow: View {
     @ObservedObject var experience: Experience
-    let isTimeRelative: Bool
+    let timeDisplayStyle: SaveableTimeDisplayStyle
 
     var body: some View {
         NavigationLink(value: GlobalNavigationDestination.experience(experience: experience)) {
@@ -12,7 +12,7 @@ struct ExperienceRow: View {
                     ExperienceRowObservedLocation(
                         experience: experience,
                         location: location,
-                        isTimeRelative: isTimeRelative,
+                        timeDisplayStyle: timeDisplayStyle,
                         rating: experience.maxRating
                     )
                 } else {
@@ -22,7 +22,7 @@ struct ExperienceRow: View {
                         distinctSubstanceNames: experience.distinctUsedSubstanceNames,
                         sortDate: experience.sortDateUnwrapped,
                         isFavorite: experience.isFavorite,
-                        isTimeRelative: isTimeRelative,
+                        timeDisplayStyle: timeDisplayStyle,
                         locationName: nil,
                         rating: experience.overallRating?.optionUnwrapped ?? experience.maxRating,
                         isCurrent: experience.isCurrent,
@@ -78,7 +78,7 @@ struct ExperienceRow: View {
 struct ExperienceRowObservedLocation: View {
     @ObservedObject var experience: Experience
     @ObservedObject var location: ExperienceLocation
-    let isTimeRelative: Bool
+    let timeDisplayStyle: SaveableTimeDisplayStyle
     let rating: ShulginRatingOption?
 
     var body: some View {
@@ -88,7 +88,7 @@ struct ExperienceRowObservedLocation: View {
             distinctSubstanceNames: experience.distinctUsedSubstanceNames,
             sortDate: experience.sortDateUnwrapped,
             isFavorite: experience.isFavorite,
-            isTimeRelative: isTimeRelative,
+            timeDisplayStyle: timeDisplayStyle,
             locationName: location.name,
             rating: rating,
             isCurrent: experience.isCurrent,
@@ -103,7 +103,7 @@ struct ExperienceRowContent: View {
     let distinctSubstanceNames: [String]
     let sortDate: Date
     let isFavorite: Bool
-    let isTimeRelative: Bool
+    let timeDisplayStyle: SaveableTimeDisplayStyle
     let locationName: String?
     let rating: ShulginRatingOption?
     let isCurrent: Bool
@@ -149,7 +149,7 @@ struct ExperienceRowContent: View {
                     HStack {
                         ExperienceTimeText(
                             time: sortDate,
-                            isTimeRelative: isTimeRelative,
+                            timeDisplayStyle: timeDisplayStyle,
                             isCurrent: isCurrent
                         )
                         Spacer()
@@ -177,7 +177,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: ["MDMA", "LSD"],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: true,
-                isTimeRelative: false,
+                timeDisplayStyle: .auto,
                 locationName: "Longer location name",
                 rating: .threePlus,
                 isCurrent: true,
@@ -189,7 +189,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: ["MDMA", "LSD"],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: true,
-                isTimeRelative: false,
+                timeDisplayStyle: .regular,
                 locationName: nil,
                 rating: .threePlus,
                 isCurrent: false,
@@ -201,7 +201,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: ["MDMA", "LSD", "Cocaine", "Amphetamine"],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: true,
-                isTimeRelative: true,
+                timeDisplayStyle: .relativeToNow,
                 locationName: "Short location",
                 rating: .threePlus,
                 isCurrent: false,
@@ -213,7 +213,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: ["MDMA", "LSD"],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: true,
-                isTimeRelative: true,
+                timeDisplayStyle: .relativeToNow,
                 locationName: nil,
                 rating: nil,
                 isCurrent: false,
@@ -225,7 +225,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: ["MDMA", "LSD"],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: true,
-                isTimeRelative: true,
+                timeDisplayStyle: .relativeToNow,
                 locationName: "Home",
                 rating: nil,
                 isCurrent: false,
@@ -237,7 +237,7 @@ struct ExperienceRowContent: View {
                 distinctSubstanceNames: [],
                 sortDate: Date() - 5 * 60 * 60 - 30,
                 isFavorite: false,
-                isTimeRelative: false,
+                timeDisplayStyle: .regular,
                 locationName: nil,
                 rating: .threePlus,
                 isCurrent: false,

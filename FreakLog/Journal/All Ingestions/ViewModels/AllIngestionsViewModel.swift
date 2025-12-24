@@ -8,6 +8,7 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     // MARK: - Published Properties
     
     @Published private(set) var sections: [IngestionSection] = []
+    @Published private(set) var timelineIngestions: [Ingestion] = []
     @Published private(set) var isLoading = false
     @Published private(set) var hasReachedEnd = false
     @Published var searchText: String = ""
@@ -91,6 +92,15 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         return PersistenceController.shared.getIngestionsBetween(startDate: startDate, endDate: endDate)
     }
 
+    /// Updates the ingestions used for the top timeline chart.
+    func updateTimelineIngestions() {
+        guard let latestIngestion = fetchedResultsController?.fetchedObjects?.first else {
+            timelineIngestions = []
+            return
+        }
+        timelineIngestions = getIngestionsForDynamicExperience(for: latestIngestion)
+    }
+
     // MARK: - Private Methods
     
     private func setupSearchObserver() {
@@ -156,6 +166,8 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         } else {
             hasReachedEnd = false
         }
+        
+        updateTimelineIngestions()
     }
 
     private func groupIngestions(_ newIngestions: [Ingestion]) {

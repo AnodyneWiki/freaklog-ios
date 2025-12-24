@@ -15,7 +15,16 @@ struct DynamicExperienceScreen: View {
     var timeDisplayStyle: TimeDisplayStyle {
         let style = SaveableTimeDisplayStyle(rawValue: timeDisplayStyleText) ?? .regular
         switch style {
-        case .regular, .auto: return .regular
+        case .regular: return .regular
+        case .auto:
+            // Auto logic: relative if any ingestion is recent (within dynamic range), otherwise regular
+            // For a "Dynamic" screen, usually everything is recent, but we follow the rule.
+            let window = TimeInterval(dynamicExperienceRangeHours) * 60 * 60
+            if ingestions.contains(where: { $0.timeUnwrapped > Date.now.addingTimeInterval(-window) }) {
+                return .relativeToNow
+            } else {
+                return .regular
+            }
         case .relativeToNow: return .relativeToNow
         case .relativeToStart: return .relativeToStart
         case .between: return .between

@@ -6,7 +6,12 @@ struct JournalScreen: View {
     @Binding var isSearchPresented: Bool
     @Binding var isFavoriteFilterEnabled: Bool
 
-    @State private var isTimeRelative = false
+
+    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
+
+    private var timeDisplayStyle: SaveableTimeDisplayStyle {
+        SaveableTimeDisplayStyle(rawValue: timeDisplayStyleText) ?? .auto
+    }
 
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
@@ -15,7 +20,7 @@ struct JournalScreen: View {
         (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
     }
 
-    @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = true
+    @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = false
     @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: Int = JournalViewOption.allIngestions.rawValue
 
     var body: some View {
@@ -33,22 +38,26 @@ struct JournalScreen: View {
                     ExperiencesList(
                         searchText: searchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
-                        isTimeRelative: isTimeRelative
+                        timeDisplayStyle: timeDisplayStyle
                     )
                 } else {
                     AllIngestionsView(
                         searchText: $searchText,
-                        isTimeRelative: isTimeRelative
+                        timeDisplayStyle: timeDisplayStyle
                     )
                 }
             }
             .scrollDismissesKeyboard(.interactively)
             .modify {
                 let prompt = selectedTab == JournalViewOption.experiences.rawValue ? "Search experiences" : "Search"
-                if #available(iOS 17.0, *) {
-                    $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .navigationBarDrawer, prompt: prompt)
+                if isSearchPresented {
+                    if #available(iOS 17.0, *) {
+                        $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .automatic, prompt: prompt)
+                    } else {
+                        $0.searchable(text: $searchText, placement: .automatic, prompt: prompt)
+                    }
                 } else {
-                    $0.searchable(text: $searchText, placement: .navigationBarDrawer, prompt: prompt)
+                    $0
                 }
             }
             .disableAutocorrection(true)
@@ -66,8 +75,20 @@ struct JournalScreen: View {
                     .frame(maxWidth: 220)
                 }
             }
+                
             ToolbarItem(placement: .navigationBarLeading) {
-                favoriteButton
+                HStack {
+                    if selectedTab == JournalViewOption.experiences.rawValue {
+                        favoriteButton
+                    }
+                    if !isSearchPresented {
+                        Button {
+                            isSearchPresented = true
+                        } label: {
+                            Label("Search", systemImage: "magnifyingglass")
+                        }
+                    }
+                }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 8) {
@@ -80,24 +101,15 @@ struct JournalScreen: View {
 
     private var timeDisplayMenu: some View {
         Menu {
-            Button {
-                isTimeRelative = false
-            } label: {
-                let option = SaveableTimeDisplayStyle.regular
-                if isTimeRelative {
-                    Text(option.text)
-                } else {
-                    Label(option.text, systemImage: "checkmark")
-                }
-            }
-            Button {
-                isTimeRelative = true
-            } label: {
-                let option = SaveableTimeDisplayStyle.relativeToNow
-                if isTimeRelative {
-                    Label(option.text, systemImage: "checkmark")
-                } else {
-                    Text(option.text)
+            ForEach([SaveableTimeDisplayStyle.auto, .regular, .relativeToNow]) { style in
+                Button {
+                    timeDisplayStyleText = style.rawValue
+                } label: {
+                    if timeDisplayStyle == style {
+                        Label(style.text, systemImage: "checkmark")
+                    } else {
+                        Text(style.text)
+                    }
                 }
             }
         } label: {

@@ -2,11 +2,11 @@ import SwiftUI
 
 struct ExperiencesList: View {
     let isFavoriteFilterEnabled: Bool
-    let isTimeRelative: Bool
+    let timeDisplayStyle: SaveableTimeDisplayStyle
 
-    init(searchText: String, isFavoriteFilterEnabled: Bool, isTimeRelative: Bool) {
+    init(searchText: String, isFavoriteFilterEnabled: Bool, timeDisplayStyle: SaveableTimeDisplayStyle) {
         self.isFavoriteFilterEnabled = isFavoriteFilterEnabled
-        self.isTimeRelative = isTimeRelative
+        self.timeDisplayStyle = timeDisplayStyle
         let predicateFavorite = NSPredicate(
             format: "isFavorite == %@",
             NSNumber(value: true)
@@ -58,7 +58,7 @@ struct ExperiencesList: View {
     var body: some View {
         ZStack {
             List(fetchedExperiences) { experience in
-                ExperienceRow(experience: experience, isTimeRelative: isTimeRelative)
+                ExperienceRow(experience: experience, timeDisplayStyle: timeDisplayStyle)
             }
             .listStyle(.plain)
             if fetchedExperiences.isEmpty {

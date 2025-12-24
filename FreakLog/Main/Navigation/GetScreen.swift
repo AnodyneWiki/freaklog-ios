@@ -29,7 +29,7 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             DynamicExperienceScreen(ingestions: ingestions)
         case let .chooseExperience(experiences):
             List(experiences) { experience in
-                ExperienceRow(experience: experience, isTimeRelative: false)
+                ExperienceRow(experience: experience, timeDisplayStyle: .regular)
             }
         case .saferHallucinogen:
             SaferHallucinogenScreen()
