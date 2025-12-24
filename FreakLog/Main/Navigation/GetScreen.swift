@@ -25,6 +25,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             JournalCalendarScreen()
         case let .experience(experience):
             ExperienceScreen(experience: experience)
+        case let .dynamicExperience(ingestions):
+            DynamicExperienceScreen(ingestions: ingestions)
         case let .chooseExperience(experiences):
             List(experiences) { experience in
                 ExperienceRow(experience: experience, isTimeRelative: false)

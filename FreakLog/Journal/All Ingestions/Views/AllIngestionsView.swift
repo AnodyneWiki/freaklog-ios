@@ -11,20 +11,26 @@ struct AllIngestionsView: View {
     @State private var hiddenIngestions: [ObjectIdentifier] = []
 
     var body: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                // Buffer to allow the first header to distinguish between 'naturally at top' and 'pinned'
-                Color.clear.frame(height: 12)
-                
-                ForEach(viewModel.sections) { section in
-                    Section(header: ChameleonHeader(title: section.id, date: section.date)) {
-                        sectionContent(section)
-                    }
+        List {
+            ForEach(viewModel.sections) { section in
+                Section(header: ChameleonHeader(title: section.id, date: section.date)
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+                ) {
+                    sectionContent(section)
                 }
-                
-                loadingIndicator
+                .textCase(nil) // Prevent default header capitalization
             }
+            
+            loadingIndicator
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
         }
+        .listStyle(.plain)
+        .scrollIndicators(.hidden)
+        .environment(\.defaultMinListHeaderHeight, 0)
+        .scrollContentBackground(.hidden)
         .coordinateSpace(name: "scroll")
         .sheet(item: $ingestionToEdit) { ingestion in
             let isHidden = Binding(
@@ -58,26 +64,48 @@ private extension AllIngestionsView {
     @ViewBuilder
     func sectionContent(_ section: IngestionSection) -> some View {
         ForEach(section.ingestions) { ingestion in
-            Button {
-                ingestionToEdit = ingestion
-            } label: {
-                IngestionRow(
-                    ingestion: ingestion,
-                    isEyeOpen: isEyeOpen,
-                    isHidingDosageDots: isHidingDosageDots,
-                    timeText: {
-                        Text(ingestion.timeUnwrapped, style: .time)
+            VStack(spacing: 0) {
+                Button {
+                    let relatedIngestions = viewModel.getIngestionsForDynamicExperience(for: ingestion)
+                    if !relatedIngestions.isEmpty {
+                        Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: relatedIngestions))
                     }
-                )
-                .padding(.vertical, 8)
-                .padding(.horizontal)
-                .background(Color(UIColor.systemBackground))
+                } label: {
+                    IngestionRow(
+                        ingestion: ingestion,
+                        isEyeOpen: isEyeOpen,
+                        isHidingDosageDots: isHidingDosageDots,
+                        timeText: {
+                            Text(ingestion.timeUnwrapped, style: .time)
+                        }
+                    )
+                    .padding(.vertical, 8)
+                    .padding(.horizontal)
+                    .background(Color(UIColor.systemBackground))
+                }
+                .buttonStyle(.plain)
+                
+                if ingestion != section.ingestions.last {
+                    Divider()
+                        .padding(.leading, 56)
+                }
             }
-            .buttonStyle(.plain)
-            
-            if ingestion != section.ingestions.last {
-                Divider()
-                    .padding(.leading, 56)
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                Button {
+                    ingestionToEdit = ingestion
+                } label: {
+                    Label("Edit", systemImage: "pencil")
+                }
+                .tint(.orange)
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                Button(role: .destructive) {
+                    viewModel.delete(ingestion)
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
             }
         }
     }

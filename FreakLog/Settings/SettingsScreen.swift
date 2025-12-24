@@ -14,6 +14,7 @@ struct SettingsScreen: View {
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = true
+    @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey) var dynamicExperienceRangeHours: Int = 24
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
 
@@ -42,6 +43,12 @@ struct SettingsScreen: View {
             fabButtonPositionString = newValue.rawValue
         }
 
+        let dynamicRangeBinding = Binding {
+            DynamicRangeOption(rawValue: dynamicExperienceRangeHours) ?? .twentyFourHours
+        } set: { newValue in
+            dynamicExperienceRangeHours = newValue.rawValue
+        }
+
         SettingsContent(
             isEyeOpen: $isEyeOpen,
             isHidingDosageDots: $isHidingDosageDots,
@@ -68,7 +75,8 @@ struct SettingsScreen: View {
             isSuccessToast: $viewModel.isShowingSuccessToast,
             toastMessage: $viewModel.toastMessage,
             lockTimeOption: timeOptionBinding,
-            fabButtonPosition: fabPositionBinding
+            fabButtonPosition: fabPositionBinding,
+            dynamicExperienceRange: dynamicRangeBinding
         )
     }
 }
@@ -96,6 +104,7 @@ struct SettingsContent: View {
     @Binding var toastMessage: String
     @Binding var lockTimeOption: LockTimeOption
     @Binding var fabButtonPosition: FabButtonPosition
+    @Binding var dynamicExperienceRange: DynamicRangeOption
 
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingImportAlert = false
@@ -139,6 +148,13 @@ struct SettingsContent: View {
                         }
                     } label: {
                         Label("Button Position", systemImage: "arrow.left.and.right.square")
+                    }
+                    Picker(selection: $dynamicExperienceRange) {
+                        ForEach(DynamicRangeOption.allCases) { option in
+                            Text(option.text).tag(option)
+                        }
+                    } label: {
+                        Label("Dynamic Range", systemImage: "clock.arrow.circlepath")
                     }
                     Group {
                         Toggle("Hide dosage dots", isOn: $isHidingDosageDots)
@@ -317,7 +333,8 @@ struct SettingsContent: View {
         isSuccessToast: .constant(false),
         toastMessage: .constant(""),
         lockTimeOption: .constant(.after5Minutes),
-        fabButtonPosition: .constant(.center)
+        fabButtonPosition: .constant(.center),
+        dynamicExperienceRange: .constant(.twentyFourHours)
     )
     .accentColor(Color.blue)
 }

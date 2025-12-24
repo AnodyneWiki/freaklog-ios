@@ -7,11 +7,13 @@ struct CumulativeDose: Identifiable {
 
     let substanceName: String
     let substanceColor: SubstanceColor
+    let firstIngestionTime: Date
     let cumulativeRoutes: [CumulativeRouteAndDose]
 
     init(ingestionsForSubstance: [Ingestion], substanceName: String, substanceColor: SubstanceColor) {
         self.substanceName = substanceName
         self.substanceColor = substanceColor
+        self.firstIngestionTime = ingestionsForSubstance.map { $0.timeUnwrapped }.min() ?? Date()
         let substance = ingestionsForSubstance.first?.substance
         let ingestionsByRoute = Dictionary(grouping: ingestionsForSubstance, by: { $0.administrationRouteUnwrapped })
         cumulativeRoutes = ingestionsByRoute.map { (route: AdministrationRoute, ingestions: [Ingestion]) in

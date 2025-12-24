@@ -24,6 +24,7 @@ struct PersistenceController {
     static let clonedIngestionTimeKey = "clonedIngestionTimeKey"
     static let fabButtonPositionKey = "fabButtonPosition"
     static let isICloudSyncEnabledKey = "isICloudSyncEnabled"
+    static let dynamicExperienceRangeHoursKey = "dynamicExperienceRangeHours"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext

@@ -62,6 +62,27 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         isLoading = false
     }
 
+    /// Deletes an ingestion from Core Data.
+    func delete(_ ingestion: Ingestion) {
+        context.delete(ingestion)
+        do {
+            try context.save()
+        } catch {
+            print("ERROR: [AllIngestionsViewModel] Failed to delete ingestion: \(error.localizedDescription)")
+        }
+    }
+
+    /// Returns ingestions for the configured dynamic range relative to the given ingestion.
+    func getIngestionsForDynamicExperience(for ingestion: Ingestion) -> [Ingestion] {
+        let anchorTime = ingestion.timeUnwrapped
+        let hours = UserDefaults.standard.integer(forKey: PersistenceController.dynamicExperienceRangeHoursKey)
+        let rangeHours = hours > 0 ? hours : 24
+        let startDate = anchorTime.addingTimeInterval(-TimeInterval(rangeHours) * 60 * 60)
+        let endDate = anchorTime
+        
+        return PersistenceController.shared.getIngestionsBetween(startDate: startDate, endDate: endDate)
+    }
+
     // MARK: - Private Methods
     
     private func setupSearchObserver() {

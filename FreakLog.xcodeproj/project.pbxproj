@@ -22,6 +22,9 @@
 		A15CA2B52EFAFED200D90023 /* ChameleonHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */; };
 		A15CA2C32EFB1B9300D90023 /* ChartScrollingHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2C22EFB1B9300D90023 /* ChartScrollingHelper.swift */; };
 		A15CA2C52EFB279800D90023 /* DosageStatChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2C42EFB279800D90023 /* DosageStatChart.swift */; };
+		A15CA2F92EFB688300D90023 /* DynamicExperienceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2F82EFB688300D90023 /* DynamicExperienceScreen.swift */; };
+		A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */; };
+		A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
 		EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9927E5E72000077FB2 /* WebViewScreen.swift */; };
 		EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
@@ -415,6 +418,9 @@
 		A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsView.swift; sourceTree = "<group>"; };
 		A15CA2C22EFB1B9300D90023 /* ChartScrollingHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartScrollingHelper.swift; sourceTree = "<group>"; };
 		A15CA2C42EFB279800D90023 /* DosageStatChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosageStatChart.swift; sourceTree = "<group>"; };
+		A15CA2F82EFB688300D90023 /* DynamicExperienceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicExperienceScreen.swift; sourceTree = "<group>"; };
+		A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceLogic.swift; sourceTree = "<group>"; };
+		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
 		B2ACA17F2F1DD47AFA616C73A5329B8C4 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
@@ -1188,6 +1194,7 @@
 		EA6D44E12A4FF8B700BF2E8A /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */,
 				EA302E422B2F3320007F113F /* Custom Units */,
 				EAC39DC1297881E90012823D /* EditColorsScreen.swift */,
 				EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */,
@@ -1562,6 +1569,7 @@
 		EAE4715E26CBA664009FB0EC /* CoreDataHelpers */ = {
 			isa = PBXGroup;
 			children = (
+				A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */,
 				EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */,
 				EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */,
 				EA6048332A16C70A005C6A4B /* Spray-CoreDataHelpers.swift */,
@@ -1610,6 +1618,7 @@
 		EAE4718826CBA664009FB0EC /* Experience */ = {
 			isa = PBXGroup;
 			children = (
+				A15CA2F82EFB688300D90023 /* DynamicExperienceScreen.swift */,
 				EAE4808F2973DDF400B600EF /* Components */,
 				EAE4718B26CBA664009FB0EC /* ExperienceScreen.swift */,
 				EA4B8A242A9CFD34009918DE /* ConsumerWithIngestions.swift */,
@@ -1940,6 +1949,7 @@
 				EAC4BFFE2B890DF600293B44 /* OnFirstAppearModifier.swift in Sources */,
 				EA47E65927CA136C00F6E10F /* RoaRange.swift in Sources */,
 				EA4B8A072A969301009918DE /* WeightedLine.swift in Sources */,
+				A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */,
 				EAB794752D02DA9B00ED37C8 /* TimePointOrRangePicker.swift in Sources */,
 				EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */,
 				EA302E512B385976007F113F /* CustomChooseDoseScreenArguments.swift in Sources */,
@@ -2072,6 +2082,7 @@
 				EAC25C08295608E20002D68F /* AdministrationRouteScreen.swift in Sources */,
 				EABD92112942131E0073303A /* OnsetComeupPeakTotalTimeline.swift in Sources */,
 				EA418A2D296C00BF00DEA663 /* LocationManager.swift in Sources */,
+				A15CA2F92EFB688300D90023 /* DynamicExperienceScreen.swift in Sources */,
 				EA48F85629DB0EFE007DA8C5 /* ShulginRatingSection.swift in Sources */,
 				EA47E67027CB477000F6E10F /* SearchScreen.swift in Sources */,
 				EA48F88E29DD5053007DA8C5 /* CompanionCodable.swift in Sources */,
@@ -2089,6 +2100,7 @@
 				EA4793582B48122C00685EAA /* CustomUnitDosePicker.swift in Sources */,
 				EA4B8A1F2A9B3E0E009918DE /* EverythingForOneTimedNote.swift in Sources */,
 				EA4B8A312AA6FF02009918DE /* LockTimeOption.swift in Sources */,
+				A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */,
 				EA48F85829DB12A5007DA8C5 /* ShulginRatingOption.swift in Sources */,
 				EA47935E2B48384100685EAA /* CustomUnitBox.swift in Sources */,
 				EA26B2BF2976C0D600A1051A /* NextLabel.swift in Sources */,

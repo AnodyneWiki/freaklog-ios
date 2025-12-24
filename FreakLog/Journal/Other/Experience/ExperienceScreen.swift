@@ -324,6 +324,19 @@ struct ExperienceScreen: View {
                         }
                     }
                 }
+                if !experience.interactions.isEmpty && isEyeOpen && !isHidingSubstanceInfoInExperience {
+                    Section("Interactions") {
+                        ForEach(experience.interactions) { interaction in
+                            NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: experience.substancesUsed)) {
+                                InteractionPairRow(
+                                    aName: interaction.aName,
+                                    bName: interaction.bName,
+                                    interactionType: interaction.interactionType
+                                )
+                            }
+                        }
+                    }
+                }
                 if isEyeOpen && !isHidingSubstanceInfoInExperience && !experience.substancesUsed.isEmpty {
                     Section("Info") {
                         ForEach(experience.substancesUsed) { substance in
@@ -334,15 +347,6 @@ struct ExperienceScreen: View {
                         if experience.substancesUsed.contains(where: { $0.isHallucinogen }) {
                             NavigationLink(value: GlobalNavigationDestination.saferHallucinogen) {
                                 Label("Safer Hallucinogens", systemImage: "cross")
-                            }
-                        }
-                        ForEach(experience.interactions) { interaction in
-                            NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: experience.substancesUsed)) {
-                                InteractionPairRow(
-                                    aName: interaction.aName,
-                                    bName: interaction.bName,
-                                    interactionType: interaction.interactionType
-                                )
                             }
                         }
                         if experience.interactions.isEmpty {
