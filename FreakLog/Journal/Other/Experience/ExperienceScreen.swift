@@ -96,7 +96,7 @@ struct ExperienceScreen: View {
 
     func updateActivityIfActive() {
         if #available(iOS 16.2, *) {
-            if let lastTime = experience.myIngestionsSorted.last?.time, lastTime > Date.now.addingTimeInterval(-12 * 60 * 60) && ActivityManager.shared.isActivityActive {
+            if !ProcessInfo.processInfo.isiOSAppOnMac, let lastTime = experience.myIngestionsSorted.last?.time, lastTime > Date.now.addingTimeInterval(-12 * 60 * 60) && ActivityManager.shared.isActivityActive {
                 startOrUpdateLiveActivity()
             }
         }
@@ -104,6 +104,7 @@ struct ExperienceScreen: View {
 
     @available(iOS 16.2, *)
     func startOrUpdateLiveActivity() {
+        guard !ProcessInfo.processInfo.isiOSAppOnMac else { return }
         Task {
             await ActivityManager.shared.startOrUpdateActivity(
                 substanceGroups: getSubstanceIngestionGroups(ingestions: experience.myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
@@ -121,6 +122,7 @@ struct ExperienceScreen: View {
 
     @available(iOS 16.2, *)
     func stopLiveActivity() {
+        guard !ProcessInfo.processInfo.isiOSAppOnMac else { return }
         Task {
             await ActivityManager.shared.stopActivity(
                 substanceGroups: getSubstanceIngestionGroups(ingestions: experience.myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
@@ -173,7 +175,7 @@ struct ExperienceScreen: View {
                             isCurrentExperience: experience.isCurrent
                         )
                         if #available(iOS 16.2, *) {
-                            if experience.isCurrent && timelineModel.isWorthDrawing {
+                            if !ProcessInfo.processInfo.isiOSAppOnMac, experience.isCurrent && timelineModel.isWorthDrawing {
                                 LiveActivityButton(
                                     stopLiveActivity: {
                                         stopLiveActivity()

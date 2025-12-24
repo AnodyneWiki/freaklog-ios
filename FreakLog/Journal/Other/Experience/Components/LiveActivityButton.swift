@@ -10,7 +10,7 @@ struct LiveActivityButton: View {
 
     var body: some View {
         Group {
-            if areActivitiesEnabled {
+            if !ProcessInfo.processInfo.isiOSAppOnMac && areActivitiesEnabled {
                 if activityManager.isActivityActive {
                     Button {
                         stopLiveActivity()
@@ -37,6 +37,7 @@ struct LiveActivityButton: View {
             }
         }
         .task {
+            guard !ProcessInfo.processInfo.isiOSAppOnMac else { return }
             let authorizationInfo = ActivityManager.shared.authorizationInfo
             self.areActivitiesEnabled = authorizationInfo.areActivitiesEnabled
             for await isEnabled in authorizationInfo.activityEnablementUpdates {

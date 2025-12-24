@@ -167,6 +167,7 @@ struct FinishIngestionScreen: View {
                         let isTimeRecentOrFuture = Date().timeIntervalSinceReferenceDate - selectedTime
                             .timeIntervalSinceReferenceDate < 12 * 60 * 60
                         if
+                            !ProcessInfo.processInfo.isiOSAppOnMac,
                             ActivityManager.shared.authorizationInfo.areActivitiesEnabled,
                             !ActivityManager.shared.isActivityActive,
                             isTimeRecentOrFuture

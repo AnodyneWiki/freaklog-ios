@@ -142,7 +142,7 @@ struct SettingsContent: View {
                         Toggle("Draw redoses individually", isOn: $areRedosesDrawnIndividually)
                         Toggle("Independent substance heights", isOn: $areSubstanceHeightsIndependent)
                         if #available(iOS 16.2, *) {
-                            if ActivityManager.shared.authorizationInfo.areActivitiesEnabled {
+                            if !ProcessInfo.processInfo.isiOSAppOnMac, ActivityManager.shared.authorizationInfo.areActivitiesEnabled {
                                 Toggle("Automatic live activities", isOn: $shouldAutomaticallyStartLiveActivity)
                             }
                         }

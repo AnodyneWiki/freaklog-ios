@@ -34,7 +34,7 @@ struct ExperienceRow: View {
                 Button(role: .destructive) {
                     Task {
                         if #available(iOS 16.2, *) {
-                            if experience.isCurrent {
+                            if !ProcessInfo.processInfo.isiOSAppOnMac, experience.isCurrent {
                                 await ActivityManager.shared.stopActivity(
                                     substanceGroups: getSubstanceIngestionGroups(ingestions: experience.ingestionsSorted),
                                     everythingForEachRating: experience.ratingsWithTimeSorted.map { shulgin in

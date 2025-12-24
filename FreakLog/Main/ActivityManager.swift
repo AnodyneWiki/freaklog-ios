@@ -5,11 +5,19 @@ import Foundation
 @MainActor
 class ActivityManager: ObservableObject {
     static let shared = ActivityManager()
-    let authorizationInfo = ActivityAuthorizationInfo()
+    lazy var authorizationInfo = ActivityAuthorizationInfo()
     @Published var isActivityActive = false
     private var activityStateTask: Task<Void, Never>?
 
+    private var areActivitiesSupported: Bool {
+        if ProcessInfo.processInfo.isiOSAppOnMac {
+            return false
+        }
+        return true
+    }
+
     init() {
+        guard areActivitiesSupported else { return }
         if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first {
             isActivityActive = firstActivity.activityState == .active
             activityStateTask = Task { [weak self] in
@@ -31,6 +39,7 @@ class ActivityManager: ObservableObject {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) async {
+        guard areActivitiesSupported else { return }
         if authorizationInfo.areActivitiesEnabled {
             if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first, firstActivity.activityState == .active {
                 await updateActivity(
@@ -67,6 +76,7 @@ class ActivityManager: ObservableObject {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) {
+        guard areActivitiesSupported else { return }
         let attributes = TimelineWidgetAttributes(name: "Passed from app")
         let state = TimelineWidgetAttributes.ContentState(
             substanceGroups: substanceGroups,
@@ -100,6 +110,8 @@ class ActivityManager: ObservableObject {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) async {
+        // No guard needed here as it's called internally with an activity instance, but good practice?
+        // Actually update relies on activity instance.
         let state = TimelineWidgetAttributes.ContentState(
             substanceGroups: substanceGroups,
             everythingForEachRating: everythingForEachRating,
@@ -118,6 +130,7 @@ class ActivityManager: ObservableObject {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) async {
+        guard areActivitiesSupported else { return }
         if authorizationInfo.areActivitiesEnabled {
             let state = TimelineWidgetAttributes.ContentState(
                 substanceGroups: substanceGroups,
