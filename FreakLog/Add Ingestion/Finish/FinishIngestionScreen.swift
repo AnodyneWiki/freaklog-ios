@@ -539,10 +539,6 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    static func editWebhookMessageIfNeeded(for ingestion: Ingestion) async {
-        await WebhookManager.shared.editWebhookMessages(for: ingestion)
-    }
-
     static func deleteWebhookMessages(for ingestions: [Ingestion]) async {
         await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
     }

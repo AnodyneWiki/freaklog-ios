@@ -207,6 +207,9 @@ struct EditIngestionScreen: View {
         }
         PersistenceController.shared.saveViewContext()
         ingestion.experience?.objectWillChange.send()
+        Task {
+            await WebhookManager.shared.editWebhookMessages(for: ingestion)
+        }
         dismiss()
     }
 
