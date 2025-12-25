@@ -5,7 +5,7 @@ struct PersistenceController {
     static let shared = PersistenceController()
     static let preview: PersistenceController = .init(inMemory: true)
 
-    let container: NSPersistentContainer
+    let container: NSPersistentCloudKitContainer
 
     private var isInitialized = false
 
@@ -37,65 +37,45 @@ struct PersistenceController {
         container.viewContext
     }
 
-    private static let modelName = "Main"
-
     init(inMemory: Bool = false) {
         let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
-
-        if isICloudSyncEnabled && !inMemory {
-            container = NSPersistentCloudKitContainer(name: PersistenceController.modelName)
-        } else {
-            container = NSPersistentContainer(name: PersistenceController.modelName)
-        }
-
-        let description = container.persistentStoreDescriptions.first
+        container = NSPersistentCloudKitContainer(name: "Main")
 
         if !inMemory {
-            // Always enable history tracking to prevent compatibility issues when switching sync modes
-            description?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
+            container.persistentStoreDescriptions.forEach { description in
+                description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
 
-            if isICloudSyncEnabled {
-                // Configure CloudKit container options
-                #if DEBUG
-                let containerIdentifier = "iCloud.woof.freaklog-debug"
-                #else
-                let containerIdentifier = "iCloud.woof.freaklog"
+                if isICloudSyncEnabled {
+                    #if DEBUG
+                    let containerIdentifier = "iCloud.woof.freaklog-debug"
+                    #else
+                    let containerIdentifier = "iCloud.woof.freaklog"
+                    #endif
+
+                    let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+                    description.cloudKitContainerOptions = cloudKitContainerOptions
+
+                    description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+                } else {
+                    description.configuration = "Local"
+                }
+                
+                #if APP_WIDGET
+                description.setOption(true as NSNumber, forKey: NSReadOnlyPersistentStoreOption)
                 #endif
-
-                let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
-                description?.cloudKitContainerOptions = cloudKitContainerOptions
-
-                // Set additional store options for CloudKit sync
-                description?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
             }
         }
 
-#if APP_WIDGET
-        description?.setOption(true as NSNumber, forKey: NSReadOnlyPersistentStoreOption)
-#endif
-
         if inMemory {
-            loadInMemoryStores(description: description)
+            loadInMemoryStores(description: container.persistentStoreDescriptions.first)
             isInitialized = true
-        }
-
-        // Configure view context
-        if isICloudSyncEnabled && !inMemory {
-            // Configure view context for CloudKit sync
-            viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-            viewContext.automaticallyMergesChangesFromParent = true
-        } else {
-            // Configure view context for local storage
-            viewContext.automaticallyMergesChangesFromParent = true
         }
     }
 
-    // Tries to load data from persistent store, if it's available
     public func loadData(_ app: UIApplication) {
         tryLoadPersistentStores(app)
     }
 
-    // Loads data from the in-memory store (only used for development)
     private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
         let description = NSPersistentStoreDescription()
         description.type = NSInMemoryStoreType
@@ -107,23 +87,15 @@ struct PersistenceController {
             }
         }
 
-        // Configure view context for in-memory stores (no CloudKit sync)
         viewContext.automaticallyMergesChangesFromParent = true
     }
 
-    // Tries to load data from the persistent store, if it's available.
-    // Specially handles the case of the app being prewarmed before first unlock, to supress erroneous app crashes.
-    // There is likely a better way to fix it, but neither I nor the internet seems to know it.
     private func tryLoadPersistentStores(_ app: UIApplication) {
         if isInitialized { return }
-
-        container.loadPersistentStores { _, error in
+        container.loadPersistentStores { description, error in
             if let error = error {
                 let nsError = error as NSError
                 if (nsError.domain == "NSCocoaErrorDomain" && nsError.code == 256 && nsError.userInfo["NSSQLiteErrorDomain"] as? Int == 23) {
-                    NSLog("Can't load core data stack due to BFU state")
-                    NSLog("Cannot continue.")
-                    // We want to end execution (since we can't continue) but not crash (to prevent the crash dialog)
                     exit(0)
                 }
                 else {
@@ -132,47 +104,117 @@ struct PersistenceController {
             }
         }
 
+        
+        viewContext.automaticallyMergesChangesFromParent = true
+        viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        
+        let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
+        if !UserDefaults.standard.bool(forKey: didInitializeCloudKitSchemaKey) {
+            do {
+                try container.initializeCloudKitSchema(options: [])
+                UserDefaults.standard.set(true, forKey: didInitializeCloudKitSchemaKey)
+            } catch {
+            }
+        }
+
+
         return
     }
 
-    func deleteEverything() throws {
+    func updateCloudKitSyncStatus(_ enabled: Bool) {
+        
+        saveViewContext()
+        
+        guard let store = container.persistentStoreCoordinator.persistentStores.first,
+              let url = store.url else {
+            return
+        }
+
+        guard let description = container.persistentStoreDescriptions.first else {
+             return
+        }
+
+        if enabled {
+            #if DEBUG
+            let containerIdentifier = "iCloud.woof.freaklog-debug"
+            #else
+            let containerIdentifier = "iCloud.woof.freaklog"
+            #endif
+            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+            description.cloudKitContainerOptions = cloudKitContainerOptions
+            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+            description.configuration = nil
+        } else {
+            description.cloudKitContainerOptions = nil
+            description.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+            description.configuration = "Local"
+        }
+
+        do {
+            try container.persistentStoreCoordinator.remove(store)
+        } catch {
+            return
+        }
+        
+        container.loadPersistentStores { description, error in
+            if let error = error {
+                fatalError("Failed to load Core Data stack: \(error)")
+            }
+        }
+        
+        viewContext.automaticallyMergesChangesFromParent = true
+        viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    }
+
+    func deleteEverything(blockContext: NSManagedObjectContext? = nil) throws {
+        let context = blockContext ?? viewContext
         let experienceDeleteRequest = Experience.fetchRequest()
         experienceDeleteRequest.includesPropertyValues = false
-        let experiences = try viewContext.fetch(experienceDeleteRequest)
+        let experiences = try context.fetch(experienceDeleteRequest)
         for exp in experiences {
-            viewContext.delete(exp)
+            context.delete(exp)
         }
         let ingestionDeleteRequest = Ingestion.fetchRequest()
         ingestionDeleteRequest.includesPropertyValues = false
-        let ingestions = try viewContext.fetch(ingestionDeleteRequest)
+        let ingestions = try context.fetch(ingestionDeleteRequest)
         for ing in ingestions {
-            viewContext.delete(ing)
+            context.delete(ing)
         }
         let customDeleteRequest = CustomSubstance.fetchRequest()
         customDeleteRequest.includesPropertyValues = false
-        let customs = try viewContext.fetch(customDeleteRequest)
+        let customs = try context.fetch(customDeleteRequest)
         for cust in customs {
-            viewContext.delete(cust)
+            context.delete(cust)
         }
         let companionDeleteRequest = SubstanceCompanion.fetchRequest()
         companionDeleteRequest.includesPropertyValues = false
-        let companions = try viewContext.fetch(companionDeleteRequest)
+        let companions = try context.fetch(companionDeleteRequest)
         for com in companions {
-            viewContext.delete(com)
+            context.delete(com)
         }
         let unitDeleteRequest = CustomUnit.fetchRequest()
         unitDeleteRequest.includesPropertyValues = false
-        let customUnits = try viewContext.fetch(unitDeleteRequest)
+        let customUnits = try context.fetch(unitDeleteRequest)
         for unit in customUnits {
-            viewContext.delete(unit)
+            context.delete(unit)
         }
         let sprayDeleteRequest = Spray.fetchRequest()
         sprayDeleteRequest.includesPropertyValues = false
-        let sprays = try viewContext.fetch(sprayDeleteRequest)
+        let sprays = try context.fetch(sprayDeleteRequest)
         for spray in sprays {
-            viewContext.delete(spray)
+            context.delete(spray)
         }
-        try viewContext.save()
+        try context.save()
+        
+        
+        let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
+        if !isICloudSyncEnabled {
+            let purgeHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
+            do {
+                try context.execute(purgeHistoryRequest)
+            } catch {
+            }
+        }
     }
 
     func migrateCompanionsAndExperienceSortDates() {
@@ -284,26 +326,22 @@ struct PersistenceController {
             let companionFetchRequest = SubstanceCompanion.fetchRequest()
             let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
 
-            // Group companions by substanceName
             var companionsByName: [String: [SubstanceCompanion]] = [:]
             for companion in allCompanions {
                 guard let name = companion.substanceName else { continue }
                 companionsByName[name, default: []].append(companion)
             }
 
-            // For each substance name with multiple companions, keep one and reassign ingestions
             for (_, companions) in companionsByName where companions.count > 1 {
-                let keeper = companions[0] // Keep the first one
+                let keeper = companions[0]
                 let duplicates = companions[1...]
 
                 for duplicate in duplicates {
-                    // Reassign all ingestions from duplicate to keeper
                     if let ingestions = duplicate.ingestions as? Set<Ingestion> {
                         for ingestion in ingestions {
                             ingestion.substanceCompanion = keeper
                         }
                     }
-                    // Delete the duplicate
                     viewContext.delete(duplicate)
                 }
             }

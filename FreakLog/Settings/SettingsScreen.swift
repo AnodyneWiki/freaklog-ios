@@ -100,7 +100,7 @@ struct SettingsContent: View {
         List {
             Section(
                 header: Text("Privacy"),
-                footer: Text("iCloud Sync setting takes effect after restarting the app.")
+                footer: Text("Turn on to sync your data across your devices.")
             ) {
                 if isFaceIDAvailable {
                     Toggle("Require App Unlock", isOn: $hasToUnlockApp.animation()).tint(Color.accentColor)
@@ -117,6 +117,9 @@ struct SettingsContent: View {
                     .labelsHidden()
                 }
                 Toggle("iCloud Sync", isOn: $isICloudSyncEnabled.animation()).tint(Color.accentColor)
+                    .onChange(of: isICloudSyncEnabled) { newValue in
+                        PersistenceController.shared.updateCloudKitSyncStatus(newValue)
+                    }
             }
             if isEyeOpen {
                 Section("UI") {
@@ -241,7 +244,9 @@ struct SettingsContent: View {
                 selectedFile.stopAccessingSecurityScopedResource()
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
-                print("Error getting data: \(error.localizedDescription)")
+                // print("Error getting data: \(error.localizedDescription)") // Removed debug print
+                // better: Just ignore, or handle error properly without console spam
+
             }
         }
         .fileExporter(

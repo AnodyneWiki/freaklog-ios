@@ -105,4 +105,17 @@
         <attribute name="url" optional="YES" attributeType="String"/>
         <relationship name="messages" optional="YES" toMany="YES" deletionRule="Cascade" destinationEntity="WebhookMessage" inverseName="webhookPreset" inverseEntity="WebhookMessage"/>
     </entity>
+    <configuration name="Local">
+        <memberEntity name="CustomSubstance"/>
+        <memberEntity name="CustomUnit"/>
+        <memberEntity name="Experience"/>
+        <memberEntity name="ExperienceLocation"/>
+        <memberEntity name="Ingestion"/>
+        <memberEntity name="ShulginRating"/>
+        <memberEntity name="Spray"/>
+        <memberEntity name="SubstanceCompanion"/>
+        <memberEntity name="TimedNote"/>
+        <memberEntity name="WebhookMessage"/>
+        <memberEntity name="WebhookPreset"/>
+    </configuration>
 </model>
