@@ -71,7 +71,13 @@ struct AllIngestionsView: View {
             viewModel.searchText = newValue
         }
         .onAppear {
-            viewModel.searchText = searchText
+            if viewModel.searchText != searchText {
+                viewModel.searchText = searchText
+            }
+            viewModel.updateTimelineIngestions()
+        }
+        .onChange(of: dynamicExperienceRangeHours) { _ in
+            viewModel.updateTimelineIngestions()
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
