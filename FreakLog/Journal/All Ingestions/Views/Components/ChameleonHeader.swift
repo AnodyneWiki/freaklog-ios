@@ -6,6 +6,7 @@ import SwiftUI
 struct ChameleonHeader: View {
     let title: String
     let date: Date
+    var dynamicExperienceDestination: GlobalNavigationDestination? = nil
     
     @State private var isPinnedInternal = false
 
@@ -21,7 +22,16 @@ struct ChameleonHeader: View {
                         .font(.subheadline.bold())
                         .foregroundColor(isPinnedInternal ? .primary : .secondary)
                         .textCase(.uppercase)
+                    
                     Spacer()
+                    
+                    if let dynamicExperienceDestination = dynamicExperienceDestination {
+                        NavigationLink(value: dynamicExperienceDestination) {
+                            Label("Overview", systemImage: "arrow.down.left.and.arrow.up.right.square")
+                                .labelStyle(.iconOnly)
+                                .foregroundColor(.blue)
+                        }
+                    }
                 }
                 .padding(.horizontal, 16)
                 Spacer(minLength: 0)

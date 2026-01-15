@@ -22,7 +22,17 @@ struct AllIngestionsView: View {
                 .listRowSeparator(.hidden)
 
             ForEach(viewModel.sections) { section in
-                Section(header: ChameleonHeader(title: section.id, date: section.date)
+                Section(header: ChameleonHeader(
+                    title: section.id,
+                    date: section.date,
+                    dynamicExperienceDestination: {
+                        let dynamicIngestions = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)
+                        if !dynamicIngestions.isEmpty {
+                            return GlobalNavigationDestination.dynamicExperience(ingestions: dynamicIngestions)
+                        }
+                        return nil
+                    }()
+                )
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
                 ) {
@@ -200,17 +210,6 @@ private extension AllIngestionsView {
             }
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
-            .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                Button {
-                    let relatedIngestions = viewModel.getIngestionsForDynamicExperience(for: ingestion)
-                    if !relatedIngestions.isEmpty {
-                        Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: relatedIngestions))
-                    }
-                } label: {
-                    Label("Overview", systemImage: "clock.arrow.circlepath")
-                }
-                .tint(.blue)
-            }
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     viewModel.delete(ingestion)

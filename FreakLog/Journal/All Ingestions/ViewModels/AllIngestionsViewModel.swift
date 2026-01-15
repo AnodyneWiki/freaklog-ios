@@ -92,6 +92,26 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         return PersistenceController.shared.getIngestionsBetween(startDate: startDate, endDate: endDate)
     }
 
+    func getIngestionsForDynamicExperienceLastIngestion(for date: Date) -> [Ingestion] {
+        let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        
+        let request: NSFetchRequest<Ingestion> = Ingestion.fetchRequest()
+        request.predicate = NSPredicate(format: "time >= %@ AND time <= %@", startOfDay as NSDate, endOfDay as NSDate)
+        request.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
+        request.fetchLimit = 1
+        
+        do {
+            if let lastIngestion = try PersistenceController.shared.viewContext.fetch(request).first {
+                return getIngestionsForDynamicExperience(for: lastIngestion)
+            }
+        } catch {
+            print("ERROR: Failed to fetch last ingestion for day: \(error)")
+        }
+        
+        return []
+    }
+
     /// Updates the ingestions used for the top timeline chart.
     func updateTimelineIngestions() {
         guard let latestIngestion = fetchedResultsController?.fetchedObjects?.first else {
