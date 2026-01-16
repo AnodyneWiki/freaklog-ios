@@ -22,6 +22,8 @@
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
 		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
+		A10928722F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
+		A10928732F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
 		A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */; };
 		A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */; };
 		A15CA2B42EFAFED200D90023 /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
@@ -74,12 +76,7 @@
 		EA085E112961A1C9001638AC /* TimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92052941C4080073303A /* TimelineDrawable.swift */; };
 		EA085E132961A1F0001638AC /* GraphicsContext-DrawDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */; };
 		EA085E142961A200001638AC /* StrokeStyle-Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920C294202680073303A /* StrokeStyle-Timeline.swift */; };
-		EA085E152961A212001638AC /* TotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92082941EA4B0073303A /* TotalTimeline.swift */; };
-		EA085E172961A212001638AC /* OnsetComeupTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921429421CE60073303A /* OnsetComeupTimeline.swift */; };
-		EA085E182961A212001638AC /* OnsetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD9212294215FB0073303A /* OnsetTimeline.swift */; };
-		EA085E192961A212001638AC /* OnsetComeupPeakTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92102942131E0073303A /* OnsetComeupPeakTotalTimeline.swift */; };
 		EA085E1B2961A212001638AC /* NoTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921829422C580073303A /* NoTimeline.swift */; };
-		EA085E1C2961A212001638AC /* OnsetComeupPeakTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921629421E960073303A /* OnsetComeupPeakTimeline.swift */; };
 		EA095A0F27D9DCAE007D44D6 /* UnitsPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A0E27D9DCAE007D44D6 /* UnitsPicker.swift */; };
 		EA095A1427DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A1327DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift */; };
 		EA0CAAAF295473C900095A33 /* GraphicsContext-DrawDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */; };
@@ -97,7 +94,6 @@
 		EA29DC3A2B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */; };
 		EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A5C5E29F01F58004D8A7E /* DoneButton.swift */; };
 		EA2A69A529714ED600B3A474 /* SaferRoutesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A69A429714ED600B3A474 /* SaferRoutesScreen.swift */; };
-		EA2C94B52AAD98A000864BEC /* FullTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2C94B42AAD98A000864BEC /* FullTimeline.swift */; };
 		EA2D19652B11D3BA00B270A2 /* SubstanceIngestionGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19642B11D3BA00B270A2 /* SubstanceIngestionGroup.swift */; };
 		EA2D19662B11D46900B270A2 /* SubstanceRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63527CA136C00F6E10F /* SubstanceRepo.swift */; };
 		EA2D19692B11E85300B270A2 /* ChooseOtherRouteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19682B11E85300B270A2 /* ChooseOtherRouteScreen.swift */; };
@@ -191,8 +187,6 @@
 		EA4B8A072A969301009918DE /* WeightedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A062A969301009918DE /* WeightedLine.swift */; };
 		EA4B8A092A969B0E009918DE /* FullCumulativeTimelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A082A969B0E009918DE /* FullCumulativeTimelines.swift */; };
 		EA4B8A0A2A99F2BE009918DE /* WeightedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A062A969301009918DE /* WeightedLine.swift */; };
-		EA4B8A0C2A9A15FE009918DE /* OnsetTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920A2941FB160073303A /* OnsetTotalTimeline.swift */; };
-		EA4B8A0D2A9A1601009918DE /* OnsetComeupTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920E294203E70073303A /* OnsetComeupTotalTimeline.swift */; };
 		EA4B8A0E2A9A1609009918DE /* GroupDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92012941C3A30073303A /* GroupDrawable.swift */; };
 		EA4B8A0F2A9A23ED009918DE /* FullCumulativeTimelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A082A969B0E009918DE /* FullCumulativeTimelines.swift */; };
 		EA4B8A122A9B1F23009918DE /* TimedNote-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A112A9B1F23009918DE /* TimedNote-CoreDataHelpers.swift */; };
@@ -287,14 +281,7 @@
 		EABD92002941C3740073303A /* AxisDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FF2941C3740073303A /* AxisDrawable.swift */; };
 		EABD92022941C3A30073303A /* GroupDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92012941C3A30073303A /* GroupDrawable.swift */; };
 		EABD92062941C4080073303A /* TimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92052941C4080073303A /* TimelineDrawable.swift */; };
-		EABD92092941EA4B0073303A /* TotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92082941EA4B0073303A /* TotalTimeline.swift */; };
-		EABD920B2941FB160073303A /* OnsetTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920A2941FB160073303A /* OnsetTotalTimeline.swift */; };
 		EABD920D294202680073303A /* StrokeStyle-Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920C294202680073303A /* StrokeStyle-Timeline.swift */; };
-		EABD920F294203E70073303A /* OnsetComeupTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920E294203E70073303A /* OnsetComeupTotalTimeline.swift */; };
-		EABD92112942131E0073303A /* OnsetComeupPeakTotalTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92102942131E0073303A /* OnsetComeupPeakTotalTimeline.swift */; };
-		EABD9213294215FB0073303A /* OnsetTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD9212294215FB0073303A /* OnsetTimeline.swift */; };
-		EABD921529421CE60073303A /* OnsetComeupTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921429421CE60073303A /* OnsetComeupTimeline.swift */; };
-		EABD921729421E960073303A /* OnsetComeupPeakTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921629421E960073303A /* OnsetComeupPeakTimeline.swift */; };
 		EABD921929422C580073303A /* NoTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921829422C580073303A /* NoTimeline.swift */; };
 		EABD921E294278240073303A /* CategorySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921D294278240073303A /* CategorySection.swift */; };
 		EABD922029427A9C0073303A /* DosesSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921F29427A9C0073303A /* DosesSection.swift */; };
@@ -330,7 +317,6 @@
 		EACF43942B9F7B7A008D1897 /* GlobalNavigationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */; };
 		EACF439B2BA24026008D1897 /* DosageStatScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439A2BA24026008D1897 /* DosageStatScreen.swift */; };
 		EACF439D2BA247D3008D1897 /* DosageStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439C2BA247D3008D1897 /* DosageStat.swift */; };
-		EAD089D42AADA01A006EAA48 /* FullTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2C94B42AAD98A000864BEC /* FullTimeline.swift */; };
 		EAD1D0022B52709500EC0D70 /* CustomUnitsArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0012B52709500EC0D70 /* CustomUnitsArchiveScreen.swift */; };
 		EAD1D0042B5271BD00EC0D70 /* CustomUnitRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0032B5271BD00EC0D70 /* CustomUnitRow.swift */; };
 		EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4710626CBA57F009FB0EC /* FreakLog.swift */; };
@@ -425,6 +411,7 @@
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
+		A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedTimelineDrawable.swift; sourceTree = "<group>"; };
 		A15CA2A92EFAFED200D90023 /* IngestionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSection.swift; sourceTree = "<group>"; };
 		A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsViewModel.swift; sourceTree = "<group>"; };
 		A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChameleonHeader.swift; sourceTree = "<group>"; };
@@ -473,7 +460,6 @@
 		EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Double-asRoundedReadableString.swift"; sourceTree = "<group>"; };
 		EA2A5C5E29F01F58004D8A7E /* DoneButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoneButton.swift; sourceTree = "<group>"; };
 		EA2A69A429714ED600B3A474 /* SaferRoutesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaferRoutesScreen.swift; sourceTree = "<group>"; };
-		EA2C94B42AAD98A000864BEC /* FullTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullTimeline.swift; sourceTree = "<group>"; };
 		EA2D19642B11D3BA00B270A2 /* SubstanceIngestionGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceIngestionGroup.swift; sourceTree = "<group>"; };
 		EA2D19682B11E85300B270A2 /* ChooseOtherRouteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseOtherRouteScreen.swift; sourceTree = "<group>"; };
 		EA2D196A2B11E8AE00B270A2 /* RouteBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RouteBox.swift; sourceTree = "<group>"; };
@@ -656,14 +642,7 @@
 		EABD91FF2941C3740073303A /* AxisDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AxisDrawable.swift; sourceTree = "<group>"; };
 		EABD92012941C3A30073303A /* GroupDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupDrawable.swift; sourceTree = "<group>"; };
 		EABD92052941C4080073303A /* TimelineDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineDrawable.swift; sourceTree = "<group>"; };
-		EABD92082941EA4B0073303A /* TotalTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalTimeline.swift; sourceTree = "<group>"; };
-		EABD920A2941FB160073303A /* OnsetTotalTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetTotalTimeline.swift; sourceTree = "<group>"; };
 		EABD920C294202680073303A /* StrokeStyle-Timeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "StrokeStyle-Timeline.swift"; sourceTree = "<group>"; };
-		EABD920E294203E70073303A /* OnsetComeupTotalTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetComeupTotalTimeline.swift; sourceTree = "<group>"; };
-		EABD92102942131E0073303A /* OnsetComeupPeakTotalTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetComeupPeakTotalTimeline.swift; sourceTree = "<group>"; };
-		EABD9212294215FB0073303A /* OnsetTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetTimeline.swift; sourceTree = "<group>"; };
-		EABD921429421CE60073303A /* OnsetComeupTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetComeupTimeline.swift; sourceTree = "<group>"; };
-		EABD921629421E960073303A /* OnsetComeupPeakTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnsetComeupPeakTimeline.swift; sourceTree = "<group>"; };
 		EABD921829422C580073303A /* NoTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoTimeline.swift; sourceTree = "<group>"; };
 		EABD921D294278240073303A /* CategorySection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategorySection.swift; sourceTree = "<group>"; };
 		EABD921F29427A9C0073303A /* DosesSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DosesSection.swift; sourceTree = "<group>"; };
@@ -1397,19 +1376,12 @@
 		EABD92072941EA1A0073303A /* Drawables */ = {
 			isa = PBXGroup;
 			children = (
+				A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */,
 				EA4B8A082A969B0E009918DE /* FullCumulativeTimelines.swift */,
-				EA2C94B42AAD98A000864BEC /* FullTimeline.swift */,
 				EA1F774F2D4CCB7100E7F483 /* FullRangeTimeline.swift */,
 				EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */,
-				EABD92082941EA4B0073303A /* TotalTimeline.swift */,
 				EABD920C294202680073303A /* StrokeStyle-Timeline.swift */,
-				EABD921429421CE60073303A /* OnsetComeupTimeline.swift */,
-				EABD92102942131E0073303A /* OnsetComeupPeakTotalTimeline.swift */,
-				EABD9212294215FB0073303A /* OnsetTimeline.swift */,
-				EABD921629421E960073303A /* OnsetComeupPeakTimeline.swift */,
 				EABD92052941C4080073303A /* TimelineDrawable.swift */,
-				EABD920E294203E70073303A /* OnsetComeupTotalTimeline.swift */,
-				EABD920A2941FB160073303A /* OnsetTotalTimeline.swift */,
 				EABD921829422C580073303A /* NoTimeline.swift */,
 			);
 			path = Drawables;
@@ -1873,16 +1845,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EAD089D42AADA01A006EAA48 /* FullTimeline.swift in Sources */,
 				EA085E0329619F3E001638AC /* SubstanceColor.swift in Sources */,
 				EA4B8A232A9B3FE9009918DE /* EverythingForOneTimedNote.swift in Sources */,
 				EA085DFD29619E1E001638AC /* RoaDuration.swift in Sources */,
 				EA1F77502D4CCB7700E7F483 /* FullRangeTimeline.swift in Sources */,
 				EA085E0429619F85001638AC /* Interactions.swift in Sources */,
-				EA085E192961A212001638AC /* OnsetComeupPeakTotalTimeline.swift in Sources */,
 				EA085E0529619F85001638AC /* SubstanceFile.swift in Sources */,
 				EA085E0C29619FA3001638AC /* DoseRangeType.swift in Sources */,
-				EA4B8A0D2A9A1601009918DE /* OnsetComeupTotalTimeline.swift in Sources */,
 				EA085E112961A1C9001638AC /* TimelineDrawable.swift in Sources */,
 				EA4B8A222A9B3FB2009918DE /* TimedNoteDrawable.swift in Sources */,
 				EA48F86829DC1B69007DA8C5 /* ShulginRatingOption.swift in Sources */,
@@ -1897,19 +1866,16 @@
 				EAB794732D017E8600ED37C8 /* IngestionRange.swift in Sources */,
 				EA085E132961A1F0001638AC /* GraphicsContext-DrawDot.swift in Sources */,
 				EA48F86729DC1B13007DA8C5 /* RatingDrawable.swift in Sources */,
-				EA085E152961A212001638AC /* TotalTimeline.swift in Sources */,
 				EA4B8A0A2A99F2BE009918DE /* WeightedLine.swift in Sources */,
 				EA085E0E2961A0B2001638AC /* TimelineModel.swift in Sources */,
-				EA085E1C2961A212001638AC /* OnsetComeupPeakTimeline.swift in Sources */,
-				EA085E172961A212001638AC /* OnsetComeupTimeline.swift in Sources */,
 				EA085E0B29619F97001638AC /* AdministrationRoute.swift in Sources */,
-				EA4B8A0C2A9A15FE009918DE /* OnsetTotalTimeline.swift in Sources */,
 				EA2D19662B11D46900B270A2 /* SubstanceRepo.swift in Sources */,
 				EA4B8A0F2A9A23ED009918DE /* FullCumulativeTimelines.swift in Sources */,
 				EA085E0929619F85001638AC /* RoaRange.swift in Sources */,
 				EA085DE529616E48001638AC /* TimelineWidgetAttributes.swift in Sources */,
 				EA085E0D29619FFD001638AC /* EffectTimeline.swift in Sources */,
 				EA085DFE29619E26001638AC /* DurationRange.swift in Sources */,
+				A10928722F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */,
 				EA4189EF2962E69000DEA663 /* Constants.swift in Sources */,
 				EAC9C17F2BAAB8C50068A577 /* DateDifference.swift in Sources */,
 				EA085DD529607229001638AC /* TimelineWidgetLiveActivity.swift in Sources */,
@@ -1919,7 +1885,6 @@
 				EA085E142961A200001638AC /* StrokeStyle-Timeline.swift in Sources */,
 				EAB794702D017B1200ED37C8 /* TimeRangeDrawable.swift in Sources */,
 				EA4B8A0E2A9A1609009918DE /* GroupDrawable.swift in Sources */,
-				EA085E182961A212001638AC /* OnsetTimeline.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1962,7 +1927,6 @@
 				EA6EFDEF2D1C00E300729089 /* CustomSubstanceSuggestionView.swift in Sources */,
 				EAC25C002955FD190002D68F /* DosageGuideScreen.swift in Sources */,
 				EA60483D2A188FFB005C6A4B /* SprayModel.swift in Sources */,
-				EABD920B2941FB160073303A /* OnsetTotalTimeline.swift in Sources */,
 				0D3477A62EF62F60004CDCB4 /* TabSettingsScreen.swift in Sources */,
 				EA39B2072BB98211000B1C4E /* AppIntents.swift in Sources */,
 				EA03ABC62B39BE9200DB8D0D /* CustomUnitsChooseDoseScreen.swift in Sources */,
@@ -1971,7 +1935,6 @@
 				EAB165AE27E36D29003DF79D /* EmptySectionForPadding.swift in Sources */,
 				EAC39DC2297881E90012823D /* EditColorsScreen.swift in Sources */,
 				EA41C634295F895C000DA021 /* MonthlyExperienceChart.swift in Sources */,
-				EABD921529421CE60073303A /* OnsetComeupTimeline.swift in Sources */,
 				EAC23794276750C500109622 /* Global Functions.swift in Sources */,
 				EA41C632295F8921000DA021 /* DailyExperienceChart.swift in Sources */,
 				EAA9C3902A548B9600869E5A /* SubstanceAndDay.swift in Sources */,
@@ -1992,7 +1955,6 @@
 				EA4B8A1D2A9B3540009918DE /* EditTimedNoteScreen.swift in Sources */,
 				EA8AEA8127E2154D00B30A16 /* DoseRangeType.swift in Sources */,
 				EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */,
-				EABD92092941EA4B0073303A /* TotalTimeline.swift in Sources */,
 				EA41C61D295AF236000DA021 /* InteractionsGroup.swift in Sources */,
 				EA48F88A29DD501F007DA8C5 /* LocationCodable.swift in Sources */,
 				EAA9C36E2A50679100869E5A /* ToleranceType.swift in Sources */,
@@ -2100,7 +2062,6 @@
 				EAB794722D017E8600ED37C8 /* IngestionRange.swift in Sources */,
 				EA48F8B929EE8A32007DA8C5 /* ChooseLocationScreenContent.swift in Sources */,
 				EA4B8A252A9CFD34009918DE /* ConsumerWithIngestions.swift in Sources */,
-				EABD921729421E960073303A /* OnsetComeupPeakTimeline.swift in Sources */,
 				EAA2C9BC2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift in Sources */,
 				A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */,
 				A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */,
@@ -2117,7 +2078,6 @@
 				A15CA2C32EFB1B9300D90023 /* ChartScrollingHelper.swift in Sources */,
 				EA418A33296C755400DEA663 /* EditLocationLinkAndMap.swift in Sources */,
 				EAC25C08295608E20002D68F /* AdministrationRouteScreen.swift in Sources */,
-				EABD92112942131E0073303A /* OnsetComeupPeakTotalTimeline.swift in Sources */,
 				EA418A2D296C00BF00DEA663 /* LocationManager.swift in Sources */,
 				A15CA2F92EFB688300D90023 /* DynamicExperienceScreen.swift in Sources */,
 				EA48F85629DB0EFE007DA8C5 /* ShulginRatingSection.swift in Sources */,
@@ -2149,7 +2109,6 @@
 				EA4B8A152A9B22EA009918DE /* AddTimedNoteScreen.swift in Sources */,
 				EA1DE5A22949D10100FEE975 /* ChooseSubstance-ViewModel.swift in Sources */,
 				EA4B8A292AA12630009918DE /* TimelineSection.swift in Sources */,
-				EABD9213294215FB0073303A /* OnsetTimeline.swift in Sources */,
 				EAC368702B6FC7C100056C56 /* CalendarColorRectangle.swift in Sources */,
 				EA302E542B385AB4007F113F /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */,
 				EAA9C38C2A54825C00869E5A /* ChooseDateScreen.swift in Sources */,
@@ -2170,7 +2129,6 @@
 				EA418A072969740D00DEA663 /* IngestionNoteScreen.swift in Sources */,
 				EAF76C9D27D8B10500945587 /* InteractionType.swift in Sources */,
 				EA527A8829428011009C142D /* DurationSection.swift in Sources */,
-				EABD920F294203E70073303A /* OnsetComeupTotalTimeline.swift in Sources */,
 				EAB165B227E49ACC003DF79D /* Notification-EyeName.swift in Sources */,
 				EAEA92232B4E780200F3049D /* Inflection.swift in Sources */,
 				EA6EFDED2D1BF9D600729089 /* CustomUnitSuggestionView.swift in Sources */,
@@ -2213,12 +2171,12 @@
 				EA968AFD2962C9B000779DD9 /* ActivityManager.swift in Sources */,
 				EAD1D0022B52709500EC0D70 /* CustomUnitsArchiveScreen.swift in Sources */,
 				EA41C6172956C683000DA021 /* InteractionChecker.swift in Sources */,
+				A10928732F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */,
 				EAE471B226CBA664009FB0EC /* WelcomeScreen.swift in Sources */,
 				EAE471DE26CBA664009FB0EC /* Main.xcdatamodeld in Sources */,
 				EA302E4E2B385712007F113F /* ChooseRouteScreenArguments.swift in Sources */,
 				EAE4721C26CBA664009FB0EC /* DosePicker.swift in Sources */,
 				EAE471E926CBA664009FB0EC /* Experience-CoreDataHelpers.swift in Sources */,
-				EA2C94B52AAD98A000864BEC /* FullTimeline.swift in Sources */,
 				EA460D1F2762CA8B002EF80B /* FAQView.swift in Sources */,
 				EA1DE5A42949DE8A00FEE975 /* SuggestionsCreator.swift in Sources */,
 				EA6048252A140E25005C6A4B /* FabPosition.swift in Sources */,

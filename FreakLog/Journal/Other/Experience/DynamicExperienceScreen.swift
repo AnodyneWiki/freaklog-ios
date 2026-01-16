@@ -33,11 +33,19 @@ struct DynamicExperienceScreen: View {
 
     var body: some View {
         let myIngestions = ExperienceLogic.myIngestions(from: ingestions)
-        let timelineModel = ExperienceLogic.timelineModel(
-            from: myIngestions,
-            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-        )
+        var timelineModel: TimelineModel {
+            let anchorTime = myIngestions.map(\.timeUnwrapped).max() ?? Date()
+            let rangeSeconds = TimeInterval(dynamicExperienceRangeHours * 60 * 60)
+            let startTime = anchorTime.addingTimeInterval(-rangeSeconds)
+            let visibleRange = startTime...anchorTime
+
+            return ExperienceLogic.timelineModel(
+                from: myIngestions,
+                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+                visibleTimeRange: visibleRange
+            )
+        }
         
         List {
             if timelineModel.isWorthDrawing {

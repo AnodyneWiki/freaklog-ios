@@ -86,7 +86,10 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         let anchorTime = ingestion.timeUnwrapped
         let hours = UserDefaults.standard.integer(forKey: PersistenceController.dynamicExperienceRangeHoursKey)
         let rangeHours = hours > 0 ? hours : 24
-        let startDate = anchorTime.addingTimeInterval(-TimeInterval(rangeHours) * 60 * 60)
+        // Extend the start date by 24 hours (or another buffer) to catch ingestions started before the window
+        // but whose effects might bleed into it.
+        let bufferHours: Double = 24
+        let startDate = anchorTime.addingTimeInterval(-TimeInterval(rangeHours + Int(bufferHours)) * 60 * 60)
         let endDate = anchorTime
         
         return PersistenceController.shared.getIngestionsBetween(startDate: startDate, endDate: endDate)

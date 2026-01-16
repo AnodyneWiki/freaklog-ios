@@ -50,14 +50,16 @@ struct ExperienceLogic {
         everythingForEachRating: [EverythingForOneRating] = [],
         everythingForEachTimedNote: [EverythingForOneTimedNote] = [],
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        visibleTimeRange: ClosedRange<Date>? = nil
     ) -> TimelineModel {
         TimelineModel(
             substanceGroups: getSubstanceIngestionGroups(ingestions: ingestions),
             everythingForEachRating: everythingForEachRating,
             everythingForEachTimedNote: everythingForEachTimedNote,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            visibleTimeRange: visibleTimeRange
         )
     }
     
