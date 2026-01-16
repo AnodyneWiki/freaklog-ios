@@ -40,20 +40,30 @@ struct TimelineModel: Hashable {
     }
 
     // swiftlint:disable function_body_length
+    // swiftlint:disable function_body_length
     init(
         substanceGroups: [SubstanceIngestionGroup],
         everythingForEachRating: [EverythingForOneRating],
         everythingForEachTimedNote: [EverythingForOneTimedNote],
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        visibleTimeRange: ClosedRange<Date>? = nil
     ) {
 
-        let startTime = Self.getStartTime(
+        let startTime: Date
+        let contentStartTime = Self.getStartTime(
             substanceGroups: substanceGroups,
             everythingForEachRating: everythingForEachRating,
             everythingForEachTimedNote: everythingForEachTimedNote
         )
+        
+        if let visibleTimeRange {
+            startTime = max(visibleTimeRange.lowerBound, contentStartTime)
+        } else {
+            startTime = contentStartTime
+        }
         self.startTime = startTime
+
         let substanceGroupsWithRepoInfo = getSubstanceGroupWithRepoInfo(substanceIngestionGroups: substanceGroups)
         var roaGroups: [RoaGroup] = []
         for substanceGroup in substanceGroupsWithRepoInfo {
@@ -134,9 +144,19 @@ struct TimelineModel: Hashable {
         let widthOfTimelinesAndRatings = groupDrawables.map { group in
             group.endRelativeToStartInSeconds
         } + ratingDrawables.map { $0.distanceFromStart } + timedNoteDrawables.map { $0.distanceFromStart } + timeRangeDrawables.map { $0.endInSeconds }
-        let maxWidth: TimeInterval = (widthOfTimelinesAndRatings.max() ?? sixHours)
-        totalWidth = maxWidth
-        axisDrawable = AxisDrawable(startTime: startTime, widthInSeconds: maxWidth)
+        let calculatedMaxWidth: TimeInterval = (widthOfTimelinesAndRatings.max() ?? sixHours)
+        
+        let finalWidth: TimeInterval
+        if let visibleTimeRange {
+            let windowDurationFromStart = visibleTimeRange.upperBound.timeIntervalSince(startTime)
+            finalWidth = max(windowDurationFromStart, calculatedMaxWidth)
+        } else {
+            finalWidth = calculatedMaxWidth
+        }
+        
+        self.totalWidth = finalWidth
+        
+        axisDrawable = AxisDrawable(startTime: startTime, widthInSeconds: finalWidth)
     }
     // swiftlint:enable function_body_length
 

@@ -94,10 +94,16 @@ struct AllIngestionsView: View {
     }
 
     private var timelineModel: TimelineModel {
-        ExperienceLogic.timelineModel(
+        let anchorTime = viewModel.timelineIngestions.map(\.timeUnwrapped).max() ?? Date()
+        let rangeSeconds = TimeInterval(dynamicExperienceRangeHours * 60 * 60)
+        let startTime = anchorTime.addingTimeInterval(-rangeSeconds)
+        let visibleRange = startTime...anchorTime
+
+        return ExperienceLogic.timelineModel(
             from: viewModel.timelineIngestions,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            visibleTimeRange: visibleRange
         )
     }
 }
