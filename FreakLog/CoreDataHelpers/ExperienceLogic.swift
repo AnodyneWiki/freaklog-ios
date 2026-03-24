@@ -62,6 +62,24 @@ struct ExperienceLogic {
             visibleTimeRange: visibleTimeRange
         )
     }
+
+    static func chartTimelineModel(
+        from ingestions: [Ingestion],
+        everythingForEachRating: [EverythingForOneRating] = [],
+        everythingForEachTimedNote: [EverythingForOneTimedNote] = [],
+        areRedosesDrawnIndividually: Bool,
+        areSubstanceHeightsIndependent: Bool,
+        visibleTimeRange: ClosedRange<Date>? = nil
+    ) -> ChartTimelineModel {
+        ChartTimelineModel(
+            substanceGroups: getSubstanceIngestionGroups(ingestions: ingestions),
+            everythingForEachRating: everythingForEachRating,
+            everythingForEachTimedNote: everythingForEachTimedNote,
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            visibleTimeRange: visibleTimeRange
+        )
+    }
     
     struct ChartData {
         let toleranceWindows: [ToleranceWindow]

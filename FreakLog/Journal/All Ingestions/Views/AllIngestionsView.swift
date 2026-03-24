@@ -14,37 +14,45 @@ struct AllIngestionsView: View {
 
     @State private var ingestionToEdit: Ingestion?
     @State private var hiddenIngestions: [ObjectIdentifier] = []
+    @State private var pinnedDates: Set<Date> = []
 
     var body: some View {
-        List {
+        VStack(spacing: 0) {
             timelineSection
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-
-            ForEach(viewModel.sections) { section in
-                Section(header: ChameleonHeader(
-                    title: section.id,
-                    date: section.date,
-                    dynamicExperienceDestination: {
-                        let dynamicIngestions = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)
-                        if !dynamicIngestions.isEmpty {
-                            return GlobalNavigationDestination.dynamicExperience(ingestions: dynamicIngestions)
+            
+            List {
+                ForEach(viewModel.sections) { section in
+                    Section(header: ChameleonHeader(
+                        title: section.id,
+                        date: section.date,
+                        dynamicExperienceDestination: {
+                            let dynamicIngestions = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)
+                            if !dynamicIngestions.isEmpty {
+                                return GlobalNavigationDestination.dynamicExperience(ingestions: dynamicIngestions)
+                            }
+                            return nil
+                        }(),
+                        onPinnedStateChanged: { isPinned in
+                            if isPinned {
+                                pinnedDates.insert(section.date)
+                            } else {
+                                pinnedDates.remove(section.date)
+                            }
                         }
-                        return nil
-                    }()
-                )
+                    )
+                        .listRowInsets(EdgeInsets())
+                        .listRowSeparator(.hidden)
+                    ) {
+                        sectionContent(section)
+                    }
+                    .textCase(nil) // Prevent default header capitalization
+                }
+
+                loadingIndicator
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
-                ) {
-                    sectionContent(section)
-                }
-                .textCase(nil) // Prevent default header capitalization
+                    .listRowBackground(Color.clear)
             }
-            
-            loadingIndicator
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
         .scrollIndicators(.hidden)
@@ -81,6 +89,8 @@ struct AllIngestionsView: View {
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarBackground(Color.black, for: .navigationBar)
     }
 
     private var viewTimeDisplayStyle: TimeDisplayStyle {
@@ -93,14 +103,48 @@ struct AllIngestionsView: View {
         }
     }
 
-    private var timelineModel: TimelineModel {
-        let anchorTime = viewModel.timelineIngestions.map(\.timeUnwrapped).max() ?? Date()
+    private var timelineModel: ChartTimelineModel {
+        // Determine the "active" date based on scrolling
+        // IF scrolling down (newest to oldest), the visible pinned header is likely the minimal date in the pinned set
+        // (because older dates are smaller/eaerlier, and they come "after" newer dates in the list, so they pin last).
+        // Wait:
+        // Newest (Today) -> Pins. Set={Today}. Min=Today.
+        // Scroll down -> Yesterday (Older) -> Pins. Set={Today, Yesterday}. Min=Yesterday.
+        // Scroll down -> DayBefore (Even Older) -> Pins. Set={... DayBefore}. Min=DayBefore.
+        // This logic holds for Reverse Chronological lists.
+        
+        let anchorDate: Date = {
+            if let minPinned = pinnedDates.min() {
+                return minPinned
+            }
+            // Fallback to first section (newest) or today
+            return viewModel.sections.first?.date ?? Date()
+        }()
+    
+        // Use the chameleon header logic to get the range
+        // "viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)"
+        let ingestionsForChart = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: anchorDate)
+        
+        // If no ingestions found (empty day?), fallback to something safe or empty
+        let chartIngestions = ingestionsForChart.isEmpty ? viewModel.timelineIngestions : ingestionsForChart // Fallback? Or just empty?
+        // Actually, if we are on a section with no dynamic context, maybe show nothing or daily?
+        // But the section exists, so it must have ingestions.
+        
+        // Calculate Visible Range based on these ingestions/dynamic range logic
+        // The dynamic range logic is embedded in `getIngestions ...`.
+        // We need to construct the model from these ingestions.
+        
+        // We probably want the time range to match the retrieved ingestions + margin?
+        // `ExperienceLogic.chartTimelineModel` calculates start time based on the ingestions passed.
+        // But we might want to enforce the specific 24h (or dynamic) window.
+        
+        let anchorTime = chartIngestions.map(\.timeUnwrapped).max() ?? Date()
         let rangeSeconds = TimeInterval(dynamicExperienceRangeHours * 60 * 60)
         let startTime = anchorTime.addingTimeInterval(-rangeSeconds)
         let visibleRange = startTime...anchorTime
 
-        return ExperienceLogic.timelineModel(
-            from: viewModel.timelineIngestions,
+        return ExperienceLogic.chartTimelineModel(
+            from: chartIngestions,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
             areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
             visibleTimeRange: visibleRange
@@ -119,11 +163,10 @@ private extension AllIngestionsView {
                  Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: viewModel.timelineIngestions))
             } label: {
                 VStack(spacing: 0) {
-                    EffectTimeline(
+                    ChartTimelineView(
                         timelineModel: timelineModel,
                         height: 200,
-                        timeDisplayStyle: viewTimeDisplayStyle,
-                        isShowingTopLabels: false
+                        isShowingCurrentTime: true
                     )
                     .padding(.top, 8)
                     

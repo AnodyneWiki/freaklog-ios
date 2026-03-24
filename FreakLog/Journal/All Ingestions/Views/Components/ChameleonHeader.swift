@@ -7,6 +7,7 @@ struct ChameleonHeader: View {
     let title: String
     let date: Date
     var dynamicExperienceDestination: GlobalNavigationDestination? = nil
+    var onPinnedStateChanged: ((Bool) -> Void)? = nil
     
     @State private var isPinnedInternal = false
 
@@ -49,11 +50,19 @@ struct ChameleonHeader: View {
             }
             .onAppear {
                 isPinnedInternal = isPinned
+                if isPinned {
+                    onPinnedStateChanged?(true)
+                }
             }
             .onChange(of: isPinned) { newValue in
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                     isPinnedInternal = newValue
                 }
+                onPinnedStateChanged?(newValue)
+            }
+            .onDisappear {
+                // If the header disappears (scrolled off screen or recycled), we should consider it unpinned/handled.
+                onPinnedStateChanged?(false)
             }
         }
         .frame(height: 38)

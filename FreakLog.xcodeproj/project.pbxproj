@@ -24,6 +24,8 @@
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
 		A10928722F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
 		A10928732F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
+		A109287B2F1C22D20063B47E /* ChartTimelineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928782F1C22D20063B47E /* ChartTimelineModel.swift */; };
+		A109287C2F1C22D20063B47E /* ChartTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928792F1C22D20063B47E /* ChartTimelineView.swift */; };
 		A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */; };
 		A15CA2B32EFAFED200D90023 /* AllIngestionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AF2EFAFED200D90023 /* AllIngestionsView.swift */; };
 		A15CA2B42EFAFED200D90023 /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
@@ -412,6 +414,8 @@
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
 		A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedTimelineDrawable.swift; sourceTree = "<group>"; };
+		A10928782F1C22D20063B47E /* ChartTimelineModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartTimelineModel.swift; sourceTree = "<group>"; };
+		A10928792F1C22D20063B47E /* ChartTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartTimelineView.swift; sourceTree = "<group>"; };
 		A15CA2A92EFAFED200D90023 /* IngestionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSection.swift; sourceTree = "<group>"; };
 		A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsViewModel.swift; sourceTree = "<group>"; };
 		A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChameleonHeader.swift; sourceTree = "<group>"; };
@@ -757,6 +761,15 @@
 				0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */,
 			);
 			path = Webhooks;
+			sourceTree = "<group>";
+		};
+		A109287A2F1C22D20063B47E /* TimelineNew */ = {
+			isa = PBXGroup;
+			children = (
+				A10928782F1C22D20063B47E /* ChartTimelineModel.swift */,
+				A10928792F1C22D20063B47E /* ChartTimelineView.swift */,
+			);
+			path = TimelineNew;
 			sourceTree = "<group>";
 		};
 		A15CA2AA2EFAFED200D90023 /* Models */ = {
@@ -1499,6 +1512,7 @@
 		EAE4710526CBA57F009FB0EC /* FreakLog */ = {
 			isa = PBXGroup;
 			children = (
+				A109287A2F1C22D20063B47E /* TimelineNew */,
 				0DC49ACE2EFB58B6000A9A0D /* Webhooks */,
 				44E43E022E71E9E9008D7FDD /* Assets */,
 				441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */,
@@ -2138,6 +2152,8 @@
 				EA039AC72A6C6657006DFAFE /* View-ColorBackground.swift in Sources */,
 				EAC25C04295603B10002D68F /* VolumetricDosingScreen.swift in Sources */,
 				EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */,
+				A109287B2F1C22D20063B47E /* ChartTimelineModel.swift in Sources */,
+				A109287C2F1C22D20063B47E /* ChartTimelineView.swift in Sources */,
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,
