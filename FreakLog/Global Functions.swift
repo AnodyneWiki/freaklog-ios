@@ -1,11 +1,21 @@
 import CoreData
+#if canImport(UIKit)
 import UIKit
+#endif
+
+#if canImport(WatchKit)
+import WatchKit
+#endif
 
 @MainActor
 func playHapticFeedback() {
     #if !targetEnvironment(simulator)
+    #if os(watchOS)
+    WKInterfaceDevice.current().play(.click)
+    #elseif canImport(UIKit)
     let impactMed = UIImpactFeedbackGenerator(style: .medium)
     impactMed.impactOccurred()
+    #endif
     #endif
 }
 

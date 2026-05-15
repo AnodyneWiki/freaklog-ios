@@ -7,6 +7,27 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		02BB8C092C615A05246F1682 /* WeightUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483A2A188FDB005C6A4B /* WeightUnit.swift */; };
+		03BA42AFBBF75AC916B7A9F3 /* TimedNoteDottedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A1A2A9B2ECF009918DE /* TimedNoteDottedLine.swift */; };
+		04FE0529BBF338FB92CE171A /* FullCumulativeTimelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A082A969B0E009918DE /* FullCumulativeTimelines.swift */; };
+		05C8C7D1776F70B6923A20A6 /* TimeRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C62E295EB86C000DA021 /* TimeRange.swift */; };
+		065D73C1172E97D3C9EC1592 /* Notification-EyeName.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165B127E49ACC003DF79D /* Notification-EyeName.swift */; };
+		06E1E938B0B3219687FD7194 /* DurationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8729428011009C142D /* DurationSection.swift */; };
+		0760660A8FE11A84FE206424 /* FabPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048242A140E25005C6A4B /* FabPosition.swift */; };
+		07C78808C8A22DBA32560AE0 /* Text-LinearGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E827CD22D300B10DD3 /* Text-LinearGradient.swift */; };
+		07D5E0C1D0FF840F654CB9A6 /* DurationRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E64327CA136C00F6E10F /* DurationRange.swift */; };
+		081480A81FE75F1197A1DA3C /* CustomUnitRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0032B5271BD00EC0D70 /* CustomUnitRow.swift */; };
+		082D7C0473D7EBB94B21A5FC /* Date-Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC42A6BAA10006DFAFE /* Date-Format.swift */; };
+		08D545B6B86CC67EFDD15BAA /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CDEE6559DAA3F05A32E9999 /* Foundation.framework */; };
+		08E987BA281C4587E14EE6CF /* WatchTimelinePreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB7A29809FB919465C42D2E /* WatchTimelinePreview.swift */; };
+		0ACA4C13A7C9FB768AC97290 /* SuggestionsCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE5A32949DE8A00FEE975 /* SuggestionsCreator.swift */; };
+		0AD65D40748E2E292AE4DFDA /* FabLabelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048442A25C28F005C6A4B /* FabLabelStyle.swift */; };
+		0AF7E3E5DD33BD0399626274 /* FullCumulativeTimelines.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A082A969B0E009918DE /* FullCumulativeTimelines.swift */; };
+		0B1AB630CFE87F7B019D95B8 /* TimeRangeDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB7946E2D017B1200ED37C8 /* TimeRangeDrawable.swift */; };
+		0B5C4E2F80BA9212533B1DFA /* SprayModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483C2A188FFB005C6A4B /* SprayModel.swift */; };
+		0C4A451CAD611AE3C862F280 /* TimedNoteDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A202A9B3EBC009918DE /* TimedNoteDrawable.swift */; };
+		0CC500B18C1F3E41C82AB213 /* CustomSubstanceBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE59F2949CEFD00FEE975 /* CustomSubstanceBox.swift */; };
+		0CE85371D256FF068637FC2B /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
 		0D235F2E2EF9B92800D9309D /* WebhookPresetEditScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */; };
 		0D235F322EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */; };
 		0D235F332EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */; };
@@ -19,9 +40,245 @@
 		0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */; };
 		0DC49ACF2EFB58B6000A9A0D /* WebhookManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */; };
 		0DC49AD12EFB5C94000A9A0D /* WebhookArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */; };
+		0DE627C90A81633D7E8A2E96 /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
+		0E15FFB11C78473C686F0AC3 /* EditCustomSubstanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165A127E35883003DF79D /* EditCustomSubstanceView.swift */; };
+		0FD9DF98D5E7FC6F9CA6A427 /* FinishIngestionScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E472B381C2F007F113F /* FinishIngestionScreenArguments.swift */; };
+		0FFDFC48574796B53863C1B9 /* InteractionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76C9C27D8B10500945587 /* InteractionType.swift */; };
+		12AEE0A1FC847055123C5CCB /* FabLabelStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048442A25C28F005C6A4B /* FabLabelStyle.swift */; };
+		1325858F74A09AC16A9E4762 /* Angle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48B9A626E80F21003BF667 /* Angle.swift */; };
+		134E974D3DA07B5DF0604A01 /* FabButtonPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */; };
+		148A784FE4285A93C834CC88 /* RoaDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63927CA136C00F6E10F /* RoaDuration.swift */; };
+		14A41C83E641AD44D58C096F /* CustomSubstanceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */; };
+		14C671AB93D4AC79DE664824 /* CustomUnitDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4793592B48252500685EAA /* CustomUnitDose.swift */; };
+		162685AF5399CFB2701675C5 /* InteractionType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76C9C27D8B10500945587 /* InteractionType.swift */; };
+		16F7133BE31757E525BD260B /* ExperienceTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB32A3F278A00FE1A44 /* ExperienceTimeText.swift */; };
+		17AE3F07347B9360A4AA359B /* NoTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921829422C580073303A /* NoTimeline.swift */; };
+		17F21D3F610F7771A9A73E7A /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2C296C00BF00DEA663 /* LocationManager.swift */; };
+		185BF7CBBCE86E3F9D25AA27 /* Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C624295EAFD8000DA021 /* Data.swift */; };
+		188989A683CFA600889450C3 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A38296CEEBD00DEA663 /* Authenticator.swift */; };
+		1923B34F8F755B1AC267BF1F /* InteractionChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C6162956C683000DA021 /* InteractionChecker.swift */; };
+		196506A31BEABD4991D462A2 /* IngestionMinInfoForTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085E0029619E5B001638AC /* IngestionMinInfoForTimeline.swift */; };
+		1A4CFAC7DD78C490F7606A2C /* FreakLogWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A09389B82DD218F77DBCEDC /* FreakLogWatchApp.swift */; };
+		1A68341A287A14D6E7A9F3DE /* CustomUnitBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47935D2B48384100685EAA /* CustomUnitBox.swift */; };
+		1B07E8FF77504FA8725F27A1 /* SubstanceBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE59D2949CB5800FEE975 /* SubstanceBox.swift */; };
+		1B2BD6DA71F2349DB44AD948 /* ChasingTheDragonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483E2A1BF2CB005C6A4B /* ChasingTheDragonSection.swift */; };
+		1B7027C35A416DE214443E52 /* CumulativeDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */; };
+		1B734011102A6973E73F8EA0 /* CustomUnit-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */; };
+		1BAF5E470B7C5F6B5773D087 /* ExperienceTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB32A3F278A00FE1A44 /* ExperienceTimeText.swift */; };
+		1D0897497A04FD371DD5AA69 /* FreakLogWatchWidgets.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA217C5C995190517D920E2C /* FreakLogWatchWidgets.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		1E15E6E38F60C8301D4DF613 /* ToxicitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8529427F56009C142D /* ToxicitySection.swift */; };
+		1E95A6748AB10199B505208B /* DoneButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A5C5E29F01F58004D8A7E /* DoneButton.swift */; };
+		1E9B077A434C37971B40DC7C /* EffectTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A9329428CD8009C142D /* EffectTimeline.swift */; };
+		1EAD8696B0092902D9FDA50C /* ChooseRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E4D2B385712007F113F /* ChooseRouteScreenArguments.swift */; };
+		1ED9E4B9FB796CB2FFA49E43 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
+		1F1E6051FBB8539D673B2B65 /* Double-asRoundedReadableString.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */; };
+		1FF86C0282634DA94E901177 /* InteractionPairRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C618295AE60C000DA021 /* InteractionPairRow.swift */; };
+		202E68A26EAD213C7359E3D2 /* InjectionSites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC552EF4A91F00039340 /* InjectionSites.swift */; };
+		20560D71D145B66495E27C8F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 94191855F1D06B6AD526EBA6 /* Assets.xcassets */; };
+		20D08D2B38D4D69C9EB46541 /* RatingScreenContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86029DB2B1B007DA8C5 /* RatingScreenContent.swift */; };
+		20DAAE30F9BB028001468A64 /* RoaRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63F27CA136C00F6E10F /* RoaRange.swift */; };
+		2181FA5ED3E6D0012615EB81 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189ED2962E67600DEA663 /* Constants.swift */; };
+		2196865646DACFD24042604D /* DotRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB82A3F290900FE1A44 /* DotRows.swift */; };
+		2208DA860EC91291615A047B /* ToastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014FA327EA1AD300077FB2 /* ToastViewModel.swift */; };
+		22954F7992D2FCA0D4F3FA01 /* RatingDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86529DC1AE9007DA8C5 /* RatingDrawable.swift */; };
+		239BB4A57FD42F9CEBB1E487 /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
+		23B8AC01DB965809541C4DBF /* UIApplication-CurrentWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A1327DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift */; };
+		241C5CFAC80DD3C91915A99E /* Date-Format.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC42A6BAA10006DFAFE /* Date-Format.swift */; };
+		243151D07C68113FB3D44D3E /* ShulginRatingOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85729DB12A5007DA8C5 /* ShulginRatingOption.swift */; };
+		251A53FA3930589AC0F09461 /* ExperienceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88729DD4FD6007DA8C5 /* ExperienceCodable.swift */; };
+		2541855782F4E7AF94066FCF /* TimedNote-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A112A9B1F23009918DE /* TimedNote-CoreDataHelpers.swift */; };
+		259623635E1AAC7C4237EB8D /* AxisDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FF2941C3740073303A /* AxisDrawable.swift */; };
+		27C4BA7E2DBCF03D5C58589E /* DateDifference.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A329E991C6007DA8C5 /* DateDifference.swift */; };
+		28B240534DE08810CB598034 /* SaferScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1D293FA4F500C605E2 /* SaferScreen.swift */; };
+		29C7E8511F254D579B63C191 /* OneRoaDurationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447EA27CD276300B10DD3 /* OneRoaDurationRow.swift */; };
+		2A58994E3058ADF2BCC4FC37 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4718026CBA664009FB0EC /* Persistence.swift */; };
+		2B8AB686F086EFC2EB4BEA61 /* TestingServicesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFA2955EC900002D68F /* TestingServicesScreen.swift */; };
+		2E3D97BB590DA3969974886C /* RecentExperiencesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23B84F0D9D8A4C6F37DD1EAE /* RecentExperiencesView.swift */; };
+		2E81BE75411EC64CBD660C90 /* WebhookPreset-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */; };
+		2F74A7E5E24CEE6FAA8DD9C0 /* AddIngestionDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E4B2B385516007F113F /* AddIngestionDestination.swift */; };
+		305FC063F672F9D91FE08830 /* AdministrationRouteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C07295608E20002D68F /* AdministrationRouteScreen.swift */; };
+		3096AB8CF5F50C2DDF6DBA5F /* Angle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48B9A626E80F21003BF667 /* Angle.swift */; };
+		30D4F9C873382131C7F8E417 /* RegularDoseAndUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048282A1411CF005C6A4B /* RegularDoseAndUnit.swift */; };
+		31136418F1539B216578C9F3 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
+		3151A161706967BD12CB33E9 /* ExperienceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */; };
+		3160519933059403D27B538A /* CompanionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88D29DD5053007DA8C5 /* CompanionCodable.swift */; };
+		317B34C06289FDD5BF2137B8 /* CustomSubstanceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60482A2A1411E5005C6A4B /* CustomSubstanceModel.swift */; };
+		31FC2BF9D2ED4D227C305A1C /* RoaRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63F27CA136C00F6E10F /* RoaRange.swift */; };
+		32235C26C5F68F344BF94249 /* ToxicitySection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8529427F56009C142D /* ToxicitySection.swift */; };
+		32BCAA111B4BCC57FE19B275 /* IngestionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88B29DD503D007DA8C5 /* IngestionCodable.swift */; };
+		3339FA6CC0EDED596D326F90 /* Global Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC23793276750C500109622 /* Global Functions.swift */; };
+		33C459C7E4EDC8FFD39D0294 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
+		3421579C92F327C5D670F26F /* Double-asRoundedReadableString.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */; };
+		351A20237229306DC74EB6CB /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2C296C00BF00DEA663 /* LocationManager.swift */; };
+		35DD1FBDF373A51AF0A3685D /* DurationChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC92A6C6691006DFAFE /* DurationChip.swift */; };
+		35EC5EC1AB1FCD367FB1A555 /* CustomSubstanceBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE59F2949CEFD00FEE975 /* CustomSubstanceBox.swift */; };
+		36B50F4938880FE459B04DE5 /* Dot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEBA2A3F292B00FE1A44 /* Dot.swift */; };
+		37573BCFB833BEE1010875E2 /* Notification-EyeName.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165B127E49ACC003DF79D /* Notification-EyeName.swift */; };
+		378CDF889DCDDA367BE073A2 /* GraphicsContext-DrawDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */; };
+		37EEC574961618028C0B6C86 /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E532B385AB4007F113F /* CustomSubstanceChooseRouteScreenArguments.swift */; };
+		380B4A98B9F445DBACAB603B /* Dot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEBA2A3F292B00FE1A44 /* Dot.swift */; };
+		3A034FFD76A3D9781D73BB6C /* ChooseRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E4D2B385712007F113F /* ChooseRouteScreenArguments.swift */; };
+		3A84D342574ACDC774BDE4DD /* TestingServicesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFA2955EC900002D68F /* TestingServicesScreen.swift */; };
+		3B2326A06F047A0F84A85F2B /* StrokeStyle-Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920C294202680073303A /* StrokeStyle-Timeline.swift */; };
+		3B9088DFF8CBECBAF9A28106 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189ED2962E67600DEA663 /* Constants.swift */; };
+		3C1DD1993C144E4FF29687D7 /* CompanionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88D29DD5053007DA8C5 /* CompanionCodable.swift */; };
+		3C7A95E40AED95073DBF801B /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
+		3D019316F94026D8ED817AD4 /* String-CaseInsensitiveContains.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */; };
+		3D8A0C6B36E3BE90F35CB808 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
+		3DC97F3832152AC57108B495 /* DurationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8729428011009C142D /* DurationSection.swift */; };
+		3DEE18F8F31B1A84CF494D4A /* CumulativeDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE480922973EF5900B600EF /* CumulativeDose.swift */; };
+		3DF4CB4F5F4E631FAD90A41F /* EffectTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A9329428CD8009C142D /* EffectTimeline.swift */; };
+		3EAEC79C71CA1A0578537A98 /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
+		3F229105D741ABC985219EBB /* Substance.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63D27CA136C00F6E10F /* Substance.swift */; };
+		41D5C7F8032FFFEB5034CE00 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
+		42B46B4FA63E10D5FF7A675A /* Suggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048262A1411C0005C6A4B /* Suggestion.swift */; };
+		437D5767518EF83F77C5D466 /* ChooseOtherRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E552B385D22007F113F /* ChooseOtherRouteScreenArguments.swift */; };
+		4409F2E687EEA95319855D5C /* StrokeStyle-Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920C294202680073303A /* StrokeStyle-Timeline.swift */; };
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
+		4445A72711C88026B0C05F04 /* Inflection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA92222B4E780200F3049D /* Inflection.swift */; };
+		4478208D2109AC09C1545FA8 /* View-ColorBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC62A6C6657006DFAFE /* View-ColorBackground.swift */; };
 		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
+		4517324E1D4140DDD4B310D0 /* FreakLogWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 0285B89C52569C0549493802 /* FreakLogWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		4563ABD075CBF811B715AF13 /* Date-String.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4717D26CBA664009FB0EC /* Date-String.swift */; };
+		46B98A61048AE2F094DE07DF /* SaferRoutesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A69A429714ED600B3A474 /* SaferRoutesScreen.swift */; };
+		48348460E05DCCC8792F0AC3 /* IngestionMinInfoForTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085E0029619E5B001638AC /* IngestionMinInfoForTimeline.swift */; };
+		49A2387CFF8E67BCBE96B710 /* FabPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048242A140E25005C6A4B /* FabPosition.swift */; };
+		49C4589C6CE927567FAE50C1 /* EverythingForOneTimedNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A1E2A9B3E0E009918DE /* EverythingForOneTimedNote.swift */; };
+		4A6F402CE6F195AE57390E53 /* Data.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C624295EAFD8000DA021 /* Data.swift */; };
+		4A720B4344A4DC652019D73A /* AcknowledgeSaferUseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */; };
+		4AFAD16EBE74D3536C64F642 /* CustomChooseDoseScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E502B385976007F113F /* CustomChooseDoseScreenArguments.swift */; };
+		4DBF80ED09E99B2A0134D376 /* CustomUnitCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA323B332B6E187600DC1316 /* CustomUnitCodable.swift */; };
+		4ED2C7B66106ADCD93A85F24 /* CustomChooseDoseScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E502B385976007F113F /* CustomChooseDoseScreenArguments.swift */; };
+		4ED5FAF57F6FDD4932ED927C /* SubstanceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CA827D90CF900945587 /* SubstanceColor.swift */; };
+		4EF1831D2C6893646BDC8357 /* DoseClassificationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8A2CB42B468D3F0050554C /* DoseClassificationRow.swift */; };
+		4F9F734A9FFC74F521F75174 /* DosageGuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFF2955FD190002D68F /* DosageGuideScreen.swift */; };
+		5087E0EE846680F1AF6A710D /* SubstanceCompanion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABDA72A2887ECFB00A23DB3 /* SubstanceCompanion-CoreDataHelpers.swift */; };
+		518673B3CBDAD838C46BBE72 /* CustomUnitCalculationText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFF2B893EB300293B44 /* CustomUnitCalculationText.swift */; };
+		5268967E40B07C7679F65E28 /* substances.json in Resources */ = {isa = PBXBuildFile; fileRef = 8EB6E5D159C41C150FC176EA /* substances.json */; };
+		52BB228110C1DA172DAAA62F /* RoaDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63B27CA136C00F6E10F /* RoaDose.swift */; };
+		536F4824A226240D989A6AFA /* ToleranceSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8329427E61009C142D /* ToleranceSection.swift */; };
+		53D6B30E3F47D88264CA3EF3 /* TimeRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C62E295EB86C000DA021 /* TimeRange.swift */; };
+		541AD8E044238A0D6E983291 /* AxisDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FF2941C3740073303A /* AxisDrawable.swift */; };
+		54818D11AC078F70F19C9920 /* ToleranceChartExplanationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3932A57214A00869E5A /* ToleranceChartExplanationScreen.swift */; };
+		5503AA5BE75BA7058E21C2C8 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF21C232BBB3A1F000BFB0A /* Tab.swift */; };
+		569E0B5CEF0CC850714CC9E8 /* Authenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A38296CEEBD00DEA663 /* Authenticator.swift */; };
+		5848B6CE5B1B88940F040A38 /* InteractionChecker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C6162956C683000DA021 /* InteractionChecker.swift */; };
+		58FE6A82E77FFF86FBED10ED /* WebhookArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */; };
+		5AEEFA7BAF3B0FDE3BF818CE /* RoaDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E627CD175000B10DD3 /* RoaDoseRow.swift */; };
+		5B090F3B38C202CCE714995A /* WebhookArchiveScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */; };
+		5B1F93C836ED0C7AE8EA5420 /* ToleranceChartPreviewDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */; };
+		5C6B73BBE7953ACF60B39D50 /* RoaDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E627CD175000B10DD3 /* RoaDoseRow.swift */; };
+		5D902A895FF759B28C0ECF7D /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
+		5E6695389506C9BCA8C90B61 /* CustomSubstance-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB1659D27E34AD5003DF79D /* CustomSubstance-CoreDataHelpers.swift */; };
+		609609B9A16B54C976BAE4AC /* WeightedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A062A969301009918DE /* WeightedLine.swift */; };
+		614A9023798A1AEA22C1D376 /* SubstanceIngestionGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19642B11D3BA00B270A2 /* SubstanceIngestionGroup.swift */; };
+		62913AD6E97DBE392C71BA59 /* FinishIngestionScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E472B381C2F007F113F /* FinishIngestionScreenArguments.swift */; };
+		64C6B12414EAAFC4BCD0F95C /* GlobalNavigationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */; };
+		65ABC14F465D913C2E66E7E0 /* TabSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */; };
+		663C522D1BCCF64A7D86F393 /* DotRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB82A3F290900FE1A44 /* DotRows.swift */; };
+		669CDBD078952609639FC736 /* TimelineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FC294105830073303A /* TimelineModel.swift */; };
+		66C0AA07E20DF6D0BA8D62E4 /* ChooseOtherRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E552B385D22007F113F /* ChooseOtherRouteScreenArguments.swift */; };
+		674D369BE36192B381643B3D /* RatingDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86529DC1AE9007DA8C5 /* RatingDrawable.swift */; };
+		683A4B8E022280E14F4A8E9A /* SubstanceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CA827D90CF900945587 /* SubstanceColor.swift */; };
+		68B5BB2E99CE3E5D2DBC13B3 /* DangerTriangles.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8AF29EBEE4B007DA8C5 /* DangerTriangles.swift */; };
+		68DBAEE1A53327A19B70F364 /* Tolerance.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63727CA136C00F6E10F /* Tolerance.swift */; };
+		6A23EB79973662F34D5E7CA3 /* ToastViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014FA327EA1AD300077FB2 /* ToastViewModel.swift */; };
+		6ADE15C340035BDA1E6225F7 /* MissingToleranceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3912A57203800869E5A /* MissingToleranceText.swift */; };
+		6AFD4FB015B82E1256B619B9 /* VolumetricDosingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C03295603B10002D68F /* VolumetricDosingScreen.swift */; };
+		6B03AF873130D83269902A73 /* SubstanceWithToleranceAndColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC22A5F1118006DFAFE /* SubstanceWithToleranceAndColor.swift */; };
+		6C20E003BD522137E328A73B /* TimeDisplayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */; };
+		6CA6F5438DF8F773C0885122 /* SelectRatingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CDA29FBA381007D8BF6 /* SelectRatingSection.swift */; };
+		6D0050B0CA7C787DFB47647C /* Global Functions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC23793276750C500109622 /* Global Functions.swift */; };
+		6D760010A8C935B25516D44D /* ToleranceTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3952A5944EB00869E5A /* ToleranceTimeOption.swift */; };
+		6F38E0CA4BBCDEB2D6F767F5 /* CustomSubstanceModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60482A2A1411E5005C6A4B /* CustomSubstanceModel.swift */; };
+		705288DAAE462109E765402A /* ExperiencePickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */; };
+		729EF1AB3190B78FA270C55C /* GraphicsContext-DrawDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */; };
+		72DE6D19B3D5AC577DDC4684 /* DangerTriangles.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8AF29EBEE4B007DA8C5 /* DangerTriangles.swift */; };
+		72F54E210DC3DE9C91379FB9 /* NoTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921829422C580073303A /* NoTimeline.swift */; };
+		737F414F641D3B3147177DFA /* String-CleanSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60482D2A162225005C6A4B /* String-CleanSearch.swift */; };
+		73B44A9205BB48D5C456FCE8 /* Experience-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */; };
+		73C9A8C4F56638E0DC2D6CD9 /* ToleranceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C36F2A5067A200869E5A /* ToleranceWindow.swift */; };
+		7481610F382EEBF7E99D4C98 /* Text-LinearGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E827CD22D300B10DD3 /* Text-LinearGradient.swift */; };
+		74ABC049AED1A34ACC467A5E /* ConsumerWithIngestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A242A9CFD34009918DE /* ConsumerWithIngestions.swift */; };
+		74EE15998B8E531A5A7CDC99 /* CumulativeDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE480922973EF5900B600EF /* CumulativeDose.swift */; };
+		755BECE644CD06D0AAFB06A7 /* GoThroughAllInteractionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C61A295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift */; };
+		76C7B86E52997C2F933C908B /* ActiveExperienceComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D153CAB29680654DDF6B631 /* ActiveExperienceComplication.swift */; };
+		7806FFA678415FE902AC8F47 /* ExperienceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88729DD4FD6007DA8C5 /* ExperienceCodable.swift */; };
+		784CE260701616CBB93041F1 /* DoseRangeType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8AEA8027E2154D00B30A16 /* DoseRangeType.swift */; };
+		790D8D641C994304C214D2FA /* SubstanceCompanion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABDA72A2887ECFB00A23DB3 /* SubstanceCompanion-CoreDataHelpers.swift */; };
+		79B0FD5291A125F422A38DBD /* CustomUnitDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8A2CB12B468AEF0050554C /* CustomUnitDoseRow.swift */; };
+		7AEAFA2564AC8B9BBD001ED9 /* SuggestionsCreator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE5A32949DE8A00FEE975 /* SuggestionsCreator.swift */; };
+		7C2E3496E2FDBBEB12B1C93E /* CustomUnitCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA323B332B6E187600DC1316 /* CustomUnitCodable.swift */; };
+		7C4CE00E5D43EA5DB869581B /* EditCustomSubstanceView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165A127E35883003DF79D /* EditCustomSubstanceView.swift */; };
+		7D4DE808D0811AA2655C2B5F /* CustomUnitMinInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47935F2B4A72D700685EAA /* CustomUnitMinInfo.swift */; };
+		7DDA43CED62970B3F57FADF7 /* EditOverallRatingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CD729FBA2E4007D8BF6 /* EditOverallRatingScreen.swift */; };
+		7ED8D17EC43C4EFDAD3FE693 /* AddIngestionDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E4B2B385516007F113F /* AddIngestionDestination.swift */; };
+		8047FC0AB3E834B85B74C7B3 /* FullRangeTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1F774F2D4CCB7100E7F483 /* FullRangeTimeline.swift */; };
+		80EB07D9AF3663496A1B7984 /* ReagentTestingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFC2955F23A0002D68F /* ReagentTestingScreen.swift */; };
+		81486B510B2FB2716262613D /* UnitPickerOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014FAF27EC6E0400077FB2 /* UnitPickerOptions.swift */; };
+		814A61020555DB1F9C75FFF6 /* SubstanceFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C18293F9BCE00C605E2 /* SubstanceFile.swift */; };
+		8150A7EF2498E9B507A619DB /* DurationChip.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC92A6C6691006DFAFE /* DurationChip.swift */; };
+		81B16AA6FE4F56A84D87517A /* DoseRangeType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8AEA8027E2154D00B30A16 /* DoseRangeType.swift */; };
+		81DC7AC437AC2DA4D6BAABD3 /* InteractionsGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C61C295AF236000DA021 /* InteractionsGroup.swift */; };
+		827C0F603384F1CBA4193656 /* TimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92052941C4080073303A /* TimelineDrawable.swift */; };
+		83213458159A82647C952BD5 /* SubstanceRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63527CA136C00F6E10F /* SubstanceRepo.swift */; };
+		83468DCCE03CFD30984BC083 /* GroupDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92012941C3A30073303A /* GroupDrawable.swift */; };
+		837B0C9CD351019DA85936A8 /* Spray-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048332A16C70A005C6A4B /* Spray-CoreDataHelpers.swift */; };
+		838FDCFF97F24C62655BC0D3 /* CustomUnitBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47935D2B48384100685EAA /* CustomUnitBox.swift */; };
+		8435C630E4485CB9F426DF8B /* RegularDoseAndUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048282A1411CF005C6A4B /* RegularDoseAndUnit.swift */; };
+		845A66F9FB1368183EE456F4 /* EverythingForOneTimedNote.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A1E2A9B3E0E009918DE /* EverythingForOneTimedNote.swift */; };
+		8476654993267B307FC253DF /* FullRangeTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1F774F2D4CCB7100E7F483 /* FullRangeTimeline.swift */; };
+		84B0850139C277CFA214EE3E /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
+		84BBB5E09A37D543EF419D35 /* SearchLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3822A5479AE00869E5A /* SearchLogic.swift */; };
+		853102D3D49C735120EA8B31 /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
+		863D3F8D784C6B57A0EEA518 /* CustomUnitDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8A2CB12B468AEF0050554C /* CustomUnitDoseRow.swift */; };
+		86F6B6ED4C8352C7F2007E91 /* TimedNoteDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A202A9B3EBC009918DE /* TimedNoteDrawable.swift */; };
+		87154CE4B56FA4C1B489948F /* ExperienceLocation-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2E296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift */; };
+		8770651252874398982799FE /* SearchLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3822A5479AE00869E5A /* SearchLogic.swift */; };
+		880028B6D13FD73707E60F9D /* Navigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF21C252BBB3A3B000BFB0A /* Navigator.swift */; };
+		882DDCE9B4AD71D6991D21DA /* GoThroughAllInteractionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C61A295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift */; };
+		88C2727E40228723FC9613A7 /* TimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92052941C4080073303A /* TimelineDrawable.swift */; };
+		895D2054AC6013908E403486 /* RouteOfAdministrationPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E0955F4F4A0563C5F9ADD6A /* RouteOfAdministrationPickerView.swift */; };
+		899D5088B761366F58CF6F36 /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
+		8A9814A09D50BEE669A495A6 /* IngestionSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2A92EFAFED200D90023 /* IngestionSection.swift */; };
+		8AC52B5E768DFFC9CECF655A /* ExplainExperienceSectionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC39DC329789E120012823D /* ExplainExperienceSectionScreen.swift */; };
+		8AE627079D40CA7C4BAD6C45 /* TimedNoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A182A9B2A89009918DE /* TimedNoteRow.swift */; };
+		8C7D3EA0AACC5FBB5BBAD274 /* TabSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */; };
+		8CA4BD23B5EC85F38AD56269 /* SaferScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1D293FA4F500C605E2 /* SaferScreen.swift */; };
+		8CDD03BE186CE9653B68E386 /* TimelineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FC294105830073303A /* TimelineModel.swift */; };
+		8D6B6170061320BB476265F6 /* TimedNoteRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A182A9B2A89009918DE /* TimedNoteRow.swift */; };
+		8E5166CBBA8E900576EBF96D /* SaferRoutesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A69A429714ED600B3A474 /* SaferRoutesScreen.swift */; };
+		8E682EB4F180060F43EEB726 /* AddRatingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85929DB182C007DA8C5 /* AddRatingScreen.swift */; };
+		8F6EBB7E422079E508B8EF3F /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712226CBA663009FB0EC /* Feature.swift */; };
+		8F78A96EFB2F03EBBDB7F627 /* DurationRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E64327CA136C00F6E10F /* DurationRange.swift */; };
+		91287E05E1B0FD48152F0769 /* AcknowledgeInteractionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76C8F27D7A5A000945587 /* AcknowledgeInteractionsView.swift */; };
+		91537B682825F562B3DDA195 /* OnFirstAppearModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFD2B890DF600293B44 /* OnFirstAppearModifier.swift */; };
+		9255A5C35DCE5FA0BFC8F000 /* ExperienceLocation-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2E296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift */; };
+		9314148564B5B65BE460BEB0 /* Array-Unique.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A30296C056500DEA663 /* Array-Unique.swift */; };
+		934E63CE4D448CAE79B2A72F /* WeightedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A062A969301009918DE /* WeightedLine.swift */; };
+		936B1960BDFED2ABB3A382C9 /* WeightUnit.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483A2A188FDB005C6A4B /* WeightUnit.swift */; };
+		93CB0126FE71049FED1414D9 /* Roa.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E64127CA136C00F6E10F /* Roa.swift */; };
+		95B7935B28C4FAF2E3FF8620 /* CustomSubstance-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB1659D27E34AD5003DF79D /* CustomSubstance-CoreDataHelpers.swift */; };
+		95C0A99EBDF638DFFA2A8062 /* DosageStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439C2BA247D3008D1897 /* DosageStat.swift */; };
+		95DA02776760F459932211FB /* InjectionSites.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC552EF4A91F00039340 /* InjectionSites.swift */; };
+		95F07B450B89668F1E45B3AB /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1A293F9C0100C605E2 /* Category.swift */; };
+		960FBEDDA562171481F02FE7 /* ToleranceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C36D2A50679100869E5A /* ToleranceType.swift */; };
+		967F787F2A88CF5FE5145EA7 /* RatingScreenContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86029DB2B1B007DA8C5 /* RatingScreenContent.swift */; };
+		96AC110B4A90BFA04ED5C8ED /* LocationCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88929DD501F007DA8C5 /* LocationCodable.swift */; };
+		97DEBAC3BDAFD86FE6A14829 /* ExperienceColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB52A3F283D00FE1A44 /* ExperienceColorRectangle.swift */; };
+		97E5944E18C413F1CDC75832 /* Experience-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */; };
+		98C07777A0DF233A07AD3444 /* ToleranceTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3952A5944EB00869E5A /* ToleranceTimeOption.swift */; };
+		9AD915D6AF39B9A4C96406E1 /* CustomUnitCalculationText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFF2B893EB300293B44 /* CustomUnitCalculationText.swift */; };
+		9AEF6C2E5CE30FC503F6EAE9 /* WebhookPreset-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */; };
+		9B299F736520E102A31098EC /* EverythingForOneRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86929DC26A6007DA8C5 /* EverythingForOneRating.swift */; };
+		9B57E069FD644DD2DED206C9 /* CustomUnit-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */; };
+		9CA59B92DB50595668780D77 /* SelectRatingSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CDA29FBA381007D8BF6 /* SelectRatingSection.swift */; };
+		9CC561EF72274AA0C4E792AA /* IngestionRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB794712D017E8600ED37C8 /* IngestionRange.swift */; };
+		9CDB4149685FFC4F21A0D80F /* MDMAPillsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0129673FFF00DEA663 /* MDMAPillsSection.swift */; };
+		9E5A1998D2EFF13E04633093 /* CalendarColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC3686F2B6FC7C100056C56 /* CalendarColorRectangle.swift */; };
+		9EC843CADAE5D107DB7E436F /* ToleranceWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C36F2A5067A200869E5A /* ToleranceWindow.swift */; };
+		A0E93FDEC59C05C06A55AD4A /* Spray-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048332A16C70A005C6A4B /* Spray-CoreDataHelpers.swift */; };
 		A10928722F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
 		A10928732F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */; };
 		A15CA2B22EFAFED200D90023 /* AllIngestionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */; };
@@ -35,6 +292,113 @@
 		A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
 		A15CA2FF2EFB73E100D90023 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
 		A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
+		A2535EB6E16037BB3077554A /* String-CaseInsensitiveContains.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */; };
+		A32BBDEE9ECD94CB83BAF3C5 /* ColorPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB1659427E302BC003DF79D /* ColorPickerScreen.swift */; };
+		A336ED300E8E9DDC7C5E74E1 /* EditColorsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC39DC1297881E90012823D /* EditColorsScreen.swift */; };
+		A3893B331E87DC4A4CC9CE16 /* InteractionsGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C61C295AF236000DA021 /* InteractionsGroup.swift */; };
+		A40ADA7CA6DA2BEF11E91E1E /* ToleranceSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA527A8329427E61009C142D /* ToleranceSection.swift */; };
+		A446DD03349DE1C96DFFA4A5 /* ToleranceChartPreviewDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */; };
+		A4AD01E7AF710F74B4717462 /* Array-Unique.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A30296C056500DEA663 /* Array-Unique.swift */; };
+		A62EBA171CE2DECE15ADB1E3 /* DoseClassificationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8A2CB42B468D3F0050554C /* DoseClassificationRow.swift */; };
+		A72A28918AC96549020A59F3 /* AdministrationRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */; };
+		A82480931E13BA6915DE695A /* QuickAddView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07AE462F9245E709BA17B46D /* QuickAddView.swift */; };
+		A93F28254FB359611B27BC21 /* ShulginRating-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85E29DB27A0007DA8C5 /* ShulginRating-CoreDataHelpers.swift */; };
+		AA2A6105B581DAD1D34ABB5A /* QuickAddComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC7DCFCB68663ACAAA701DB2 /* QuickAddComplication.swift */; };
+		AA3925628B24E5A1F0703286 /* TimedNoteDottedLine.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A1A2A9B2ECF009918DE /* TimedNoteDottedLine.swift */; };
+		AAB6BF30C61370D60BBF096C /* ExperienceColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEB52A3F283D00FE1A44 /* ExperienceColorRectangle.swift */; };
+		ABF14FA1F9DE2995EA861A6E /* FreakLogWatchWidgetsBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 985A08FA47E5C7A8789A1E69 /* FreakLogWatchWidgetsBundle.swift */; };
+		ABF96E7D2206D3916910DCA8 /* SubstanceAndDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */; };
+		AC34BB11079A35137BE7C8EE /* SubstanceFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C18293F9BCE00C605E2 /* SubstanceFile.swift */; };
+		AC50D8489F1A435C758457BC /* UIApplication-CurrentWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A1327DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift */; };
+		AD503B4C293D49CB04BA9A86 /* ChameleonHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */; };
+		AD51B484D851F11F73F11102 /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E532B385AB4007F113F /* CustomSubstanceChooseRouteScreenArguments.swift */; };
+		AE0311D6895ABEA6864617A7 /* EditOverallRatingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CD729FBA2E4007D8BF6 /* EditOverallRatingScreen.swift */; };
+		AE5B48A76926E9EC10AAB4FA /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1A293F9C0100C605E2 /* Category.swift */; };
+		AE6E79AC9E1B235DD632C241 /* AdministrationRouteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C07295608E20002D68F /* AdministrationRouteScreen.swift */; };
+		AF66F3BF7226672AE22AB4BD /* SprayModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483C2A188FFB005C6A4B /* SprayModel.swift */; };
+		AF687F621F740B7A2D2DB096 /* Roa.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E64127CA136C00F6E10F /* Roa.swift */; };
+		AFFC16CEA1D62355CC1A4F9A /* String-CleanSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60482D2A162225005C6A4B /* String-CleanSearch.swift */; };
+		B0D69AF4403CF2EA7B793EA2 /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
+		B2512836CF679F15608E0B2B /* Tolerance.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63727CA136C00F6E10F /* Tolerance.swift */; };
+		B2D54D4A7BCC07C8AD2C4507 /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4718026CBA664009FB0EC /* Persistence.swift */; };
+		B37FB22964C72F174CA8DAB3 /* DosageClassificationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C01295600F20002D68F /* DosageClassificationScreen.swift */; };
+		B381173DC86F0795A780F983 /* ToleranceTextsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039ABF2A5E75CE006DFAFE /* ToleranceTextsScreen.swift */; };
+		B4D0DC3F0133EDEF46E83314 /* Interactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1F293FED5500C605E2 /* Interactions.swift */; };
+		B4F08CA40A40119E89FEBAE9 /* WatchExperienceDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F69D7A16AA1FAB79E6376568 /* WatchExperienceDetailView.swift */; };
+		B56B1EEE4BE29E530D5C68E0 /* EmptySectionForPadding.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */; };
+		B56B67815672CB9460BAF718 /* ExperiencePickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */; };
+		B5BB50552D81E0195AD52EB2 /* WatchSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EA015A187CCF42BDF8BC128 /* WatchSettingsView.swift */; };
+		B622D2B59A8ECF334649DE4E /* AcknowledgeInteractionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76C8F27D7A5A000945587 /* AcknowledgeInteractionsView.swift */; };
+		B800D99817DC31F976C3941C /* EmptySectionForPadding.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB165AD27E36D29003DF79D /* EmptySectionForPadding.swift */; };
+		B93463700ACFF016BDD62981 /* RatingCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */; };
+		BB3C461280CBB4CE5EBCD9CD /* InteractionPairRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C618295AE60C000DA021 /* InteractionPairRow.swift */; };
+		BB98BED408DD1D84D670D1DB /* SubstanceRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63527CA136C00F6E10F /* SubstanceRepo.swift */; };
+		BCAA6CEC336A2D6E0ECBC6E9 /* ChameleonHeader.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2AD2EFAFED200D90023 /* ChameleonHeader.swift */; };
+		BD536F28C0322D111D1A8287 /* SubstanceWithToleranceAndColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC22A5F1118006DFAFE /* SubstanceWithToleranceAndColor.swift */; };
+		BD8FFCDC5AEF3846BBE7FF68 /* ReagentTestingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFC2955F23A0002D68F /* ReagentTestingScreen.swift */; };
+		BDFC9C98B24B383C3D78E719 /* ChooseCustomUnitScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFB2B890ADA00293B44 /* ChooseCustomUnitScreen.swift */; };
+		BE102ABC6147ADAA63D9FB7F /* NowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A1115502AE44DBAFF85694E /* NowView.swift */; };
+		BE604F3C2CFDAFDB00875C98 /* RootTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9A3C3CCD53F234397E829B9 /* RootTabView.swift */; };
+		BF56B1B95F47B1BE494F42F0 /* MissingToleranceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3912A57203800869E5A /* MissingToleranceText.swift */; };
+		C231651CE66EEF43CF3FBA2D /* ShulginRating-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85E29DB27A0007DA8C5 /* ShulginRating-CoreDataHelpers.swift */; };
+		C3025EEEAE4ED35D9F43D2E5 /* VolumetricDosingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C03295603B10002D68F /* VolumetricDosingScreen.swift */; };
+		C330773F8910E65804B655C6 /* IngestionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88B29DD503D007DA8C5 /* IngestionCodable.swift */; };
+		C3834DD54319C2C16DA8007D /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
+		C395BFB5FD5365C91C2188E3 /* RatingExplanationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CDC29FBA3D9007D8BF6 /* RatingExplanationSection.swift */; };
+		C45E2F29DE14D2D335CECD52 /* Inflection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAEA92222B4E780200F3049D /* Inflection.swift */; };
+		C4B5BB48C577A042AB6F9D66 /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
+		C5E87D191CFD560F5DAEAD61 /* DateDifference.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A329E991C6007DA8C5 /* DateDifference.swift */; };
+		C612A6F75F9B4D69677980BB /* SubstanceAndDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */; };
+		C697BAC973DAD7178C93F6E9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3CDEE6559DAA3F05A32E9999 /* Foundation.framework */; };
+		C82709C075A8E9229AECBB1B /* Substance.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63D27CA136C00F6E10F /* Substance.swift */; };
+		C856AB6E9BC3F0A78AD65934 /* QuestionAndAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA460D2327637964002EF80B /* QuestionAndAnswer.swift */; };
+		C8BF97E7C6EC40EAA2F00FF4 /* FabButtonPosition.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A32EF5FE9B004CDCB4 /* FabButtonPosition.swift */; };
+		CA43ECB5F8A6BEADE78805FF /* LocationCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88929DD501F007DA8C5 /* LocationCodable.swift */; };
+		CA70A9A0D35873E747B56332 /* Suggestion.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA6048262A1411C0005C6A4B /* Suggestion.swift */; };
+		CBFD392C8B98BAB35CC0CC45 /* RatingCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */; };
+		CCE6A2F4357865811B2CD0EB /* WebhookMessage-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */; };
+		CD13D50CEE7FD98FD82BEA0F /* ChooseCustomUnitScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFB2B890ADA00293B44 /* ChooseCustomUnitScreen.swift */; };
+		CD94EA2122E44FE9C5701D67 /* SubstanceBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA1DE59D2949CB5800FEE975 /* SubstanceBox.swift */; };
+		CEB08D4B1D9E5AF3DCF45672 /* CustomUnitMinInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47935F2B4A72D700685EAA /* CustomUnitMinInfo.swift */; };
+		D04BA4BD6929BBA6C3834749 /* CustomUnitDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4793592B48252500685EAA /* CustomUnitDose.swift */; };
+		D0B0083C51582B4B48016310 /* CumulativeDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */; };
+		D1D9F3BC7E398E8103BD38C1 /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC572EF4A93E00039340 /* WebhookService.swift */; };
+		D1DAD907AB1448ACA3E7D421 /* ToleranceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C36D2A50679100869E5A /* ToleranceType.swift */; };
+		D22F2BB177A8516D1EF926EE /* Ingestion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */; };
+		D2D98058571FE30D6D47D578 /* CustomUnitRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAD1D0032B5271BD00EC0D70 /* CustomUnitRow.swift */; };
+		D37DE853ECCB1ACF7681D8B8 /* SaferHallucinogenScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C05295604B00002D68F /* SaferHallucinogenScreen.swift */; };
+		D41BBF5A7D836299BCF884D8 /* Tab.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF21C232BBB3A1F000BFB0A /* Tab.swift */; };
+		D4F38ED2140FB2BEFD283DA2 /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
+		D4FEA05043B9593261E9A893 /* RoaDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63B27CA136C00F6E10F /* RoaDose.swift */; };
+		D565977AEB76536A487C2B86 /* DoseEntryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 198CBC25DF7FDAD9E8F23682 /* DoseEntryView.swift */; };
+		D68DDEF6ED218F49614C487E /* NextLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA26B2BE2976C0D600A1051A /* NextLabel.swift */; };
+		D748BC1055B981827FC83C4F /* DosageStat.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF439C2BA247D3008D1897 /* DosageStat.swift */; };
+		D8496E44DFB0D1AB37020828 /* ToleranceChartExplanationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3932A57214A00869E5A /* ToleranceChartExplanationScreen.swift */; };
+		D9BFECB9F6750E7795DE922D /* ConsumerWithIngestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A242A9CFD34009918DE /* ConsumerWithIngestions.swift */; };
+		DC1FCDD4D27EEE2DEB6F79D7 /* WebhookMessage-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */; };
+		DC2BD74E9740DE81FC94D267 /* AdministrationRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */; };
+		DD76CAA84920F94E6432E433 /* Date-String.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4717D26CBA664009FB0EC /* Date-String.swift */; };
+		DDC233B15B267DD5FDB39871 /* ColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEBD2A3F298E00FE1A44 /* ColorRectangle.swift */; };
+		DE809D2148273C415ADAB13E /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
+		DF4B0E9DFCB011D0F1AB338C /* SaferHallucinogenScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C05295604B00002D68F /* SaferHallucinogenScreen.swift */; };
+		E0B8BC0ADA09137E6A9AF647 /* ColorPickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB1659427E302BC003DF79D /* ColorPickerScreen.swift */; };
+		E208B857BB497E1FE170BCC9 /* CalendarColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC3686F2B6FC7C100056C56 /* CalendarColorRectangle.swift */; };
+		E3ACFAAD9D63AF6046C8757E /* CustomSubstanceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */; };
+		E3F477AE63122699343CEDBD /* EverythingForOneRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86929DC26A6007DA8C5 /* EverythingForOneRating.swift */; };
+		E559147C44BB061F3C830387 /* QuestionAndAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA460D2327637964002EF80B /* QuestionAndAnswer.swift */; };
+		E57FA1F69C7BAEA20CEFB333 /* ColorRectangle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA55CEBD2A3F298E00FE1A44 /* ColorRectangle.swift */; };
+		E58969752081A1ED2D061A9A /* StandardDeviationConfidenceIntervalExplanation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA22BC712CAFA7F300BE7D35 /* StandardDeviationConfidenceIntervalExplanation.swift */; };
+		E59C5202987F1A68D0E5B104 /* ToleranceTextsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039ABF2A5E75CE006DFAFE /* ToleranceTextsScreen.swift */; };
+		E644FD7936B9BF52E76313AD /* WebhookService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D9BFC572EF4A93E00039340 /* WebhookService.swift */; };
+		E6692A8651DA5C1B90195FED /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
+		E6D26CE17323947590ABE5BC /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A72EF62FA6004CDCB4 /* TabManager.swift */; };
+		E6D4CD0F4E328EB024BEBC36 /* View-ColorBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA039AC62A6C6657006DFAFE /* View-ColorBackground.swift */; };
+		E6E286458283AD609955853D /* TimedNote-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A112A9B1F23009918DE /* TimedNote-CoreDataHelpers.swift */; };
+		E7298B03B77C1D1EC1DB51AE /* TabManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D3477A72EF62FA6004CDCB4 /* TabManager.swift */; };
+		E807D579FB37E20471DD38E4 /* GlobalNavigationDestination.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */; };
+		E808D02EE0B6C25448FFA0CD /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
+		E8A13ABD83D2A45A2BB343F3 /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712226CBA663009FB0EC /* Feature.swift */; };
+		E9BEE22F26680ECBF557CEA4 /* WebhookManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */; };
 		EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */; };
 		EA014F9A27E5E72000077FB2 /* WebViewScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9927E5E72000077FB2 /* WebViewScreen.swift */; };
 		EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */; };
@@ -352,9 +716,60 @@
 		EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CA827D90CF900945587 /* SubstanceColor.swift */; };
 		EAF76CAC27D90F6A00945587 /* AdministrationRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */; };
 		EAFA4BD42B400BE50056649E /* WrappingHStack in Frameworks */ = {isa = PBXBuildFile; productRef = EAFA4BD32B400BE50056649E /* WrappingHStack */; };
+		EB55484E4CF17CA0CBCD68BD /* WelcomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4711D26CBA663009FB0EC /* WelcomeScreen.swift */; };
+		EBB88BB3AB5913773EBC7BD1 /* RoaDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA47E63927CA136C00F6E10F /* RoaDuration.swift */; };
+		EC89CD2DEB54031CA492A2D8 /* Navigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF21C252BBB3A3B000BFB0A /* Navigator.swift */; };
+		ECDFF31C7C4FA4B58995B81D /* ChasingTheDragonSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA60483E2A1BF2CB005C6A4B /* ChasingTheDragonSection.swift */; };
+		EF0D508CDF0C4B82BEB03423 /* substances.json in Resources */ = {isa = PBXBuildFile; fileRef = 8EB6E5D159C41C150FC176EA /* substances.json */; };
+		EF5DA78174D730D1DD5CE147 /* AddRatingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85929DB182C007DA8C5 /* AddRatingScreen.swift */; };
+		F00D006D524D6940292F2A8D /* Ingestion-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */; };
+		F029B27211CBB71A123857F8 /* Interactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB0C1F293FED5500C605E2 /* Interactions.swift */; };
+		F051FBA093B53553B9890437 /* SubstanceIngestionGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2D19642B11D3BA00B270A2 /* SubstanceIngestionGroup.swift */; };
+		F06D67505871D1FF14DD83D4 /* NextLabel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA26B2BE2976C0D600A1051A /* NextLabel.swift */; };
+		F146B51C39436AEA0EB91288 /* ExperienceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */; };
+		F1D388CC122F0D9D919D7B93 /* AcknowledgeSaferUseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */; };
+		F1F6D9304FE3EB8282324F08 /* EditColorsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC39DC1297881E90012823D /* EditColorsScreen.swift */; };
+		F28AEF03A190BA65957DE99E /* TimeRangeDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB7946E2D017B1200ED37C8 /* TimeRangeDrawable.swift */; };
+		F32339E0EBF803D51C30DC0D /* MDMAPillsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0129673FFF00DEA663 /* MDMAPillsSection.swift */; };
+		F34A653A842F75F38330C8C7 /* SubstanceAndRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E492B38289B007F113F /* SubstanceAndRoute.swift */; };
+		F4854010F22BD548604220F0 /* IngestionRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB794712D017E8600ED37C8 /* IngestionRange.swift */; };
+		F5116F053D9AEC904636E883 /* ExplainExperienceSectionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC39DC329789E120012823D /* ExplainExperienceSectionScreen.swift */; };
+		F5783AF2FE0B756FB8C0FB36 /* ToleranceChartCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3712A50690C00869E5A /* ToleranceChartCalculator.swift */; };
+		F581E2D811D99DAAAFAC30A2 /* ToleranceChartCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3712A50690C00869E5A /* ToleranceChartCalculator.swift */; };
+		F6129DC38215D8FEA82BEACD /* DosageClassificationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25C01295600F20002D68F /* DosageClassificationScreen.swift */; };
+		F61F52BBCF7A902E4B424E11 /* SubstanceAndRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA302E492B38289B007F113F /* SubstanceAndRoute.swift */; };
+		F66E6D4C8910F737F55E575D /* TimeDisplayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */; };
+		F68C83C0D91AD159F8306C67 /* WebhookManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */; };
+		F74F7D01D95CF69A84C52E56 /* SubstancePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1C02C4B8E556A699DF2456D /* SubstancePickerView.swift */; };
+		F7780E7D8B5E20797AF5D8C0 /* RelativeTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7F230E2B8E095700EA6734 /* RelativeTimeText.swift */; };
+		F811BBD2425FC39DC696BB45 /* RatingExplanationSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CDC29FBA3D9007D8BF6 /* RatingExplanationSection.swift */; };
+		F9983CED5C0A5C7BC964791B /* WelcomeScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4711D26CBA663009FB0EC /* WelcomeScreen.swift */; };
+		F9C7FFDDFE8ECFF21CB0D010 /* GroupDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD92012941C3A30073303A /* GroupDrawable.swift */; };
+		FA53C639CECF81A6C4D28CA9 /* ShulginRatingOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F85729DB12A5007DA8C5 /* ShulginRatingOption.swift */; };
+		FB1737C5FAEA31AB6E0D2399 /* StandardDeviationConfidenceIntervalExplanation.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA22BC712CAFA7F300BE7D35 /* StandardDeviationConfidenceIntervalExplanation.swift */; };
+		FC37392BB3B7435E47B8E394 /* OneRoaDurationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447EA27CD276300B10DD3 /* OneRoaDurationRow.swift */; };
+		FC3D346C53720862E127D8C9 /* DosageGuideScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC25BFF2955FD190002D68F /* DosageGuideScreen.swift */; };
+		FCACB63ADA417284C0EB215D /* OnFirstAppearModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAC4BFFD2B890DF600293B44 /* OnFirstAppearModifier.swift */; };
+		FD4FFA9E54528AF4808F4AE4 /* RelativeTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7F230E2B8E095700EA6734 /* RelativeTimeText.swift */; };
+		FE645C83D302C51252BD38D1 /* DoneButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA2A5C5E29F01F58004D8A7E /* DoneButton.swift */; };
+		FEAA91674DD33C2FB813CA50 /* UnitPickerOptions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA014FAF27EC6E0400077FB2 /* UnitPickerOptions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
+		A61F9A08FF04996DC577F1D3 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A1FDDC6AC1380EC42A6D3C90;
+			remoteInfo = FreakLogWatchWidgets;
+		};
+		B636EB99E10BC1ABF1832F17 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 15743BCD7AA4942784B552AD;
+			remoteInfo = FreakLogWatch;
+		};
 		EA085DDB29607229001638AC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
@@ -372,6 +787,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		DF75EE70543342D086B561B4 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1D0897497A04FD371DD5AA69 /* FreakLogWatchWidgets.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EA085DDE29607229001638AC /* Embed Foundation Extensions */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -389,6 +815,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
+				4517324E1D4140DDD4B310D0 /* FreakLogWatch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -396,6 +823,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0285B89C52569C0549493802 /* FreakLogWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreakLogWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		07AE462F9245E709BA17B46D /* QuickAddView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = QuickAddView.swift; path = FreakLogWatch/Views/AddIngestion/QuickAddView.swift; sourceTree = SOURCE_ROOT; };
 		0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPresetEditScreen.swift; sourceTree = "<group>"; };
 		0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ingestion-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebhookMessage-CoreDataHelpers.swift"; sourceTree = "<group>"; };
@@ -408,9 +837,20 @@
 		0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhooksScreen.swift; sourceTree = "<group>"; };
 		0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookManager.swift; sourceTree = "<group>"; };
 		0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookArchiveScreen.swift; sourceTree = "<group>"; };
+		198CBC25DF7FDAD9E8F23682 /* DoseEntryView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DoseEntryView.swift; path = FreakLogWatch/Views/AddIngestion/DoseEntryView.swift; sourceTree = SOURCE_ROOT; };
+		23B84F0D9D8A4C6F37DD1EAE /* RecentExperiencesView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RecentExperiencesView.swift; path = FreakLogWatch/Views/RecentExperiencesView.swift; sourceTree = SOURCE_ROOT; };
+		2A09389B82DD218F77DBCEDC /* FreakLogWatchApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FreakLogWatchApp.swift; path = FreakLogWatch/FreakLogWatchApp.swift; sourceTree = SOURCE_ROOT; };
+		2EA015A187CCF42BDF8BC128 /* WatchSettingsView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchSettingsView.swift; path = FreakLogWatch/Views/Settings/WatchSettingsView.swift; sourceTree = SOURCE_ROOT; };
+		3CDEE6559DAA3F05A32E9999 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/WatchOS.platform/Developer/SDKs/WatchOS11.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		3D153CAB29680654DDF6B631 /* ActiveExperienceComplication.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ActiveExperienceComplication.swift; path = FreakLogWatchWidgets/ActiveExperienceComplication.swift; sourceTree = SOURCE_ROOT; };
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
+		5E0955F4F4A0563C5F9ADD6A /* RouteOfAdministrationPickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RouteOfAdministrationPickerView.swift; path = FreakLogWatch/Views/AddIngestion/RouteOfAdministrationPickerView.swift; sourceTree = SOURCE_ROOT; };
+		6A1115502AE44DBAFF85694E /* NowView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = NowView.swift; path = FreakLogWatch/Views/NowView.swift; sourceTree = SOURCE_ROOT; };
+		8EB6E5D159C41C150FC176EA /* substances.json */ = {isa = PBXFileReference; includeInIndex = 1; name = substances.json; path = FreakLog/Assets/substances.json; sourceTree = SOURCE_ROOT; };
+		94191855F1D06B6AD526EBA6 /* Assets.xcassets */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder.assetcatalog; name = Assets.xcassets; path = FreakLogWatch/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		985A08FA47E5C7A8789A1E69 /* FreakLogWatchWidgetsBundle.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = FreakLogWatchWidgetsBundle.swift; path = FreakLogWatchWidgets/FreakLogWatchWidgetsBundle.swift; sourceTree = SOURCE_ROOT; };
 		A10928712F1A8FFE0063B47E /* UnifiedTimelineDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedTimelineDrawable.swift; sourceTree = "<group>"; };
 		A15CA2A92EFAFED200D90023 /* IngestionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSection.swift; sourceTree = "<group>"; };
 		A15CA2AB2EFAFED200D90023 /* AllIngestionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AllIngestionsViewModel.swift; sourceTree = "<group>"; };
@@ -423,6 +863,8 @@
 		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
 		A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViewOption.swift; sourceTree = "<group>"; };
 		A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSettingsScreen.swift; sourceTree = "<group>"; };
+		AA217C5C995190517D920E2C /* FreakLogWatchWidgets.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = FreakLogWatchWidgets.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1C02C4B8E556A699DF2456D /* SubstancePickerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = SubstancePickerView.swift; path = FreakLogWatch/Views/AddIngestion/SubstancePickerView.swift; sourceTree = SOURCE_ROOT; };
 		EA014F9427E5DB5200077FB2 /* WebViewRepresentable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewRepresentable.swift; sourceTree = "<group>"; };
 		EA014F9927E5E72000077FB2 /* WebViewScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebViewScreen.swift; sourceTree = "<group>"; };
 		EA014F9D27E5F5F200077FB2 /* RowLabelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RowLabelView.swift; sourceTree = "<group>"; };
@@ -713,14 +1155,54 @@
 		EAF76CA327D8F72700945587 /* ExperiencesList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiencesList.swift; sourceTree = "<group>"; };
 		EAF76CA827D90CF900945587 /* SubstanceColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceColor.swift; sourceTree = "<group>"; };
 		EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationRoute.swift; sourceTree = "<group>"; };
+		F69D7A16AA1FAB79E6376568 /* WatchExperienceDetailView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchExperienceDetailView.swift; path = FreakLogWatch/Views/WatchExperienceDetailView.swift; sourceTree = SOURCE_ROOT; };
+		F9A3C3CCD53F234397E829B9 /* RootTabView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = RootTabView.swift; path = FreakLogWatch/Views/RootTabView.swift; sourceTree = SOURCE_ROOT; };
+		FC7DCFCB68663ACAAA701DB2 /* QuickAddComplication.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = QuickAddComplication.swift; path = FreakLogWatchWidgets/QuickAddComplication.swift; sourceTree = SOURCE_ROOT; };
+		FCB7A29809FB919465C42D2E /* WatchTimelinePreview.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = WatchTimelinePreview.swift; path = FreakLogWatch/Views/WatchTimelinePreview.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		440D42F52E74A40D00C73035 /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = Assets; path = ../FreakLog/Assets; sourceTree = "<group>"; };
-		44E43E022E71E9E9008D7FDD /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Assets; sourceTree = "<group>"; };
+		440D42F52E74A40D00C73035 /* ../FreakLog/Assets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = ../FreakLog/Assets;
+			sourceTree = "<group>";
+		};
+		44E43E022E71E9E9008D7FDD /* Assets */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = Assets;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		13495CEF0D5AB1BE33BF2496 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08D545B6B86CC67EFDD15BAA /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C1FCC33F3F5D6E88EF714DB1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C697BAC973DAD7178C93F6E9 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EA085DC929607229001638AC /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -757,6 +1239,27 @@
 				0DC49ACD2EFB58B6000A9A0D /* WebhookManager.swift */,
 			);
 			path = Webhooks;
+			sourceTree = "<group>";
+		};
+		222E625B454DC92EE2D63EA8 /* AddIngestion */ = {
+			isa = PBXGroup;
+			children = (
+				198CBC25DF7FDAD9E8F23682 /* DoseEntryView.swift */,
+				07AE462F9245E709BA17B46D /* QuickAddView.swift */,
+				5E0955F4F4A0563C5F9ADD6A /* RouteOfAdministrationPickerView.swift */,
+				B1C02C4B8E556A699DF2456D /* SubstancePickerView.swift */,
+			);
+			name = AddIngestion;
+			path = AddIngestion;
+			sourceTree = "<group>";
+		};
+		91D0621B896AC02827622D12 /* Settings */ = {
+			isa = PBXGroup;
+			children = (
+				2EA015A187CCF42BDF8BC128 /* WatchSettingsView.swift */,
+			);
+			name = Settings;
+			path = Settings;
 			sourceTree = "<group>";
 		};
 		A15CA2AA2EFAFED200D90023 /* Models */ = {
@@ -800,6 +1303,37 @@
 				A15CA2B02EFAFED200D90023 /* Views */,
 			);
 			path = "All Ingestions";
+			sourceTree = "<group>";
+		};
+		B27F73FC63F522DB2211E9C6 /* watchOS */ = {
+			isa = PBXGroup;
+			children = (
+				3CDEE6559DAA3F05A32E9999 /* Foundation.framework */,
+			);
+			name = watchOS;
+			sourceTree = "<group>";
+		};
+		B2A365448D4494A306A0934D /* FreakLogWatch */ = {
+			isa = PBXGroup;
+			children = (
+				2A09389B82DD218F77DBCEDC /* FreakLogWatchApp.swift */,
+				FF7BCBDCA6C15B3AFA813323 /* Views */,
+				8EB6E5D159C41C150FC176EA /* substances.json */,
+				94191855F1D06B6AD526EBA6 /* Assets.xcassets */,
+			);
+			name = FreakLogWatch;
+			path = FreakLogWatch;
+			sourceTree = "<group>";
+		};
+		C41A88C2419910364ADB3C32 /* FreakLogWatchWidgets */ = {
+			isa = PBXGroup;
+			children = (
+				FC7DCFCB68663ACAAA701DB2 /* QuickAddComplication.swift */,
+				3D153CAB29680654DDF6B631 /* ActiveExperienceComplication.swift */,
+				985A08FA47E5C7A8789A1E69 /* FreakLogWatchWidgetsBundle.swift */,
+			);
+			name = FreakLogWatchWidgets;
+			path = FreakLogWatchWidgets;
 			sourceTree = "<group>";
 		};
 		EA014F9627E5DC6500077FB2 /* Web */ = {
@@ -851,7 +1385,7 @@
 				EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */,
 				EA085DD829607229001638AC /* Assets.xcassets */,
 				EA085DDA29607229001638AC /* Info.plist */,
-				440D42F52E74A40D00C73035 /* Assets */,
+				440D42F52E74A40D00C73035 /* ../FreakLog/Assets */,
 			);
 			path = TimelineWidget;
 			sourceTree = "<group>";
@@ -1275,6 +1809,7 @@
 			children = (
 				EA085DCD29607229001638AC /* WidgetKit.framework */,
 				EA085DCF29607229001638AC /* SwiftUI.framework */,
+				B27F73FC63F522DB2211E9C6 /* watchOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -1483,6 +2018,8 @@
 				EA085DD129607229001638AC /* TimelineWidget */,
 				EAE4710426CBA57F009FB0EC /* Products */,
 				EAA2EC6826E2064D00B4FACF /* Frameworks */,
+				B2A365448D4494A306A0934D /* FreakLogWatch */,
+				C41A88C2419910364ADB3C32 /* FreakLogWatchWidgets */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1492,6 +2029,8 @@
 				EAE4710326CBA57F009FB0EC /* FreakLog.app */,
 				EACB6E3A27D09C8800940291 /* FreakLogTests.xctest */,
 				EA085DCC29607229001638AC /* LiveActivityExtension.appex */,
+				0285B89C52569C0549493802 /* FreakLogWatch.app */,
+				AA217C5C995190517D920E2C /* FreakLogWatchWidgets.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1693,9 +2232,60 @@
 			path = Enums;
 			sourceTree = "<group>";
 		};
+		FF7BCBDCA6C15B3AFA813323 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				222E625B454DC92EE2D63EA8 /* AddIngestion */,
+				6A1115502AE44DBAFF85694E /* NowView.swift */,
+				23B84F0D9D8A4C6F37DD1EAE /* RecentExperiencesView.swift */,
+				F9A3C3CCD53F234397E829B9 /* RootTabView.swift */,
+				91D0621B896AC02827622D12 /* Settings */,
+				F69D7A16AA1FAB79E6376568 /* WatchExperienceDetailView.swift */,
+				FCB7A29809FB919465C42D2E /* WatchTimelinePreview.swift */,
+			);
+			name = Views;
+			path = Views;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		15743BCD7AA4942784B552AD /* FreakLogWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F3F5830BCEB1CCB256B90FE0 /* Build configuration list for PBXNativeTarget "FreakLogWatch" */;
+			buildPhases = (
+				E517F312E4224475D89EEEBE /* Sources */,
+				C1FCC33F3F5D6E88EF714DB1 /* Frameworks */,
+				1B97CE2ED12DA1BD28C5E90B /* Resources */,
+				DF75EE70543342D086B561B4 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E06CD5A6DEFE9890F4048031 /* PBXTargetDependency */,
+			);
+			name = FreakLogWatch;
+			productName = FreakLogWatch;
+			productReference = 0285B89C52569C0549493802 /* FreakLogWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A1FDDC6AC1380EC42A6D3C90 /* FreakLogWatchWidgets */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5BC107C931E4E87D061C7B5C /* Build configuration list for PBXNativeTarget "FreakLogWatchWidgets" */;
+			buildPhases = (
+				1F5246540CF93390CF8BCD02 /* Sources */,
+				13495CEF0D5AB1BE33BF2496 /* Frameworks */,
+				3E7B9D27CEF0753749536827 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FreakLogWatchWidgets;
+			productName = FreakLogWatchWidgets;
+			productReference = AA217C5C995190517D920E2C /* FreakLogWatchWidgets.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		EA085DCB29607229001638AC /* LiveActivityExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "LiveActivityExtension" */;
@@ -1709,7 +2299,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				440D42F52E74A40D00C73035 /* Assets */,
+				440D42F52E74A40D00C73035 /* ../FreakLog/Assets */,
 			);
 			name = LiveActivityExtension;
 			productName = TimelineWidgetExtension;
@@ -1748,6 +2338,7 @@
 			);
 			dependencies = (
 				EA085DDC29607229001638AC /* PBXTargetDependency */,
+				DA3E1F53A52BDDC7CE3AE8CB /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				44E43E022E71E9E9008D7FDD /* Assets */,
@@ -1808,11 +2399,30 @@
 				EAE4710226CBA57F009FB0EC /* FreakLog */,
 				EACB6E3927D09C8800940291 /* FreakLogTests */,
 				EA085DCB29607229001638AC /* LiveActivityExtension */,
+				15743BCD7AA4942784B552AD /* FreakLogWatch */,
+				A1FDDC6AC1380EC42A6D3C90 /* FreakLogWatchWidgets */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		1B97CE2ED12DA1BD28C5E90B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EF0D508CDF0C4B82BEB03423 /* substances.json in Resources */,
+				20560D71D145B66495E27C8F /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3E7B9D27CEF0753749536827 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5268967E40B07C7679F65E28 /* substances.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EA085DCA29607229001638AC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -1841,6 +2451,414 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		1F5246540CF93390CF8BCD02 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AA2A6105B581DAD1D34ABB5A /* QuickAddComplication.swift in Sources */,
+				76C7B86E52997C2F933C908B /* ActiveExperienceComplication.swift in Sources */,
+				ABF14FA1F9DE2995EA861A6E /* FreakLogWatchWidgetsBundle.swift in Sources */,
+				D4F38ED2140FB2BEFD283DA2 /* Main.xcdatamodeld in Sources */,
+				F1D388CC122F0D9D919D7B93 /* AcknowledgeSaferUseScreen.swift in Sources */,
+				7ED8D17EC43C4EFDAD3FE693 /* AddIngestionDestination.swift in Sources */,
+				0CC500B18C1F3E41C82AB213 /* CustomSubstanceBox.swift in Sources */,
+				1A68341A287A14D6E7A9F3DE /* CustomUnitBox.swift in Sources */,
+				1B07E8FF77504FA8725F27A1 /* SubstanceBox.swift in Sources */,
+				6F38E0CA4BBCDEB2D6F767F5 /* CustomSubstanceModel.swift in Sources */,
+				14C671AB93D4AC79DE664824 /* CustomUnitDose.swift in Sources */,
+				30D4F9C873382131C7F8E417 /* RegularDoseAndUnit.swift in Sources */,
+				CA70A9A0D35873E747B56332 /* Suggestion.swift in Sources */,
+				0ACA4C13A7C9FB768AC97290 /* SuggestionsCreator.swift in Sources */,
+				9AD915D6AF39B9A4C96406E1 /* CustomUnitCalculationText.swift in Sources */,
+				863D3F8D784C6B57A0EEA518 /* CustomUnitDoseRow.swift in Sources */,
+				CEB08D4B1D9E5AF3DCF45672 /* CustomUnitMinInfo.swift in Sources */,
+				1E95A6748AB10199B505208B /* DoneButton.swift in Sources */,
+				ECDFF31C7C4FA4B58995B81D /* ChasingTheDragonSection.swift in Sources */,
+				9CDB4149685FFC4F21A0D80F /* MDMAPillsSection.swift in Sources */,
+				F61F52BBCF7A902E4B424E11 /* SubstanceAndRoute.swift in Sources */,
+				4ED2C7B66106ADCD93A85F24 /* CustomChooseDoseScreenArguments.swift in Sources */,
+				62913AD6E97DBE392C71BA59 /* FinishIngestionScreenArguments.swift in Sources */,
+				351A20237229306DC74EB6CB /* LocationManager.swift in Sources */,
+				91537B682825F562B3DDA195 /* OnFirstAppearModifier.swift in Sources */,
+				A32BBDEE9ECD94CB83BAF3C5 /* ColorPickerScreen.swift in Sources */,
+				B800D99817DC31F976C3941C /* EmptySectionForPadding.swift in Sources */,
+				705288DAAE462109E765402A /* ExperiencePickerScreen.swift in Sources */,
+				95DA02776760F459932211FB /* InjectionSites.swift in Sources */,
+				D1D9F3BC7E398E8103BD38C1 /* WebhookService.swift in Sources */,
+				91287E05E1B0FD48152F0769 /* AcknowledgeInteractionsView.swift in Sources */,
+				5848B6CE5B1B88940F040A38 /* InteractionChecker.swift in Sources */,
+				F06D67505871D1FF14DD83D4 /* NextLabel.swift in Sources */,
+				437D5767518EF83F77C5D466 /* ChooseOtherRouteScreenArguments.swift in Sources */,
+				1EAD8696B0092902D9FDA50C /* ChooseRouteScreenArguments.swift in Sources */,
+				37EEC574961618028C0B6C86 /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */,
+				2181FA5ED3E6D0012615EB81 /* Constants.swift in Sources */,
+				95B7935B28C4FAF2E3FF8620 /* CustomSubstance-CoreDataHelpers.swift in Sources */,
+				1B734011102A6973E73F8EA0 /* CustomUnit-CoreDataHelpers.swift in Sources */,
+				73B44A9205BB48D5C456FCE8 /* Experience-CoreDataHelpers.swift in Sources */,
+				87154CE4B56FA4C1B489948F /* ExperienceLocation-CoreDataHelpers.swift in Sources */,
+				3151A161706967BD12CB33E9 /* ExperienceLogic.swift in Sources */,
+				F00D006D524D6940292F2A8D /* Ingestion-CoreDataHelpers.swift in Sources */,
+				A93F28254FB359611B27BC21 /* ShulginRating-CoreDataHelpers.swift in Sources */,
+				837B0C9CD351019DA85936A8 /* Spray-CoreDataHelpers.swift in Sources */,
+				683A4B8E022280E14F4A8E9A /* SubstanceColor.swift in Sources */,
+				5087E0EE846680F1AF6A710D /* SubstanceCompanion-CoreDataHelpers.swift in Sources */,
+				2541855782F4E7AF94066FCF /* TimedNote-CoreDataHelpers.swift in Sources */,
+				CCE6A2F4357865811B2CD0EB /* WebhookMessage-CoreDataHelpers.swift in Sources */,
+				2E81BE75411EC64CBD660C90 /* WebhookPreset-CoreDataHelpers.swift in Sources */,
+				AE5B48A76926E9EC10AAB4FA /* Category.swift in Sources */,
+				8F78A96EFB2F03EBBDB7F627 /* DurationRange.swift in Sources */,
+				B4D0DC3F0133EDEF46E83314 /* Interactions.swift in Sources */,
+				AF687F621F740B7A2D2DB096 /* Roa.swift in Sources */,
+				D4FEA05043B9593261E9A893 /* RoaDose.swift in Sources */,
+				148A784FE4285A93C834CC88 /* RoaDuration.swift in Sources */,
+				20DAAE30F9BB028001468A64 /* RoaRange.swift in Sources */,
+				3F229105D741ABC985219EBB /* Substance.swift in Sources */,
+				AC34BB11079A35137BE7C8EE /* SubstanceFile.swift in Sources */,
+				BB98BED408DD1D84D670D1DB /* SubstanceRepo.swift in Sources */,
+				68DBAEE1A53327A19B70F364 /* Tolerance.swift in Sources */,
+				A72A28918AC96549020A59F3 /* AdministrationRoute.swift in Sources */,
+				784CE260701616CBB93041F1 /* DoseRangeType.swift in Sources */,
+				C8BF97E7C6EC40EAA2F00FF4 /* FabButtonPosition.swift in Sources */,
+				0FFDFC48574796B53863C1B9 /* InteractionType.swift in Sources */,
+				FEAA91674DD33C2FB813CA50 /* UnitPickerOptions.swift in Sources */,
+				1325858F74A09AC16A9E4762 /* Angle.swift in Sources */,
+				9314148564B5B65BE460BEB0 /* Array-Unique.swift in Sources */,
+				241C5CFAC80DD3C91915A99E /* Date-Format.swift in Sources */,
+				4563ABD075CBF811B715AF13 /* Date-String.swift in Sources */,
+				3421579C92F327C5D670F26F /* Double-asRoundedReadableString.swift in Sources */,
+				065D73C1172E97D3C9EC1592 /* Notification-EyeName.swift in Sources */,
+				84B0850139C277CFA214EE3E /* Sequence-Uniqued.swift in Sources */,
+				3D019316F94026D8ED817AD4 /* String-CaseInsensitiveContains.swift in Sources */,
+				AFFC16CEA1D62355CC1A4F9A /* String-CleanSearch.swift in Sources */,
+				07C78808C8A22DBA32560AE0 /* Text-LinearGradient.swift in Sources */,
+				AC50D8489F1A435C758457BC /* UIApplication-CurrentWindow.swift in Sources */,
+				3339FA6CC0EDED596D326F90 /* Global Functions.swift in Sources */,
+				3C7A95E40AED95073DBF801B /* IngestionSection.swift in Sources */,
+				BCAA6CEC336A2D6E0ECBC6E9 /* ChameleonHeader.swift in Sources */,
+				1ED9E4B9FB796CB2FFA49E43 /* JournalViewOption.swift in Sources */,
+				3DEE18F8F31B1A84CF494D4A /* CumulativeDose.swift in Sources */,
+				D0B0083C51582B4B48016310 /* CumulativeDoseRow.swift in Sources */,
+				C5E87D191CFD560F5DAEAD61 /* DateDifference.swift in Sources */,
+				CD13D50CEE7FD98FD82BEA0F /* ChooseCustomUnitScreen.swift in Sources */,
+				F5116F053D9AEC904636E883 /* ExplainExperienceSectionScreen.swift in Sources */,
+				755BECE644CD06D0AAFB06A7 /* GoThroughAllInteractionsScreen.swift in Sources */,
+				E57FA1F69C7BAEA20CEFB333 /* ColorRectangle.swift in Sources */,
+				36B50F4938880FE459B04DE5 /* Dot.swift in Sources */,
+				663C522D1BCCF64A7D86F393 /* DotRows.swift in Sources */,
+				FD4FFA9E54528AF4808F4AE4 /* RelativeTimeText.swift in Sources */,
+				BB3C461280CBB4CE5EBCD9CD /* InteractionPairRow.swift in Sources */,
+				8E682EB4F180060F43EEB726 /* AddRatingScreen.swift in Sources */,
+				AE0311D6895ABEA6864617A7 /* EditOverallRatingScreen.swift in Sources */,
+				FA53C639CECF81A6C4D28CA9 /* ShulginRatingOption.swift in Sources */,
+				F811BBD2425FC39DC696BB45 /* RatingExplanationSection.swift in Sources */,
+				20D08D2B38D4D69C9EB46541 /* RatingScreenContent.swift in Sources */,
+				9CA59B92DB50595668780D77 /* SelectRatingSection.swift in Sources */,
+				F66E6D4C8910F737F55E575D /* TimeDisplayStyle.swift in Sources */,
+				03BA42AFBBF75AC916B7A9F3 /* TimedNoteDottedLine.swift in Sources */,
+				8AE627079D40CA7C4BAD6C45 /* TimedNoteRow.swift in Sources */,
+				D9BFECB9F6750E7795DE922D /* ConsumerWithIngestions.swift in Sources */,
+				97DEBAC3BDAFD86FE6A14829 /* ExperienceColorRectangle.swift in Sources */,
+				1BAF5E470B7C5F6B5773D087 /* ExperienceTimeText.swift in Sources */,
+				0AD65D40748E2E292AE4DFDA /* FabLabelStyle.swift in Sources */,
+				49A2387CFF8E67BCBE96B710 /* FabPosition.swift in Sources */,
+				9E5A1998D2EFF13E04633093 /* CalendarColorRectangle.swift in Sources */,
+				188989A683CFA600889450C3 /* Authenticator.swift in Sources */,
+				64C6B12414EAAFC4BCD0F95C /* GlobalNavigationDestination.swift in Sources */,
+				E8A13ABD83D2A45A2BB343F3 /* Feature.swift in Sources */,
+				EB55484E4CF17CA0CBCD68BD /* WelcomeScreen.swift in Sources */,
+				5D902A895FF759B28C0ECF7D /* LaunchAnimationWrapper.swift in Sources */,
+				880028B6D13FD73707E60F9D /* Navigator.swift in Sources */,
+				5503AA5BE75BA7058E21C2C8 /* Tab.swift in Sources */,
+				E6D26CE17323947590ABE5BC /* TabManager.swift in Sources */,
+				6A23EB79973662F34D5E7CA3 /* ToastViewModel.swift in Sources */,
+				B2D54D4A7BCC07C8AD2C4507 /* Persistence.swift in Sources */,
+				28B240534DE08810CB598034 /* SaferScreen.swift in Sources */,
+				AE6E79AC9E1B235DD632C241 /* AdministrationRouteScreen.swift in Sources */,
+				F6129DC38215D8FEA82BEACD /* DosageClassificationScreen.swift in Sources */,
+				4F9F734A9FFC74F521F75174 /* DosageGuideScreen.swift in Sources */,
+				BD8FFCDC5AEF3846BBE7FF68 /* ReagentTestingScreen.swift in Sources */,
+				D37DE853ECCB1ACF7681D8B8 /* SaferHallucinogenScreen.swift in Sources */,
+				46B98A61048AE2F094DE07DF /* SaferRoutesScreen.swift in Sources */,
+				3A84D342574ACDC774BDE4DD /* TestingServicesScreen.swift in Sources */,
+				C3025EEEAE4ED35D9F43D2E5 /* VolumetricDosingScreen.swift in Sources */,
+				AF66F3BF7226672AE22AB4BD /* SprayModel.swift in Sources */,
+				936B1960BDFED2ABB3A382C9 /* WeightUnit.swift in Sources */,
+				7C4CE00E5D43EA5DB869581B /* EditCustomSubstanceView.swift in Sources */,
+				84BBB5E09A37D543EF419D35 /* SearchLogic.swift in Sources */,
+				68B5BB2E99CE3E5D2DBC13B3 /* DangerTriangles.swift in Sources */,
+				35DD1FBDF373A51AF0A3685D /* DurationChip.swift in Sources */,
+				06E1E938B0B3219687FD7194 /* DurationSection.swift in Sources */,
+				FC37392BB3B7435E47B8E394 /* OneRoaDurationRow.swift in Sources */,
+				E6D4CD0F4E328EB024BEBC36 /* View-ColorBackground.swift in Sources */,
+				A3893B331E87DC4A4CC9CE16 /* InteractionsGroup.swift in Sources */,
+				A62EBA171CE2DECE15ADB1E3 /* DoseClassificationRow.swift in Sources */,
+				5C6B73BBE7953ACF60B39D50 /* RoaDoseRow.swift in Sources */,
+				B0D69AF4403CF2EA7B793EA2 /* RowLabelView.swift in Sources */,
+				536F4824A226240D989A6AFA /* ToleranceSection.swift in Sources */,
+				32235C26C5F68F344BF94249 /* ToxicitySection.swift in Sources */,
+				3160519933059403D27B538A /* CompanionCodable.swift in Sources */,
+				14A41C83E641AD44D58C096F /* CustomSubstanceCodable.swift in Sources */,
+				7C2E3496E2FDBBEB12B1C93E /* CustomUnitCodable.swift in Sources */,
+				251A53FA3930589AC0F09461 /* ExperienceCodable.swift in Sources */,
+				C330773F8910E65804B655C6 /* IngestionCodable.swift in Sources */,
+				CA43ECB5F8A6BEADE78805FF /* LocationCodable.swift in Sources */,
+				B93463700ACFF016BDD62981 /* RatingCodable.swift in Sources */,
+				0CE85371D256FF068637FC2B /* TimedNoteCodable.swift in Sources */,
+				081480A81FE75F1197A1DA3C /* CustomUnitRow.swift in Sources */,
+				FB1737C5FAEA31AB6E0D2399 /* StandardDeviationConfidenceIntervalExplanation.swift in Sources */,
+				E808D02EE0B6C25448FFA0CD /* DynamicRangeOption.swift in Sources */,
+				A336ED300E8E9DDC7C5E74E1 /* EditColorsScreen.swift in Sources */,
+				DE809D2148273C415ADAB13E /* LockTimeOption.swift in Sources */,
+				E559147C44BB061F3C830387 /* QuestionAndAnswer.swift in Sources */,
+				3D8A0C6B36E3BE90F35CB808 /* JournalSettingsScreen.swift in Sources */,
+				8C7D3EA0AACC5FBB5BBAD274 /* TabSettingsScreen.swift in Sources */,
+				58FE6A82E77FFF86FBED10ED /* WebhookArchiveScreen.swift in Sources */,
+				185BF7CBBCE86E3F9D25AA27 /* Data.swift in Sources */,
+				95C0A99EBDF638DFFA2A8062 /* DosageStat.swift in Sources */,
+				4445A72711C88026B0C05F04 /* Inflection.swift in Sources */,
+				53D6B30E3F47D88264CA3EF3 /* TimeRange.swift in Sources */,
+				A446DD03349DE1C96DFFA4A5 /* ToleranceChartPreviewDataProvider.swift in Sources */,
+				D1DAD907AB1448ACA3E7D421 /* ToleranceType.swift in Sources */,
+				73C9A8C4F56638E0DC2D6CD9 /* ToleranceWindow.swift in Sources */,
+				6ADE15C340035BDA1E6225F7 /* MissingToleranceText.swift in Sources */,
+				6B03AF873130D83269902A73 /* SubstanceWithToleranceAndColor.swift in Sources */,
+				E59C5202987F1A68D0E5B104 /* ToleranceTextsScreen.swift in Sources */,
+				D8496E44DFB0D1AB37020828 /* ToleranceChartExplanationScreen.swift in Sources */,
+				98C07777A0DF233A07AD3444 /* ToleranceTimeOption.swift in Sources */,
+				ABF96E7D2206D3916910DCA8 /* SubstanceAndDay.swift in Sources */,
+				F581E2D811D99DAAAFAC30A2 /* ToleranceChartCalculator.swift in Sources */,
+				541AD8E044238A0D6E983291 /* AxisDrawable.swift in Sources */,
+				0AF7E3E5DD33BD0399626274 /* FullCumulativeTimelines.swift in Sources */,
+				8047FC0AB3E834B85B74C7B3 /* FullRangeTimeline.swift in Sources */,
+				729EF1AB3190B78FA270C55C /* GraphicsContext-DrawDot.swift in Sources */,
+				17AE3F07347B9360A4AA359B /* NoTimeline.swift in Sources */,
+				3B2326A06F047A0F84A85F2B /* StrokeStyle-Timeline.swift in Sources */,
+				827C0F603384F1CBA4193656 /* TimelineDrawable.swift in Sources */,
+				0DE627C90A81633D7E8A2E96 /* UnifiedTimelineDrawable.swift in Sources */,
+				1E9B077A434C37971B40DC7C /* EffectTimeline.swift in Sources */,
+				9B299F736520E102A31098EC /* EverythingForOneRating.swift in Sources */,
+				49C4589C6CE927567FAE50C1 /* EverythingForOneTimedNote.swift in Sources */,
+				F9C7FFDDFE8ECFF21CB0D010 /* GroupDrawable.swift in Sources */,
+				9CC561EF72274AA0C4E792AA /* IngestionRange.swift in Sources */,
+				196506A31BEABD4991D462A2 /* IngestionMinInfoForTimeline.swift in Sources */,
+				F051FBA093B53553B9890437 /* SubstanceIngestionGroup.swift in Sources */,
+				22954F7992D2FCA0D4F3FA01 /* RatingDrawable.swift in Sources */,
+				F28AEF03A190BA65957DE99E /* TimeRangeDrawable.swift in Sources */,
+				0C4A451CAD611AE3C862F280 /* TimedNoteDrawable.swift in Sources */,
+				8CDD03BE186CE9653B68E386 /* TimelineModel.swift in Sources */,
+				609609B9A16B54C976BAE4AC /* WeightedLine.swift in Sources */,
+				F68C83C0D91AD159F8306C67 /* WebhookManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E517F312E4224475D89EEEBE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A4CFAC7DD78C490F7606A2C /* FreakLogWatchApp.swift in Sources */,
+				D565977AEB76536A487C2B86 /* DoseEntryView.swift in Sources */,
+				A82480931E13BA6915DE695A /* QuickAddView.swift in Sources */,
+				895D2054AC6013908E403486 /* RouteOfAdministrationPickerView.swift in Sources */,
+				F74F7D01D95CF69A84C52E56 /* SubstancePickerView.swift in Sources */,
+				BE102ABC6147ADAA63D9FB7F /* NowView.swift in Sources */,
+				2E3D97BB590DA3969974886C /* RecentExperiencesView.swift in Sources */,
+				BE604F3C2CFDAFDB00875C98 /* RootTabView.swift in Sources */,
+				B5BB50552D81E0195AD52EB2 /* WatchSettingsView.swift in Sources */,
+				B4F08CA40A40119E89FEBAE9 /* WatchExperienceDetailView.swift in Sources */,
+				08E987BA281C4587E14EE6CF /* WatchTimelinePreview.swift in Sources */,
+				899D5088B761366F58CF6F36 /* Main.xcdatamodeld in Sources */,
+				4A720B4344A4DC652019D73A /* AcknowledgeSaferUseScreen.swift in Sources */,
+				2F74A7E5E24CEE6FAA8DD9C0 /* AddIngestionDestination.swift in Sources */,
+				35EC5EC1AB1FCD367FB1A555 /* CustomSubstanceBox.swift in Sources */,
+				838FDCFF97F24C62655BC0D3 /* CustomUnitBox.swift in Sources */,
+				CD94EA2122E44FE9C5701D67 /* SubstanceBox.swift in Sources */,
+				317B34C06289FDD5BF2137B8 /* CustomSubstanceModel.swift in Sources */,
+				D04BA4BD6929BBA6C3834749 /* CustomUnitDose.swift in Sources */,
+				8435C630E4485CB9F426DF8B /* RegularDoseAndUnit.swift in Sources */,
+				42B46B4FA63E10D5FF7A675A /* Suggestion.swift in Sources */,
+				7AEAFA2564AC8B9BBD001ED9 /* SuggestionsCreator.swift in Sources */,
+				518673B3CBDAD838C46BBE72 /* CustomUnitCalculationText.swift in Sources */,
+				79B0FD5291A125F422A38DBD /* CustomUnitDoseRow.swift in Sources */,
+				7D4DE808D0811AA2655C2B5F /* CustomUnitMinInfo.swift in Sources */,
+				FE645C83D302C51252BD38D1 /* DoneButton.swift in Sources */,
+				1B2BD6DA71F2349DB44AD948 /* ChasingTheDragonSection.swift in Sources */,
+				F32339E0EBF803D51C30DC0D /* MDMAPillsSection.swift in Sources */,
+				F34A653A842F75F38330C8C7 /* SubstanceAndRoute.swift in Sources */,
+				4AFAD16EBE74D3536C64F642 /* CustomChooseDoseScreenArguments.swift in Sources */,
+				0FD9DF98D5E7FC6F9CA6A427 /* FinishIngestionScreenArguments.swift in Sources */,
+				17F21D3F610F7771A9A73E7A /* LocationManager.swift in Sources */,
+				FCACB63ADA417284C0EB215D /* OnFirstAppearModifier.swift in Sources */,
+				E0B8BC0ADA09137E6A9AF647 /* ColorPickerScreen.swift in Sources */,
+				B56B1EEE4BE29E530D5C68E0 /* EmptySectionForPadding.swift in Sources */,
+				B56B67815672CB9460BAF718 /* ExperiencePickerScreen.swift in Sources */,
+				202E68A26EAD213C7359E3D2 /* InjectionSites.swift in Sources */,
+				E644FD7936B9BF52E76313AD /* WebhookService.swift in Sources */,
+				B622D2B59A8ECF334649DE4E /* AcknowledgeInteractionsView.swift in Sources */,
+				1923B34F8F755B1AC267BF1F /* InteractionChecker.swift in Sources */,
+				D68DDEF6ED218F49614C487E /* NextLabel.swift in Sources */,
+				66C0AA07E20DF6D0BA8D62E4 /* ChooseOtherRouteScreenArguments.swift in Sources */,
+				3A034FFD76A3D9781D73BB6C /* ChooseRouteScreenArguments.swift in Sources */,
+				AD51B484D851F11F73F11102 /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */,
+				3B9088DFF8CBECBAF9A28106 /* Constants.swift in Sources */,
+				5E6695389506C9BCA8C90B61 /* CustomSubstance-CoreDataHelpers.swift in Sources */,
+				9B57E069FD644DD2DED206C9 /* CustomUnit-CoreDataHelpers.swift in Sources */,
+				97E5944E18C413F1CDC75832 /* Experience-CoreDataHelpers.swift in Sources */,
+				9255A5C35DCE5FA0BFC8F000 /* ExperienceLocation-CoreDataHelpers.swift in Sources */,
+				F146B51C39436AEA0EB91288 /* ExperienceLogic.swift in Sources */,
+				D22F2BB177A8516D1EF926EE /* Ingestion-CoreDataHelpers.swift in Sources */,
+				C231651CE66EEF43CF3FBA2D /* ShulginRating-CoreDataHelpers.swift in Sources */,
+				A0E93FDEC59C05C06A55AD4A /* Spray-CoreDataHelpers.swift in Sources */,
+				4ED5FAF57F6FDD4932ED927C /* SubstanceColor.swift in Sources */,
+				790D8D641C994304C214D2FA /* SubstanceCompanion-CoreDataHelpers.swift in Sources */,
+				E6E286458283AD609955853D /* TimedNote-CoreDataHelpers.swift in Sources */,
+				DC1FCDD4D27EEE2DEB6F79D7 /* WebhookMessage-CoreDataHelpers.swift in Sources */,
+				9AEF6C2E5CE30FC503F6EAE9 /* WebhookPreset-CoreDataHelpers.swift in Sources */,
+				95F07B450B89668F1E45B3AB /* Category.swift in Sources */,
+				07D5E0C1D0FF840F654CB9A6 /* DurationRange.swift in Sources */,
+				F029B27211CBB71A123857F8 /* Interactions.swift in Sources */,
+				93CB0126FE71049FED1414D9 /* Roa.swift in Sources */,
+				52BB228110C1DA172DAAA62F /* RoaDose.swift in Sources */,
+				EBB88BB3AB5913773EBC7BD1 /* RoaDuration.swift in Sources */,
+				31FC2BF9D2ED4D227C305A1C /* RoaRange.swift in Sources */,
+				C82709C075A8E9229AECBB1B /* Substance.swift in Sources */,
+				814A61020555DB1F9C75FFF6 /* SubstanceFile.swift in Sources */,
+				83213458159A82647C952BD5 /* SubstanceRepo.swift in Sources */,
+				B2512836CF679F15608E0B2B /* Tolerance.swift in Sources */,
+				DC2BD74E9740DE81FC94D267 /* AdministrationRoute.swift in Sources */,
+				81B16AA6FE4F56A84D87517A /* DoseRangeType.swift in Sources */,
+				134E974D3DA07B5DF0604A01 /* FabButtonPosition.swift in Sources */,
+				162685AF5399CFB2701675C5 /* InteractionType.swift in Sources */,
+				81486B510B2FB2716262613D /* UnitPickerOptions.swift in Sources */,
+				3096AB8CF5F50C2DDF6DBA5F /* Angle.swift in Sources */,
+				A4AD01E7AF710F74B4717462 /* Array-Unique.swift in Sources */,
+				082D7C0473D7EBB94B21A5FC /* Date-Format.swift in Sources */,
+				DD76CAA84920F94E6432E433 /* Date-String.swift in Sources */,
+				1F1E6051FBB8539D673B2B65 /* Double-asRoundedReadableString.swift in Sources */,
+				37573BCFB833BEE1010875E2 /* Notification-EyeName.swift in Sources */,
+				853102D3D49C735120EA8B31 /* Sequence-Uniqued.swift in Sources */,
+				A2535EB6E16037BB3077554A /* String-CaseInsensitiveContains.swift in Sources */,
+				737F414F641D3B3147177DFA /* String-CleanSearch.swift in Sources */,
+				7481610F382EEBF7E99D4C98 /* Text-LinearGradient.swift in Sources */,
+				23B8AC01DB965809541C4DBF /* UIApplication-CurrentWindow.swift in Sources */,
+				6D0050B0CA7C787DFB47647C /* Global Functions.swift in Sources */,
+				8A9814A09D50BEE669A495A6 /* IngestionSection.swift in Sources */,
+				AD503B4C293D49CB04BA9A86 /* ChameleonHeader.swift in Sources */,
+				33C459C7E4EDC8FFD39D0294 /* JournalViewOption.swift in Sources */,
+				74EE15998B8E531A5A7CDC99 /* CumulativeDose.swift in Sources */,
+				1B7027C35A416DE214443E52 /* CumulativeDoseRow.swift in Sources */,
+				27C4BA7E2DBCF03D5C58589E /* DateDifference.swift in Sources */,
+				BDFC9C98B24B383C3D78E719 /* ChooseCustomUnitScreen.swift in Sources */,
+				8AC52B5E768DFFC9CECF655A /* ExplainExperienceSectionScreen.swift in Sources */,
+				882DDCE9B4AD71D6991D21DA /* GoThroughAllInteractionsScreen.swift in Sources */,
+				DDC233B15B267DD5FDB39871 /* ColorRectangle.swift in Sources */,
+				380B4A98B9F445DBACAB603B /* Dot.swift in Sources */,
+				2196865646DACFD24042604D /* DotRows.swift in Sources */,
+				F7780E7D8B5E20797AF5D8C0 /* RelativeTimeText.swift in Sources */,
+				1FF86C0282634DA94E901177 /* InteractionPairRow.swift in Sources */,
+				EF5DA78174D730D1DD5CE147 /* AddRatingScreen.swift in Sources */,
+				7DDA43CED62970B3F57FADF7 /* EditOverallRatingScreen.swift in Sources */,
+				243151D07C68113FB3D44D3E /* ShulginRatingOption.swift in Sources */,
+				C395BFB5FD5365C91C2188E3 /* RatingExplanationSection.swift in Sources */,
+				967F787F2A88CF5FE5145EA7 /* RatingScreenContent.swift in Sources */,
+				6CA6F5438DF8F773C0885122 /* SelectRatingSection.swift in Sources */,
+				6C20E003BD522137E328A73B /* TimeDisplayStyle.swift in Sources */,
+				AA3925628B24E5A1F0703286 /* TimedNoteDottedLine.swift in Sources */,
+				8D6B6170061320BB476265F6 /* TimedNoteRow.swift in Sources */,
+				74ABC049AED1A34ACC467A5E /* ConsumerWithIngestions.swift in Sources */,
+				AAB6BF30C61370D60BBF096C /* ExperienceColorRectangle.swift in Sources */,
+				16F7133BE31757E525BD260B /* ExperienceTimeText.swift in Sources */,
+				12AEE0A1FC847055123C5CCB /* FabLabelStyle.swift in Sources */,
+				0760660A8FE11A84FE206424 /* FabPosition.swift in Sources */,
+				E208B857BB497E1FE170BCC9 /* CalendarColorRectangle.swift in Sources */,
+				569E0B5CEF0CC850714CC9E8 /* Authenticator.swift in Sources */,
+				E807D579FB37E20471DD38E4 /* GlobalNavigationDestination.swift in Sources */,
+				8F6EBB7E422079E508B8EF3F /* Feature.swift in Sources */,
+				F9983CED5C0A5C7BC964791B /* WelcomeScreen.swift in Sources */,
+				41D5C7F8032FFFEB5034CE00 /* LaunchAnimationWrapper.swift in Sources */,
+				EC89CD2DEB54031CA492A2D8 /* Navigator.swift in Sources */,
+				D41BBF5A7D836299BCF884D8 /* Tab.swift in Sources */,
+				E7298B03B77C1D1EC1DB51AE /* TabManager.swift in Sources */,
+				2208DA860EC91291615A047B /* ToastViewModel.swift in Sources */,
+				2A58994E3058ADF2BCC4FC37 /* Persistence.swift in Sources */,
+				8CA4BD23B5EC85F38AD56269 /* SaferScreen.swift in Sources */,
+				305FC063F672F9D91FE08830 /* AdministrationRouteScreen.swift in Sources */,
+				B37FB22964C72F174CA8DAB3 /* DosageClassificationScreen.swift in Sources */,
+				FC3D346C53720862E127D8C9 /* DosageGuideScreen.swift in Sources */,
+				80EB07D9AF3663496A1B7984 /* ReagentTestingScreen.swift in Sources */,
+				DF4B0E9DFCB011D0F1AB338C /* SaferHallucinogenScreen.swift in Sources */,
+				8E5166CBBA8E900576EBF96D /* SaferRoutesScreen.swift in Sources */,
+				2B8AB686F086EFC2EB4BEA61 /* TestingServicesScreen.swift in Sources */,
+				6AFD4FB015B82E1256B619B9 /* VolumetricDosingScreen.swift in Sources */,
+				0B5C4E2F80BA9212533B1DFA /* SprayModel.swift in Sources */,
+				02BB8C092C615A05246F1682 /* WeightUnit.swift in Sources */,
+				0E15FFB11C78473C686F0AC3 /* EditCustomSubstanceView.swift in Sources */,
+				8770651252874398982799FE /* SearchLogic.swift in Sources */,
+				72DE6D19B3D5AC577DDC4684 /* DangerTriangles.swift in Sources */,
+				8150A7EF2498E9B507A619DB /* DurationChip.swift in Sources */,
+				3DC97F3832152AC57108B495 /* DurationSection.swift in Sources */,
+				29C7E8511F254D579B63C191 /* OneRoaDurationRow.swift in Sources */,
+				4478208D2109AC09C1545FA8 /* View-ColorBackground.swift in Sources */,
+				81DC7AC437AC2DA4D6BAABD3 /* InteractionsGroup.swift in Sources */,
+				4EF1831D2C6893646BDC8357 /* DoseClassificationRow.swift in Sources */,
+				5AEEFA7BAF3B0FDE3BF818CE /* RoaDoseRow.swift in Sources */,
+				E6692A8651DA5C1B90195FED /* RowLabelView.swift in Sources */,
+				A40ADA7CA6DA2BEF11E91E1E /* ToleranceSection.swift in Sources */,
+				1E15E6E38F60C8301D4DF613 /* ToxicitySection.swift in Sources */,
+				3C1DD1993C144E4FF29687D7 /* CompanionCodable.swift in Sources */,
+				E3ACFAAD9D63AF6046C8757E /* CustomSubstanceCodable.swift in Sources */,
+				4DBF80ED09E99B2A0134D376 /* CustomUnitCodable.swift in Sources */,
+				7806FFA678415FE902AC8F47 /* ExperienceCodable.swift in Sources */,
+				32BCAA111B4BCC57FE19B275 /* IngestionCodable.swift in Sources */,
+				96AC110B4A90BFA04ED5C8ED /* LocationCodable.swift in Sources */,
+				CBFD392C8B98BAB35CC0CC45 /* RatingCodable.swift in Sources */,
+				C4B5BB48C577A042AB6F9D66 /* TimedNoteCodable.swift in Sources */,
+				D2D98058571FE30D6D47D578 /* CustomUnitRow.swift in Sources */,
+				E58969752081A1ED2D061A9A /* StandardDeviationConfidenceIntervalExplanation.swift in Sources */,
+				C3834DD54319C2C16DA8007D /* DynamicRangeOption.swift in Sources */,
+				F1F6D9304FE3EB8282324F08 /* EditColorsScreen.swift in Sources */,
+				239BB4A57FD42F9CEBB1E487 /* LockTimeOption.swift in Sources */,
+				C856AB6E9BC3F0A78AD65934 /* QuestionAndAnswer.swift in Sources */,
+				31136418F1539B216578C9F3 /* JournalSettingsScreen.swift in Sources */,
+				65ABC14F465D913C2E66E7E0 /* TabSettingsScreen.swift in Sources */,
+				5B090F3B38C202CCE714995A /* WebhookArchiveScreen.swift in Sources */,
+				4A6F402CE6F195AE57390E53 /* Data.swift in Sources */,
+				D748BC1055B981827FC83C4F /* DosageStat.swift in Sources */,
+				C45E2F29DE14D2D335CECD52 /* Inflection.swift in Sources */,
+				05C8C7D1776F70B6923A20A6 /* TimeRange.swift in Sources */,
+				5B1F93C836ED0C7AE8EA5420 /* ToleranceChartPreviewDataProvider.swift in Sources */,
+				960FBEDDA562171481F02FE7 /* ToleranceType.swift in Sources */,
+				9EC843CADAE5D107DB7E436F /* ToleranceWindow.swift in Sources */,
+				BF56B1B95F47B1BE494F42F0 /* MissingToleranceText.swift in Sources */,
+				BD536F28C0322D111D1A8287 /* SubstanceWithToleranceAndColor.swift in Sources */,
+				B381173DC86F0795A780F983 /* ToleranceTextsScreen.swift in Sources */,
+				54818D11AC078F70F19C9920 /* ToleranceChartExplanationScreen.swift in Sources */,
+				6D760010A8C935B25516D44D /* ToleranceTimeOption.swift in Sources */,
+				C612A6F75F9B4D69677980BB /* SubstanceAndDay.swift in Sources */,
+				F5783AF2FE0B756FB8C0FB36 /* ToleranceChartCalculator.swift in Sources */,
+				259623635E1AAC7C4237EB8D /* AxisDrawable.swift in Sources */,
+				04FE0529BBF338FB92CE171A /* FullCumulativeTimelines.swift in Sources */,
+				8476654993267B307FC253DF /* FullRangeTimeline.swift in Sources */,
+				378CDF889DCDDA367BE073A2 /* GraphicsContext-DrawDot.swift in Sources */,
+				72F54E210DC3DE9C91379FB9 /* NoTimeline.swift in Sources */,
+				4409F2E687EEA95319855D5C /* StrokeStyle-Timeline.swift in Sources */,
+				88C2727E40228723FC9613A7 /* TimelineDrawable.swift in Sources */,
+				3EAEC79C71CA1A0578537A98 /* UnifiedTimelineDrawable.swift in Sources */,
+				3DF4CB4F5F4E631FAD90A41F /* EffectTimeline.swift in Sources */,
+				E3F477AE63122699343CEDBD /* EverythingForOneRating.swift in Sources */,
+				845A66F9FB1368183EE456F4 /* EverythingForOneTimedNote.swift in Sources */,
+				83468DCCE03CFD30984BC083 /* GroupDrawable.swift in Sources */,
+				F4854010F22BD548604220F0 /* IngestionRange.swift in Sources */,
+				48348460E05DCCC8792F0AC3 /* IngestionMinInfoForTimeline.swift in Sources */,
+				614A9023798A1AEA22C1D376 /* SubstanceIngestionGroup.swift in Sources */,
+				674D369BE36192B381643B3D /* RatingDrawable.swift in Sources */,
+				0B1AB630CFE87F7B019D95B8 /* TimeRangeDrawable.swift in Sources */,
+				86F6B6ED4C8352C7F2007E91 /* TimedNoteDrawable.swift in Sources */,
+				669CDBD078952609639FC736 /* TimelineModel.swift in Sources */,
+				934E63CE4D448CAE79B2A72F /* WeightedLine.swift in Sources */,
+				E9BEE22F26680ECBF557CEA4 /* WebhookManager.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		EA085DC829607229001638AC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -2199,6 +3217,18 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		DA3E1F53A52BDDC7CE3AE8CB /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FreakLogWatch;
+			target = 15743BCD7AA4942784B552AD /* FreakLogWatch */;
+			targetProxy = B636EB99E10BC1ABF1832F17 /* PBXContainerItemProxy */;
+		};
+		E06CD5A6DEFE9890F4048031 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = FreakLogWatchWidgets;
+			target = A1FDDC6AC1380EC42A6D3C90 /* FreakLogWatchWidgets */;
+			targetProxy = A61F9A08FF04996DC577F1D3 /* PBXContainerItemProxy */;
+		};
 		EA085DDC29607229001638AC /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = EA085DCB29607229001638AC /* LiveActivityExtension */;
@@ -2212,6 +3242,82 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		76082928F8D83AFB2B7D1BB5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FreakLogWatch/FreakLogWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FreakLogWatch/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		7BC423B6995F905B240349D9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FreakLogWatchWidgets/FreakLogWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FreakLogWatchWidgets/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				VALIDATE_PRODUCT = YES;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		E799A3DF86A61D3CD6B6FDBD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FreakLogWatch/FreakLogWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FreakLogWatch/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 		EA085DDF29607229001638AC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -2482,9 +3588,42 @@
 			};
 			name = Release;
 		};
+		FCFD41797959342B9497A648 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = FreakLogWatchWidgets/FreakLogWatchWidgets.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = FreakLogWatchWidgets/Info.plist;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.watchkitapp.widgets;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "watchsimulator watchos";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		5BC107C931E4E87D061C7B5C /* Build configuration list for PBXNativeTarget "FreakLogWatchWidgets" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7BC423B6995F905B240349D9 /* Release */,
+				FCFD41797959342B9497A648 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		EA085DE12960722A001638AC /* Build configuration list for PBXNativeTarget "LiveActivityExtension" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -2517,6 +3656,15 @@
 			buildConfigurations = (
 				EAE4711826CBA582009FB0EC /* Debug */,
 				EAE4711926CBA582009FB0EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F3F5830BCEB1CCB256B90FE0 /* Build configuration list for PBXNativeTarget "FreakLogWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				76082928F8D83AFB2B7D1BB5 /* Release */,
+				E799A3DF86A61D3CD6B6FDBD /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

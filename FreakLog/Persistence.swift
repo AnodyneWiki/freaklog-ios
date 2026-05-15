@@ -1,5 +1,8 @@
 @preconcurrency import CoreData //FIXME
 import SwiftUI
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct PersistenceController {
     static let shared = PersistenceController()
@@ -72,8 +75,14 @@ struct PersistenceController {
         }
     }
 
+    #if canImport(UIKit) && !os(watchOS)
     public func loadData(_ app: UIApplication) {
-        tryLoadPersistentStores(app)
+        tryLoadPersistentStores()
+    }
+    #endif
+
+    public func loadData() {
+        tryLoadPersistentStores()
     }
 
     private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
@@ -90,7 +99,7 @@ struct PersistenceController {
         viewContext.automaticallyMergesChangesFromParent = true
     }
 
-    private func tryLoadPersistentStores(_ app: UIApplication) {
+    private func tryLoadPersistentStores() {
         if isInitialized { return }
         container.loadPersistentStores { description, error in
             if let error = error {

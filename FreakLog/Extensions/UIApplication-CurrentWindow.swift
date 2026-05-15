@@ -1,3 +1,4 @@
+#if os(iOS)
 import UIKit
 
 public extension UIApplication {
@@ -9,3 +10,4 @@ public extension UIApplication {
             .first { $0.isKeyWindow }
     }
 }
+#endif

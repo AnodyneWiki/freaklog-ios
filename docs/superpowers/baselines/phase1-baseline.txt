@@ -1,0 +1,4 @@
+/Users/pilz/Documents/FreakLog-iOS/FreakLog/Persistence.swift:129:19: warning: immutable value 'url' was never used; consider replacing with '_' or removing it
+              let url = store.url else {
+              ~~~~^~~
+              _
