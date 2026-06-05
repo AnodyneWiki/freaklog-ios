@@ -188,113 +188,84 @@ final class WebhookManager: Sendable {
 
     // MARK: - Deleting Webhooks
 
+    private struct DeletionTarget: Sendable {
+        let messageObjectID: NSManagedObjectID
+        let url: String
+        let messageId: String
+    }
+
+    private func executeDeletions(_ targets: [DeletionTarget], in container: NSPersistentContainer, also extraObjectID: NSManagedObjectID? = nil) async {
+        await withTaskGroup(of: Void.self) { group in
+            for target in targets {
+                group.addTask {
+                    _ = await WebhookService.deleteWebhookMessage(url: target.url, messageId: target.messageId)
+                }
+            }
+        }
+        await container.performBackgroundTask { bgContext in
+            for target in targets {
+                if let msg = try? bgContext.existingObject(with: target.messageObjectID) as? WebhookMessage {
+                    bgContext.delete(msg)
+                }
+            }
+            if let id = extraObjectID, let obj = try? bgContext.existingObject(with: id) {
+                bgContext.delete(obj)
+            }
+            try? bgContext.save()
+        }
+    }
+
+    private func buildPresetDeletionTargets(presetID: NSManagedObjectID, in container: NSPersistentContainer) async -> [DeletionTarget] {
+        await container.performBackgroundTask { bgContext in
+            guard let bgPreset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return [] }
+            let url = bgPreset.urlUnwrapped
+            guard !url.isEmpty else { return [] }
+            return (bgPreset.messages?.allObjects as? [WebhookMessage] ?? []).compactMap { msg in
+                guard let messageId = msg.messageId else { return nil }
+                return DeletionTarget(messageObjectID: msg.objectID, url: url, messageId: messageId)
+            }
+        }
+    }
+
     func deleteWebhookMessages(for ingestions: [Ingestion]) async {
-        let ingestionObjectIDs = ingestions.map { $0.objectID }
-        await deleteWebhookMessages(forIngestionObjectIDs: ingestionObjectIDs)
+        await deleteWebhookMessages(forIngestionObjectIDs: ingestions.map { $0.objectID })
     }
 
     func deleteWebhookMessages(forIngestionObjectIDs ingestionObjectIDs: [NSManagedObjectID]) async {
         guard !ingestionObjectIDs.isEmpty else { return }
-        
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-
-            struct DeletionTarget: Sendable {
-                let messageObjectID: NSManagedObjectID
-                let url: String
-                let messageId: String
-            }
-
             let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-                var results: [DeletionTarget] = []
-                for ingestionID in ingestionObjectIDs {
-                    guard let ingestion = try? bgContext.existingObject(with: ingestionID) as? Ingestion else { continue }
-                    for message in ingestion.webhookMessagesSorted {
-                         guard let preset = message.webhookPreset,
-                               let messageId = message.messageId,
-                               let url = preset.url, !url.isEmpty
-                         else { continue }
-
-                         results.append(DeletionTarget(messageObjectID: message.objectID, url: url, messageId: messageId))
-                    }
-                }
-                return results
-            }
-
-            await withTaskGroup(of: Void.self) { group in
-                for target in targets {
-                    group.addTask {
-                        _ = await WebhookService.deleteWebhookMessage(url: target.url, messageId: target.messageId)
+                ingestionObjectIDs.flatMap { ingestionID -> [DeletionTarget] in
+                    guard let ingestion = try? bgContext.existingObject(with: ingestionID) as? Ingestion else { return [] }
+                    return ingestion.webhookMessagesSorted.compactMap { message in
+                        guard let preset = message.webhookPreset,
+                              let messageId = message.messageId,
+                              let url = preset.url, !url.isEmpty
+                        else { return nil }
+                        return DeletionTarget(messageObjectID: message.objectID, url: url, messageId: messageId)
                     }
                 }
             }
-
-            await container.performBackgroundTask { bgContext in
-                for target in targets {
-                    if let msg = try? bgContext.existingObject(with: target.messageObjectID) as? WebhookMessage {
-                        bgContext.delete(msg)
-                    }
-                }
-                try? bgContext.save()
-            }
+            await self.executeDeletions(targets, in: container)
         }
     }
 
     func deleteMessages(for preset: WebhookPreset) async {
         let presetObjectID = preset.objectID
-
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-
-            struct DeletionTarget: Sendable {
-                let messageObjectID: NSManagedObjectID
-                let url: String
-                let messageId: String
-            }
-
-            let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-                guard let bgPreset = try? bgContext.existingObject(with: presetObjectID) as? WebhookPreset else { return [] }
-                let url = bgPreset.urlUnwrapped
-                guard !url.isEmpty else { return [] }
-
-                var results: [DeletionTarget] = []
-                let messages = bgPreset.messages?.allObjects as? [WebhookMessage] ?? []
-
-                for msg in messages {
-                    if let messageId = msg.messageId {
-                        results.append(DeletionTarget(messageObjectID: msg.objectID, url: url, messageId: messageId))
-                    }
-                }
-                return results
-            }
-
-            await withTaskGroup(of: Void.self) { group in
-                for target in targets {
-                    group.addTask {
-                        _ = await WebhookService.deleteWebhookMessage(url: target.url, messageId: target.messageId)
-                    }
-                }
-            }
-
-            await container.performBackgroundTask { bgContext in
-                for target in targets {
-                    if let msg = try? bgContext.existingObject(with: target.messageObjectID) as? WebhookMessage {
-                        bgContext.delete(msg)
-                    }
-                }
-                try? bgContext.save()
-            }
+            let targets = await self.buildPresetDeletionTargets(presetID: presetObjectID, in: container)
+            await self.executeDeletions(targets, in: container)
         }
     }
 
     func deleteAllPresetsAndMessages() async {
         let container = PersistenceController.shared.container
-
         let presetObjectIDs: [NSManagedObjectID] = await container.performBackgroundTask { bgContext in
             let fetchRequest = WebhookPreset.fetchRequest()
             return (try? bgContext.fetch(fetchRequest).map { $0.objectID }) ?? []
         }
-
         await withTaskGroup(of: Void.self) { group in
             for presetID in presetObjectIDs {
                 group.addTask {
@@ -307,48 +278,8 @@ final class WebhookManager: Sendable {
     private func deleteMessagesAndPreset(presetID: NSManagedObjectID) async {
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-
-            struct DeletionTarget: Sendable {
-                let messageObjectID: NSManagedObjectID
-                let url: String
-                let messageId: String
-            }
-
-            let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-                guard let bgPreset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return [] }
-                let url = bgPreset.urlUnwrapped
-                guard !url.isEmpty else { return [] }
-
-                var results: [DeletionTarget] = []
-                let messages = bgPreset.messages?.allObjects as? [WebhookMessage] ?? []
-
-                for msg in messages {
-                    if let messageId = msg.messageId {
-                        results.append(DeletionTarget(messageObjectID: msg.objectID, url: url, messageId: messageId))
-                    }
-                }
-                return results
-            }
-
-            await withTaskGroup(of: Void.self) { group in
-                for target in targets {
-                    group.addTask {
-                        _ = await WebhookService.deleteWebhookMessage(url: target.url, messageId: target.messageId)
-                    }
-                }
-            }
-
-            await container.performBackgroundTask { bgContext in
-                for target in targets {
-                    if let msg = try? bgContext.existingObject(with: target.messageObjectID) as? WebhookMessage {
-                        bgContext.delete(msg)
-                    }
-                }
-                if let bgPreset = try? bgContext.existingObject(with: presetID) as? WebhookPreset {
-                    bgContext.delete(bgPreset)
-                }
-                try? bgContext.save()
-            }
+            let targets = await self.buildPresetDeletionTargets(presetID: presetID, in: container)
+            await self.executeDeletions(targets, in: container, also: presetID)
         }
     }
 }

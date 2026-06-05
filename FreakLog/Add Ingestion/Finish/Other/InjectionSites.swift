@@ -101,3 +101,15 @@ struct SubQSitePicker: View {
         }
     }
 }
+
+extension AdministrationRoute {
+    func siteString(nostril: Nostril?, vein: Vein?, muscle: Muscle?, subQSite: SubcutaneousSite?) -> String {
+        switch self {
+        case .insufflated: return nostril?.rawValue ?? ""
+        case .intravenous: return vein?.rawValue ?? ""
+        case .intramuscular: return muscle?.rawValue ?? ""
+        case .subcutaneous: return subQSite?.rawValue ?? ""
+        default: return ""
+        }
+    }
+}

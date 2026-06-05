@@ -72,4 +72,5 @@ enum AdministrationRoute: String, Codable, CaseIterable, Identifiable {
             return .purple
         }
     }
+
 }

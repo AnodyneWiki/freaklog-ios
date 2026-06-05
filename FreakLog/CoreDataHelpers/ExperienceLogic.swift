@@ -17,7 +17,7 @@ struct ExperienceLogic {
     }
     
     static func interactions(from ingestions: [Ingestion]) -> [Interaction] {
-        let substanceNames = ingestions.filter({ $0.consumerName == nil }).map { $0.substanceNameUnwrapped }.uniqued()
+        let substanceNames = ingestions.filter({ $0.consumerNameUnwrapped.isEmpty }).map { $0.substanceNameUnwrapped }.uniqued()
         var interactions: [Interaction] = []
         for subIndex in 0 ..< substanceNames.count {
             let name = substanceNames[subIndex]
