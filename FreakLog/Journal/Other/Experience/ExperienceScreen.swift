@@ -446,9 +446,12 @@ struct ExperienceScreen: View {
 
     private func delete() {
         let ingestions = experience.ingestionsSorted
-        print("Experience delete: ingestions count \(ingestions.count)")
+        let identifiers = ingestions.compactMap(\.identifier)
         Task {
             await FinishIngestionScreen.deleteWebhookMessages(for: ingestions)
+            for id in identifiers {
+                await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
+            }
             await MainActor.run {
                 PersistenceController.shared.viewContext.delete(experience)
                 PersistenceController.shared.saveViewContext()

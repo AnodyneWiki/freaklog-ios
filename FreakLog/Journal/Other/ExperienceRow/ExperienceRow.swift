@@ -55,7 +55,11 @@ struct ExperienceRow: View {
                             }
                         }
                         let ingestions = experience.ingestions?.allObjects as? [Ingestion] ?? []
+                        let identifiers = ingestions.compactMap(\.identifier)
                         await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
+                        for id in identifiers {
+                            await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
+                        }
                         await MainActor.run {
                             PersistenceController.shared.viewContext.delete(experience)
                             PersistenceController.shared.saveViewContext()

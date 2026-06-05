@@ -75,6 +75,7 @@ struct FinishIngestionScreen: View {
             Task { @MainActor in
                 do {
                     try addIngestionWithExperience()
+                    Task { await LeaderboardSyncManager.shared.syncAll() }
                     Task { @MainActor in
                         toastViewModel.showSuccessToast()
                         generateSuccessHaptic()
@@ -265,10 +266,7 @@ struct FinishIngestionScreen: View {
     }
 
     func selectExperienceBasedOnCurrentTime() {
-        let fetchRequest = Experience.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
-        fetchRequest.predicate = FinishIngestionScreen.getPredicate(from: selectedTime)
-        experiencesWithinLargerRange = (try? PersistenceController.shared.viewContext.fetch(fetchRequest)) ?? []
+        experiencesWithinLargerRange = FinishIngestionScreen.getExperiences(near: selectedTime)
         if wantsToForceNewExperience {
             selectedExperience = nil
         } else {
@@ -276,6 +274,13 @@ struct FinishIngestionScreen: View {
                 from: experiencesWithinLargerRange,
                 date: selectedTime)
         }
+    }
+
+    static func getExperiences(near date: Date) -> [Experience] {
+        let fetchRequest = Experience.fetchRequest()
+        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
+        fetchRequest.predicate = getPredicate(from: date)
+        return (try? PersistenceController.shared.viewContext.fetch(fetchRequest)) ?? []
     }
 
     func initializeColorCompanionAndNote() {
@@ -317,17 +322,8 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    func getSiteString() -> String {
-        if arguments.administrationRoute == .insufflated, let val = selectedNostril {
-            return val.rawValue
-        } else if arguments.administrationRoute == .intravenous, let val = selectedVein {
-            return val.rawValue
-        } else if arguments.administrationRoute == .intramuscular, let val = selectedMuscle {
-            return val.rawValue
-        } else if arguments.administrationRoute == .subcutaneous, let val = selectedSubQSite {
-            return val.rawValue
-        }
-        return ""
+    private func siteString() -> String {
+        arguments.administrationRoute.siteString(nostril: selectedNostril, vein: selectedVein, muscle: selectedMuscle, subQSite: selectedSubQSite)
     }
 
     func addIngestionWithExperience() throws {
@@ -416,7 +412,7 @@ struct FinishIngestionScreen: View {
                     units: units,
                     isEstimate: arguments.isEstimate,
                     route: arguments.administrationRoute.rawValue,
-                    site: getSiteString().lowercased(),
+                    site: siteString().lowercased(),
                     note: enteredNote
                 )
 
@@ -473,12 +469,8 @@ struct FinishIngestionScreen: View {
         if !areYouConsumer {
             ingestion.consumerName = consumerName
         }
-        let siteString = getSiteString()
-        if !siteString.isEmpty {
-            ingestion.administrationSite = siteString
-        } else {
-            ingestion.administrationSite = nil
-        }
+        let site = siteString()
+        ingestion.administrationSite = site.isEmpty ? nil : site
         ingestion.webhookMessageId = nil
         ingestion.experience = experience
         if let location {

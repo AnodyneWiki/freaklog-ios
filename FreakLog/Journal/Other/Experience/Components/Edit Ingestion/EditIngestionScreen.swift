@@ -55,10 +55,7 @@ struct EditIngestionScreen: View {
     @State private var selectedExperience: Experience?
 
     func setExperiencesBasedOnTime() {
-        let fetchRequest = Experience.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
-        fetchRequest.predicate = FinishIngestionScreen.getPredicate(from: time)
-        experiencesWithinLargerRange = (try? PersistenceController.shared.viewContext.fetch(fetchRequest)) ?? []
+        experiencesWithinLargerRange = FinishIngestionScreen.getExperiences(near: time)
     }
 
 
@@ -93,12 +90,10 @@ struct EditIngestionScreen: View {
             experiencesWithinLargerRange: experiencesWithinLargerRange,
             sheetToShow: $sheetToShow
         ).onFirstAppear {
-            locationManager.selectedLocation = ingestion.location != nil ? Location(
-                name: ingestion.locationUnwrapped?.nameUnwrapped ?? "Unknown",
-                longitude: ingestion.locationUnwrapped?.longitudeUnwrapped,
-                latitude: ingestion.locationUnwrapped?.latitudeUnwrapped
-            ) : nil
-            locationManager.selectedLocationName = ingestion.locationUnwrapped?.nameUnwrapped ?? ""
+            if let loc = ingestion.location {
+                locationManager.selectedLocation = Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
+                locationManager.selectedLocationName = loc.nameUnwrapped
+            }
             time = ingestion.timeUnwrapped
             if let eTime = ingestion.endTime {
                 endTime = eTime
@@ -168,12 +163,8 @@ struct EditIngestionScreen: View {
         } else {
             ingestion.consumerName = consumerName
         }
-        let siteString = getSiteString()
-        if !siteString.isEmpty {
-            ingestion.administrationSite = siteString
-        } else {
-            ingestion.administrationSite = nil
-        }
+        let site = ingestion.administrationRouteUnwrapped.siteString(nostril: selectedNostril, vein: selectedVein, muscle: selectedMuscle, subQSite: selectedSubQSite)
+        ingestion.administrationSite = site.isEmpty ? nil : site
 
         if let selectedLocation = locationManager.selectedLocation {
             if let existingLocation = ingestion.location {
@@ -214,8 +205,12 @@ struct EditIngestionScreen: View {
     }
 
     private func delete() {
+        let identifier = ingestion.identifier
         Task {
             await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
+            if let id = identifier {
+                await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
+            }
             await MainActor.run {
                 PersistenceController.shared.viewContext.delete(ingestion)
                 PersistenceController.shared.saveViewContext()
@@ -239,18 +234,6 @@ struct EditIngestionScreen: View {
         return success
     }
 
-    private func getSiteString() -> String {
-        if ingestion.administrationRouteUnwrapped == .insufflated, let val = selectedNostril {
-            return val.rawValue
-        } else if ingestion.administrationRouteUnwrapped == .intravenous, let val = selectedVein {
-            return val.rawValue
-        } else if ingestion.administrationRouteUnwrapped == .intramuscular, let val = selectedMuscle {
-            return val.rawValue
-        } else if ingestion.administrationRouteUnwrapped == .subcutaneous, let val = selectedSubQSite {
-            return val.rawValue
-        }
-        return ""
-    }
 }
 
 // MARK: - EditIngestionContent
