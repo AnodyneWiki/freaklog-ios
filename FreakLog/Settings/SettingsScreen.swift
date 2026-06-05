@@ -135,6 +135,9 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.webhookSettings) {
                         Label("Webhooks", systemImage: "network")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.leaderboardServers) {
+                        Label("Leaderboard", systemImage: "chart.bar.xaxis")
+                    }
                     NavigationLink(value: GlobalNavigationDestination.tabSettings) {
                         Label("Customize Tabs", systemImage: "rectangle.stack")
                     }
@@ -244,9 +247,6 @@ struct SettingsContent: View {
                 selectedFile.stopAccessingSecurityScopedResource()
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
-                // print("Error getting data: \(error.localizedDescription)") // Removed debug print
-                // better: Just ignore, or handle error properly without console spam
-
             }
         }
         .fileExporter(

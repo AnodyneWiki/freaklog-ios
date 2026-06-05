@@ -32,6 +32,8 @@ struct PersistenceController {
     static let webhookSubstanceInfoUrlKey = "webhookSubstanceInfoUrl"
     static let defaultJournalViewKey = "defaultJournalView"
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
+    static let leaderboardServersKey = "leaderboardServers"
+    static let leaderboardDeviceSeedKey = "leaderboardDeviceSeed"
 
     var viewContext: NSManagedObjectContext {
         container.viewContext

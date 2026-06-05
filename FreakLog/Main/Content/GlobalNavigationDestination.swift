@@ -23,7 +23,7 @@ enum GlobalNavigationDestination: Hashable {
     // stats tab mainly
     case toleranceChart
     case toleranceChartExplanation
-    case experienceDetails(experienceData: ExperienceData)
+    case experienceDetails(experienceData: ExperienceData, ingestionData: ExperienceData)
     case substanceDetails(substanceData: SubstanceData)
     case dosageStat(substanceName: String)
 
@@ -36,6 +36,10 @@ enum GlobalNavigationDestination: Hashable {
     case doseClassification
     case volumetricDosing
     case administrationRouteInfo
+
+    // leaderboard
+    case leaderboardServers
+    case serverLeaderboard(serverID: UUID)
 
     // settings tab
     case editColors

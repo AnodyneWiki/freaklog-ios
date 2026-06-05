@@ -19,6 +19,7 @@ struct FreakLog: App {
                         .environmentObject(toastViewModel)
                         .environmentObject(authenticator)
                         .environmentObject(locationManager)
+                        .environmentObject(LeaderboardServerStore.shared)
                         .accentColor(Color.blue)
                         .toast(isPresenting: $toastViewModel.isShowingToast, duration: 1) {
                             AlertToast(

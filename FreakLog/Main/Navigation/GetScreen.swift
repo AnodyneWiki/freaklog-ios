@@ -41,8 +41,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             ToleranceChartExplanationScreen()
         case .toleranceChart:
             ToleranceChartScreen()
-        case let .experienceDetails(experienceData):
-            ExperienceDetailsScreen(experienceData: experienceData)
+        case let .experienceDetails(experienceData, ingestionData):
+            ExperienceDetailsScreen(experienceData: experienceData, ingestionData: ingestionData)
         case let .substanceDetails(substanceData):
             SubstanceDetailsScreen(substanceData: substanceData)
         case .saferRoutes:
@@ -65,6 +65,12 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             EditColorsScreen()
         case .customUnits:
             CustomUnitsScreen()
+        case .leaderboardServers:
+            LeaderboardServersScreen()
+                .environmentObject(LeaderboardServerStore.shared)
+        case let .serverLeaderboard(serverID):
+            ServerLeaderboardScreen(serverID: serverID)
+                .environmentObject(LeaderboardServerStore.shared)
         case .webhookSettings:
             WebhooksScreen()
         case .webhookArchive:
