@@ -4,6 +4,7 @@ import SwiftUI
 struct DailyExperienceChart: View {
     let experienceData: ExperienceData
     let colorMapping: (String) -> Color
+    var unitLabel: String = "Experiences"
     var chartHeight: CGFloat = 240
     @State private var selectedElement: SubstanceExperienceCountForDay?
     @Environment(\.layoutDirection) var layoutDirection
@@ -35,10 +36,10 @@ struct DailyExperienceChart: View {
     var body: some View {
         VStack(alignment: .leading) {
             VStack(alignment: .leading) {
-                Text("Total Experiences")
+                Text("Total \(unitLabel)")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("\(experienceData.last30DaysTotal, format: .number) Experiences")
+                Text("\(experienceData.last30DaysTotal, format: .number) \(unitLabel)")
                     .font(.title2.bold())
                     .foregroundColor(.primary)
             }.opacity(selectedElement == nil ? 1 : 0)

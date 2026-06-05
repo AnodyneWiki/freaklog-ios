@@ -5,6 +5,7 @@ struct YearlyExperienceChart: View {
     let experienceData: ExperienceData
     let isShowingYearlyAverageLine: Bool
     let colorMapping: (String) -> Color
+    var unitLabel: String = "Experiences"
     var chartHeight: CGFloat = 240
     @State private var selectedElement: SubstanceExperienceCountForYear?
     @Environment(\.layoutDirection) var layoutDirection
@@ -36,10 +37,10 @@ struct YearlyExperienceChart: View {
     var body: some View {
         VStack(alignment: .leading) {
             VStack(alignment: .leading) {
-                Text("Total Experiences")
+                Text("Total \(unitLabel)")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Text("\(experienceData.yearsTotal, format: .number) Experiences")
+                Text("\(experienceData.yearsTotal, format: .number) \(unitLabel)")
                     .font(.title2.bold())
                     .foregroundColor(.primary)
             }.opacity(selectedElement == nil ? 1 : 0)

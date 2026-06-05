@@ -16,6 +16,7 @@ struct StatsScreen: View {
     ) var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     @State private var experienceData: ExperienceData?
+    @State private var ingestionData: ExperienceData?
     @State private var substanceData: SubstanceData?
     @State private var toleranceWindows: [ToleranceWindow] = []
     @State private var substancesInIngestionsButNotToleranceChart: [String] = []
@@ -24,9 +25,10 @@ struct StatsScreen: View {
 
     var body: some View {
         Group {
-            if let experienceData, let substanceData {
+            if let experienceData, let ingestionData, let substanceData {
                 StatsScreenContent(
                     experienceData: experienceData,
+                    ingestionData: ingestionData,
                     substanceData: substanceData,
                     toleranceWindows: toleranceWindows,
                     substancesInIngestionsButNotChart: substancesInIngestionsButNotToleranceChart,
@@ -43,6 +45,7 @@ struct StatsScreen: View {
     }
 
     private func calculateStats() {
+        ingestionData = buildIngestionData()
         experienceData = ExperienceData(
             last30Days: getExperienceCountsLast30Days(),
             last12Months: getExperienceCountsLast12Months(),
@@ -75,6 +78,71 @@ struct StatsScreen: View {
         substancesInIngestionsButNotToleranceChart = Array(substancesWithoutToleranceWindows)
     }
 
+
+    private func buildIngestionData() -> ExperienceData {
+        ExperienceData(
+            last30Days: getIngestionCountsLast30Days(),
+            last12Months: getIngestionCountsLast12Months(),
+            years: getIngestionCountsYears(),
+            colorMapping: { substanceName in
+                getColor(for: substanceName).swiftUIColor
+            }
+        )
+    }
+
+    private func getIngestionCountsLast30Days() -> [SubstanceExperienceCountForDay] {
+        let last30Days = ingestions.prefix { ing in
+            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: Date()) <= 30
+        }
+        return Dictionary(grouping: last30Days) { ing in
+            var key = ing.substanceNameUnwrapped
+            let c = Calendar.current.dateComponents([.year, .month, .day], from: ing.timeUnwrapped)
+            if let y = c.year, let m = c.month, let d = c.day { key += "\(y)\(m)\(d)" }
+            return key
+        }.compactMap { (_, ings) in
+            guard let first = ings.first else { return nil }
+            return SubstanceExperienceCountForDay(
+                day: first.timeUnwrapped,
+                substanceName: first.substanceNameUnwrapped,
+                experienceCount: Double(ings.count)
+            )
+        }
+    }
+
+    private func getIngestionCountsLast12Months() -> [SubstanceExperienceCountForMonth] {
+        let last12Months = ingestions.prefix { ing in
+            Calendar.current.numberOfMonthsBetween(ing.timeUnwrapped, and: Date()) <= 12
+        }
+        return Dictionary(grouping: last12Months) { ing in
+            var key = ing.substanceNameUnwrapped
+            let c = Calendar.current.dateComponents([.year, .month], from: ing.timeUnwrapped)
+            if let y = c.year, let m = c.month { key += "\(y)\(m)" }
+            return key
+        }.compactMap { (_, ings) in
+            guard let first = ings.first else { return nil }
+            return SubstanceExperienceCountForMonth(
+                month: first.timeUnwrapped,
+                substanceName: first.substanceNameUnwrapped,
+                experienceCount: Double(ings.count)
+            )
+        }
+    }
+
+    private func getIngestionCountsYears() -> [SubstanceExperienceCountForYear] {
+        Dictionary(grouping: ingestions) { ing in
+            var key = ing.substanceNameUnwrapped
+            let c = Calendar.current.dateComponents([.year], from: ing.timeUnwrapped)
+            if let y = c.year { key += "\(y)" }
+            return key
+        }.compactMap { (_, ings) in
+            guard let first = ings.first else { return nil }
+            return SubstanceExperienceCountForYear(
+                year: first.timeUnwrapped,
+                substanceName: first.substanceNameUnwrapped,
+                experienceCount: Double(ings.count)
+            )
+        }
+    }
 
     private func getSortedSubstanceCountsLast30Days() -> [SubstanceCount] {
         let last30Days = experiences.prefix { exp in
@@ -228,6 +296,7 @@ extension Calendar {
 
 struct StatsScreenContent: View {
     let experienceData: ExperienceData
+    let ingestionData: ExperienceData
     let substanceData: SubstanceData
     let toleranceWindows: [ToleranceWindow]
     let substancesInIngestionsButNotChart: [String]
@@ -247,7 +316,12 @@ struct StatsScreenContent: View {
                 }
             }
             Section {
-                NavigationLink(value: GlobalNavigationDestination.experienceDetails(experienceData: experienceData)) {
+                NavigationLink(
+                    value: GlobalNavigationDestination.experienceDetails(
+                        experienceData: experienceData,
+                        ingestionData: ingestionData
+                    )
+                ) {
                     ExperienceOverview(experienceData: experienceData)
                 }
             }
@@ -264,6 +338,7 @@ struct StatsScreenContent: View {
     NavigationStack {
         StatsScreenContent(
             experienceData: .mock1,
+            ingestionData: .mock1,
             substanceData: .mock1,
             toleranceWindows: ToleranceChartPreviewDataProvider.mock1,
             substancesInIngestionsButNotChart: ["2C-B", "DMT"],
