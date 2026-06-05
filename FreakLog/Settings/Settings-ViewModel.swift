@@ -109,7 +109,6 @@ extension SettingsScreen {
                                     if let companion = companionDict[ingestionCodable.substanceName] {
                                         newIngestion.substanceCompanion = companion
                                     } else {
-                                        // assertionFailure("Found no corresponding substance companion for ingestion")
                                         let newCompanion = SubstanceCompanion(context: context)
                                         newCompanion.substanceName = ingestionCodable.substanceName
                                         newCompanion.colorAsText = (SubstanceColor.allCases.randomElement() ?? .red).rawValue
@@ -180,15 +179,12 @@ extension SettingsScreen {
 
         // Converts v12 exports, if necessary.
         private func tryConvertFile(_ data: Data) -> Data {
-            print("Trying to convert file")
-            // Attempt to parse the JSON data into a mutable dictionary.
             guard
                 var jsonObject = try? JSONSerialization.jsonObject(
                     with: data,
                     options: .mutableContainers
                 ) as? [String: Any]
             else {
-                // If it's not valid JSON, return the original data.
                 return data
             }
             
@@ -198,8 +194,6 @@ extension SettingsScreen {
             else {
                 return data
             }
-            
-            print("Converting from v12+ iOS Journal")
             
             jsonObject.removeValue(forKey: "exportSource")
             
@@ -339,8 +333,7 @@ extension SettingsScreen {
                                 {
                                     ingestion["substanceName"] = resolvedName
                                 } else {
-                                    ingestion["substanceName"] =
-                                    "Unknown Substance3"
+                                    ingestion["substanceName"] = "Unknown Substance"
                                 }
                             }
                             ingestions[j] = ingestion
@@ -356,10 +349,8 @@ extension SettingsScreen {
                 let finalData = try JSONSerialization.data(
                     withJSONObject: jsonObject
                 )
-                print("Successfully re-serialized converted JSON.")
                 return finalData
             } catch {
-                print("Failed to re-serialize converted JSON: \(error)")
                 return data
             }
         }

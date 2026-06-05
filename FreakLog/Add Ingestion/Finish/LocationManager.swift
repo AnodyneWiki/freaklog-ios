@@ -22,7 +22,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         let sortedLocations = (try? PersistenceController.shared.viewContext.fetch(locationFetchRequest)) ?? []
         experienceLocations = sortedLocations.map { loc in
             Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
-        }.unique
+        }.uniqued()
         self.authorizationStatus = manager.authorizationStatus
     }
 

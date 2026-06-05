@@ -110,8 +110,6 @@ class ActivityManager: ObservableObject {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) async {
-        // No guard needed here as it's called internally with an activity instance, but good practice?
-        // Actually update relies on activity instance.
         let state = TimelineWidgetAttributes.ContentState(
             substanceGroups: substanceGroups,
             everythingForEachRating: everythingForEachRating,
