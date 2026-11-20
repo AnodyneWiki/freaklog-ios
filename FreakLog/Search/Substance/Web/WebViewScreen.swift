@@ -26,5 +26,5 @@ struct WebViewScreen: View {
 }
 
 #Preview {
-    WebViewScreen(articleURL: URL(string: "https://psy.st/wiki/LSD")!)
+    WebViewScreen(articleURL: URL(string: "https://psychonautwiki.org/wiki/LSD")!)
 }

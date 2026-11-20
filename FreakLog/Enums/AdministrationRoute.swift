@@ -1,7 +1,7 @@
 import Foundation
 import SwiftUI
 
-// https://psy.st/wiki/Route_of_administration
+// https://psychonautwiki.org/wiki/Route_of_administration
 enum AdministrationRoute: String, Codable, CaseIterable, Identifiable {
     case oral
     case sublingual

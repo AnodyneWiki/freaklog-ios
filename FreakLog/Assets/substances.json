@@ -9,31 +9,31 @@
       "name": "psychedelic",
       "name": "psychedelic",
       "description": "Psychedelics are drugs which alter the perception, causing a number of mental effects which manifest in many forms including altered states of consciousness, visual or tactile effects.",
-      "url": "https://psy.st/wiki/Psychedelics",
+      "url": "https://psychonautwiki.org/wiki/Psychedelics",
       "color": 4287564543
     },
     {
       "name": "stimulant",
       "description": "Stimulants excite the nervous system and increase physiological function.",
-      "url": "https://psy.st/wiki/Stimulants",
+      "url": "https://psychonautwiki.org/wiki/Stimulants",
       "color": 4278246860
     },
     {
       "name": "entactogen",
       "description": "Entactogens (also known as empathogens) are a class of psychoactive substances that produce distinctive emotional and social effects similar to those of MDMA.",
-      "url": "https://psy.st/wiki/Entactogens",
+      "url": "https://psychonautwiki.org/wiki/Entactogens",
       "color": 4294904442
     },
     {
       "name": "depressant",
       "description": "Depressants are drugs which reduce arousal and stimulation in the user, characterised by a depressing of mental and physical functions.",
-      "url": "https://psy.st/wiki/Depressant",
+      "url": "https://psychonautwiki.org/wiki/Depressant",
       "color": 4294606340
     },
     {
       "name": "opioid",
       "description": "Opioids are pain-killing depressants which may also cause euphoria.",
-      "url": "https://psy.st/wiki/Opioids",
+      "url": "https://psychonautwiki.org/wiki/Opioids",
       "color": 4294955889
     },
     {
@@ -44,7 +44,7 @@
     {
       "name": "research-chemical",
       "description": "Research chemicals are drugs with relatively little history of human use, and thus particular care should be taken if choosing to ingest them.",
-      "url": "https://psy.st/wiki/Research_chemicals",
+      "url": "https://psychonautwiki.org/wiki/Research_chemicals",
       "color": 4286350333
     },
     {
@@ -55,73 +55,73 @@
     {
       "name": "dissociative",
       "description": "Dissociatives are mostly NMDA receptor antagonists, these substances are hallucinogenic but different than psychedelics. As per the name, these substances create a distance between the user and reality.",
-      "url": "https://psy.st/wiki/Dissociatives",
+      "url": "https://psychonautwiki.org/wiki/Dissociatives",
       "color": 4294928359
     },
     {
       "name": "benzodiazepine",
       "description": "Benzodiazepines are generally hypnotic or anxiolytic depressant drugs.",
-      "url": "https://psy.st/wiki/Benzodiazepines",
+      "url": "https://psychonautwiki.org/wiki/Benzodiazepines",
       "color": 4291603072
     },
     {
       "name": "cannabinoid",
       "description": "A cannabinoid is one of a class of diverse chemical compounds that act on cannabinoid receptors on cells that alter neurotransmitter functioning in the brain.",
-      "url": "https://psy.st/wiki/Cannabinoid",
+      "url": "https://psychonautwiki.org/wiki/Cannabinoid",
       "color": 4282175310
     },
     {
       "name": "nootropic",
       "description": "Nootropics (also referred to as smart drugs, neuro enhancers, and cognitive enhancers) are substances that purportedly improve cognitive functions such as memory, motivation, attention, and concentration, in healthy individuals.",
-      "url": "https://psy.st/wiki/Nootropic",
+      "url": "https://psychonautwiki.org/wiki/Nootropic",
       "color": 4282309616
     },
     {
       "name": "deliriant",
       "description": "Deliriants are considered to be true hallucinogens, because the visuals they produce are hard or impossible to tell apart from reality; they are also known for negative physical effects.",
-      "url": "https://psy.st/wiki/Deliriant",
+      "url": "https://psychonautwiki.org/wiki/Deliriant",
       "color": 4278452378
     },
     {
       "name": "barbiturate",
       "description": "Barbiturates (also known as barbs and barbies) are a class of psychoactive substances that act as depressants of the central nervous system. They produce a variety of sedative-hypnotic effects including sedation, anxiety suppression, muscle relaxation, and seizure suppression when administered.",
-      "url": "https://psy.st/wiki/Barbiturates",
+      "url": "https://psychonautwiki.org/wiki/Barbiturates",
       "color": 4279550862
     },
     {
       "name": "eugeroic",
       "description": "Eugeroics, also known as wakefulness-promoting agents and wakefulness-promoting drugs, are a class of psychoactive substances that promote wakefulness and alertness. The best-known member of this class is modafinil.",
-      "url": "https://psy.st/wiki/Eugeroics",
+      "url": "https://psychonautwiki.org/wiki/Eugeroics",
       "color": 4283267071
     },
     {
       "name": "hallucinogen",
       "description": "Hallucinogens are a class of psychoactive substances that produce powerful alterations in perception, mood, and various cognitive processes. Hallucinogens can be classified into psychedelics, dissociatives and deliriants",
-      "url": "https://psy.st/wiki/Hallucinogens",
+      "url": "https://psychonautwiki.org/wiki/Hallucinogens",
       "color": 4294554120
     },
     {
       "name": "oneirogen",
       "description": "Oneirogen describes a wide array of psychoactive plants and chemicals ranging from normal dream enhancers to intense dissociative or deliriant drugs.",
-      "url": "https://psy.st/wiki/Oneirogen",
+      "url": "https://psychonautwiki.org/wiki/Oneirogen",
       "color": 4290969561
     },
     {
       "name": "antipsychotic",
       "description": "Antipsychotics (also known as neuroleptics or major tranquilizers) are a class of psychiatric medication primarily used to manage psychosis (including delusions, hallucinations, or disordered thought), particularly in schizophrenia and bipolar disorder.",
-      "url": "https://psy.st/wiki/Antipsychotic",
+      "url": "https://psychonautwiki.org/wiki/Antipsychotic",
       "color": 4293455940
     },
     {
       "name": "antidepressant",
       "description": "Antidepressants are a class of psychoactive substances that are prescribed to treat psychiatric disorders, most commonly major depressive disorder and some forms of anxiety disorders.",
-      "url": "https://psy.st/wiki/Antidepressants",
+      "url": "https://psychonautwiki.org/wiki/Antidepressants",
       "color": 4294954702
     },
     {
       "name": "hypnotic",
       "description": "Hypnotics, or soporifics, are a class of drugs which promote and induce sleep. They are the opposite of eugeroics which promote wakefulness. They are commonly distributed in the form of pharmaceutical drugs prescribed to treat insomnia.",
-      "url": "https://psy.st/wiki/Hypnotic",
+      "url": "https://psychonautwiki.org/wiki/Hypnotic",
       "color": 4293455940
     }
   ],
@@ -138,7 +138,7 @@
         "Butylene Glycol",
         "One Four B-D-O"
       ],
-      "url": "https://psy.st/wiki/1,4-Butanediol",
+      "url": "https://psychonautwiki.org/wiki/1,4-Butanediol",
       "isApproved": true,
       "tolerance": {
         "full": "within several weeks of continuous use",
@@ -210,7 +210,7 @@
       "commonNames": [
         "1B-LSD"
       ],
-      "url": "https://psy.st/wiki/1B-LSD",
+      "url": "https://psychonautwiki.org/wiki/1B-LSD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -294,7 +294,7 @@
       "commonNames": [
         "1cP-AL-LAD"
       ],
-      "url": "https://psy.st/wiki/1cP-AL-LAD",
+      "url": "https://psychonautwiki.org/wiki/1cP-AL-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -376,7 +376,7 @@
       "commonNames": [
         "1cP-LSD"
       ],
-      "url": "https://psy.st/wiki/1cP-LSD",
+      "url": "https://psychonautwiki.org/wiki/1cP-LSD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -455,7 +455,7 @@
       "commonNames": [
         "1cP-MiPLA"
       ],
-      "url": "https://psy.st/wiki/1cP-MiPLA",
+      "url": "https://psychonautwiki.org/wiki/1cP-MiPLA",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -533,7 +533,7 @@
         "1P-ETH-LAD",
         "1-Propionyl-6-ethyl-6-nor-lysergic acid diethyamide"
       ],
-      "url": "https://psy.st/wiki/1P-ETH-LAD",
+      "url": "https://psychonautwiki.org/wiki/1P-ETH-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -607,7 +607,7 @@
       "commonNames": [
         "1P-LSD"
       ],
-      "url": "https://psy.st/wiki/1P-LSD",
+      "url": "https://psychonautwiki.org/wiki/1P-LSD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -690,7 +690,7 @@
       "commonNames": [
         "1V-LSD"
       ],
-      "url": "https://psy.st/wiki/1V-LSD",
+      "url": "https://psychonautwiki.org/wiki/1V-LSD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -771,7 +771,7 @@
       "commonNames": [
         "2-AI"
       ],
-      "url": "https://psy.st/wiki/2-Aminoindane",
+      "url": "https://psychonautwiki.org/wiki/2-Aminoindane",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -847,7 +847,7 @@
       "commonNames": [
         "2-FA"
       ],
-      "url": "https://psy.st/wiki/2-FA",
+      "url": "https://psychonautwiki.org/wiki/2-FA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -942,7 +942,7 @@
       "commonNames": [
         "2-FEA"
       ],
-      "url": "https://psy.st/wiki/2-FEA",
+      "url": "https://psychonautwiki.org/wiki/2-FEA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -1039,7 +1039,7 @@
         "2-FDCK",
         "2-Fluorodeschloroketamine"
       ],
-      "url": "https://psy.st/wiki/2-Fluorodeschloroketamine",
+      "url": "https://psychonautwiki.org/wiki/2-Fluorodeschloroketamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -1144,7 +1144,7 @@
       "commonNames": [
         "2-FMA"
       ],
-      "url": "https://psy.st/wiki/2-FMA",
+      "url": "https://psychonautwiki.org/wiki/2-FMA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -1287,7 +1287,7 @@
         "2,5-DMA",
         "DOH"
       ],
-      "url": "https://psy.st/wiki/2,5-DMA",
+      "url": "https://psychonautwiki.org/wiki/2,5-DMA",
       "isApproved": true,
       "tolerance": {
         "full": "after ingestion over the couse of multiple days",
@@ -1344,7 +1344,7 @@
       "commonNames": [
         "25B-NBOMe"
       ],
-      "url": "https://psy.st/wiki/25B-NBOMe",
+      "url": "https://psychonautwiki.org/wiki/25B-NBOMe",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1447,7 +1447,7 @@
       "commonNames": [
         "25C-NBOH"
       ],
-      "url": "https://psy.st/wiki/25C-NBOH",
+      "url": "https://psychonautwiki.org/wiki/25C-NBOH",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1524,7 +1524,7 @@
         "NBOMe-2C-C",
         "2C-C-NBOMe"
       ],
-      "url": "https://psy.st/wiki/25C-NBOMe",
+      "url": "https://psychonautwiki.org/wiki/25C-NBOMe",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1613,7 +1613,7 @@
       "commonNames": [
         "25D-NBOMe"
       ],
-      "url": "https://psy.st/wiki/25D-NBOMe",
+      "url": "https://psychonautwiki.org/wiki/25D-NBOMe",
       "isApproved": true,
       "crossTolerances": [
         "psychedelics"
@@ -1687,7 +1687,7 @@
         "25i-NBOH",
         "Cimbi-27"
       ],
-      "url": "https://psy.st/wiki/25I-NBOH",
+      "url": "https://psychonautwiki.org/wiki/25I-NBOH",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1773,7 +1773,7 @@
         "25i",
         "Cimbi-5"
       ],
-      "url": "https://psy.st/wiki/25I-NBOMe",
+      "url": "https://psychonautwiki.org/wiki/25I-NBOMe",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1908,7 +1908,7 @@
       "commonNames": [
         "25N-NBOMe"
       ],
-      "url": "https://psy.st/wiki/25N-NBOMe",
+      "url": "https://psychonautwiki.org/wiki/25N-NBOMe",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -1999,7 +1999,7 @@
         "Nexus",
         "Bees"
       ],
-      "url": "https://psy.st/wiki/2C-B",
+      "url": "https://psychonautwiki.org/wiki/2C-B",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "non-addictive with a low potential for abuse",
@@ -2183,7 +2183,7 @@
       "commonNames": [
         "2C-B-FLY"
       ],
-      "url": "https://psy.st/wiki/2C-B-FLY",
+      "url": "https://psychonautwiki.org/wiki/2C-B-FLY",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2266,7 +2266,7 @@
       "commonNames": [
         "2C-C"
       ],
-      "url": "https://psy.st/wiki/2C-C",
+      "url": "https://psychonautwiki.org/wiki/2C-C",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -2342,7 +2342,7 @@
         "2C-M",
         "LE-25"
       ],
-      "url": "https://psy.st/wiki/2C-D",
+      "url": "https://psychonautwiki.org/wiki/2C-D",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2426,7 +2426,7 @@
         "2C-E",
         "Eternity"
       ],
-      "url": "https://psy.st/wiki/2C-E",
+      "url": "https://psychonautwiki.org/wiki/2C-E",
       "isApproved": true,
       "crossTolerances": [
         "psychedelic"
@@ -2535,7 +2535,7 @@
       "commonNames": [
         "2C-I"
       ],
-      "url": "https://psy.st/wiki/2C-I",
+      "url": "https://psychonautwiki.org/wiki/2C-I",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2631,7 +2631,7 @@
       "commonNames": [
         "2C-P"
       ],
-      "url": "https://psy.st/wiki/2C-P",
+      "url": "https://psychonautwiki.org/wiki/2C-P",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2715,7 +2715,7 @@
         "2C-T",
         "Tesseract"
       ],
-      "url": "https://psy.st/wiki/2C-T",
+      "url": "https://psychonautwiki.org/wiki/2C-T",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2784,7 +2784,7 @@
         "2C-T-2",
         "Rosy"
       ],
-      "url": "https://psy.st/wiki/2C-T-2",
+      "url": "https://psychonautwiki.org/wiki/2C-T-2",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2888,7 +2888,7 @@
         "2C-T-21",
         "Aurora"
       ],
-      "url": "https://psy.st/wiki/2C-T-21",
+      "url": "https://psychonautwiki.org/wiki/2C-T-21",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -2956,7 +2956,7 @@
         "Blue Mystic",
         "7th Heaven"
       ],
-      "url": "https://psy.st/wiki/2C-T-7",
+      "url": "https://psychonautwiki.org/wiki/2C-T-7",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -3069,7 +3069,7 @@
         "2M2B",
         "2-methyl-2-butanol"
       ],
-      "url": "https://psy.st/wiki/2M2B",
+      "url": "https://psychonautwiki.org/wiki/2M2B",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3135,7 +3135,7 @@
         "3-FA",
         "PAL-353"
       ],
-      "url": "https://psy.st/wiki/3-FA",
+      "url": "https://psychonautwiki.org/wiki/3-FA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3236,7 +3236,7 @@
       "commonNames": [
         "3-FEA"
       ],
-      "url": "https://psy.st/wiki/3-FEA",
+      "url": "https://psychonautwiki.org/wiki/3-FEA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3381,7 +3381,7 @@
       "commonNames": [
         "3-FMA"
       ],
-      "url": "https://psy.st/wiki/3-FMA",
+      "url": "https://psychonautwiki.org/wiki/3-FMA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3484,7 +3484,7 @@
         "3-FPM",
         "PAL-593"
       ],
-      "url": "https://psy.st/wiki/3-FPM",
+      "url": "https://psychonautwiki.org/wiki/3-FPM",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3578,7 +3578,7 @@
         "3-HO-PCE",
         "Hydroxyeticyclidine"
       ],
-      "url": "https://psy.st/wiki/3-HO-PCE",
+      "url": "https://psychonautwiki.org/wiki/3-HO-PCE",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -3635,7 +3635,7 @@
         "3-HO-PCP",
         "Hydroxyphencyclidine"
       ],
-      "url": "https://psy.st/wiki/3-HO-PCP",
+      "url": "https://psychonautwiki.org/wiki/3-HO-PCP",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -3697,7 +3697,7 @@
         "3-MeO-PCE",
         "Methoxyeticyclidine"
       ],
-      "url": "https://psy.st/wiki/3-MeO-PCE",
+      "url": "https://psychonautwiki.org/wiki/3-MeO-PCE",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -3818,7 +3818,7 @@
     {
       "name": "3-MeO-PCMo",
       "commonNames": [],
-      "url": "https://psy.st/wiki/3-MeO-PCMo",
+      "url": "https://psychonautwiki.org/wiki/3-MeO-PCMo",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -3891,7 +3891,7 @@
         "3-MeO-PCP",
         "3-MeO"
       ],
-      "url": "https://psy.st/wiki/3-MeO-PCP",
+      "url": "https://psychonautwiki.org/wiki/3-MeO-PCP",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -4032,7 +4032,7 @@
         "3-MMC",
         "Metaphedrone"
       ],
-      "url": "https://psy.st/wiki/3-MMC",
+      "url": "https://psychonautwiki.org/wiki/3-MMC",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -4209,7 +4209,7 @@
       "commonNames": [
         "3,4-CTMP"
       ],
-      "url": "https://psy.st/wiki/3,4-CTMP",
+      "url": "https://psychonautwiki.org/wiki/3,4-CTMP",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -4273,7 +4273,7 @@
         "3C-E",
         "3C-Escaline"
       ],
-      "url": "https://psy.st/wiki/3C-E",
+      "url": "https://psychonautwiki.org/wiki/3C-E",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4387,7 +4387,7 @@
     {
       "name": "3C-P",
       "commonNames": [],
-      "url": "https://psy.st/wiki/3C-P",
+      "url": "https://psychonautwiki.org/wiki/3C-P",
       "isApproved": false,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4464,7 +4464,7 @@
         "4-Acetoxy-DET",
         "Ethacetin"
       ],
-      "url": "https://psy.st/wiki/4-AcO-DET",
+      "url": "https://psychonautwiki.org/wiki/4-AcO-DET",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4551,7 +4551,7 @@
         "Ipracetin",
         "Aces"
       ],
-      "url": "https://psy.st/wiki/4-AcO-DiPT",
+      "url": "https://psychonautwiki.org/wiki/4-AcO-DiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4638,7 +4638,7 @@
         "O-Acetylpsilocin",
         "Synthetic mushrooms"
       ],
-      "url": "https://psy.st/wiki/4-AcO-DMT",
+      "url": "https://psychonautwiki.org/wiki/4-AcO-DMT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4764,7 +4764,7 @@
         "Metacetin",
         "O-Acetylmetocin"
       ],
-      "url": "https://psy.st/wiki/4-AcO-MET",
+      "url": "https://psychonautwiki.org/wiki/4-AcO-MET",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4848,7 +4848,7 @@
         "Mipracetin",
         "O-Acetylmiprocin"
       ],
-      "url": "https://psy.st/wiki/4-AcO-MiPT",
+      "url": "https://psychonautwiki.org/wiki/4-AcO-MiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -4936,7 +4936,7 @@
         "PAL-303",
         "Flux"
       ],
-      "url": "https://psy.st/wiki/4-FA",
+      "url": "https://psychonautwiki.org/wiki/4-FA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -5036,7 +5036,7 @@
       "commonNames": [
         "4-FMA"
       ],
-      "url": "https://psy.st/wiki/4-FMA",
+      "url": "https://psychonautwiki.org/wiki/4-FMA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -5139,7 +5139,7 @@
         "Ethocin",
         "CZ-74"
       ],
-      "url": "https://psy.st/wiki/4-HO-DET",
+      "url": "https://psychonautwiki.org/wiki/4-HO-DET",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5223,7 +5223,7 @@
         "4-HO-DiPT",
         "Iprocin"
       ],
-      "url": "https://psy.st/wiki/4-HO-DiPT",
+      "url": "https://psychonautwiki.org/wiki/4-HO-DiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5302,7 +5302,7 @@
         "4-HO-DPT",
         "Procin"
       ],
-      "url": "https://psy.st/wiki/4-HO-DPT",
+      "url": "https://psychonautwiki.org/wiki/4-HO-DPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5419,7 +5419,7 @@
         "4-HO-EPT",
         "Eprocin"
       ],
-      "url": "https://psy.st/wiki/4-HO-EPT",
+      "url": "https://psychonautwiki.org/wiki/4-HO-EPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5495,7 +5495,7 @@
         "Methylcybin",
         "Colour"
       ],
-      "url": "https://psy.st/wiki/4-HO-MET",
+      "url": "https://psychonautwiki.org/wiki/4-HO-MET",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5602,7 +5602,7 @@
         "4-HO-MiPT",
         "Miprocin"
       ],
-      "url": "https://psy.st/wiki/4-HO-MiPT",
+      "url": "https://psychonautwiki.org/wiki/4-HO-MiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5686,7 +5686,7 @@
         "4-HO-MPT",
         "Meprocin"
       ],
-      "url": "https://psy.st/wiki/4-HO-MPT",
+      "url": "https://psychonautwiki.org/wiki/4-HO-MPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -5771,7 +5771,7 @@
         "4-MeO-PCP",
         "Methoxydine"
       ],
-      "url": "https://psy.st/wiki/4-MeO-PCP",
+      "url": "https://psychonautwiki.org/wiki/4-MeO-PCP",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -5887,7 +5887,7 @@
         "4F-EPH",
         "4-FEPH"
       ],
-      "url": "https://psy.st/wiki/4F-EPH",
+      "url": "https://psychonautwiki.org/wiki/4F-EPH",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -5959,7 +5959,7 @@
         "4F-MPH",
         "4-FMPH"
       ],
-      "url": "https://psy.st/wiki/4F-MPH",
+      "url": "https://psychonautwiki.org/wiki/4F-MPH",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -6066,7 +6066,7 @@
       "commonNames": [
         "5-APB"
       ],
-      "url": "https://psy.st/wiki/5-APB",
+      "url": "https://psychonautwiki.org/wiki/5-APB",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -6171,7 +6171,7 @@
         "Tript-OH",
         "Triptum"
       ],
-      "url": "https://psy.st/wiki/5-Hydroxytryptophan",
+      "url": "https://psychonautwiki.org/wiki/5-Hydroxytryptophan",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -6208,7 +6208,7 @@
       "commonNames": [
         "5-MAPB"
       ],
-      "url": "https://psy.st/wiki/5-MAPB",
+      "url": "https://psychonautwiki.org/wiki/5-MAPB",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -6306,7 +6306,7 @@
         "5-MeO-DALT",
         "Foxtrot"
       ],
-      "url": "https://psy.st/wiki/5-MeO-DALT",
+      "url": "https://psychonautwiki.org/wiki/5-MeO-DALT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -6435,7 +6435,7 @@
       "commonNames": [
         "5-MeO-DiBF"
       ],
-      "url": "https://psy.st/wiki/5-MeO-DiBF",
+      "url": "https://psychonautwiki.org/wiki/5-MeO-DiBF",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -6498,7 +6498,7 @@
         "Foxy Methoxy",
         "Foxy"
       ],
-      "url": "https://psy.st/wiki/5-MeO-DiPT",
+      "url": "https://psychonautwiki.org/wiki/5-MeO-DiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -6580,7 +6580,7 @@
         "Toad",
         "Jaguar"
       ],
-      "url": "https://psy.st/wiki/5-MeO-DMT",
+      "url": "https://psychonautwiki.org/wiki/5-MeO-DMT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -6722,7 +6722,7 @@
         "5-MeO-MiPT",
         "Moxy"
       ],
-      "url": "https://psy.st/wiki/5-MeO-MiPT",
+      "url": "https://psychonautwiki.org/wiki/5-MeO-MiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -6853,7 +6853,7 @@
         "5F-AKB48",
         "5F-APINACA"
       ],
-      "url": "https://psy.st/wiki/5F-AKB48",
+      "url": "https://psychonautwiki.org/wiki/5F-AKB48",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -6939,7 +6939,7 @@
     {
       "name": "5F-PB-22",
       "commonNames": [],
-      "url": "https://psy.st/wiki/5F-PB-22",
+      "url": "https://psychonautwiki.org/wiki/5F-PB-22",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7018,7 +7018,7 @@
         "6-APB",
         "Benzofury"
       ],
-      "url": "https://psy.st/wiki/6-APB",
+      "url": "https://psychonautwiki.org/wiki/6-APB",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -7115,7 +7115,7 @@
       "commonNames": [
         "6-APDB"
       ],
-      "url": "https://psy.st/wiki/6-APDB",
+      "url": "https://psychonautwiki.org/wiki/6-APDB",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -7209,7 +7209,7 @@
         "alpha-PHP",
         "PV7"
       ],
-      "url": "https://psy.st/wiki/A-PHP",
+      "url": "https://psychonautwiki.org/wiki/A-PHP",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7377,7 +7377,7 @@
         "Prolintanone",
         "Gravel"
       ],
-      "url": "https://psy.st/wiki/A-PVP",
+      "url": "https://psychonautwiki.org/wiki/A-PVP",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7538,7 +7538,7 @@
       "commonNames": [
         "Ab-fubi"
       ],
-      "url": "https://psy.st/wiki/AB-FUBINACA",
+      "url": "https://psychonautwiki.org/wiki/AB-FUBINACA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7627,7 +7627,7 @@
       "commonNames": [
         "Acetylfentanyl"
       ],
-      "url": "https://psy.st/wiki/Acetylfentanyl",
+      "url": "https://psychonautwiki.org/wiki/Acetylfentanyl",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7730,7 +7730,7 @@
         "Adrafinil",
         "Olmifon"
       ],
-      "url": "https://psy.st/wiki/Adrafinil",
+      "url": "https://psychonautwiki.org/wiki/Adrafinil",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -7804,7 +7804,7 @@
         "AL-LAD",
         "Aladdin"
       ],
-      "url": "https://psy.st/wiki/AL-LAD",
+      "url": "https://psychonautwiki.org/wiki/AL-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -7894,7 +7894,7 @@
         "Juice",
         "Bevvy"
       ],
-      "url": "https://psy.st/wiki/Alcohol",
+      "url": "https://psychonautwiki.org/wiki/Alcohol",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -8016,7 +8016,7 @@
         "1A-LAD",
         "Orange Sunshine"
       ],
-      "url": "https://psy.st/wiki/ALD-52",
+      "url": "https://psychonautwiki.org/wiki/ALD-52",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -8102,7 +8102,7 @@
         "Allylescaline",
         "AL"
       ],
-      "url": "https://psy.st/wiki/Allylescaline",
+      "url": "https://psychonautwiki.org/wiki/Allylescaline",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -8155,7 +8155,7 @@
         "Choline Alfoscerate",
         "L-Alpha Glycerylphosphorylcholine"
       ],
-      "url": "https://psy.st/wiki/Alpha-GPC",
+      "url": "https://psychonautwiki.org/wiki/Alpha-GPC",
       "isApproved": true,
       "tolerance": {
         "full": "after prolonged and repeated usage",
@@ -8204,7 +8204,7 @@
         "Alprazolam",
         "Ksalol"
       ],
-      "url": "https://psy.st/wiki/Alprazolam",
+      "url": "https://psychonautwiki.org/wiki/Alprazolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -8335,7 +8335,7 @@
         "Adderall",
         "Pep"
       ],
-      "url": "https://psy.st/wiki/Amphetamine",
+      "url": "https://psychonautwiki.org/wiki/Amphetamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -8530,7 +8530,7 @@
       "commonNames": [
         "Aniracetam"
       ],
-      "url": "https://psy.st/wiki/Aniracetam",
+      "url": "https://psychonautwiki.org/wiki/Aniracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -8589,7 +8589,7 @@
         "SDB-001",
         "2NE1"
       ],
-      "url": "https://psy.st/wiki/APICA",
+      "url": "https://psychonautwiki.org/wiki/APICA",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -8656,7 +8656,7 @@
         "Dacepton",
         "APO-go"
       ],
-      "url": "https://psy.st/wiki/Apomorphine",
+      "url": "https://psychonautwiki.org/wiki/Apomorphine",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -8850,7 +8850,7 @@
         "R-Modawake",
         "Neoresotyl"
       ],
-      "url": "https://psy.st/wiki/Armodafinil",
+      "url": "https://psychonautwiki.org/wiki/Armodafinil",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -8952,7 +8952,7 @@
         "Natem",
         "Shori"
       ],
-      "url": "https://psy.st/wiki/Ayahuasca",
+      "url": "https://psychonautwiki.org/wiki/Ayahuasca",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -9003,7 +9003,7 @@
         "Baclofen",
         "Lioresal"
       ],
-      "url": "https://psy.st/wiki/Baclofen",
+      "url": "https://psychonautwiki.org/wiki/Baclofen",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -9090,7 +9090,7 @@
         "Benzydamine",
         "Tantum Verde"
       ],
-      "url": "https://psy.st/wiki/Benzydamine",
+      "url": "https://psychonautwiki.org/wiki/Benzydamine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [
@@ -9149,7 +9149,7 @@
         "Bromantan",
         "Ladasten"
       ],
-      "url": "https://psy.st/wiki/Bromantane",
+      "url": "https://psychonautwiki.org/wiki/Bromantane",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -9212,7 +9212,7 @@
         "Zepam",
         "Lexotanil"
       ],
-      "url": "https://psy.st/wiki/Bromazepam",
+      "url": "https://psychonautwiki.org/wiki/Bromazepam",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [
@@ -9285,7 +9285,7 @@
         "Bromazolam",
         "XLI-268"
       ],
-      "url": "https://psy.st/wiki/Bromazolam",
+      "url": "https://psychonautwiki.org/wiki/Bromazolam",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -9350,7 +9350,7 @@
         "B-DFLY",
         "Dragonfly"
       ],
-      "url": "https://psy.st/wiki/Bromo-DragonFLY",
+      "url": "https://psychonautwiki.org/wiki/Bromo-DragonFLY",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -9436,7 +9436,7 @@
         "Bufotenin",
         "5-HO-DMT"
       ],
-      "url": "https://psy.st/wiki/Bufotenin",
+      "url": "https://psychonautwiki.org/wiki/Bufotenin",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -9520,7 +9520,7 @@
         "Addnok",
         "Transtec"
       ],
-      "url": "https://psy.st/wiki/Buprenorphine",
+      "url": "https://psychonautwiki.org/wiki/Buprenorphine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -9650,7 +9650,7 @@
         "Dimethyltryptamine",
         "Dmitri"
       ],
-      "url": "https://psy.st/wiki/Buspirone",
+      "url": "https://psychonautwiki.org/wiki/Buspirone",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -9679,7 +9679,7 @@
         "bk-MBDB",
         "B1"
       ],
-      "url": "https://psy.st/wiki/Butylone",
+      "url": "https://psychonautwiki.org/wiki/Butylone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -9771,7 +9771,7 @@
       "commonNames": [
         "Caffeine"
       ],
-      "url": "https://psy.st/wiki/Caffeine",
+      "url": "https://psychonautwiki.org/wiki/Caffeine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -9943,7 +9943,7 @@
         "CBD",
         "Epidiolex"
       ],
-      "url": "https://psy.st/wiki/Cannabidiol",
+      "url": "https://psychonautwiki.org/wiki/Cannabidiol",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "low abuse potential",
@@ -9998,7 +9998,7 @@
         "Tree",
         "THC"
       ],
-      "url": "https://psy.st/wiki/Cannabis",
+      "url": "https://psychonautwiki.org/wiki/Cannabis",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -10176,7 +10176,7 @@
         "Carisoprodol",
         "Soma"
       ],
-      "url": "https://psy.st/wiki/Carisoprodol",
+      "url": "https://psychonautwiki.org/wiki/Carisoprodol",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "extremely physically and psychologically addictive",
@@ -10234,7 +10234,7 @@
       "commonNames": [
         "Librium"
       ],
-      "url": "https://psy.st/wiki/Chlordiazepoxide",
+      "url": "https://psychonautwiki.org/wiki/Chlordiazepoxide",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [
@@ -10293,7 +10293,7 @@
       "commonNames": [
         "Choline"
       ],
-      "url": "https://psy.st/wiki/Choline_bitartrate",
+      "url": "https://psychonautwiki.org/wiki/Choline_bitartrate",
       "isApproved": true,
       "tolerance": {
         "full": "after prolonged and repeated usage",
@@ -10361,7 +10361,7 @@
         "Cinolazepam",
         "Gerodorm"
       ],
-      "url": "https://psy.st/wiki/Cinolazepam",
+      "url": "https://psychonautwiki.org/wiki/Cinolazepam",
       "isApproved": false,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -10425,7 +10425,7 @@
       "commonNames": [
         "Citicoline"
       ],
-      "url": "https://psy.st/wiki/Citicoline",
+      "url": "https://psychonautwiki.org/wiki/Citicoline",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -10488,7 +10488,7 @@
         "K-Pins",
         "Rivotril"
       ],
-      "url": "https://psy.st/wiki/Clonazepam",
+      "url": "https://psychonautwiki.org/wiki/Clonazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -10568,7 +10568,7 @@
         "Clam",
         "C-lam"
       ],
-      "url": "https://psy.st/wiki/Clonazolam",
+      "url": "https://psychonautwiki.org/wiki/Clonazolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -10634,7 +10634,7 @@
         "Kapvay",
         "Nexiclon XR"
       ],
-      "url": "https://psy.st/wiki/Clonidine",
+      "url": "https://psychonautwiki.org/wiki/Clonidine",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not addictive and has a low potential for abuse",
@@ -10703,7 +10703,7 @@
         "Nose Candy",
         "Chari"
       ],
-      "url": "https://psy.st/wiki/Cocaine",
+      "url": "https://psychonautwiki.org/wiki/Cocaine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -10851,7 +10851,7 @@
         "Purple Drank",
         "Syrup"
       ],
-      "url": "https://psy.st/wiki/Codeine",
+      "url": "https://psychonautwiki.org/wiki/Codeine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -10951,7 +10951,7 @@
       "commonNames": [
         "Coluracetam"
       ],
-      "url": "https://psy.st/wiki/Coluracetam",
+      "url": "https://psychonautwiki.org/wiki/Coluracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11037,7 +11037,7 @@
         "N-Carbamimidoyl-N-methylglycine",
         "Methylguanidoacetic acid"
       ],
-      "url": "https://psy.st/wiki/Creatine",
+      "url": "https://psychonautwiki.org/wiki/Creatine",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming with a low potential for abuse",
@@ -11075,7 +11075,7 @@
       "commonNames": [
         "Cyclazodone"
       ],
-      "url": "https://psy.st/wiki/Cyclazodone",
+      "url": "https://psychonautwiki.org/wiki/Cyclazodone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11142,7 +11142,7 @@
         "Datura",
         "Jimson Weed"
       ],
-      "url": "https://psy.st/wiki/Datura",
+      "url": "https://psychonautwiki.org/wiki/Datura",
       "isApproved": true,
       "tolerance": {
         "full": "with repeated use",
@@ -11185,7 +11185,7 @@
       "commonNames": [
         "Deschloroetizolam"
       ],
-      "url": "https://psy.st/wiki/Deschloroetizolam",
+      "url": "https://psychonautwiki.org/wiki/Deschloroetizolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -11262,7 +11262,7 @@
         "DXE",
         "O-PCM"
       ],
-      "url": "https://psy.st/wiki/Deschloroketamine",
+      "url": "https://psychonautwiki.org/wiki/Deschloroketamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11404,7 +11404,7 @@
         "Krokodil",
         "Krok"
       ],
-      "url": "https://psy.st/wiki/Desomorphine",
+      "url": "https://psychonautwiki.org/wiki/Desomorphine",
       "isApproved": true,
       "crossTolerances": [
         "opioids"
@@ -11440,7 +11440,7 @@
         "2-DPMP",
         "Ivory Wave"
       ],
-      "url": "https://psy.st/wiki/Desoxypipradrol",
+      "url": "https://psychonautwiki.org/wiki/Desoxypipradrol",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11554,7 +11554,7 @@
         "Diethyltryptamine",
         "DET"
       ],
-      "url": "https://psy.st/wiki/DET",
+      "url": "https://psychonautwiki.org/wiki/DET",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -11616,7 +11616,7 @@
         "Dex",
         "Attentin"
       ],
-      "url": "https://psy.st/wiki/Dextroamphetamine",
+      "url": "https://psychonautwiki.org/wiki/Dextroamphetamine",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -11749,7 +11749,7 @@
         "DexAlone",
         "Duract"
       ],
-      "url": "https://psy.st/wiki/Dextromethorphan",
+      "url": "https://psychonautwiki.org/wiki/Dextromethorphan",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11855,7 +11855,7 @@
         "Propoxyphene",
         "Darvon"
       ],
-      "url": "https://psy.st/wiki/Dextropropoxyphene",
+      "url": "https://psychonautwiki.org/wiki/Dextropropoxyphene",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -11942,7 +11942,7 @@
         "Mother's Little Helper",
         "Apaurin"
       ],
-      "url": "https://psy.st/wiki/Diazepam",
+      "url": "https://psychonautwiki.org/wiki/Diazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -12023,7 +12023,7 @@
         "Dichloropane",
         "RTI-111"
       ],
-      "url": "https://psy.st/wiki/Dichloropane",
+      "url": "https://psychonautwiki.org/wiki/Dichloropane",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -12130,7 +12130,7 @@
       "commonNames": [
         "Diclazepam"
       ],
-      "url": "https://psy.st/wiki/Diclazepam",
+      "url": "https://psychonautwiki.org/wiki/Diclazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within 3-4 days of continuous use",
@@ -12181,7 +12181,7 @@
       "commonNames": [
         "Dihydrocodeine"
       ],
-      "url": "https://psy.st/wiki/Dihydrocodeine",
+      "url": "https://psychonautwiki.org/wiki/Dihydrocodeine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -12254,7 +12254,7 @@
         "Unisom SleepMelts",
         "ZzzQuil"
       ],
-      "url": "https://psy.st/wiki/Diphenhydramine",
+      "url": "https://psychonautwiki.org/wiki/Diphenhydramine",
       "isApproved": true,
       "tolerance": {
         "full": "with repeated use",
@@ -12323,7 +12323,7 @@
       "commonNames": [
         "Diphenidine"
       ],
-      "url": "https://psy.st/wiki/Diphenidine",
+      "url": "https://psychonautwiki.org/wiki/Diphenidine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -12447,7 +12447,7 @@
       "commonNames": [
         "DiPT"
       ],
-      "url": "https://psy.st/wiki/DiPT",
+      "url": "https://psychonautwiki.org/wiki/DiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -12529,7 +12529,7 @@
         "The Glory",
         "The Spirit Molecule"
       ],
-      "url": "https://psy.st/wiki/DMT",
+      "url": "https://psychonautwiki.org/wiki/DMT",
       "isApproved": true,
       "tolerance": {
         "full": "does not appear to occur"
@@ -12660,7 +12660,7 @@
         "Brolamfetamine",
         "Bromo-DMA"
       ],
-      "url": "https://psy.st/wiki/DOB",
+      "url": "https://psychonautwiki.org/wiki/DOB",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -12758,7 +12758,7 @@
       "commonNames": [
         "DOC"
       ],
-      "url": "https://psy.st/wiki/DOC",
+      "url": "https://psychonautwiki.org/wiki/DOC",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -12880,7 +12880,7 @@
       "commonNames": [
         "DOI"
       ],
-      "url": "https://psy.st/wiki/DOI",
+      "url": "https://psychonautwiki.org/wiki/DOI",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -12964,7 +12964,7 @@
         "DOM",
         "STP (Serenity, Tranquility, and Peace)"
       ],
-      "url": "https://psy.st/wiki/DOM",
+      "url": "https://psychonautwiki.org/wiki/DOM",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -13064,7 +13064,7 @@
         "Dipropyltryptamine",
         "The Light"
       ],
-      "url": "https://psy.st/wiki/DPT",
+      "url": "https://psychonautwiki.org/wiki/DPT",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -13166,7 +13166,7 @@
         "Efavirenz",
         "Sustiva"
       ],
-      "url": "https://psy.st/wiki/Efavirenz",
+      "url": "https://psychonautwiki.org/wiki/Efavirenz",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not known to be habit-forming",
@@ -13222,7 +13222,7 @@
         "Ephedrine",
         "Ephedra"
       ],
-      "url": "https://psy.st/wiki/Ephedrine",
+      "url": "https://psychonautwiki.org/wiki/Ephedrine",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -13276,7 +13276,7 @@
         "Ephenidine",
         "NEDPA"
       ],
-      "url": "https://psy.st/wiki/Ephenidine",
+      "url": "https://psychonautwiki.org/wiki/Ephenidine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -13340,7 +13340,7 @@
         "βk-EBDP",
         "bk-ethyl-K"
       ],
-      "url": "https://psy.st/wiki/Ephylone",
+      "url": "https://psychonautwiki.org/wiki/Ephylone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use"
@@ -13411,7 +13411,7 @@
       "commonNames": [
         "EPT"
       ],
-      "url": "https://psy.st/wiki/EPT",
+      "url": "https://psychonautwiki.org/wiki/EPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -13468,7 +13468,7 @@
       "commonNames": [
         "Escaline"
       ],
-      "url": "https://psy.st/wiki/Escaline",
+      "url": "https://psychonautwiki.org/wiki/Escaline",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -13537,7 +13537,7 @@
         "Lunesta",
         "Eszop"
       ],
-      "url": "https://psy.st/wiki/Eszopiclone",
+      "url": "https://psychonautwiki.org/wiki/Eszopiclone",
       "isApproved": false,
       "tolerance": {
         "full": "within a couple of weeks of daily use",
@@ -13596,7 +13596,7 @@
         "Ethcathinone",
         "Ethylpropion"
       ],
-      "url": "https://psy.st/wiki/ETH-CAT",
+      "url": "https://psychonautwiki.org/wiki/ETH-CAT",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -13716,7 +13716,7 @@
       "commonNames": [
         "ETH-LAD"
       ],
-      "url": "https://psy.st/wiki/ETH-LAD",
+      "url": "https://psychonautwiki.org/wiki/ETH-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -13801,7 +13801,7 @@
         "Codethyline",
         "Dionine"
       ],
-      "url": "https://psy.st/wiki/Ethylmorphine",
+      "url": "https://psychonautwiki.org/wiki/Ethylmorphine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -13871,7 +13871,7 @@
         "bk-MDEA",
         "MDEC"
       ],
-      "url": "https://psy.st/wiki/Ethylone",
+      "url": "https://psychonautwiki.org/wiki/Ethylone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -13964,7 +13964,7 @@
         "Ethylphenidate",
         "EPH"
       ],
-      "url": "https://psy.st/wiki/Ethylphenidate",
+      "url": "https://psychonautwiki.org/wiki/Ethylphenidate",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -14061,7 +14061,7 @@
         "Etizest",
         "Depas"
       ],
-      "url": "https://psy.st/wiki/Etizolam",
+      "url": "https://psychonautwiki.org/wiki/Etizolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14142,7 +14142,7 @@
     {
       "name": "Etomidate",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Etomidate",
+      "url": "https://psychonautwiki.org/wiki/Etomidate",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -14238,7 +14238,7 @@
         "Fluorophenibut",
         "Fluorobut"
       ],
-      "url": "https://psy.st/wiki/F-Phenibut",
+      "url": "https://psychonautwiki.org/wiki/F-Phenibut",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14298,7 +14298,7 @@
         "Fenethylline",
         "Captagon"
       ],
-      "url": "https://psy.st/wiki/Fenethylline",
+      "url": "https://psychonautwiki.org/wiki/Fenethylline",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -14374,7 +14374,7 @@
         "Abstral",
         "Lazanda"
       ],
-      "url": "https://psy.st/wiki/Fentanyl",
+      "url": "https://psychonautwiki.org/wiki/Fentanyl",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -14512,7 +14512,7 @@
       "commonNames": [
         "Flualprazolam"
       ],
-      "url": "https://psy.st/wiki/Flualprazolam",
+      "url": "https://psychonautwiki.org/wiki/Flualprazolam",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -14588,7 +14588,7 @@
       "commonNames": [
         "Flubromazepam"
       ],
-      "url": "https://psy.st/wiki/Flubromazepam",
+      "url": "https://psychonautwiki.org/wiki/Flubromazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14640,7 +14640,7 @@
       "commonNames": [
         "Flubromazolam"
       ],
-      "url": "https://psy.st/wiki/Flubromazolam",
+      "url": "https://psychonautwiki.org/wiki/Flubromazolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14700,7 +14700,7 @@
         "Rophies",
         "Wolfies"
       ],
-      "url": "https://psy.st/wiki/Flunitrazepam",
+      "url": "https://psychonautwiki.org/wiki/Flunitrazepam",
       "isApproved": false,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14765,7 +14765,7 @@
       "commonNames": [
         "Flunitrazolam"
       ],
-      "url": "https://psy.st/wiki/Flunitrazolam",
+      "url": "https://psychonautwiki.org/wiki/Flunitrazolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -14835,7 +14835,7 @@
         "Gabarone",
         "Gralise"
       ],
-      "url": "https://psy.st/wiki/Gabapentin",
+      "url": "https://psychonautwiki.org/wiki/Gabapentin",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged continuous usage",
@@ -14896,7 +14896,7 @@
     {
       "name": "Gaboxadol",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Gaboxadol",
+      "url": "https://psychonautwiki.org/wiki/Gaboxadol",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -14949,7 +14949,7 @@
       "commonNames": [
         "Galantamine"
       ],
-      "url": "https://psy.st/wiki/Galantamine",
+      "url": "https://psychonautwiki.org/wiki/Galantamine",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -14994,7 +14994,7 @@
         "GBL",
         "gamma-Butyrolactone"
       ],
-      "url": "https://psy.st/wiki/GBL",
+      "url": "https://psychonautwiki.org/wiki/GBL",
       "isApproved": true,
       "tolerance": {
         "full": "within several days of continuous use",
@@ -15097,7 +15097,7 @@
         "Xyrem",
         "Sodium oxybate"
       ],
-      "url": "https://psy.st/wiki/GHB",
+      "url": "https://psychonautwiki.org/wiki/GHB",
       "isApproved": true,
       "tolerance": {
         "full": "within several days of continuous use",
@@ -15198,7 +15198,7 @@
       "commonNames": [
         "Haldol"
       ],
-      "url": "https://psy.st/wiki/Haloperidol",
+      "url": "https://psychonautwiki.org/wiki/Haloperidol",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [
@@ -15242,7 +15242,7 @@
         "Junk",
         "Brown"
       ],
-      "url": "https://psy.st/wiki/Heroin",
+      "url": "https://psychonautwiki.org/wiki/Heroin",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -15421,7 +15421,7 @@
       "commonNames": [
         "Hexedrone"
       ],
-      "url": "https://psy.st/wiki/Hexedrone",
+      "url": "https://psychonautwiki.org/wiki/Hexedrone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -15478,7 +15478,7 @@
       "commonNames": [
         "HXE"
       ],
-      "url": "https://psy.st/wiki/HXE",
+      "url": "https://psychonautwiki.org/wiki/HXE",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -15631,7 +15631,7 @@
         "Zohydro ER (extended-release)",
         "Norco"
       ],
-      "url": "https://psy.st/wiki/Hydrocodone",
+      "url": "https://psychonautwiki.org/wiki/Hydrocodone",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged use",
@@ -15706,7 +15706,7 @@
         "Jurnista",
         "Palladone"
       ],
-      "url": "https://psy.st/wiki/Hydromorphone",
+      "url": "https://psychonautwiki.org/wiki/Hydromorphone",
       "isApproved": true,
       "crossTolerances": [
         "opioids"
@@ -15874,7 +15874,7 @@
         "Endabuse",
         "Iboga"
       ],
-      "url": "https://psy.st/wiki/Ibogaine",
+      "url": "https://psychonautwiki.org/wiki/Ibogaine",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -15921,7 +15921,7 @@
         "IPH",
         "IPPH"
       ],
-      "url": "https://psy.st/wiki/Isopropylphenidate",
+      "url": "https://psychonautwiki.org/wiki/Isopropylphenidate",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -16043,7 +16043,7 @@
     {
       "name": "JWH-018",
       "commonNames": [],
-      "url": "https://psy.st/wiki/JWH-018",
+      "url": "https://psychonautwiki.org/wiki/JWH-018",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -16128,7 +16128,7 @@
         "JWH-073",
         "Spice"
       ],
-      "url": "https://psy.st/wiki/JWH-073",
+      "url": "https://psychonautwiki.org/wiki/JWH-073",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -16221,7 +16221,7 @@
         "Purple",
         "Jet"
       ],
-      "url": "https://psy.st/wiki/Ketamine",
+      "url": "https://psychonautwiki.org/wiki/Ketamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use"
@@ -16373,7 +16373,7 @@
         "Kratom",
         "Kratum"
       ],
-      "url": "https://psy.st/wiki/Kratom",
+      "url": "https://psychonautwiki.org/wiki/Kratom",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -16455,7 +16455,7 @@
     {
       "name": "LAE-32",
       "commonNames": [],
-      "url": "https://psy.st/wiki/LAE-32",
+      "url": "https://psychonautwiki.org/wiki/LAE-32",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -16498,7 +16498,7 @@
         "Vyvanse",
         "Elvanse"
       ],
-      "url": "https://psy.st/wiki/Lisdexamfetamine",
+      "url": "https://psychonautwiki.org/wiki/Lisdexamfetamine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -16585,7 +16585,7 @@
         "Orfidal",
         "Lorsilan"
       ],
-      "url": "https://psy.st/wiki/Lorazepam",
+      "url": "https://psychonautwiki.org/wiki/Lorazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -16642,7 +16642,7 @@
         "LSA",
         "Ergine"
       ],
-      "url": "https://psy.st/wiki/LSA",
+      "url": "https://psychonautwiki.org/wiki/LSA",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -16706,7 +16706,7 @@
         "Tabs",
         "Blotter"
       ],
-      "url": "https://psy.st/wiki/LSD",
+      "url": "https://psychonautwiki.org/wiki/LSD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -16810,7 +16810,7 @@
       "commonNames": [
         "LSM-775"
       ],
-      "url": "https://psy.st/wiki/LSM-775",
+      "url": "https://psychonautwiki.org/wiki/LSM-775",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -16877,7 +16877,7 @@
         "Diazedine",
         "Lambda"
       ],
-      "url": "https://psy.st/wiki/LSZ",
+      "url": "https://psychonautwiki.org/wiki/LSZ",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -16958,7 +16958,7 @@
       "commonNames": [
         "mCPP"
       ],
-      "url": "https://psy.st/wiki/MCPP",
+      "url": "https://psychonautwiki.org/wiki/MCPP",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -17034,7 +17034,7 @@
         "Sally",
         "Tenamfetamine"
       ],
-      "url": "https://psy.st/wiki/MDA",
+      "url": "https://psychonautwiki.org/wiki/MDA",
       "isApproved": true,
       "tolerance": {
         "full": "repeated and heavy usage",
@@ -17143,7 +17143,7 @@
       "commonNames": [
         "MDAI"
       ],
-      "url": "https://psy.st/wiki/MDAI",
+      "url": "https://psychonautwiki.org/wiki/MDAI",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -17231,7 +17231,7 @@
         "MDE",
         "Eve"
       ],
-      "url": "https://psy.st/wiki/MDEA",
+      "url": "https://psychonautwiki.org/wiki/MDEA",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -17353,7 +17353,7 @@
         "Beans",
         "Pingers"
       ],
-      "url": "https://psy.st/wiki/MDMA",
+      "url": "https://psychonautwiki.org/wiki/MDMA",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -17478,7 +17478,7 @@
         "Bath Salts",
         "NRG-1"
       ],
-      "url": "https://psy.st/wiki/MDPV",
+      "url": "https://psychonautwiki.org/wiki/MDPV",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -17550,7 +17550,7 @@
     {
       "name": "Meclofenoxate",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Meclofenoxate",
+      "url": "https://psychonautwiki.org/wiki/Meclofenoxate",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [
@@ -17577,7 +17577,7 @@
       "commonNames": [
         "Melatonin"
       ],
-      "url": "https://psy.st/wiki/Melatonin",
+      "url": "https://psychonautwiki.org/wiki/Melatonin",
       "isApproved": true,
       "tolerance": {
         "full": "after prolonged and repeated usage",
@@ -17651,7 +17651,7 @@
         "Namzaric (with donepezil",
         "both extended-release)"
       ],
-      "url": "https://psy.st/wiki/Memantine",
+      "url": "https://psychonautwiki.org/wiki/Memantine",
       "isApproved": true,
       "crossTolerances": [
         "dissociatives"
@@ -17728,7 +17728,7 @@
         "M-CAT",
         "Meow Meow"
       ],
-      "url": "https://psy.st/wiki/Mephedrone",
+      "url": "https://psychonautwiki.org/wiki/Mephedrone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -17877,7 +17877,7 @@
       "commonNames": [
         "Mephenaqualone"
       ],
-      "url": "https://psy.st/wiki/Mephenaqualone",
+      "url": "https://psychonautwiki.org/wiki/Mephenaqualone",
       "isApproved": false,
       "tolerance": {
         "full": "within a few days of repeated administration"
@@ -17945,7 +17945,7 @@
         "Cactus",
         "Buttons"
       ],
-      "url": "https://psy.st/wiki/Mescaline",
+      "url": "https://psychonautwiki.org/wiki/Mescaline",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -18053,7 +18053,7 @@
         "MET",
         "Methylethyltryptamine"
       ],
-      "url": "https://psy.st/wiki/MET",
+      "url": "https://psychonautwiki.org/wiki/MET",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -18197,7 +18197,7 @@
         "Dolophine",
         "Methadose"
       ],
-      "url": "https://psy.st/wiki/Methadone",
+      "url": "https://psychonautwiki.org/wiki/Methadone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -18297,7 +18297,7 @@
         "Methallylescaline",
         "MAL"
       ],
-      "url": "https://psy.st/wiki/Methallylescaline",
+      "url": "https://psychonautwiki.org/wiki/Methallylescaline",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -18382,7 +18382,7 @@
         "Shabu",
         "Yaba"
       ],
-      "url": "https://psy.st/wiki/Methamphetamine",
+      "url": "https://psychonautwiki.org/wiki/Methamphetamine",
       "isApproved": true,
       "tolerance": {
         "full": "rapidly develops with prolonged and repeated use",
@@ -18669,7 +18669,7 @@
         "Vitamin Q",
         "Soaper"
       ],
-      "url": "https://psy.st/wiki/Methaqualone",
+      "url": "https://psychonautwiki.org/wiki/Methaqualone",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of repeated administration",
@@ -18764,7 +18764,7 @@
         "Jeff",
         "MC"
       ],
-      "url": "https://psy.st/wiki/Methcathinone",
+      "url": "https://psychonautwiki.org/wiki/Methcathinone",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -18810,7 +18810,7 @@
       "commonNames": [
         "MPA"
       ],
-      "url": "https://psy.st/wiki/Methiopropamine",
+      "url": "https://psychonautwiki.org/wiki/Methiopropamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -18905,7 +18905,7 @@
         "MXE",
         "Mexxy"
       ],
-      "url": "https://psy.st/wiki/Methoxetamine",
+      "url": "https://psychonautwiki.org/wiki/Methoxetamine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -19043,7 +19043,7 @@
         "MXP",
         "2-MXP"
       ],
-      "url": "https://psy.st/wiki/Methoxphenidine",
+      "url": "https://psychonautwiki.org/wiki/Methoxphenidine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -19111,7 +19111,7 @@
         "Methylnaphthidate",
         "HDMP-28"
       ],
-      "url": "https://psy.st/wiki/Methylnaphthidate",
+      "url": "https://psychonautwiki.org/wiki/Methylnaphthidate",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -19223,7 +19223,7 @@
         "M1",
         "MDMC"
       ],
-      "url": "https://psy.st/wiki/Methylone",
+      "url": "https://psychonautwiki.org/wiki/Methylone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -19333,7 +19333,7 @@
         "Ritalin",
         "Equasym XL"
       ],
-      "url": "https://psy.st/wiki/Methylphenidate",
+      "url": "https://psychonautwiki.org/wiki/Methylphenidate",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "moderately addictive with a high potential for abuse",
@@ -19461,7 +19461,7 @@
         "Metizolam",
         "Desmethyletizolam"
       ],
-      "url": "https://psy.st/wiki/Metizolam",
+      "url": "https://psychonautwiki.org/wiki/Metizolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of repeated administration",
@@ -19522,7 +19522,7 @@
         "Mexedrone",
         "4-MMC-MeO"
       ],
-      "url": "https://psy.st/wiki/Mexedrone",
+      "url": "https://psychonautwiki.org/wiki/Mexedrone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -19595,7 +19595,7 @@
         "Midazolam",
         "Versed"
       ],
-      "url": "https://psy.st/wiki/Midazolam",
+      "url": "https://psychonautwiki.org/wiki/Midazolam",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -19692,7 +19692,7 @@
         "MiPLA",
         "Lamide"
       ],
-      "url": "https://psy.st/wiki/MiPLA",
+      "url": "https://psychonautwiki.org/wiki/MiPLA",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -19768,7 +19768,7 @@
       "commonNames": [
         "MiPT"
       ],
-      "url": "https://psy.st/wiki/MiPT",
+      "url": "https://psychonautwiki.org/wiki/MiPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -19819,7 +19819,7 @@
         "Remeron",
         "Zispin"
       ],
-      "url": "https://psy.st/wiki/Mirtazapine",
+      "url": "https://psychonautwiki.org/wiki/Mirtazapine",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -19888,7 +19888,7 @@
         "Provigil",
         "Modalert"
       ],
-      "url": "https://psy.st/wiki/Modafinil",
+      "url": "https://psychonautwiki.org/wiki/Modafinil",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -20001,7 +20001,7 @@
         "Sevredol",
         "Duramorph"
       ],
-      "url": "https://psy.st/wiki/Morphine",
+      "url": "https://psychonautwiki.org/wiki/Morphine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -20133,7 +20133,7 @@
         "MPT",
         "Methylpropyltryptamine"
       ],
-      "url": "https://psy.st/wiki/MPT",
+      "url": "https://psychonautwiki.org/wiki/MPT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -20167,7 +20167,7 @@
         "MXiPR",
         "MXiP"
       ],
-      "url": "https://psy.st/wiki/MXiPr",
+      "url": "https://psychonautwiki.org/wiki/MXiPr",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -20256,7 +20256,7 @@
       "commonNames": [
         "Nutmeg"
       ],
-      "url": "https://psy.st/wiki/Myristicin",
+      "url": "https://psychonautwiki.org/wiki/Myristicin",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "is not known to be addictive",
@@ -20333,7 +20333,7 @@
       "commonNames": [
         "N-Acetylcysteine"
       ],
-      "url": "https://psy.st/wiki/N-Acetylcysteine",
+      "url": "https://psychonautwiki.org/wiki/N-Acetylcysteine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -20373,7 +20373,7 @@
         "NEH",
         "Ethyl-Hexedrone"
       ],
-      "url": "https://psy.st/wiki/N-Ethylhexedrone",
+      "url": "https://psychonautwiki.org/wiki/N-Ethylhexedrone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -20496,7 +20496,7 @@
         "Dehydroxyfluorafinil",
         "Modafiendz"
       ],
-      "url": "https://psy.st/wiki/N-Methylbisfluoromodafinil",
+      "url": "https://psychonautwiki.org/wiki/N-Methylbisfluoromodafinil",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -20563,7 +20563,7 @@
         "Narcan",
         "Evzio"
       ],
-      "url": "https://psy.st/wiki/Naloxone",
+      "url": "https://psychonautwiki.org/wiki/Naloxone",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming",
@@ -20683,7 +20683,7 @@
         "NEP",
         "Ethyl-Pentedrone"
       ],
-      "url": "https://psy.st/wiki/NEP",
+      "url": "https://psychonautwiki.org/wiki/NEP",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -20784,7 +20784,7 @@
       "commonNames": [
         "Nicotine"
       ],
-      "url": "https://psy.st/wiki/Nicotine",
+      "url": "https://psychonautwiki.org/wiki/Nicotine",
       "isApproved": true,
       "tolerance": {
         "full": "rapidly develops with prolonged and repeated use",
@@ -20955,7 +20955,7 @@
       "commonNames": [
         "Nifoxipam"
       ],
-      "url": "https://psy.st/wiki/Nifoxipam",
+      "url": "https://psychonautwiki.org/wiki/Nifoxipam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -21015,7 +21015,7 @@
         "N2O",
         "Nangs"
       ],
-      "url": "https://psy.st/wiki/Nitrous",
+      "url": "https://psychonautwiki.org/wiki/Nitrous",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21102,7 +21102,7 @@
     {
       "name": "NM-2-AI",
       "commonNames": [],
-      "url": "https://psy.st/wiki/NM-2-AI",
+      "url": "https://psychonautwiki.org/wiki/NM-2-AI",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21172,7 +21172,7 @@
       "commonNames": [
         "O-Desmethyltramadol"
       ],
-      "url": "https://psy.st/wiki/O-Desmethyltramadol",
+      "url": "https://psychonautwiki.org/wiki/O-Desmethyltramadol",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21347,7 +21347,7 @@
         "O-PCE",
         "Eticyclidone"
       ],
-      "url": "https://psy.st/wiki/O-PCE",
+      "url": "https://psychonautwiki.org/wiki/O-PCE",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21443,7 +21443,7 @@
         "GVS-111",
         "Omberacetam"
       ],
-      "url": "https://psy.st/wiki/Omberacetam",
+      "url": "https://psychonautwiki.org/wiki/Omberacetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops over several weeks of prolonged and repeated use",
@@ -21520,7 +21520,7 @@
         "Serax",
         "Ceresta"
       ],
-      "url": "https://psy.st/wiki/Oxazepam",
+      "url": "https://psychonautwiki.org/wiki/Oxazepam",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [
@@ -21591,7 +21591,7 @@
       "commonNames": [
         "Oxiracetam"
       ],
-      "url": "https://psy.st/wiki/Oxiracetam",
+      "url": "https://psychonautwiki.org/wiki/Oxiracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21656,7 +21656,7 @@
         "Percodan",
         "Percocet"
       ],
-      "url": "https://psy.st/wiki/Oxycodone",
+      "url": "https://psychonautwiki.org/wiki/Oxycodone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -21764,7 +21764,7 @@
       "commonNames": [
         "Opana"
       ],
-      "url": "https://psy.st/wiki/Oxymorphone",
+      "url": "https://psychonautwiki.org/wiki/Oxymorphone",
       "isApproved": true,
       "crossTolerances": [
         "opioids"
@@ -21826,7 +21826,7 @@
       "commonNames": [
         "PARGY-LAD"
       ],
-      "url": "https://psy.st/wiki/PARGY-LAD",
+      "url": "https://psychonautwiki.org/wiki/PARGY-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -21888,7 +21888,7 @@
         "PCE",
         "Eticyclidine"
       ],
-      "url": "https://psy.st/wiki/PCE",
+      "url": "https://psychonautwiki.org/wiki/PCE",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -22059,7 +22059,7 @@
         "Tic Tac",
         "Zoom"
       ],
-      "url": "https://psy.st/wiki/PCP",
+      "url": "https://psychonautwiki.org/wiki/PCP",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -22239,7 +22239,7 @@
         "Pentedrone",
         "Drone"
       ],
-      "url": "https://psy.st/wiki/Pentedrone",
+      "url": "https://psychonautwiki.org/wiki/Pentedrone",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -22364,7 +22364,7 @@
         "pentobarbitone",
         "Nembutal"
       ],
-      "url": "https://psy.st/wiki/Pentobarbital",
+      "url": "https://psychonautwiki.org/wiki/Pentobarbital",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "extremely physically and psychologically addictive",
@@ -22427,7 +22427,7 @@
         "Dolantin",
         "Dolcontral"
       ],
-      "url": "https://psy.st/wiki/Pethidine",
+      "url": "https://psychonautwiki.org/wiki/Pethidine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -22508,7 +22508,7 @@
     {
       "name": "Phenazepam",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Phenazepam",
+      "url": "https://psychonautwiki.org/wiki/Phenazepam",
       "isApproved": false,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -22576,7 +22576,7 @@
         "Phenybut",
         "PhGABA"
       ],
-      "url": "https://psy.st/wiki/Phenibut",
+      "url": "https://psychonautwiki.org/wiki/Phenibut",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -22651,7 +22651,7 @@
         "Luminal",
         "Phenobarb"
       ],
-      "url": "https://psy.st/wiki/Phenobarbital",
+      "url": "https://psychonautwiki.org/wiki/Phenobarbital",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "extremely physically and psychologically addictive",
@@ -22717,7 +22717,7 @@
         "Phenotropil",
         "Carphedon"
       ],
-      "url": "https://psy.st/wiki/Phenylpiracetam",
+      "url": "https://psychonautwiki.org/wiki/Phenylpiracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -22771,7 +22771,7 @@
       "commonNames": [
         "Piracetam"
       ],
-      "url": "https://psy.st/wiki/Piracetam",
+      "url": "https://psychonautwiki.org/wiki/Piracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -22820,7 +22820,7 @@
       "commonNames": [
         "PMA"
       ],
-      "url": "https://psy.st/wiki/PMA",
+      "url": "https://psychonautwiki.org/wiki/PMA",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [
@@ -22878,7 +22878,7 @@
       "commonNames": [
         "PMMA"
       ],
-      "url": "https://psy.st/wiki/PMMA",
+      "url": "https://psychonautwiki.org/wiki/PMMA",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [
@@ -22902,7 +22902,7 @@
     {
       "name": "Poppers",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Poppers",
+      "url": "https://psychonautwiki.org/wiki/Poppers",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -22927,7 +22927,7 @@
       "commonNames": [
         "Pramiracetam"
       ],
-      "url": "https://psy.st/wiki/Pramiracetam",
+      "url": "https://psychonautwiki.org/wiki/Pramiracetam",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -22980,7 +22980,7 @@
         "Lyrica",
         "Nervalin"
       ],
-      "url": "https://psy.st/wiki/Pregabalin",
+      "url": "https://psychonautwiki.org/wiki/Pregabalin",
       "isApproved": true,
       "tolerance": {
         "full": "within several months of continuous use",
@@ -23101,7 +23101,7 @@
       "commonNames": [
         "PRO-LAD"
       ],
-      "url": "https://psy.st/wiki/PRO-LAD",
+      "url": "https://psychonautwiki.org/wiki/PRO-LAD",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -23168,7 +23168,7 @@
         "Stemetil",
         "Phenotil"
       ],
-      "url": "https://psy.st/wiki/Prochlorperazine",
+      "url": "https://psychonautwiki.org/wiki/Prochlorperazine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -23203,7 +23203,7 @@
     {
       "name": "Progesterone",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Progesterone",
+      "url": "https://psychonautwiki.org/wiki/Progesterone",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -23267,7 +23267,7 @@
       "commonNames": [
         "Prolintane"
       ],
-      "url": "https://psy.st/wiki/Prolintane",
+      "url": "https://psychonautwiki.org/wiki/Prolintane",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -23347,7 +23347,7 @@
         "Phenergan",
         "Lergigan"
       ],
-      "url": "https://psy.st/wiki/Promethazine",
+      "url": "https://psychonautwiki.org/wiki/Promethazine",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -23407,7 +23407,7 @@
         "Propylhexedrine",
         "Benzedrex"
       ],
-      "url": "https://psy.st/wiki/Propylhexedrine",
+      "url": "https://psychonautwiki.org/wiki/Propylhexedrine",
       "isApproved": true,
       "tolerance": {
         "full": "rapidly develops with prolonged and repeated use",
@@ -23495,7 +23495,7 @@
       "commonNames": [
         "Proscaline"
       ],
-      "url": "https://psy.st/wiki/Proscaline",
+      "url": "https://psychonautwiki.org/wiki/Proscaline",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -23546,7 +23546,7 @@
         "4-HO-DMT",
         "4-OH-DMT"
       ],
-      "url": "https://psy.st/wiki/Psilocin",
+      "url": "https://psychonautwiki.org/wiki/Psilocin",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -23623,7 +23623,7 @@
         "Shrooms",
         "4-PO-DMT"
       ],
-      "url": "https://psy.st/wiki/Psilocybin_mushrooms",
+      "url": "https://psychonautwiki.org/wiki/Psilocybin_mushrooms",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -23720,7 +23720,7 @@
       "commonNames": [
         "Pyrazolam"
       ],
-      "url": "https://psy.st/wiki/Pyrazolam",
+      "url": "https://psychonautwiki.org/wiki/Pyrazolam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -23773,7 +23773,7 @@
         "Quetiapine",
         "Seroquel"
       ],
-      "url": "https://psy.st/wiki/Quetiapine",
+      "url": "https://psychonautwiki.org/wiki/Quetiapine",
       "isApproved": true,
       "tolerance": {
         "full": "within a week of continuous use",
@@ -23849,7 +23849,7 @@
       "commonNames": [
         "Risperdal"
       ],
-      "url": "https://psy.st/wiki/Risperidone",
+      "url": "https://psychonautwiki.org/wiki/Risperidone",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -23896,7 +23896,7 @@
       "commonNames": [
         "PCPy"
       ],
-      "url": "https://psy.st/wiki/Rolicyclidine",
+      "url": "https://psychonautwiki.org/wiki/Rolicyclidine",
       "isApproved": false,
       "tolerance": {
         "full": "with prolonged and repeated use",
@@ -24082,7 +24082,7 @@
         "Seer's Sage",
         "Sally"
       ],
-      "url": "https://psy.st/wiki/Salvinorin_A",
+      "url": "https://psychonautwiki.org/wiki/Salvinorin_A",
       "isApproved": true,
       "crossTolerances": [
         "hallucinogen"
@@ -24149,7 +24149,7 @@
         "SAM-e",
         "Methylguanidoacetic Acid"
       ],
-      "url": "https://psy.st/wiki/SAM-e",
+      "url": "https://psychonautwiki.org/wiki/SAM-e",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "not habit-forming with a low potential for abuse",
@@ -24184,7 +24184,7 @@
         "Secobarbitone",
         "Seconal"
       ],
-      "url": "https://psy.st/wiki/Secobarbital",
+      "url": "https://psychonautwiki.org/wiki/Secobarbital",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "extremely physically and psychologically addictive",
@@ -24242,7 +24242,7 @@
       "commonNames": [
         "STS-135"
       ],
-      "url": "https://psy.st/wiki/STS-135",
+      "url": "https://psychonautwiki.org/wiki/STS-135",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -24334,7 +24334,7 @@
         "Sufenta",
         "Chronogesic"
       ],
-      "url": "https://psy.st/wiki/Sufentanil",
+      "url": "https://psychonautwiki.org/wiki/Sufentanil",
       "isApproved": true,
       "crossTolerances": [],
       "toxicities": [],
@@ -24403,7 +24403,7 @@
         "Yantil",
         "Yantil SR"
       ],
-      "url": "https://psy.st/wiki/Tapentadol",
+      "url": "https://psychonautwiki.org/wiki/Tapentadol",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -24498,7 +24498,7 @@
         "Restoril",
         "Normison"
       ],
-      "url": "https://psy.st/wiki/Temazepam",
+      "url": "https://psychonautwiki.org/wiki/Temazepam",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -24556,7 +24556,7 @@
         "Temurin",
         "Temorine"
       ],
-      "url": "https://psy.st/wiki/Theacrine",
+      "url": "https://psychonautwiki.org/wiki/Theacrine",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -24626,7 +24626,7 @@
         "L-Theanine",
         "L-γ-glutamylethylamide and N5-ethyl-L-glutamine"
       ],
-      "url": "https://psy.st/wiki/Theanine",
+      "url": "https://psychonautwiki.org/wiki/Theanine",
       "isApproved": true,
       "tolerance": {
         "full": "after prolonged and repeated usage",
@@ -24678,7 +24678,7 @@
       "commonNames": [
         "THJ-018"
       ],
-      "url": "https://psy.st/wiki/THJ-018",
+      "url": "https://psychonautwiki.org/wiki/THJ-018",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -24762,7 +24762,7 @@
       "commonNames": [
         "THJ-2201"
       ],
-      "url": "https://psy.st/wiki/THJ-2201",
+      "url": "https://psychonautwiki.org/wiki/THJ-2201",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -24849,7 +24849,7 @@
         "Coaxil",
         "Tatinol"
       ],
-      "url": "https://psy.st/wiki/Tianeptine",
+      "url": "https://psychonautwiki.org/wiki/Tianeptine",
       "isApproved": true,
       "tolerance": {
         "full": "with prolonged use",
@@ -24923,7 +24923,7 @@
         "Valoron",
         "Generika"
       ],
-      "url": "https://psy.st/wiki/Tilidin",
+      "url": "https://psychonautwiki.org/wiki/Tilidin",
       "isApproved": false,
       "crossTolerances": [],
       "toxicities": [],
@@ -24999,7 +24999,7 @@
       "commonNames": [
         "TMA-2"
       ],
-      "url": "https://psy.st/wiki/TMA-2",
+      "url": "https://psychonautwiki.org/wiki/TMA-2",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -25072,7 +25072,7 @@
       "commonNames": [
         "TMA-6"
       ],
-      "url": "https://psy.st/wiki/TMA-6",
+      "url": "https://psychonautwiki.org/wiki/TMA-6",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -25160,7 +25160,7 @@
         "Tramacur",
         "Tramundin"
       ],
-      "url": "https://psy.st/wiki/Tramadol",
+      "url": "https://psychonautwiki.org/wiki/Tramadol",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -25267,7 +25267,7 @@
     {
       "name": "Triazolam",
       "commonNames": [],
-      "url": "https://psy.st/wiki/Triazolam",
+      "url": "https://psychonautwiki.org/wiki/Triazolam",
       "isApproved": false,
       "tolerance": {
         "full": "within a couple of days of continuous use",
@@ -25335,7 +25335,7 @@
         "L-Tyrosine",
         "4-Hydroxyphenylalanine"
       ],
-      "url": "https://psy.st/wiki/Tyrosine",
+      "url": "https://psychonautwiki.org/wiki/Tyrosine",
       "isApproved": true,
       "tolerance": {
         "full": "after repeated and frequent usage",
@@ -25412,7 +25412,7 @@
       "commonNames": [
         "U-47700"
       ],
-      "url": "https://psy.st/wiki/U-47700",
+      "url": "https://psychonautwiki.org/wiki/U-47700",
       "isApproved": true,
       "tolerance": {
         "full": "develops with prolonged and repeated use",
@@ -25504,7 +25504,7 @@
         "Edluar",
         "Zolpimist"
       ],
-      "url": "https://psy.st/wiki/Zolpidem",
+      "url": "https://psychonautwiki.org/wiki/Zolpidem",
       "isApproved": true,
       "crossTolerances": [],
       "addictionPotential": "moderately addictive",
@@ -25570,7 +25570,7 @@
         "Zimovane",
         "Imovane"
       ],
-      "url": "https://psy.st/wiki/Zopiclone",
+      "url": "https://psychonautwiki.org/wiki/Zopiclone",
       "isApproved": true,
       "tolerance": {
         "full": "within a couple of weeks of daily use",
@@ -25629,7 +25629,7 @@
         "αMT",
         "Indopan"
       ],
-      "url": "https://psy.st/wiki/%CE%91MT",
+      "url": "https://psychonautwiki.org/wiki/%CE%91MT",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
@@ -25716,7 +25716,7 @@
         "beta-keto 2C-B",
         "bk-2C-B"
       ],
-      "url": "https://psy.st/wiki/%CE%92k-2C-B",
+      "url": "https://psychonautwiki.org/wiki/%CE%92k-2C-B",
       "isApproved": true,
       "tolerance": {
         "full": "almost immediately after ingestion",
