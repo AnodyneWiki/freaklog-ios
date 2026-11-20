@@ -15,6 +15,7 @@ struct SettingsScreen: View {
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = true
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
+    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     private var lockTimeOption: LockTimeOption {
         LockTimeOption(rawValue: lockTimeOptionString) ?? LockTimeOption.after5Minutes
@@ -23,12 +24,6 @@ struct SettingsScreen: View {
     private func setLockTimeOption(option: LockTimeOption) {
         lockTimeOptionString = option.rawValue
     }
-    
-    private var fabButtonPosition: FabButtonPosition {
-        FabButtonPosition(rawValue: fabButtonPositionString) ?? .center
-    }
-
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
 
     var body: some View {
         let timeOptionBinding = Binding {
@@ -62,11 +57,11 @@ struct SettingsScreen: View {
                     await WebhookManager.shared.deleteAllPresetsAndMessages()
                 }
             },
-            isShowingToast: $viewModel.isShowingToast,
-            isSuccessToast: $viewModel.isShowingSuccessToast,
-            toastMessage: $viewModel.toastMessage,
             lockTimeOption: timeOptionBinding
         )
+        .onAppear {
+            viewModel.toastViewModel = toastViewModel
+        }
     }
 }
 
@@ -88,9 +83,6 @@ struct SettingsContent: View {
     let exportData: () -> Void
     let importData: (Data) -> Void
     let deleteEverything: () -> Void
-    @Binding var isShowingToast: Bool
-    @Binding var isSuccessToast: Bool
-    @Binding var toastMessage: String
     @Binding var lockTimeOption: LockTimeOption
 
     @State private var isShowingDeleteConfirmation = false
@@ -262,13 +254,6 @@ struct SettingsContent: View {
             }
         }
         .navigationTitle("Settings")
-        .toast(isPresenting: $isShowingToast) {
-            AlertToast(
-                displayMode: .alert,
-                type: isSuccessToast ? .complete(.green) : .error(.red),
-                title: toastMessage
-            )
-        }
     }
 
     private var eye: some View {
@@ -313,9 +298,6 @@ struct SettingsContent: View {
         exportData: {},
         importData: { _ in },
         deleteEverything: {},
-        isShowingToast: .constant(false),
-        isSuccessToast: .constant(false),
-        toastMessage: .constant(""),
         lockTimeOption: .constant(.after5Minutes)
     )
     .accentColor(Color.blue)

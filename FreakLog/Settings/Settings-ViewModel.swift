@@ -6,9 +6,7 @@ extension SettingsScreen {
     class ViewModel: ObservableObject {
         @Published var isExporting = false
         @Published var journalFile = JournalFile(experiences: [], customSubstances: [], customUnits: [])
-        @Published var isShowingToast = false
-        @Published var isShowingSuccessToast = false
-        @Published var toastMessage = ""
+        weak var toastViewModel: ToastViewModel?
 
         func exportData() {
             let pc = PersistenceController.shared
@@ -157,6 +155,7 @@ extension SettingsScreen {
                                 newCustom.explanation = customCodable.description
                                 for roaCodable in customCodable.roas {
                                     let newRoa = CustomRoa(context: context)
+                                    newRoa.substanceName = customCodable.name
                                     roaCodable.apply(to: newRoa)
                                     newRoa.customSubstance = newCustom
                                 }
@@ -367,38 +366,22 @@ extension SettingsScreen {
         func deleteEverything() {
             Task {
                 do {
-                    let allIngestions = PersistenceController.shared.getAllIngestions()
-
-                    await withTaskGroup(of: Void.self) { group in
-                        for ingestion in allIngestions {
-                            group.addTask {
-                                await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
-                            }
-                        }
-                    }
+                    await WebhookManager.shared.deleteWebhookMessages(for: PersistenceController.shared.getAllIngestions())
 
                     try PersistenceController.shared.deleteEverything()
-                    await MainActor.run {
-                        showSuccessToast(message: "Delete Successful")
-                    }
+                    showSuccessToast(message: "Delete Successful")
                 } catch {
-                    await MainActor.run {
-                        showErrorToast(message: "Delete Failed")
-                    }
+                    showErrorToast(message: "Delete Failed")
                 }
             }
         }
 
         private func showSuccessToast(message: String) {
-            toastMessage = message
-            isShowingToast = true
-            isShowingSuccessToast = true
+            toastViewModel?.showSuccessToast(message: message)
         }
 
         private func showErrorToast(message: String) {
-            toastMessage = message
-            isShowingToast = true
-            isShowingSuccessToast = false
+            toastViewModel?.showErrorToast(message: message)
         }
     }
 }

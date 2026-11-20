@@ -262,7 +262,7 @@ struct FinishIngestionScreen: View {
     }
 
     func selectExperienceBasedOnCurrentTime() {
-        experiencesWithinLargerRange = FinishIngestionScreen.getExperiences(near: selectedTime)
+        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: selectedTime)
         if wantsToForceNewExperience {
             selectedExperience = nil
         } else {
@@ -270,10 +270,6 @@ struct FinishIngestionScreen: View {
                 from: experiencesWithinLargerRange,
                 date: selectedTime)
         }
-    }
-
-    static func getExperiences(near date: Date) -> [Experience] {
-        PersistenceController.shared.getExperiences(near: date)
     }
 
     func initializeColorCompanionAndNote() {
@@ -337,20 +333,10 @@ struct FinishIngestionScreen: View {
                     if existingExperience.isCurrent, isActivityActive {
                         Task {
                             await ActivityManager.shared.startOrUpdateActivity(
-                                substanceGroups: getSubstanceIngestionGroups(ingestions: existingExperience.myIngestionsSorted),
-                                everythingForEachRating: existingExperience.ratingsWithTimeSorted.map { shulgin in
-                                    EverythingForOneRating(
-                                        time: shulgin.timeUnwrapped,
-                                        option: shulgin.optionUnwrapped)
-                                },
-                                everythingForEachTimedNote: existingExperience.timedNotesSorted.filter { $0.isPartOfTimeline }
-                                    .map { timedNote in
-                                        EverythingForOneTimedNote(
-                                            time: timedNote.timeUnwrapped,
-                                            color: timedNote.color)
-                                    },
-                                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                                existingExperience.liveActivityState(
+                                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+                                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                                )
                             )
                         }
                     }
@@ -373,11 +359,10 @@ struct FinishIngestionScreen: View {
                     if newExperience.isCurrent, self.wantsToStartLiveActivity {
                         Task {
                             await ActivityManager.shared.startOrUpdateActivity(
-                                substanceGroups: getSubstanceIngestionGroups(ingestions: newExperience.myIngestionsSorted),
-                                everythingForEachRating: [],
-                                everythingForEachTimedNote: [],
-                                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                                newExperience.liveActivityState(
+                                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+                                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                                )
                             )
                         }
                     }
@@ -500,31 +485,7 @@ struct FinishIngestionScreen: View {
         #if !targetEnvironment(simulator)
         generator.notificationOccurred(.error)
         #endif
-    }
-
-    static func updateIngestionWithWebhookMessageId(ingestion: Ingestion, messageId: String) async throws {
-        let ingestionObjectID = ingestion.objectID
-        let context = PersistenceController.shared.viewContext
-        try await context.perform {
-            if let ingestionInContext = context.object(with: ingestionObjectID) as? Ingestion {
-                ingestionInContext.webhookMessageId = messageId
-                try context.save()
-            }
-        }
-    }
-
-    static func deleteWebhookMessages(for ingestions: [Ingestion]) async {
-        await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
-    }
-
-    static func deleteWebhookMessageIfNeeded(for ingestion: Ingestion) async {
-        await WebhookManager.shared.deleteWebhookMessages(for: [ingestion])
-    }
-
-    static func deleteWebhookMessageIfNeeded(forID ingestionID: NSManagedObjectID) async {
-        await WebhookManager.shared.deleteWebhookMessages(forIngestionObjectIDs: [ingestionID])
-    }
-}
+    }}
 
 // swiftlint:enable type_body_length function_body_length file_length
 

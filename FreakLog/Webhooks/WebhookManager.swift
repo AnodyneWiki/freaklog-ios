@@ -21,6 +21,14 @@ final class WebhookManager: Sendable {
         let template: String
         let isHyperlinked: Bool
         let substanceInfoUrl: String
+
+        static var current: WebhookSettingsSnapshot {
+            WebhookSettingsSnapshot(
+                template: UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate,
+                isHyperlinked: UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey),
+                substanceInfoUrl: UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
+            )
+        }
     }
 
     // MARK: - Sending Webhooks
@@ -28,22 +36,11 @@ final class WebhookManager: Sendable {
     func sendWebhooks(
         ingestionObjectID: NSManagedObjectID,
         presetObjectIDs: [NSManagedObjectID],
-        dataSnapshot: WebhookDataSnapshot,
-        settingsSnapshot: WebhookSettingsSnapshot? = nil
+        dataSnapshot: WebhookDataSnapshot
     ) {
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-
-            let settings: WebhookSettingsSnapshot
-            if let provided = settingsSnapshot {
-                settings = provided
-            } else {
-                settings = WebhookSettingsSnapshot(
-                    template: UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate,
-                    isHyperlinked: UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey),
-                    substanceInfoUrl: UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
-                )
-            }
+            let settings = WebhookSettingsSnapshot.current
 
             struct SendRequest: Sendable {
                 let presetObjectID: NSManagedObjectID
@@ -145,11 +142,7 @@ final class WebhookManager: Sendable {
 
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-            let settings = WebhookSettingsSnapshot(
-                template: UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate,
-                isHyperlinked: UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey),
-                substanceInfoUrl: UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
-            )
+            let settings = WebhookSettingsSnapshot.current
 
             let requests: [(url: String, messageId: String)] = await container.performBackgroundTask { bgContext in
                 messageInfos.compactMap { info in
@@ -233,31 +226,26 @@ final class WebhookManager: Sendable {
 
     func deleteWebhookMessages(forIngestionObjectIDs ingestionObjectIDs: [NSManagedObjectID]) async {
         guard !ingestionObjectIDs.isEmpty else { return }
-        Task.detached(priority: .background) {
-            let container = PersistenceController.shared.container
-            let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-                ingestionObjectIDs.flatMap { ingestionID -> [DeletionTarget] in
-                    guard let ingestion = try? bgContext.existingObject(with: ingestionID) as? Ingestion else { return [] }
-                    return ingestion.webhookMessagesSorted.compactMap { message in
-                        guard let preset = message.webhookPreset,
-                              let messageId = message.messageId,
-                              let url = preset.url, !url.isEmpty
-                        else { return nil }
-                        return DeletionTarget(messageObjectID: message.objectID, url: url, messageId: messageId)
-                    }
+        let container = PersistenceController.shared.container
+        let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
+            ingestionObjectIDs.flatMap { ingestionID -> [DeletionTarget] in
+                guard let ingestion = try? bgContext.existingObject(with: ingestionID) as? Ingestion else { return [] }
+                return ingestion.webhookMessagesSorted.compactMap { message in
+                    guard let preset = message.webhookPreset,
+                          let messageId = message.messageId,
+                          let url = preset.url, !url.isEmpty
+                    else { return nil }
+                    return DeletionTarget(messageObjectID: message.objectID, url: url, messageId: messageId)
                 }
             }
-            await self.executeDeletions(targets, in: container)
         }
+        await executeDeletions(targets, in: container)
     }
 
     func deleteMessages(for preset: WebhookPreset) async {
-        let presetObjectID = preset.objectID
-        Task.detached(priority: .background) {
-            let container = PersistenceController.shared.container
-            let targets = await self.buildPresetDeletionTargets(presetID: presetObjectID, in: container)
-            await self.executeDeletions(targets, in: container)
-        }
+        let container = PersistenceController.shared.container
+        let targets = await buildPresetDeletionTargets(presetID: preset.objectID, in: container)
+        await executeDeletions(targets, in: container)
     }
 
     func deleteAllPresetsAndMessages() async {
@@ -276,10 +264,8 @@ final class WebhookManager: Sendable {
     }
 
     private func deleteMessagesAndPreset(presetID: NSManagedObjectID) async {
-        Task.detached(priority: .background) {
-            let container = PersistenceController.shared.container
-            let targets = await self.buildPresetDeletionTargets(presetID: presetID, in: container)
-            await self.executeDeletions(targets, in: container, also: presetID)
-        }
+        let container = PersistenceController.shared.container
+        let targets = await buildPresetDeletionTargets(presetID: presetID, in: container)
+        await executeDeletions(targets, in: container, also: presetID)
     }
 }

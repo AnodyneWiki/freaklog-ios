@@ -34,36 +34,13 @@ struct ExperienceRow: View {
                 Button(role: .destructive) {
                     Task {
                         if #available(iOS 16.2, *) {
-                            if !ProcessInfo.processInfo.isiOSAppOnMac, experience.isCurrent {
+                            if experience.isCurrent {
                                 await ActivityManager.shared.stopActivity(
-                                    substanceGroups: getSubstanceIngestionGroups(ingestions: experience.ingestionsSorted),
-                                    everythingForEachRating: experience.ratingsWithTimeSorted.map { shulgin in
-                                        EverythingForOneRating(
-                                            time: shulgin.timeUnwrapped,
-                                            option: shulgin.optionUnwrapped
-                                        )
-                                    },
-                                    everythingForEachTimedNote: experience.timedNotesSorted.filter { $0.isPartOfTimeline }.map { timedNote in
-                                        EverythingForOneTimedNote(
-                                            time: timedNote.timeUnwrapped,
-                                            color: timedNote.color
-                                        )
-                                    },
-                                    areRedosesDrawnIndividually: false,
-                                    areSubstanceHeightsIndependent: false
+                                    experience.liveActivityState(areRedosesDrawnIndividually: false, areSubstanceHeightsIndependent: false)
                                 )
                             }
                         }
-                        let ingestions = experience.ingestions?.allObjects as? [Ingestion] ?? []
-                        let identifiers = ingestions.compactMap(\.identifier)
-                        await WebhookManager.shared.deleteWebhookMessages(for: ingestions)
-                        for id in identifiers {
-                            await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
-                        }
-                        await MainActor.run {
-                            PersistenceController.shared.viewContext.delete(experience)
-                            PersistenceController.shared.saveViewContext()
-                        }
+                        await IngestionDeletion.delete(experience: experience)
                     }
                 } label: {
                     Label("Delete", systemImage: "trash.fill")

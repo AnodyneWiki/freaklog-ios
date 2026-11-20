@@ -2,11 +2,11 @@ import SwiftUI
 
 struct ExperienceLogic {
     static func myIngestions(from ingestions: [Ingestion]) -> [Ingestion] {
-        ingestions.filter { $0.consumerNameUnwrapped.isEmpty }
+        ingestions.filter(\.isMine)
     }
     
     static func otherIngestions(from ingestions: [Ingestion]) -> [Ingestion] {
-        ingestions.filter { !$0.consumerNameUnwrapped.isEmpty }
+        ingestions.filter { !$0.isMine }
     }
     
     static func substancesUsed(from ingestions: [Ingestion]) -> [Substance] {
@@ -17,7 +17,7 @@ struct ExperienceLogic {
     }
     
     static func interactions(from ingestions: [Ingestion]) -> [Interaction] {
-        let substanceNames = ingestions.filter({ $0.consumerNameUnwrapped.isEmpty }).map { $0.substanceNameUnwrapped }.uniqued()
+        let substanceNames = myIngestions(from: ingestions).map(\.substanceNameUnwrapped).uniqued()
         var interactions: [Interaction] = []
         for subIndex in 0 ..< substanceNames.count {
             let name = substanceNames[subIndex]
@@ -73,9 +73,9 @@ struct ExperienceLogic {
     static func chartData(for ingestions: [Ingestion]) -> ChartData {
         let lastIngestionDate = ingestions.last?.timeUnwrapped ?? Date.now
         let threeMonthsBefore = lastIngestionDate.addingTimeInterval(-3 * 30 * 24 * 60 * 60)
-        let ingestionsForChart = PersistenceController.shared.getIngestionsBetween(startDate: threeMonthsBefore, endDate: lastIngestionDate).filter { ing in
-            ing.consumerNameUnwrapped.isEmpty
-        }
+        let ingestionsForChart = myIngestions(
+            from: PersistenceController.shared.getIngestionsBetween(startDate: threeMonthsBefore, endDate: lastIngestionDate)
+        )
         let substanceDays = ingestionsForChart.map { ing in
             SubstanceAndDay(substanceName: ing.substanceNameUnwrapped, day: ing.timeUnwrapped)
         }

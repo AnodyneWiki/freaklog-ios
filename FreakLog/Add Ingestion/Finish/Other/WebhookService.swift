@@ -41,39 +41,6 @@ struct WebhookService {
         )
     }
 
-    static func editWebhook(
-        url: String,
-        messageId: String,
-        user: String,
-        substance: String,
-        dose: Double,
-        units: String,
-        isEstimate: Bool,
-        route: String,
-        site: String,
-        note: String,
-        template: String,
-        isHyperlinked: Bool,
-        substanceInfoUrl: String
-    ) async -> WebhookResult {
-        await sendWebhookWithRetry(
-            url: url,
-            user: user,
-            substance: substance,
-            dose: dose,
-            units: units,
-            isEstimate: isEstimate,
-            route: route,
-            site: site,
-            note: note,
-            template: template,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl,
-            isEdit: true,
-            messageId: messageId
-        )
-    }
-
     static func deleteWebhookMessage(url: String, messageId: String) async -> Bool {
         guard let webhookUrl = URL(string: url) else { return false }
 
@@ -264,79 +231,6 @@ struct WebhookService {
 }
 
 extension WebhookService {
-    static func sendWebhook(
-        for preset: WebhookPreset,
-        user: String,
-        substance: String,
-        dose: Double,
-        units: String,
-        isEstimate: Bool,
-        route: String,
-        site: String,
-        note: String
-    ) async -> WebhookResult {
-        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
-        let effectiveUser = user.isEmpty ? globalUsername : user
-
-        let template = UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? defaultTemplate
-        let isHyperlinked = UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey)
-        let substanceInfoUrl = UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
-
-        return await sendWebhookWithRetry(
-            url: preset.urlUnwrapped,
-            user: effectiveUser,
-            substance: substance,
-            dose: dose,
-            units: units,
-            isEstimate: isEstimate,
-            route: route,
-            site: site,
-            note: note,
-            template: template,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl,
-            isEdit: false,
-            messageId: nil
-        )
-    }
-
-    static func editWebhook(
-        for preset: WebhookPreset,
-        messageId: String,
-        user: String,
-        substance: String,
-        dose: Double,
-        units: String,
-        isEstimate: Bool,
-        route: String,
-        site: String,
-        note: String
-    ) async -> WebhookResult {
-        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
-        let effectiveUser = user.isEmpty ? globalUsername : user
-
-        let template = UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? defaultTemplate
-        let isHyperlinked = UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey)
-        let substanceInfoUrl = UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
-
-        return await sendWebhookWithRetry(
-            url: preset.urlUnwrapped,
-            user: effectiveUser,
-            substance: substance,
-            dose: dose,
-            units: units,
-            isEstimate: isEstimate,
-            route: route,
-            site: site,
-            note: note,
-            template: template,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl,
-            isEdit: true,
-            messageId: messageId
-        )
-    }
-
     static func deleteWebhookMessage(for preset: WebhookPreset, messageId: String) async -> Bool {
         guard !messageId.isEmpty else { return false }
         return await deleteWebhookMessage(url: preset.urlUnwrapped, messageId: messageId)

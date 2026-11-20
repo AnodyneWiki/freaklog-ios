@@ -26,19 +26,11 @@ extension Experience: Comparable {
     }
 
     var creationDateUnwrappedString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM y"
-        return formatter.string(from: creationDateUnwrapped)
+        creationDateUnwrapped.asDateString
     }
 
     var myIngestionsSorted: [Ingestion] {
-        ingestionsSorted.filter { ing in
-            if let consumerName = ing.consumerName {
-                return consumerName.trimmingCharacters(in: .whitespaces).isEmpty
-            } else {
-                return true
-            }
-        }
+        ExperienceLogic.myIngestions(from: ingestionsSorted)
     }
 
     var ingestionsSorted: [Ingestion] {
@@ -50,13 +42,7 @@ extension Experience: Comparable {
     }
 
     var consumerNames: [String] {
-        ingestionsSorted.compactMap { ing in
-            if let consumerName = ing.consumerName, !consumerName.trimmingCharacters(in: .whitespaces).isEmpty {
-                return consumerName
-            } else {
-                return nil
-            }
-        }.uniqued()
+        otherIngestions.map(\.consumerNameUnwrapped).uniqued()
     }
 
     var ratingsUnwrapped: [ShulginRating] {
@@ -115,17 +101,7 @@ extension Experience: Comparable {
     }
 
     var otherIngestions: [Ingestion] {
-        let mine = Set(myIngestionsSorted)
-        return ingestionsSorted.filter { !mine.contains($0) }
-    }
-
-    var myCumulativeDoses: [CumulativeDose] {
-        let ingestionsBySubstance = Dictionary(grouping: myIngestionsSorted, by: { $0.substanceNameUnwrapped })
-        return ingestionsBySubstance.compactMap { (substanceName: String, ingestions: [Ingestion]) in
-            guard ingestions.count > 1 else { return nil }
-            guard let color = ingestions.first?.substanceColor else { return nil }
-            return CumulativeDose(ingestionsForSubstance: ingestions, substanceName: substanceName, substanceColor: color)
-        }
+        ExperienceLogic.otherIngestions(from: ingestionsSorted)
     }
 
     var interactions: [Interaction] {
@@ -142,8 +118,23 @@ extension Experience: Comparable {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) -> TimelineModel {
-        ExperienceLogic.timelineModel(
-            from: myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) },
+        liveActivityState(
+            hiddenIngestions: hiddenIngestions,
+            hiddenRatings: hiddenRatings,
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        ).timelineModel
+    }
+
+    // The user's own timeline, in the form sent to the live activity
+    func liveActivityState(
+        hiddenIngestions: [ObjectIdentifier] = [],
+        hiddenRatings: [ObjectIdentifier] = [],
+        areRedosesDrawnIndividually: Bool,
+        areSubstanceHeightsIndependent: Bool
+    ) -> TimelineWidgetAttributes.ContentState {
+        TimelineWidgetAttributes.ContentState(
+            substanceGroups: getSubstanceIngestionGroups(ingestions: myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
             everythingForEachRating: ratingsWithTimeSorted
                 .filter { !hiddenRatings.contains($0.id) }
                 .map { EverythingForOneRating(time: $0.timeUnwrapped, option: $0.optionUnwrapped) },
@@ -154,23 +145,17 @@ extension Experience: Comparable {
     }
 
     func getConsumers(hiddenIngestions: [ObjectIdentifier], areRedosesDrawnIndividually: Bool, areSubstanceHeightsIndependent: Bool) -> [ConsumerWithIngestions] {
-        let ingestionsByConsumer = Dictionary(grouping: otherIngestions, by: { $0.consumerName })
-        var consumers = [ConsumerWithIngestions]()
-        for (consumerName, ingestions) in ingestionsByConsumer {
-            if let consumerName, !consumerName.trimmingCharacters(in: .whitespaces).isEmpty {
-                let newConsumer = ConsumerWithIngestions(
-                    consumerName: consumerName,
-                    ingestionsSorted: ingestions.sorted(),
-                    timelineModel: ExperienceLogic.timelineModel(
-                        from: ingestions.filter { !hiddenIngestions.contains($0.id) },
-                        areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                        areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                    )
+        Dictionary(grouping: otherIngestions, by: \.consumerNameUnwrapped).map { consumerName, ingestions in
+            ConsumerWithIngestions(
+                consumerName: consumerName,
+                ingestionsSorted: ingestions.sorted(),
+                timelineModel: ExperienceLogic.timelineModel(
+                    from: ingestions.filter { !hiddenIngestions.contains($0.id) },
+                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
                 )
-                consumers.append(newConsumer)
-            }
-        }
-        return consumers.sorted()
+            )
+        }.sorted()
     }
 
     var chartData: ExperienceLogic.ChartData {

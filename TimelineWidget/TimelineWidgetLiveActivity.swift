@@ -5,13 +5,7 @@ import WidgetKit
 struct TimelineWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TimelineWidgetAttributes.self) { context in
-            let timelineModel = TimelineModel(
-                substanceGroups: context.state.substanceGroups,
-                everythingForEachRating: context.state.everythingForEachRating,
-                everythingForEachTimedNote: context.state.everythingForEachTimedNote,
-                areRedosesDrawnIndividually: context.state.areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: context.state.areSubstanceHeightsIndependent
-            )
+            let timelineModel = context.state.timelineModel
             VStack(spacing: 0) {
                 GeometryReader { geo in
                     EffectTimeline(
@@ -35,13 +29,7 @@ struct TimelineWidgetLiveActivity: Widget {
             .widgetURL(URL(string: openLatestExperience))
             .frame(height: 160) // in the documentation: https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities it says that truncation only happens if the height exceeds 160 points
         } dynamicIsland: { context in
-            let timelineModel = TimelineModel(
-                substanceGroups: context.state.substanceGroups,
-                everythingForEachRating: context.state.everythingForEachRating,
-                everythingForEachTimedNote: context.state.everythingForEachTimedNote,
-                areRedosesDrawnIndividually: context.state.areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: context.state.areSubstanceHeightsIndependent
-            )
+            let timelineModel = context.state.timelineModel
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
                     Text(timelineModel.startTime, style: .timer)

@@ -21,3 +21,15 @@ struct TimelineWidgetAttributes: ActivityAttributes {
     // Fixed non-changing properties about your activity go here!
     var name: String
 }
+
+extension TimelineWidgetAttributes.ContentState {
+    var timelineModel: TimelineModel {
+        TimelineModel(
+            substanceGroups: substanceGroups,
+            everythingForEachRating: everythingForEachRating,
+            everythingForEachTimedNote: everythingForEachTimedNote,
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
+    }
+}

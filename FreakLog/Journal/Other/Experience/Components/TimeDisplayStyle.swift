@@ -8,6 +8,17 @@ enum TimeDisplayStyle {
 enum SaveableTimeDisplayStyle: String, CaseIterable, Identifiable {
     case regular, relativeToNow, relativeToStart, between, auto
 
+    // `.auto` shows time relative to now while the experience is ongoing.
+    func resolved(isCurrent: Bool) -> TimeDisplayStyle {
+        switch self {
+        case .regular: .regular
+        case .relativeToNow: .relativeToNow
+        case .relativeToStart: .relativeToStart
+        case .between: .between
+        case .auto: isCurrent ? .relativeToNow : .regular
+        }
+    }
+
     var id: Self {
         self
     }

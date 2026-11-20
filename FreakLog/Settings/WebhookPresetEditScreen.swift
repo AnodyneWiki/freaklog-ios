@@ -120,9 +120,7 @@ struct EditWebhookPresetScreen: View {
     }
 
     private func sendTestMessage() async {
-        let template = UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate
-        let isHyperlinked = UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey)
-        let substanceInfoUrl = UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
+        let settings = WebhookManager.WebhookSettingsSnapshot.current
 
         _ = await WebhookService.sendWebhook(
             url: presetURL,
@@ -134,9 +132,9 @@ struct EditWebhookPresetScreen: View {
             route: "oral",
             site: "",
             note: "This is a test note.",
-            template: template,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl
+            template: settings.template,
+            isHyperlinked: settings.isHyperlinked,
+            substanceInfoUrl: settings.substanceInfoUrl
         )
     }
 }

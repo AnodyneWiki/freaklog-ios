@@ -33,6 +33,11 @@ extension Ingestion: Comparable {
         consumerName ?? ""
     }
 
+    // The user's own ingestion. Whitespace-only names also count as the user.
+    var isMine: Bool {
+        consumerNameUnwrapped.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     var doseUnwrapped: Double? {
         if dose == 0 {
             return nil
@@ -47,18 +52,6 @@ extension Ingestion: Comparable {
         } else {
             return estimatedDoseStandardDeviation
         }
-    }
-
-    private var lowerEstimate: Double? {
-        guard let doseUnwrapped else {return nil}
-        guard let estimatedDoseStandardDeviationUnwrapped else {return nil}
-        return doseUnwrapped - estimatedDoseStandardDeviationUnwrapped
-    }
-
-    private var higherEstimate: Double? {
-        guard let doseUnwrapped else {return nil}
-        guard let estimatedDoseStandardDeviationUnwrapped else {return nil}
-        return doseUnwrapped + estimatedDoseStandardDeviationUnwrapped
     }
 
     var pureSubstanceDose: Double? {

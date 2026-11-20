@@ -17,22 +17,7 @@ struct ExperienceScreen: View {
     }
 
     var timeDisplayStyle: TimeDisplayStyle {
-        switch saveableTimeDisplayStyle.wrappedValue {
-        case .regular:
-            return .regular
-        case .relativeToNow:
-            return .relativeToNow
-        case .relativeToStart:
-            return .relativeToStart
-        case .between:
-            return .between
-        case .auto:
-            if experience.isCurrent {
-                return .relativeToNow
-            } else {
-                return .regular
-            }
-        }
+        saveableTimeDisplayStyle.wrappedValue.resolved(isCurrent: experience.isCurrent)
     }
 
     @State private var isShowingDeleteConfirmation = false
@@ -45,7 +30,7 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
-    @AppStorage("isOpenLastExperienceSiriTipVisible") private var isSiriTipVisible = false
+    @AppStorage(PersistenceController.isOpenLastExperienceSiriTipVisibleKey) private var isSiriTipVisible = false
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
 
     var fabAlignment: Alignment {
@@ -102,39 +87,28 @@ struct ExperienceScreen: View {
         }
     }
 
+    private var liveActivityState: TimelineWidgetAttributes.ContentState {
+        experience.liveActivityState(
+            hiddenIngestions: hiddenIngestions,
+            hiddenRatings: hiddenRatings,
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
+    }
+
     @available(iOS 16.2, *)
     func startOrUpdateLiveActivity() {
-        guard !ProcessInfo.processInfo.isiOSAppOnMac else { return }
+        let state = liveActivityState
         Task {
-            await ActivityManager.shared.startOrUpdateActivity(
-                substanceGroups: getSubstanceIngestionGroups(ingestions: experience.myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
-                everythingForEachRating: experience.ratingsWithTimeSorted
-                    .filter { !hiddenRatings.contains($0.id) }
-                    .map { shulgin in
-                        EverythingForOneRating(time: shulgin.timeUnwrapped, option: shulgin.optionUnwrapped)
-                    },
-                everythingForEachTimedNote: experience.timedNotesForTimeline,
-                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-            )
+            await ActivityManager.shared.startOrUpdateActivity(state)
         }
     }
 
     @available(iOS 16.2, *)
     func stopLiveActivity() {
-        guard !ProcessInfo.processInfo.isiOSAppOnMac else { return }
+        let state = liveActivityState
         Task {
-            await ActivityManager.shared.stopActivity(
-                substanceGroups: getSubstanceIngestionGroups(ingestions: experience.myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
-                everythingForEachRating: experience.ratingsWithTimeSorted
-                    .filter { !hiddenRatings.contains($0.id) }
-                    .map { shulgin in
-                        EverythingForOneRating(time: shulgin.timeUnwrapped, option: shulgin.optionUnwrapped)
-                    },
-                everythingForEachTimedNote: experience.timedNotesForTimeline,
-                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-            )
+            await ActivityManager.shared.stopActivity(state)
         }
     }
 
@@ -145,16 +119,20 @@ struct ExperienceScreen: View {
 
 
     var body: some View {
+        let isCurrent = experience.isCurrent
+        let timeDisplayStyle = saveableTimeDisplayStyle.wrappedValue.resolved(isCurrent: isCurrent)
+        let myIngestions = experience.myIngestionsSorted
+        let firstIngestionTime = experience.ingestionsSorted.first?.time
         FabPosition(alignment: fabAlignment) {
             let threeHours: TimeInterval = 3*60*60
-            if experience.isCurrent || experience.creationDateUnwrapped.distance(to: .now) < threeHours {
+            if isCurrent || experience.creationDateUnwrapped.distance(to: .now) < threeHours {
                 Button(action: addIngestion) {
                     Label("New Ingestion", systemImage: "plus").labelStyle(FabLabelStyle())
                 }
             }
         } screen: {
             List {
-                if !experience.myIngestionsSorted.isEmpty {
+                if !myIngestions.isEmpty {
                     let timelineModel = experience.getMyTimeLineModel(
                         hiddenIngestions: hiddenIngestions,
                         hiddenRatings: hiddenRatings,
@@ -167,15 +145,15 @@ struct ExperienceScreen: View {
                             editIngestion: { ingestionToEdit in
                                 sheetToShow = .editIngestion(ingestion: ingestionToEdit)
                             },
-                            ingestionsSorted: experience.myIngestionsSorted,
+                            ingestionsSorted: myIngestions,
                             timeDisplayStyle: timeDisplayStyle,
                             isEyeOpen: isEyeOpen,
                             isHidingDosageDots: isHidingDosageDots,
                             hiddenIngestions: hiddenIngestions,
-                            isCurrentExperience: experience.isCurrent
+                            isCurrentExperience: isCurrent
                         )
                         if #available(iOS 16.2, *) {
-                            if !ProcessInfo.processInfo.isiOSAppOnMac, experience.isCurrent && timelineModel.isWorthDrawing {
+                            if !ProcessInfo.processInfo.isiOSAppOnMac, isCurrent && timelineModel.isWorthDrawing {
                                 LiveActivityButton(
                                     stopLiveActivity: {
                                         stopLiveActivity()
@@ -197,29 +175,15 @@ struct ExperienceScreen: View {
                                 }
                         }
                     }
-                    if !experience.myCumulativeDoses.isEmpty && isEyeOpen {
-                        Section("Your Cumulative Dose") {
-                            ForEach(experience.myCumulativeDoses.sorted(by: { $0.substanceName < $1.substanceName })) { cumulative in
-                                if let substance = SubstanceRepo.shared.getSubstance(name: cumulative.substanceName) {
-                                    NavigationLink(value: GlobalNavigationDestination.dose(substance: substance)) {
-                                        CumulativeDoseRow(
-                                            substanceName: cumulative.substanceName,
-                                            substanceColor: cumulative.substanceColor,
-                                            cumulativeRoutes: cumulative.cumulativeRoutes,
-                                            isHidingDosageDots: isHidingDosageDots,
-                                            isEyeOpen: isEyeOpen
-                                        )
-                                    }
-                                } else {
-                                    CumulativeDoseRow(
-                                        substanceName: cumulative.substanceName,
-                                        substanceColor: cumulative.substanceColor,
-                                        cumulativeRoutes: cumulative.cumulativeRoutes,
-                                        isHidingDosageDots: isHidingDosageDots,
-                                        isEyeOpen: isEyeOpen
-                                    )
-                                }
-                            }
+                    if isEyeOpen {
+                        let cumulativeDoses = ExperienceLogic.myCumulativeDoses(from: myIngestions)
+                        if !cumulativeDoses.isEmpty {
+                            CumulativeDoseSection(
+                                title: "Your Cumulative Dose",
+                                cumulativeDoses: cumulativeDoses.sorted { $0.substanceName < $1.substanceName },
+                                isHidingDosageDots: isHidingDosageDots,
+                                isEyeOpen: isEyeOpen
+                            )
                         }
                     }
                 }
@@ -243,7 +207,6 @@ struct ExperienceScreen: View {
                                 sheetToShow = .editTimedNote(timedNote: timedNote)
                             }, label: {
                                 let time = timedNote.timeUnwrapped
-                                let firstIngestionTime = experience.ingestionsSorted.first?.time
                                 TimedNoteRow(timedNote: timedNote) {
                                     if timeDisplayStyle == .relativeToNow {
                                         RelativeTimeText(date: timedNote.timeUnwrapped)
@@ -273,30 +236,17 @@ struct ExperienceScreen: View {
                         showRating: showRating,
                         hideRating: hideRating,
                         timeDisplayStyle: timeDisplayStyle,
-                        firstIngestionTime: experience.ingestionsSorted.first?.timeUnwrapped
+                        firstIngestionTime: firstIngestionTime
                     )
                 }
-                if !experience.chartData.toleranceWindows.isEmpty && !isHidingToleranceChartInExperience && isEyeOpen {
-                    Section {
-                        ToleranceChart(
-                            toleranceWindows: experience.chartData.toleranceWindows,
-                            numberOfRows: experience.chartData.numberOfSubstancesInToleranceChart,
-                            timeOption: .onlyIfCurrentTimeInChart,
-                            experienceStartDate: experience.sortDateUnwrapped.getDateWithoutTime(),
+                if isEyeOpen && !isHidingToleranceChartInExperience {
+                    let chartData = experience.chartData
+                    if !chartData.toleranceWindows.isEmpty {
+                        ToleranceChartSection(
+                            chartData: chartData,
+                            experienceStartDate: experience.sortDateUnwrapped,
                             isTimeRelative: timeDisplayStyle == .relativeToNow
                         )
-                    } header: {
-                        HStack {
-                            Text("Tolerance")
-                            Spacer()
-                            NavigationLink(value: GlobalNavigationDestination.toleranceTexts(substances: experience.chartData.substancesInChart)) {
-                                Label("Tolerance info", systemImage: "doc.plaintext").labelStyle(.iconOnly)
-                            }
-                        }
-                    } footer: {
-                        if !experience.chartData.namesOfSubstancesWithMissingTolerance.isEmpty {
-                            Text("Excluding ") + Text(experience.chartData.namesOfSubstancesWithMissingTolerance, format: .list(type: .and))
-                        }
                     }
                 }
                 ForEach(experience.getConsumers(hiddenIngestions: hiddenIngestions, areRedosesDrawnIndividually: areRedosesDrawnIndividually, areSubstanceHeightsIndependent: areSubstanceHeightsIndependent)) { consumer in
@@ -312,7 +262,7 @@ struct ExperienceScreen: View {
                             isEyeOpen: isEyeOpen,
                             isHidingDosageDots: isHidingDosageDots,
                             hiddenIngestions: hiddenIngestions,
-                            isCurrentExperience: experience.isCurrent
+                            isCurrentExperience: isCurrent
                         )
                     } header: {
                         HStack {
@@ -326,37 +276,9 @@ struct ExperienceScreen: View {
                         }
                     }
                 }
-                if !experience.interactions.isEmpty && isEyeOpen && !isHidingSubstanceInfoInExperience {
-                    Section("Interactions") {
-                        ForEach(experience.interactions) { interaction in
-                            NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: experience.substancesUsed)) {
-                                InteractionPairRow(
-                                    aName: interaction.aName,
-                                    bName: interaction.bName,
-                                    interactionType: interaction.interactionType
-                                )
-                            }
-                        }
-                    }
-                }
-                if isEyeOpen && !isHidingSubstanceInfoInExperience && !experience.substancesUsed.isEmpty {
-                    Section("Info") {
-                        ForEach(experience.substancesUsed) { substance in
-                            NavigationLink(value: GlobalNavigationDestination.substance(substance: substance)) {
-                                Label(substance.name, systemImage: "info.circle")
-                            }
-                        }
-                        if experience.substancesUsed.contains(where: { $0.isHallucinogen }) {
-                            NavigationLink(value: GlobalNavigationDestination.saferHallucinogen) {
-                                Label("Safer Hallucinogens", systemImage: "cross")
-                            }
-                        }
-                        if experience.interactions.isEmpty {
-                            NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: experience.substancesUsed)) {
-                                Label("See Interactions", systemImage: "exclamationmark.triangle")
-                            }
-                        }
-                        if experience.isCurrent {
+                if isEyeOpen && !isHidingSubstanceInfoInExperience {
+                    SubstanceInfoSections(substancesUsed: experience.substancesUsed, interactions: experience.interactions) {
+                        if isCurrent {
                             SiriTipView(intent: OpenLastExperienceIntent(), isVisible: $isSiriTipVisible)
                         }
                     }
@@ -445,21 +367,12 @@ struct ExperienceScreen: View {
     }
 
     private func delete() {
-        let ingestions = experience.ingestionsSorted
-        let identifiers = ingestions.compactMap(\.identifier)
         Task {
-            await FinishIngestionScreen.deleteWebhookMessages(for: ingestions)
-            for id in identifiers {
-                await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
+            if #available(iOS 16.2, *) {
+                stopLiveActivity()
             }
-            await MainActor.run {
-                PersistenceController.shared.viewContext.delete(experience)
-                PersistenceController.shared.saveViewContext()
-                if #available(iOS 16.2, *) {
-                    stopLiveActivity()
-                }
-                dismiss()
-            }
+            await IngestionDeletion.delete(experience: experience)
+            dismiss()
         }
     }
 }

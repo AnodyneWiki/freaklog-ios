@@ -32,64 +32,22 @@ class ActivityManager: ObservableObject {
         activityStateTask?.cancel()
     }
 
-    func startOrUpdateActivity(
-        substanceGroups: [SubstanceIngestionGroup],
-        everythingForEachRating: [EverythingForOneRating],
-        everythingForEachTimedNote: [EverythingForOneTimedNote],
-        areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
-    ) async {
-        guard areActivitiesSupported else { return }
-        if authorizationInfo.areActivitiesEnabled {
-            if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first, firstActivity.activityState == .active {
-                await updateActivity(
-                    activity: firstActivity,
-                    substanceGroups: substanceGroups,
-                    everythingForEachRating: everythingForEachRating,
-                    everythingForEachTimedNote: everythingForEachTimedNote,
-                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                )
-            } else {
-                await stopActivity(
-                    substanceGroups: substanceGroups,
-                    everythingForEachRating: everythingForEachRating,
-                    everythingForEachTimedNote: everythingForEachTimedNote,
-                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                )
-                startActivity(
-                    substanceGroups: substanceGroups,
-                    everythingForEachRating: everythingForEachRating,
-                    everythingForEachTimedNote: everythingForEachTimedNote,
-                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                )
-            }
+    func startOrUpdateActivity(_ state: TimelineWidgetAttributes.ContentState) async {
+        guard areActivitiesSupported, authorizationInfo.areActivitiesEnabled else { return }
+        if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first, firstActivity.activityState == .active {
+            await firstActivity.update(ActivityContent(state: state, staleDate: nil))
+        } else {
+            await stopActivity(state)
+            startActivity(state)
         }
     }
 
-    private func startActivity(
-        substanceGroups: [SubstanceIngestionGroup],
-        everythingForEachRating: [EverythingForOneRating],
-        everythingForEachTimedNote: [EverythingForOneTimedNote],
-        areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
-    ) {
-        guard areActivitiesSupported else { return }
+    private func startActivity(_ state: TimelineWidgetAttributes.ContentState) {
         let attributes = TimelineWidgetAttributes(name: "Passed from app")
-        let state = TimelineWidgetAttributes.ContentState(
-            substanceGroups: substanceGroups,
-            everythingForEachRating: everythingForEachRating,
-            everythingForEachTimedNote: everythingForEachTimedNote,
-            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-        )
-        let content = ActivityContent(state: state, staleDate: nil)
         do {
             let newActivity = try Activity.request(
                 attributes: attributes,
-                content: content,
+                content: ActivityContent(state: state, staleDate: nil),
                 pushType: nil
             )
             activityStateTask = Task { [weak self] in
@@ -102,45 +60,11 @@ class ActivityManager: ObservableObject {
         }
     }
 
-    private nonisolated func updateActivity(
-        activity: Activity<TimelineWidgetAttributes>,
-        substanceGroups: [SubstanceIngestionGroup],
-        everythingForEachRating: [EverythingForOneRating],
-        everythingForEachTimedNote: [EverythingForOneTimedNote],
-        areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
-    ) async {
-        let state = TimelineWidgetAttributes.ContentState(
-            substanceGroups: substanceGroups,
-            everythingForEachRating: everythingForEachRating,
-            everythingForEachTimedNote: everythingForEachTimedNote,
-            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-        )
-        let updatedContent = ActivityContent(state: state, staleDate: nil)
-        await activity.update(updatedContent)
-    }
-
-    func stopActivity(
-        substanceGroups: [SubstanceIngestionGroup],
-        everythingForEachRating: [EverythingForOneRating],
-        everythingForEachTimedNote: [EverythingForOneTimedNote],
-        areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
-    ) async {
-        guard areActivitiesSupported else { return }
-        if authorizationInfo.areActivitiesEnabled {
-            let state = TimelineWidgetAttributes.ContentState(
-                substanceGroups: substanceGroups,
-                everythingForEachRating: everythingForEachRating,
-                everythingForEachTimedNote: everythingForEachTimedNote,
-                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-            )
-            let finalContent = ActivityContent(state: state, staleDate: nil)
-            for activity in Activity<TimelineWidgetAttributes>.activities {
-                await activity.end(finalContent, dismissalPolicy: .immediate)
-            }
+    func stopActivity(_ state: TimelineWidgetAttributes.ContentState) async {
+        guard areActivitiesSupported, authorizationInfo.areActivitiesEnabled else { return }
+        let finalContent = ActivityContent(state: state, staleDate: nil)
+        for activity in Activity<TimelineWidgetAttributes>.activities {
+            await activity.end(finalContent, dismissalPolicy: .immediate)
         }
     }
 }

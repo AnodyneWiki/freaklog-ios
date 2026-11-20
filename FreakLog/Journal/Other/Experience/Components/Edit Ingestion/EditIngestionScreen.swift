@@ -54,7 +54,7 @@ struct EditIngestionScreen: View {
     @State private var selectedExperience: Experience?
 
     func setExperiencesBasedOnTime() {
-        experiencesWithinLargerRange = FinishIngestionScreen.getExperiences(near: time)
+        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: time)
     }
 
 
@@ -204,17 +204,9 @@ struct EditIngestionScreen: View {
     }
 
     private func delete() {
-        let identifier = ingestion.identifier
         Task {
-            await FinishIngestionScreen.deleteWebhookMessageIfNeeded(for: ingestion)
-            if let id = identifier {
-                await LeaderboardSyncManager.shared.notifyDeletion(identifier: id)
-            }
-            await MainActor.run {
-                PersistenceController.shared.viewContext.delete(ingestion)
-                PersistenceController.shared.saveViewContext()
-                dismiss()
-            }
+            await IngestionDeletion.delete(ingestions: [ingestion])
+            dismiss()
         }
     }
 

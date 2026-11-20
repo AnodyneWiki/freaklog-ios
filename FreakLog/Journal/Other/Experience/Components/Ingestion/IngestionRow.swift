@@ -106,7 +106,7 @@ private struct IngestionRowContent<Content: View>: View {
                 
             }
             Spacer()
-            if let numDotsUnwrap = ingestion.numberOfDots, !isHidingDosageDots {
+            if !isHidingDosageDots, let numDotsUnwrap = ingestion.numberOfDots {
                 DotRows(numDots: numDotsUnwrap)
             }
         }
