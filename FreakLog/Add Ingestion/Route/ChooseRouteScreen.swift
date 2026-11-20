@@ -60,17 +60,8 @@ struct ChooseRouteScreen: View {
                 getRouteBoxWithNavigation(route: route)
             }
         } else {
-            let numRows = Int(ceil(Double(routes.count) / 2.0))
-            ForEach(0 ..< numRows, id: \.self) { index in
-                HStack {
-                    let route1 = routes[index * 2]
-                    getRouteBoxWithNavigation(route: route1)
-                    let secondIndex = index * 2 + 1
-                    if secondIndex < routes.count {
-                        let route2 = routes[secondIndex]
-                        getRouteBoxWithNavigation(route: route2)
-                    }
-                }
+            RouteGrid(routes: routes) { route in
+                SubstanceAndRoute(substance: substance, administrationRoute: route)
             }
         }
     }

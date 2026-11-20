@@ -9,7 +9,6 @@ struct AllIngestionsView: View {
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) private var areRedosesDrawnIndividually = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) private var areSubstanceHeightsIndependent = true
-    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
     @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey) private var dynamicExperienceRangeHours: Int = 24
 
     @State private var ingestionToEdit: Ingestion?

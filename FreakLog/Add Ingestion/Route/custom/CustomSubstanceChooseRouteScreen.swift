@@ -18,27 +18,13 @@ struct CustomSubstanceChooseRouteScreen: View {
     var screen: some View {
         VStack(alignment: .center) {
             VStack(alignment: .leading) {
-                HStack {
-                    getRouteBoxFor(route: .oral)
-                    getRouteBoxFor(route: .insufflated)
+                RouteGrid(routes: Self.routes) { route in
+                    CustomChooseDoseScreenArguments(
+                        substanceName: arguments.substanceName,
+                        units: arguments.units,
+                        administrationRoute: route
+                    )
                 }
-                HStack {
-                    getRouteBoxFor(route: .smoked)
-                    getRouteBoxFor(route: .inhaled)
-                }
-                HStack {
-                    getRouteBoxFor(route: .sublingual)
-                    getRouteBoxFor(route: .buccal)
-                }
-                HStack {
-                    getRouteBoxFor(route: .rectal)
-                    getRouteBoxFor(route: .transdermal)
-                }
-                HStack {
-                    getRouteBoxFor(route: .subcutaneous)
-                    getRouteBoxFor(route: .intravenous)
-                }
-                getRouteBoxFor(route: .intramuscular)
             }
             if isEyeOpen {
                 NavigationLink(value: AddIngestionDestination.saferRoutes) {
@@ -51,28 +37,10 @@ struct CustomSubstanceChooseRouteScreen: View {
         .navigationTitle("\(arguments.substanceName) Routes")
     }
 
-    private func getRouteBoxFor(route: AdministrationRoute) -> some View {
-        NavigationLink(value: CustomChooseDoseScreenArguments(substanceName: arguments.substanceName,
-                                                              units: arguments.units,
-                                                              administrationRoute: route)) {
-            GroupBox {
-                VStack(alignment: .center) {
-                    Text(route.rawValue.localizedCapitalized)
-                        .font(.headline)
-                    Text(route.clarification)
-                        .font(.subheadline)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(
-                    minWidth: 0,
-                    maxWidth: .infinity,
-                    minHeight: 0,
-                    maxHeight: .infinity,
-                    alignment: .center
-                )
-            }
-        }
-    }
+    private static let routes: [AdministrationRoute] = [
+        .oral, .insufflated, .smoked, .inhaled, .sublingual, .buccal,
+        .rectal, .transdermal, .subcutaneous, .intravenous, .intramuscular,
+    ]
 }
 
 #Preview {

@@ -43,13 +43,6 @@ struct FullRangeTimeline: TimelineDrawable {
     }
 
     var nonNormalizedOverallMax = 1.0
-    private var normalizedHeight: Double {
-        if areSubstanceHeightsIndependent {
-            nonNormalizedHeight/nonNormalizedMaxOfRoute
-        } else {
-            nonNormalizedHeight/nonNormalizedOverallMax
-        }
-    }
 
 
     var endOfLineRelativeToStartInSeconds: TimeInterval {

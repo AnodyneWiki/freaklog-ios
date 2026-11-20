@@ -2,8 +2,6 @@ import CoreData
 import SwiftUI
 
 struct WebhooksScreen: View {
-    @Environment(\.managedObjectContext) private var viewContext
-
     @FetchRequest(fetchRequest: PersistenceController.activeWebhookPresetsRequest(), animation: .default)
     private var presets: FetchedResults<WebhookPreset>
 

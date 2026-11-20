@@ -156,13 +156,4 @@ struct JournalFile: FileDocument, Codable {
         customUnits = try values.decodeIfPresent([CustomUnitCodable].self, forKey: .customUnits) ?? []
         substanceDataOverrides = try values.decodeIfPresent([SubstanceDataOverrideCodable].self, forKey: .substanceDataOverrides) ?? []
     }
-
-    func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(experiences, forKey: .experiences)
-        try container.encode(substanceCompanions, forKey: .substanceCompanions)
-        try container.encode(customSubstances, forKey: .customSubstances)
-        try container.encode(customUnits, forKey: .customUnits)
-        try container.encode(substanceDataOverrides, forKey: .substanceDataOverrides)
-    }
 }
