@@ -20,10 +20,16 @@ struct IngestionWithRepoInfo {
 
 func getSubstanceGroupWithRepoInfo(substanceIngestionGroups: [SubstanceIngestionGroup]) -> [SubstanceGroupWithRepoInfo] {
     substanceIngestionGroups.map { substanceIngestionGroup in
-        let substance = SubstanceRepo.shared.getSubstance(name: substanceIngestionGroup.substanceName)
+        let substanceName = substanceIngestionGroup.substanceName
         let routeGroups = substanceIngestionGroup.routeMinInfos.map { routeMinInfo in
+            #if !WIDGET_EXTENSION
+            let roaDuration = PersistenceController.shared.resolvedDuration(for: substanceName, route: routeMinInfo.route)
+            let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: routeMinInfo.route)
+            #else
+            let substance = SubstanceRepo.shared.getSubstance(name: substanceName)
             let roaDuration = substance?.getDuration(for: routeMinInfo.route)
             let roaDose = substance?.getDose(for: routeMinInfo.route)
+            #endif
             let allKnownDoses = routeMinInfo.ingestions.compactMap({ ingestion in
                 ingestion.dose
             })

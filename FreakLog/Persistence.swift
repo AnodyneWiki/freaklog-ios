@@ -206,6 +206,12 @@ struct PersistenceController {
         for spray in sprays {
             context.delete(spray)
         }
+        let customRoaDeleteRequest = CustomRoa.fetchRequest()
+        customRoaDeleteRequest.includesPropertyValues = false
+        let customRoas = try context.fetch(customRoaDeleteRequest)
+        for roa in customRoas {
+            context.delete(roa)
+        }
         try context.save()
         
         
@@ -352,6 +358,209 @@ struct PersistenceController {
         }
     }
 
+    // MARK: - FetchRequest Factories
+    // Single source of truth for all CoreData queries. Use these in @FetchRequest(fetchRequest:),
+    // NSFetchedResultsController, and the instance fetch methods below.
+
+    static func ingestionsRequest() -> NSFetchRequest<Ingestion> {
+        let r = Ingestion.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
+        return r
+    }
+
+    static func personalIngestionsRequest() -> NSFetchRequest<Ingestion> {
+        let r = ingestionsRequest()
+        r.predicate = NSPredicate(format: "consumerName == nil OR consumerName == ''")
+        return r
+    }
+
+    static func ingestionsRequest(for date: Date) -> NSFetchRequest<Ingestion> {
+        let r = ingestionsRequest()
+        let startOfDay = Calendar.current.startOfDay(for: date)
+        let endOfDay = Calendar.current.date(byAdding: DateComponents(day: 1, second: -1), to: startOfDay) ?? date
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "time > %@", startOfDay as NSDate),
+            NSPredicate(format: "time < %@", endOfDay as NSDate),
+        ])
+        return r
+    }
+
+    static func recentIngestionsRequest(limit: Int) -> NSFetchRequest<Ingestion> {
+        let r = ingestionsRequest()
+        r.fetchLimit = limit
+        return r
+    }
+
+    static func ingestionsWithNotesRequest(limit: Int = 15) -> NSFetchRequest<Ingestion> {
+        let r = ingestionsRequest()
+        r.predicate = NSPredicate(format: "note.length > 0")
+        r.fetchLimit = limit
+        return r
+    }
+
+    static func experiencesRequest() -> NSFetchRequest<Experience> {
+        let r = Experience.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
+        return r
+    }
+
+    static func customSubstancesRequest() -> NSFetchRequest<CustomSubstance> {
+        let r = CustomSubstance.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomSubstance.name, ascending: true)]
+        return r
+    }
+
+    static func activeCustomUnitsRequest(filter: String = "") -> NSFetchRequest<CustomUnit> {
+        let r = CustomUnit.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomUnit.creationDate, ascending: false)]
+        let archivedPredicate = NSPredicate(format: "isArchived == %@", NSNumber(value: false))
+        if filter.isEmpty {
+            r.predicate = archivedPredicate
+        } else {
+            let searchPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+                NSPredicate(format: "name CONTAINS[c] %@", filter),
+                NSPredicate(format: "substanceName CONTAINS[c] %@", filter),
+                NSPredicate(format: "unit CONTAINS[c] %@", filter),
+                NSPredicate(format: "note CONTAINS[c] %@", filter),
+                NSPredicate(format: "administrationRoute CONTAINS[c] %@", filter),
+            ])
+            r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [archivedPredicate, searchPredicate])
+        }
+        return r
+    }
+
+    static func archivedCustomUnitsRequest() -> NSFetchRequest<CustomUnit> {
+        let r = CustomUnit.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomUnit.creationDate, ascending: false)]
+        r.predicate = NSPredicate(format: "isArchived == %@", NSNumber(value: true))
+        return r
+    }
+
+    static func activeCustomUnitsRequest(for substanceName: String) -> NSFetchRequest<CustomUnit> {
+        let r = CustomUnit.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomUnit.creationDate, ascending: false)]
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "isArchived == %@", NSNumber(value: false)),
+            NSPredicate(format: "substanceName == %@", substanceName),
+        ])
+        return r
+    }
+
+    static func substanceCompanionsRequest() -> NSFetchRequest<SubstanceCompanion> {
+        let r = SubstanceCompanion.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \SubstanceCompanion.substanceName, ascending: true)]
+        return r
+    }
+
+    static func activeWebhookPresetsRequest() -> NSFetchRequest<WebhookPreset> {
+        let r = WebhookPreset.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \WebhookPreset.creationDate, ascending: true)]
+        r.predicate = NSPredicate(format: "isArchived == NO")
+        return r
+    }
+
+    static func archivedWebhookPresetsRequest() -> NSFetchRequest<WebhookPreset> {
+        let r = WebhookPreset.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \WebhookPreset.creationDate, ascending: true)]
+        r.predicate = NSPredicate(format: "isArchived == YES")
+        return r
+    }
+
+    static func enabledWebhookPresetsRequest() -> NSFetchRequest<WebhookPreset> {
+        let r = WebhookPreset.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \WebhookPreset.name, ascending: true)]
+        r.predicate = NSPredicate(format: "isEnabled == YES")
+        return r
+    }
+
+    static func standaloneCustomRoasRequest(for substanceName: String) -> NSFetchRequest<CustomRoa> {
+        let r = CustomRoa.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomRoa.administrationRoute, ascending: true)]
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "substanceName == %@", substanceName),
+            NSPredicate(format: "customSubstance == nil"),
+        ])
+        return r
+    }
+
+    static func sprayRequest() -> NSFetchRequest<Spray> {
+        let r = Spray.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \Spray.creationDate, ascending: false)]
+        return r
+    }
+
+    // MARK: - Instance Fetch Methods
+
+    func getAllIngestions() -> [Ingestion] {
+        (try? viewContext.fetch(Ingestion.fetchRequest())) ?? []
+    }
+
+    func getRecentIngestions(limit: Int = 1000) -> [Ingestion] {
+        (try? viewContext.fetch(Self.recentIngestionsRequest(limit: limit))) ?? []
+    }
+
+    func getIngestionsWithNotes(limit: Int = 15) -> [Ingestion] {
+        (try? viewContext.fetch(Self.ingestionsWithNotesRequest(limit: limit))) ?? []
+    }
+
+    func getAllExperiences() -> [Experience] {
+        (try? viewContext.fetch(Self.experiencesRequest())) ?? []
+    }
+
+    func getExperiences(near date: Date) -> [Experience] {
+        let window: TimeInterval = 60 * 60 * 60
+        let r = Self.experiencesRequest()
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "sortDate > %@", date.addingTimeInterval(-window) as NSDate),
+            NSPredicate(format: "sortDate < %@", date.addingTimeInterval(window) as NSDate),
+        ])
+        return (try? viewContext.fetch(r)) ?? []
+    }
+
+    func getAllCustomSubstances() -> [CustomSubstance] {
+        (try? viewContext.fetch(Self.customSubstancesRequest())) ?? []
+    }
+
+    func getActiveCustomUnits() -> [CustomUnit] {
+        (try? viewContext.fetch(Self.activeCustomUnitsRequest())) ?? []
+    }
+
+    func getAllCustomUnits() -> [CustomUnit] {
+        (try? viewContext.fetch(CustomUnit.fetchRequest())) ?? []
+    }
+
+    func getAllStandaloneCustomRoas() -> [CustomRoa] {
+        let r = CustomRoa.fetchRequest()
+        r.predicate = NSPredicate(format: "customSubstance == nil")
+        return (try? viewContext.fetch(r)) ?? []
+    }
+
+    func getSubstanceCompanion(for substanceName: String) -> SubstanceCompanion? {
+        let r = SubstanceCompanion.fetchRequest()
+        r.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+        r.fetchLimit = 1
+        return (try? viewContext.fetch(r))?.first
+    }
+
+    func getRecentLocations(limit: Int = 15) -> [ExperienceLocation] {
+        let r = ExperienceLocation.fetchRequest()
+        r.sortDescriptors = [
+            NSSortDescriptor(keyPath: \ExperienceLocation.ingestion?.time, ascending: false),
+            NSSortDescriptor(keyPath: \ExperienceLocation.legacyExperience?.creationDate, ascending: false),
+        ]
+        r.fetchLimit = limit
+        return (try? viewContext.fetch(r)) ?? []
+    }
+
+    func getPersonalIngestions(from startDate: Date, to endDate: Date) -> [Ingestion] {
+        let r = Ingestion.fetchRequest()
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "time >= %@ AND time < %@", startDate as NSDate, endDate as NSDate),
+            NSPredicate(format: "consumerName == nil OR consumerName == ''"),
+        ])
+        return (try? viewContext.fetch(r)) ?? []
+    }
+
     func saveViewContext() {
         if viewContext.hasChanges {
             do {
@@ -398,5 +607,52 @@ struct PersistenceController {
         fetchRequest.predicate = NSPredicate(format: "name == %@", name)
         let results = try? viewContext.fetch(fetchRequest)
         return results?.first
+    }
+
+    func getCustomRoa(for substanceName: String, route: AdministrationRoute) -> CustomRoa? {
+        let fetchRequest = CustomRoa.fetchRequest()
+        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            NSPredicate(format: "substanceName == %@", substanceName),
+            NSPredicate(format: "administrationRoute == %@", route.rawValue),
+            NSPredicate(format: "customSubstance == nil"),
+        ])
+        return (try? viewContext.fetch(fetchRequest))?.first
+    }
+
+    // Uniform interface: resolves dose for any substance name (PW or custom),
+    // applying standalone custom overrides with priority over built-in PW data.
+    func resolvedDose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
+        if let pw = SubstanceRepo.shared.getSubstance(name: substanceName) {
+            return getCustomRoa(for: substanceName, route: route)?.roaDose
+                ?? pw.getDose(for: route)
+        }
+        return getCustomSubstance(name: substanceName)?.getRoaDose(for: route)
+    }
+
+    func resolvedDuration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
+        if let pw = SubstanceRepo.shared.getSubstance(name: substanceName) {
+            return getCustomRoa(for: substanceName, route: route)?.roaDuration
+                ?? pw.getDuration(for: route)
+        }
+        return getCustomSubstance(name: substanceName)?.getRoaDuration(for: route)
+    }
+
+    func renameSubstance(from oldName: String, to newName: String) {
+        let ctx = viewContext
+        let ingFetch = Ingestion.fetchRequest()
+        ingFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
+        ((try? ctx.fetch(ingFetch)) ?? []).forEach { $0.substanceName = newName }
+
+        let compFetch = SubstanceCompanion.fetchRequest()
+        compFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
+        ((try? ctx.fetch(compFetch)) ?? []).forEach { $0.substanceName = newName }
+
+        let unitFetch = CustomUnit.fetchRequest()
+        unitFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
+        ((try? ctx.fetch(unitFetch)) ?? []).forEach { $0.substanceName = newName }
+
+        let roaFetch = CustomRoa.fetchRequest()
+        roaFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
+        ((try? ctx.fetch(roaFetch)) ?? []).forEach { $0.substanceName = newName }
     }
 }

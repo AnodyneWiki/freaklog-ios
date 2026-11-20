@@ -8,12 +8,14 @@ struct JournalFile: FileDocument, Codable {
     var substanceCompanions: [CompanionCodable]
     var customSubstances: [CustomSubstanceCodable]
     var customUnits: [CustomUnitCodable]
+    var substanceDataOverrides: [SubstanceDataOverrideCodable]
 
     // swiftlint:disable function_body_length
     init(
         experiences: [Experience],
         customSubstances: [CustomSubstance],
-        customUnits: [CustomUnit]
+        customUnits: [CustomUnit],
+        substanceOverrideRoas: [CustomRoa] = []
     ) {
         var experiencesToStore: [ExperienceCodable] = []
         var companionsToStore: [CompanionCodable] = []
@@ -90,7 +92,8 @@ struct JournalFile: FileDocument, Codable {
             CustomSubstanceCodable(
                 name: cust.nameUnwrapped,
                 units: cust.unitsUnwrapped,
-                description: cust.explanationUnwrapped
+                description: cust.explanationUnwrapped,
+                roas: cust.customRoasSorted.map(CustomRoaCodable.init(roa:))
             )
         }
         self.customUnits = customUnits.map { customUnit in
@@ -108,6 +111,14 @@ struct JournalFile: FileDocument, Codable {
                 unitPlural: customUnit.unitPlural,
                 originalUnit: customUnit.originalUnitUnwrapped,
                 note: customUnit.noteUnwrapped)
+        }
+        let groupedByName = Dictionary(grouping: substanceOverrideRoas) { $0.substanceName ?? "" }
+            .filter { !$0.key.isEmpty }
+        self.substanceDataOverrides = groupedByName.map { name, roas in
+            SubstanceDataOverrideCodable(
+                substanceName: name,
+                roas: roas.map(CustomRoaCodable.init(roa:))
+            )
         }
     }
     // swiftlint:enable function_body_length
@@ -134,6 +145,7 @@ struct JournalFile: FileDocument, Codable {
         case substanceCompanions
         case customSubstances
         case customUnits
+        case substanceDataOverrides
     }
 
     init(from decoder: Decoder) throws {
@@ -142,6 +154,7 @@ struct JournalFile: FileDocument, Codable {
         substanceCompanions = try values.decodeIfPresent([CompanionCodable].self, forKey: .substanceCompanions) ?? []
         customSubstances = try values.decodeIfPresent([CustomSubstanceCodable].self, forKey: .customSubstances) ?? []
         customUnits = try values.decodeIfPresent([CustomUnitCodable].self, forKey: .customUnits) ?? []
+        substanceDataOverrides = try values.decodeIfPresent([SubstanceDataOverrideCodable].self, forKey: .substanceDataOverrides) ?? []
     }
 
     func encode(to encoder: Encoder) throws {
@@ -150,5 +163,6 @@ struct JournalFile: FileDocument, Codable {
         try container.encode(substanceCompanions, forKey: .substanceCompanions)
         try container.encode(customSubstances, forKey: .customSubstances)
         try container.encode(customUnits, forKey: .customUnits)
+        try container.encode(substanceDataOverrides, forKey: .substanceDataOverrides)
     }
 }

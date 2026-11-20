@@ -7,9 +7,8 @@ struct ChooseDateScreen: View {
 
     @State private var date = Date()
     @State private var selectedColor = SubstanceColor.red
-    @FetchRequest(
-        sortDescriptors: []
-    ) private var substanceCompanions: FetchedResults<SubstanceCompanion>
+    @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
+    private var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     private var doesSubstanceAlreadyHaveColor: Bool {
         substanceCompanions.contains { companion in

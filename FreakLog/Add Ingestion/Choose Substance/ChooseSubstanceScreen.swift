@@ -60,7 +60,12 @@ struct ChooseSubstanceContent: View {
                 ChooseRouteScreen(substance: arguments.substance, dismiss: dismiss)
             })
             .navigationDestination(for: CustomChooseDoseScreenArguments.self, destination: { arguments in
-                CustomSubstanceChooseDoseScreen(arguments: arguments, dismiss: dismiss)
+                CustomSubstanceChooseDoseScreen(
+                    arguments: arguments,
+                    dismiss: dismiss,
+                    navigateToCustomUnitChooseDose: { customUnit in
+                        navPath.append(customUnit)
+                    })
             })
             .navigationDestination(for: ChooseOtherRouteScreenArguments.self, destination: { arguments in
                 ChooseOtherRouteScreen(arguments: arguments, dismiss: dismiss)

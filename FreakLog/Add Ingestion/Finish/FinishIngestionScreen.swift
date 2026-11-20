@@ -43,11 +43,7 @@ struct FinishIngestionScreen: View {
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \WebhookPreset.name, ascending: true)],
-        predicate: NSPredicate(format: "isEnabled == YES"),
-        animation: .default
-    )
+    @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
 
     @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
@@ -277,15 +273,11 @@ struct FinishIngestionScreen: View {
     }
 
     static func getExperiences(near date: Date) -> [Experience] {
-        let fetchRequest = Experience.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
-        fetchRequest.predicate = getPredicate(from: date)
-        return (try? PersistenceController.shared.viewContext.fetch(fetchRequest)) ?? []
+        PersistenceController.shared.getExperiences(near: date)
     }
 
     func initializeColorCompanionAndNote() {
-        let fetchRequest = SubstanceCompanion.fetchRequest()
-        let companions = (try? PersistenceController.shared.viewContext.fetch(fetchRequest)) ?? []
+        let companions = PersistenceController.shared.getSubstanceCompanions()
         alreadyUsedColors = Array(Set(companions.map { $0.color })).sorted()
         otherColors = Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors)).sorted()
         let companionMatch = companions.first { comp in
@@ -494,16 +486,6 @@ struct FinishIngestionScreen: View {
             let experienceRange = experienceStart.addingTimeInterval(-threeHours) ... max(experienceStart.addingTimeInterval(fifteenHours), lastIngestionTime.addingTimeInterval(threeHours))
             return experienceRange.contains(date)
         }
-    }
-
-    static func getPredicate(from date: Date) -> NSCompoundPredicate {
-        let longInterval: TimeInterval = 60 * 60 * 60
-        let startDate = date.addingTimeInterval(-longInterval)
-        let endDate = date.addingTimeInterval(longInterval)
-        let laterThanStart = NSPredicate(format: "sortDate > %@", startDate as NSDate)
-        let earlierThanEnd = NSPredicate(format: "sortDate < %@", endDate as NSDate)
-        return NSCompoundPredicate(
-            andPredicateWithSubpredicates: [laterThanStart, earlierThanEnd])
     }
 
     private let generator = UINotificationFeedbackGenerator()

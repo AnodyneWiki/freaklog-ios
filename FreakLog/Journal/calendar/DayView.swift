@@ -10,17 +10,8 @@ struct DayView: View {
     init(dayComponents: DayComponents) {
         self.dayComponents = dayComponents
         let startOfDay = Calendar.current.date(from: dayComponents.components) ?? .now
-        let laterThanStart = NSPredicate(format: "time > %@", startOfDay as NSDate)
-        var components = DateComponents()
-            components.day = 1
-            components.second = -1
-        let endOfDay = Calendar.current.date(byAdding: components, to: startOfDay) ?? .now
-        let earlierThanEnd = NSPredicate(format: "time < %@", endOfDay as NSDate)
-        let compoundPredicate = NSCompoundPredicate(
-            andPredicateWithSubpredicates: [laterThanStart, earlierThanEnd])
-        self._ingestions = FetchRequest(entity: Ingestion.entity(), sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)], predicate: compoundPredicate)
-        let startOfToday = Calendar.current.startOfDay(for: .now)
-        isToday = startOfDay == startOfToday
+        self._ingestions = FetchRequest(fetchRequest: PersistenceController.ingestionsRequest(for: startOfDay))
+        isToday = startOfDay == Calendar.current.startOfDay(for: .now)
     }
 
     private let colorHeight: Double = 6

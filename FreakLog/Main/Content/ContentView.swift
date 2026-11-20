@@ -119,9 +119,7 @@ struct ContentScreen: View {
             if openUntilRatedCount < 10 {
                 openUntilRatedCount += 1
             } else if openUntilRatedCount == 10 {
-                let ingestionFetchRequest = Ingestion.fetchRequest()
-                let allIngestions = (try? PersistenceController.shared.viewContext.fetch(ingestionFetchRequest)) ?? []
-                if isEyeOpen && allIngestions.count > 10 {
+                if isEyeOpen && PersistenceController.shared.getRecentIngestions(limit: 11).count > 10 {
                     if let windowScene = UIApplication.shared.currentWindow?.windowScene {
                         SKStoreReviewController.requestReview(in: windowScene)
                     }

@@ -4,6 +4,8 @@ import SwiftUI
 func getScreen(from destination: GlobalNavigationDestination) -> some View {
     Group {
         switch destination {
+        case let .customSubstance(customSubstance):
+            CustomSubstanceScreen(customSubstance: customSubstance)
         case let .editCustomSubstance(customSubstance):
             EditCustomSubstanceView(customSubstance: customSubstance)
         case let .substance(substance):

@@ -36,9 +36,8 @@ struct EditIngestionScreen: View {
         }
     }
 
-    @FetchRequest(
-        sortDescriptors: []
-    ) var customUnits: FetchedResults<CustomUnit>
+    @FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest())
+    var customUnits: FetchedResults<CustomUnit>
 
     private var filteredCustomUnit: [CustomUnit] {
         customUnits.filter { unit in
@@ -47,7 +46,7 @@ struct EditIngestionScreen: View {
     }
 
     private var roaDose: RoaDose? {
-        ingestion.substance?.getDose(for: ingestion.administrationRouteUnwrapped)
+        PersistenceController.shared.resolvedDose(for: ingestion.substanceNameUnwrapped, route: ingestion.administrationRouteUnwrapped)
     }
 
     @State private var experiencesWithinLargerRange: [Experience] = []

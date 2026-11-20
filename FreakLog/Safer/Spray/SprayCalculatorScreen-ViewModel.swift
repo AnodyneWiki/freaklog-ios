@@ -77,10 +77,8 @@ extension SprayCalculatorScreen {
         }
 
         override init() {
-            let sprayFetchRequest = Spray.fetchRequest()
-            sprayFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Spray.creationDate, ascending: false)]
             sprayFetchController = NSFetchedResultsController(
-                fetchRequest: sprayFetchRequest,
+                fetchRequest: PersistenceController.sprayRequest(),
                 managedObjectContext: PersistenceController.shared.viewContext,
                 sectionNameKeyPath: nil, cacheName: nil
             )

@@ -4,13 +4,11 @@ struct CustomUnitsChooseSubstanceScreen: View {
     @State private var searchText = ""
     @Environment(\.dismiss) var dismiss
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-    ) private var ingestions: FetchedResults<Ingestion>
+    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    private var ingestions: FetchedResults<Ingestion>
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \CustomSubstance.name, ascending: true)]
-    ) private var customSubstances: FetchedResults<CustomSubstance>
+    @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
+    private var customSubstances: FetchedResults<CustomSubstance>
 
     private var substancesFilteredAndSorted: [Substance] {
         let substanceNamesInOrder = ingestions.prefix(500).map { ing in

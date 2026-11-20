@@ -21,10 +21,7 @@ struct EditConsumerScreen: View {
             consumerNamesInOrder: filteredNames
         )
         .onAppear {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            ingestionFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-            ingestionFetchRequest.fetchLimit = 300
-            let sortedIngestions = (try? PersistenceController.shared.viewContext.fetch(ingestionFetchRequest)) ?? []
+            let sortedIngestions = PersistenceController.shared.getRecentIngestions(limit: 300)
             consumerNamesInOrder = sortedIngestions.compactMap { ing in
                 if let consumerName = ing.consumerName, !consumerName.trimmingCharacters(in: .whitespaces).isEmpty {
                     return consumerName

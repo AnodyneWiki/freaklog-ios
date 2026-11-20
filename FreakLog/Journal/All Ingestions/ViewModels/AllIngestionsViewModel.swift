@@ -98,14 +98,9 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     }
 
     func getIngestionsForDynamicExperienceLastIngestion(for date: Date) -> [Ingestion] {
-        let endOfDay = Calendar.current.date(bySettingHour: 23, minute: 59, second: 59, of: date) ?? date
-        let startOfDay = Calendar.current.startOfDay(for: date)
-        
-        let request: NSFetchRequest<Ingestion> = Ingestion.fetchRequest()
-        request.predicate = NSPredicate(format: "time >= %@ AND time <= %@", startOfDay as NSDate, endOfDay as NSDate)
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
+        let request = PersistenceController.ingestionsRequest(for: date)
         request.fetchLimit = 1
-        
+
         do {
             if let lastIngestion = try PersistenceController.shared.viewContext.fetch(request).first {
                 return getIngestionsForDynamicExperience(for: lastIngestion)
@@ -163,18 +158,14 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     }
 
     private func createFetchRequest() -> NSFetchRequest<Ingestion> {
-        let request: NSFetchRequest<Ingestion> = Ingestion.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-        
+        let request = PersistenceController.ingestionsRequest()
         if !searchText.isEmpty {
-            let predicates = [
+            request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
                 NSPredicate(format: "substanceName CONTAINS[cd] %@", searchText),
                 NSPredicate(format: "note CONTAINS[cd] %@", searchText),
-                NSPredicate(format: "consumerName CONTAINS[cd] %@", searchText)
-            ]
-            request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: predicates)
+                NSPredicate(format: "consumerName CONTAINS[cd] %@", searchText),
+            ])
         }
-        
         return request
     }
 

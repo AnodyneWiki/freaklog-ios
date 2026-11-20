@@ -91,10 +91,8 @@ extension Ingestion: Comparable {
     }
 
     var numberOfDots: Int? {
-        substance?.getDose(for: administrationRouteUnwrapped)?.getNumDots(
-            ingestionDose: pureSubstanceDose,
-            ingestionUnits: pureUnits
-        )
+        PersistenceController.shared.resolvedDose(for: substanceNameUnwrapped, route: administrationRouteUnwrapped)?
+            .getNumDots(ingestionDose: pureSubstanceDose, ingestionUnits: pureUnits)
     }
 
     var pureUnits: String {

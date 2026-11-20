@@ -29,10 +29,7 @@ struct CustomUnitsArchiveScreen: View {
         .navigationTitle("Archive")
     }
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \CustomUnit.creationDate, ascending: false)],
-        predicate: NSPredicate(
-            format: "isArchived == %@",
-            NSNumber(value: true))) private var customUnits: FetchedResults<CustomUnit>
+    @FetchRequest(fetchRequest: PersistenceController.archivedCustomUnitsRequest())
+    private var customUnits: FetchedResults<CustomUnit>
 
 }

@@ -3,6 +3,7 @@ import Foundation
 enum GlobalNavigationDestination: Hashable {
     // substance tab mainly
     case substance(substance: Substance)
+    case customSubstance(customSubstance: CustomSubstance)
     case editCustomSubstance(customSubstance: CustomSubstance)
     case webView(articleURL: URL)
     case webViewInteractions(substanceName: String, articleURL: URL)

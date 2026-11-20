@@ -96,14 +96,7 @@ final class LeaderboardSyncManager: ObservableObject {
   }
 
   private func fetchIngestions(from start: Date, to end: Date) -> [Ingestion] {
-    let request = Ingestion.fetchRequest()
-    request.predicate = NSPredicate(
-      format: "time >= %@ AND time < %@ AND (consumerName == nil OR consumerName == '')",
-      start as NSDate,
-      end as NSDate
-    )
-    request.sortDescriptors = [NSSortDescriptor(key: "time", ascending: true)]
-    return (try? PersistenceController.shared.viewContext.fetch(request)) ?? []
+    PersistenceController.shared.getPersonalIngestions(from: start, to: end)
   }
 
   private func entryPayload(ingestion: Ingestion, deviceId: String, nickname: String) -> LeaderboardEntryPayload {

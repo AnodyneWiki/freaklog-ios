@@ -12,13 +12,11 @@ struct SearchScreen: View {
     @State private var isShowingAddCustomSubstance = false
 
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \CustomSubstance.name, ascending: true)]
-    ) private var customSubstances: FetchedResults<CustomSubstance>
-    
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-    ) private var ingestions: FetchedResults<Ingestion>
+    @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
+    private var customSubstances: FetchedResults<CustomSubstance>
+
+    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    private var ingestions: FetchedResults<Ingestion>
     
     private static let custom = "custom"
     
@@ -101,7 +99,7 @@ struct SearchScreen: View {
                     SearchSubstanceRow(substance: sub)
                 }
                 ForEach(customSubstancesFiltered) { cust in
-                    NavigationLink(value: GlobalNavigationDestination.editCustomSubstance(customSubstance: cust)) {
+                    NavigationLink(value: GlobalNavigationDestination.customSubstance(customSubstance: cust)) {
                         VStack(alignment: .leading) {
                             Text(cust.nameUnwrapped).font(.headline)
                             Spacer().frame(height: 5)

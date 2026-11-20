@@ -3,11 +3,7 @@ import SwiftUI
 struct WebhookArchiveScreen: View {
     @Environment(\.managedObjectContext) private var viewContext
     
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \WebhookPreset.creationDate, ascending: true)],
-        predicate: NSPredicate(format: "isArchived == YES"),
-        animation: .default
-    )
+    @FetchRequest(fetchRequest: PersistenceController.archivedWebhookPresetsRequest(), animation: .default)
     private var archivedPresets: FetchedResults<WebhookPreset>
     
     @State private var presetToDelete: WebhookPreset?

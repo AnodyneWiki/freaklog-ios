@@ -2,18 +2,14 @@ import Charts
 import SwiftUI
 
 struct StatsScreen: View {
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)],
-        predicate: NSPredicate(format: "consumerName=nil OR consumerName=''")
-    ) var ingestions: FetchedResults<Ingestion>
+    @FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest())
+    var ingestions: FetchedResults<Ingestion>
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
-    ) var experiences: FetchedResults<Experience>
+    @FetchRequest(fetchRequest: PersistenceController.experiencesRequest())
+    var experiences: FetchedResults<Experience>
 
-    @FetchRequest(
-        sortDescriptors: []
-    ) var substanceCompanions: FetchedResults<SubstanceCompanion>
+    @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
+    var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     @State private var experienceData: ExperienceData?
     @State private var ingestionData: ExperienceData?

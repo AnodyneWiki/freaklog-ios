@@ -6,14 +6,8 @@ extension IngestionNoteScreen {
         @Published var suggestedNotesInOrder = [String]()
 
         init() {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            ingestionFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-            ingestionFetchRequest.predicate = NSPredicate(format: "note.length > 0")
-            ingestionFetchRequest.fetchLimit = 15
-            let sortedIngestions = (try? PersistenceController.shared.viewContext.fetch(ingestionFetchRequest)) ?? []
-            suggestedNotesInOrder = sortedIngestions.map { ing in
-                ing.noteUnwrapped
-            }.uniqued()
+            suggestedNotesInOrder = PersistenceController.shared.getIngestionsWithNotes(limit: 15)
+                .map { $0.noteUnwrapped }.uniqued()
         }
     }
 }

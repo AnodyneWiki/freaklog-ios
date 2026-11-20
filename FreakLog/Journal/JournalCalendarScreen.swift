@@ -4,9 +4,8 @@ import UIKit
 
 struct JournalCalendarScreen: View {
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)]
-    ) var ingestions: FetchedResults<Ingestion>
+    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    var ingestions: FetchedResults<Ingestion>
 
     @State private var isFirstAppear = true
 

@@ -35,20 +35,7 @@ struct FilteredCustomUnits: View {
     @State private var customUnitToEdit: CustomUnit?
 
     init(filter: String) {
-        let isArchivedPredicate = NSPredicate(
-            format: "isArchived == %@",
-            NSNumber(value: false))
-        let namePredicate = NSPredicate(format: "name CONTAINS[c] %@", filter)
-        let substancePredicate = NSPredicate(format: "substanceName CONTAINS[c] %@", filter)
-        let unitPredicate = NSPredicate(format: "unit CONTAINS[c] %@", filter)
-        let notePredicate = NSPredicate(format: "note CONTAINS[c] %@", filter)
-        let administrationRoutePredicate = NSPredicate(format: "administrationRoute CONTAINS[c] %@", filter)
-        let searchTextPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [namePredicate, substancePredicate, unitPredicate, notePredicate, administrationRoutePredicate])
-        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [isArchivedPredicate, searchTextPredicate])
-        let finalPredicate = filter.isEmpty ? isArchivedPredicate : compoundPredicate
-        _fetchRequest = FetchRequest<CustomUnit>(
-            sortDescriptors: [NSSortDescriptor(keyPath: \CustomUnit.creationDate, ascending: false)],
-            predicate: finalPredicate)
+        _fetchRequest = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(filter: filter))
     }
 
     var body: some View {

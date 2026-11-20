@@ -4,11 +4,7 @@ import SwiftUI
 struct WebhooksScreen: View {
     @Environment(\.managedObjectContext) private var viewContext
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \WebhookPreset.creationDate, ascending: true)],
-        predicate: NSPredicate(format: "isArchived == NO"),
-        animation: .default
-    )
+    @FetchRequest(fetchRequest: PersistenceController.activeWebhookPresetsRequest(), animation: .default)
     private var presets: FetchedResults<WebhookPreset>
 
     @AppStorage(PersistenceController.webhookUsernameKey) private var webhookUsername: String = ""

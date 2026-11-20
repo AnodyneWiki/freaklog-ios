@@ -9,14 +9,11 @@ struct ToleranceChartScreen: View {
     @State private var additionalSubstanceDays: [SubstanceAndDay] = []
     @State private var substancesInChart: [SubstanceWithToleranceAndColor] = []
 
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)],
-        predicate: NSPredicate(format: "consumerName=nil OR consumerName=''")
-    ) var ingestions: FetchedResults<Ingestion>
+    @FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest())
+    var ingestions: FetchedResults<Ingestion>
 
-    @FetchRequest(
-        sortDescriptors: []
-    ) var substanceCompanions: FetchedResults<SubstanceCompanion>
+    @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
+    var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     var body: some View {
         ToleranceChartScreenContent(toleranceWindows: toleranceWindows,

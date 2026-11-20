@@ -11,16 +11,12 @@ extension SettingsScreen {
         @Published var toastMessage = ""
 
         func exportData() {
-            let experienceFetchRequest = Experience.fetchRequest()
-            let allExperiences = (try? PersistenceController.shared.viewContext.fetch(experienceFetchRequest)) ?? []
-            let customFetchRequest = CustomSubstance.fetchRequest()
-            let allCustomSubstances = (try? PersistenceController.shared.viewContext.fetch(customFetchRequest)) ?? []
-            let customUnitsFetchRequest = CustomUnit.fetchRequest()
-            let allCustomUnits = (try? PersistenceController.shared.viewContext.fetch(customUnitsFetchRequest)) ?? []
+            let pc = PersistenceController.shared
             journalFile = JournalFile(
-                experiences: allExperiences,
-                customSubstances: allCustomSubstances,
-                customUnits: allCustomUnits)
+                experiences: pc.getAllExperiences(),
+                customSubstances: pc.getAllCustomSubstances(),
+                customUnits: pc.getAllCustomUnits(),
+                substanceOverrideRoas: pc.getAllStandaloneCustomRoas())
             isExporting = true
         }
 
@@ -147,11 +143,23 @@ extension SettingsScreen {
                                     newExperience.legacyLocation = newLocation
                                 }
                             }
+                            for overrideCodable in file.substanceDataOverrides {
+                                for roaCodable in overrideCodable.roas {
+                                    let newRoa = CustomRoa(context: context)
+                                    newRoa.substanceName = overrideCodable.substanceName
+                                    roaCodable.apply(to: newRoa)
+                                }
+                            }
                             for customCodable in file.customSubstances {
                                 let newCustom = CustomSubstance(context: context)
                                 newCustom.name = customCodable.name
                                 newCustom.units = customCodable.units
                                 newCustom.explanation = customCodable.description
+                                for roaCodable in customCodable.roas {
+                                    let newRoa = CustomRoa(context: context)
+                                    roaCodable.apply(to: newRoa)
+                                    newRoa.customSubstance = newCustom
+                                }
                             }
                             
                             if context.hasChanges {
@@ -359,9 +367,7 @@ extension SettingsScreen {
         func deleteEverything() {
             Task {
                 do {
-                    let context = PersistenceController.shared.viewContext
-                    let fetchRequest = Ingestion.fetchRequest()
-                    let allIngestions = try context.fetch(fetchRequest)
+                    let allIngestions = PersistenceController.shared.getAllIngestions()
 
                     await withTaskGroup(of: Void.self) { group in
                         for ingestion in allIngestions {

@@ -16,10 +16,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     override init() {
         super.init()
         manager.delegate = self
-        let locationFetchRequest = ExperienceLocation.fetchRequest()
-        locationFetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \ExperienceLocation.ingestion?.time, ascending: false), NSSortDescriptor(keyPath: \ExperienceLocation.legacyExperience?.creationDate, ascending: false)]
-        locationFetchRequest.fetchLimit = 15
-        let sortedLocations = (try? PersistenceController.shared.viewContext.fetch(locationFetchRequest)) ?? []
+        let sortedLocations = PersistenceController.shared.getRecentLocations(limit: 15)
         experienceLocations = sortedLocations.map { loc in
             Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
         }.uniqued()

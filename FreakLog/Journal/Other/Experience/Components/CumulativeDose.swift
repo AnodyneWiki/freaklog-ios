@@ -14,10 +14,9 @@ struct CumulativeDose: Identifiable {
         self.substanceName = substanceName
         self.substanceColor = substanceColor
         self.firstIngestionTime = ingestionsForSubstance.map { $0.timeUnwrapped }.min() ?? Date()
-        let substance = ingestionsForSubstance.first?.substance
         let ingestionsByRoute = Dictionary(grouping: ingestionsForSubstance, by: { $0.administrationRouteUnwrapped })
         cumulativeRoutes = ingestionsByRoute.map { (route: AdministrationRoute, ingestions: [Ingestion]) in
-            let roaDose = substance?.getDose(for: route)
+            let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: route)
             return CumulativeRouteAndDose(route: route, roaDose: roaDose, ingestionForRoute: ingestions)
         }
     }
