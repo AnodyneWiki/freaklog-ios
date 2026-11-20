@@ -9,7 +9,6 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     
     @Published private(set) var sections: [IngestionSection] = []
     @Published private(set) var timelineIngestions: [Ingestion] = []
-    @Published private(set) var isLoading = false
     @Published private(set) var hasReachedEnd = false
     @Published var searchText: String = ""
 
@@ -37,15 +36,13 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         sections = []
         currentOffset = 0
         hasReachedEnd = false
-        isLoading = false
         setupFetchedResultsController()
     }
 
     /// Fetches the next batch of results from Core Data.
     func fetchNextBatch() {
-        guard !isLoading && !hasReachedEnd else { return }
+        guard !hasReachedEnd else { return }
 
-        isLoading = true
         currentOffset += pageSize
         fetchedResultsController?.fetchRequest.fetchLimit = currentOffset
         
@@ -57,8 +54,6 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         } catch {
             print("ERROR: [AllIngestionsViewModel] Failed to fetch next batch: \(error.localizedDescription)")
         }
-
-        isLoading = false
     }
 
     /// Deletes an ingestion from Core Data.
@@ -171,26 +166,10 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         updateTimelineIngestions()
     }
 
-    private func groupIngestions(_ newIngestions: [Ingestion]) {
-        var updatedSections: [IngestionSection] = []
-
-        for ingestion in newIngestions {
-            let date = ingestion.timeUnwrapped
-            let startOfDay = Calendar.current.startOfDay(for: date)
-            let sectionId = dateToSectionId(startOfDay)
-
-            if let index = updatedSections.firstIndex(where: { $0.id == sectionId }) {
-                if !updatedSections[index].ingestions.contains(where: { $0.objectID == ingestion.objectID }) {
-                    updatedSections[index].ingestions.append(ingestion)
-                }
-            } else {
-                let newSection = IngestionSection(id: sectionId, date: startOfDay, ingestions: [ingestion])
-                updatedSections.append(newSection)
-            }
-        }
-        
-        updatedSections.sort { $0.date > $1.date }
-        self.sections = updatedSections
+    private func groupIngestions(_ ingestions: [Ingestion]) {
+        sections = Dictionary(grouping: ingestions) { Calendar.current.startOfDay(for: $0.timeUnwrapped) }
+            .map { day, ingestions in IngestionSection(id: dateToSectionId(day), date: day, ingestions: ingestions) }
+            .sorted { $0.date > $1.date }
     }
 
     private func dateToSectionId(_ date: Date) -> String {
