@@ -30,7 +30,8 @@ struct SubstanceRepo {
     }
 
     func getSubstances<C: Collection>(names: C) -> [Substance] where C.Element == String {
-        substances.filter { names.contains($0.name) }
+        let names = Set(names)
+        return substances.filter { names.contains($0.name) }
     }
 
     private static func getInitialData() -> Data {

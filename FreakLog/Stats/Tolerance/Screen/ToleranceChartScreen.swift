@@ -47,14 +47,10 @@ struct ToleranceChartScreen: View {
         let persisted = relevantIngestions.map { ing in
             SubstanceAndDay(substanceName: ing.substanceNameUnwrapped, day: ing.timeUnwrapped)
         }
-        toleranceWindows = ToleranceChartCalculator.getToleranceWindows(from: persisted + additionalSubstanceDays, substanceCompanions: Array(substanceCompanions))
-        let substanceNamesInIngestions = Set(relevantIngestions.map { $0.substanceNameUnwrapped })
-        let substanceNamesInToleranceWindows = Set(toleranceWindows.map { $0.substanceName })
-        substancesInChart = SubstanceRepo.shared.getSubstances(names: substanceNamesInToleranceWindows).map { sub in
-            sub.toSubstanceWithToleranceAndColor(substanceColor: substanceCompanions.first(where: { $0.substanceNameUnwrapped == sub.name })?.color ?? .red)
-        }
-        numberOfSubstancesInChart = substanceNamesInToleranceWindows.count
-        let substancesWithoutToleranceWindows = substanceNamesInIngestions.subtracting(substanceNamesInToleranceWindows)
-        substancesInIngestionsButNotChart = Array(substancesWithoutToleranceWindows)
+        let chartData = ExperienceLogic.chartData(for: persisted + additionalSubstanceDays, substanceCompanions: Array(substanceCompanions))
+        toleranceWindows = chartData.toleranceWindows
+        substancesInChart = chartData.substancesInChart
+        numberOfSubstancesInChart = chartData.numberOfSubstancesInToleranceChart
+        substancesInIngestionsButNotChart = chartData.namesOfSubstancesWithMissingTolerance
     }
 }

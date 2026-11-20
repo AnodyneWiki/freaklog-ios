@@ -71,14 +71,9 @@ struct StatsScreen: View {
         let substanceDays = ingestionsLast90Days.map { ing in
             SubstanceAndDay(substanceName: ing.substanceNameUnwrapped, day: ing.timeUnwrapped)
         }
-        toleranceWindows = ToleranceChartCalculator.getToleranceWindows(
-            from: substanceDays,
-            substanceCompanions: Array(substanceCompanions)
-        )
-        let substancesInIngestions = Set(ingestionsLast90Days.map { $0.substanceNameUnwrapped })
-        let substancesInToleranceWindows = Set(toleranceWindows.map { $0.substanceName })
-        let substancesWithoutToleranceWindows = substancesInIngestions.subtracting(substancesInToleranceWindows)
-        substancesInIngestionsButNotToleranceChart = Array(substancesWithoutToleranceWindows)
+        let chartData = ExperienceLogic.chartData(for: Array(substanceDays), substanceCompanions: Array(substanceCompanions))
+        toleranceWindows = chartData.toleranceWindows
+        substancesInIngestionsButNotToleranceChart = chartData.namesOfSubstancesWithMissingTolerance
     }
 
     private func getIngestionCountsLast30Days() -> [SubstanceExperienceCountForDay] {

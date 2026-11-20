@@ -70,37 +70,35 @@ struct ExperienceLogic {
         let namesOfSubstancesWithMissingTolerance: [String]
     }
     
+    // Tolerance chart for the three months before the last of the given ingestions
     static func chartData(for ingestions: [Ingestion]) -> ChartData {
         let lastIngestionDate = ingestions.last?.timeUnwrapped ?? Date.now
         let threeMonthsBefore = lastIngestionDate.addingTimeInterval(-3 * 30 * 24 * 60 * 60)
         let ingestionsForChart = myIngestions(
             from: PersistenceController.shared.getIngestionsBetween(startDate: threeMonthsBefore, endDate: lastIngestionDate)
         )
-        let substanceDays = ingestionsForChart.map { ing in
-            SubstanceAndDay(substanceName: ing.substanceNameUnwrapped, day: ing.timeUnwrapped)
-        }
-        let substanceCompanions = PersistenceController.shared.getSubstanceCompanions()
-        let allWindowsInLast3Months = ToleranceChartCalculator.getToleranceWindows(
-            from: substanceDays,
-            substanceCompanions: Array(substanceCompanions)
+        return chartData(
+            for: ingestionsForChart.map { SubstanceAndDay(substanceName: $0.substanceNameUnwrapped, day: $0.timeUnwrapped) },
+            substanceCompanions: PersistenceController.shared.getSubstanceCompanions()
         )
-        let toleranceWindowsSorted = allWindowsInLast3Months.sorted { lhs, rhs in
-            lhs.start < rhs.start
-        }
-        let namesOfSubstancesInChart = toleranceWindowsSorted.map { $0.substanceName }.uniqued()
+    }
+
+    static func chartData(for substanceDays: [SubstanceAndDay], substanceCompanions: [SubstanceCompanion]) -> ChartData {
+        let toleranceWindows = ToleranceChartCalculator.getToleranceWindows(
+            from: substanceDays,
+            substanceCompanions: substanceCompanions
+        ).sorted { $0.start < $1.start }
+        let namesOfSubstancesInChart = toleranceWindows.map(\.substanceName).uniqued()
+        let colors = Dictionary(substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color) }, uniquingKeysWith: { first, _ in first })
         let substancesInChart = SubstanceRepo.shared.getSubstances(names: namesOfSubstancesInChart).map { sub in
-            sub.toSubstanceWithToleranceAndColor(substanceColor: substanceCompanions.first(where: { $0.substanceNameUnwrapped == sub.name })?.color ?? .red)
+            sub.toSubstanceWithToleranceAndColor(substanceColor: colors[sub.name] ?? .red)
         }
-        let numberOfSubstancesInToleranceChart = namesOfSubstancesInChart.count
-        let namesOfSubstancesInIngestions = Set(ingestionsForChart.map { $0.substanceNameUnwrapped })
-        let namesOfSubstancesWithWindows = Set(allWindowsInLast3Months.map { $0.substanceName })
-        let namesOfSubstancesWithoutWindows = namesOfSubstancesInIngestions.subtracting(namesOfSubstancesWithWindows)
-        let namesOfSubstancesWithMissingTolerance = Array(namesOfSubstancesWithoutWindows)
+        let namesWithoutWindows = Set(substanceDays.map(\.substanceName)).subtracting(namesOfSubstancesInChart)
         return ChartData(
-            toleranceWindows: toleranceWindowsSorted,
+            toleranceWindows: toleranceWindows,
             substancesInChart: substancesInChart,
-            numberOfSubstancesInToleranceChart: numberOfSubstancesInToleranceChart,
-            namesOfSubstancesWithMissingTolerance: namesOfSubstancesWithMissingTolerance
+            numberOfSubstancesInToleranceChart: namesOfSubstancesInChart.count,
+            namesOfSubstancesWithMissingTolerance: Array(namesWithoutWindows)
         )
     }
 }

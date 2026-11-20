@@ -22,8 +22,15 @@ enum ToleranceChartCalculator {
     }
 
     private static func getToleranceWindows(from substanceIntervals: [SubstanceInterval], substanceCompanions: [SubstanceCompanion]) -> [ToleranceWindow] {
-        substanceIntervals.map { substanceInterval in
-            let color = getSubstanceColor(substanceName: substanceInterval.substanceName, substanceCompanions: substanceCompanions)
+        let companionColors = Dictionary(
+            substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        // Substances without a companion get a color no other substance uses
+        let fallbackColor = Set(SubstanceColor.allCases).subtracting(companionColors.values).first
+            ?? SubstanceColor.allCases.randomElement() ?? .blue
+        return substanceIntervals.map { substanceInterval in
+            let color = (companionColors[substanceInterval.substanceName] ?? fallbackColor).swiftUIColor
             return ToleranceWindow(
                 substanceName: substanceInterval.substanceName,
                 start: substanceInterval.dateInterval.start,
@@ -132,14 +139,6 @@ enum ToleranceChartCalculator {
             }
             return result
         }
-    }
-
-    private static func getSubstanceColor(substanceName: String, substanceCompanions: [SubstanceCompanion]) -> Color {
-        let alreadyUsedColors = substanceCompanions.map { $0.color }
-        let substanceColor = substanceCompanions.first { com in
-            com.substanceNameUnwrapped == substanceName
-        }?.color ?? Set(SubstanceColor.allCases).subtracting(alreadyUsedColors).first ?? SubstanceColor.allCases.randomElement() ?? .blue
-        return substanceColor.swiftUIColor
     }
 
     private static func mergeDateIntervals(_ intervals: [DateInterval]) -> [DateInterval] {
