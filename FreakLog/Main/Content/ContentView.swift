@@ -7,12 +7,12 @@ struct ContentView: View {
     @AppStorage(PersistenceController.needsToSeeWelcomeKey) var needsToSeeWelcome: Bool = true
     @AppStorage(PersistenceController.isEyeOpenKey1) var isEyeOpen1: Bool = false
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen2: Bool = false
-    @AppStorage("hasBeenMigrated2") var hasBeenMigrated2: Bool = false
-    @AppStorage("hasBeenMigrated3") var hasBeenMigrated3: Bool = false
-    @AppStorage("hasBeenMigrated4") var hasBeenMigrated4: Bool = false
-    @AppStorage("hasBeenMigrated5") var hasBeenMigrated5: Bool = false
-    @AppStorage("hasBeenMigrated6") var hasBeenMigrated6: Bool = false
-    @AppStorage("hasBeenMigrated7") var hasBeenMigrated7: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated2Key) var hasBeenMigrated2: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated3Key) var hasBeenMigrated3: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated4Key) var hasBeenMigrated4: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated5Key) var hasBeenMigrated5: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated6Key) var hasBeenMigrated6: Bool = false
+    @AppStorage(PersistenceController.hasBeenMigrated7Key) var hasBeenMigrated7: Bool = false
 
     var body: some View {
         ContentScreen(isEyeOpen: isEyeOpen2)
@@ -112,14 +112,14 @@ struct ContentScreen: View {
         }
     }
 
-    @AppStorage("openUntilRatedCount") var openUntilRatedCount: Int = 0
+    @AppStorage(PersistenceController.openUntilRatedCountKey) var openUntilRatedCount: Int = 0
 
     private func maybeRequestAppRating() {
         if #available(iOS 16.2, *) {
             if openUntilRatedCount < 10 {
                 openUntilRatedCount += 1
             } else if openUntilRatedCount == 10 {
-                if isEyeOpen && PersistenceController.shared.getRecentIngestions(limit: 11).count > 10 {
+                if isEyeOpen && PersistenceController.shared.getIngestionCount() > 10 {
                     if let windowScene = UIApplication.shared.currentWindow?.windowScene {
                         SKStoreReviewController.requestReview(in: windowScene)
                     }

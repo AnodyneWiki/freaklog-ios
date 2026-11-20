@@ -1,45 +1,31 @@
 import SwiftUI
 
-// MARK: - ChooseDoseScreen
-
 struct ChooseDoseScreen: View {
-  let arguments: SubstanceAndRoute
-  let dismiss: () -> Void
-  let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
-  @State private var selectedUnits: String = UnitPickerOptions.mg.rawValue
-  @State private var selectedPureDose: Double?
-  @State private var selectedDoseDeviation: Double?
-  @State private var isEstimate = false
-  @State private var isShowingNext = false
-
-  @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen = false
-
-  var body: some View {
-    ChooseDoseScreenContent(
+  init(arguments: SubstanceAndRoute, dismiss: @escaping () -> Void, navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void) {
+    self.init(
       substanceName: arguments.substance.name,
       substance: arguments.substance,
       administrationRoute: arguments.administrationRoute,
       dismiss: dismiss,
-      navigateToCustomUnitChooseDose: navigateToCustomUnitChooseDose,
-      isEyeOpen: isEyeOpen,
-      selectedPureDose: $selectedPureDose,
-      selectedDoseDeviation: $selectedDoseDeviation,
-      selectedUnits: $selectedUnits,
-      isEstimate: $isEstimate,
-      isShowingNext: $isShowingNext)
-      .task {
-        let routeUnits = PersistenceController.shared
-          .resolvedDose(for: arguments.substance.name, route: arguments.administrationRoute)?.units
-        if let routeUnits {
-          selectedUnits = routeUnits
-        }
-      }
+      navigateToCustomUnitChooseDose: navigateToCustomUnitChooseDose)
   }
-}
 
-// MARK: - ChooseDoseScreenContent
+  init(
+    arguments: CustomChooseDoseScreenArguments,
+    dismiss: @escaping () -> Void,
+    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void
+  ) {
+    let description = PersistenceController.shared.getCustomSubstance(name: arguments.substanceName)?.explanationUnwrapped
+    self.init(
+      substanceName: arguments.substanceName,
+      substance: nil,
+      customSubstanceDescription: description?.isEmpty == false ? description : nil,
+      defaultUnits: arguments.units,
+      administrationRoute: arguments.administrationRoute,
+      dismiss: dismiss,
+      navigateToCustomUnitChooseDose: navigateToCustomUnitChooseDose)
+  }
 
-struct ChooseDoseScreenContent: View {
   init(
     substanceName: String,
     substance: Substance?,
@@ -47,13 +33,7 @@ struct ChooseDoseScreenContent: View {
     defaultUnits: String = UnitPickerOptions.mg.rawValue,
     administrationRoute: AdministrationRoute,
     dismiss: @escaping () -> Void,
-    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void,
-    isEyeOpen: Bool,
-    selectedPureDose: Binding<Double?>,
-    selectedDoseDeviation: Binding<Double?>,
-    selectedUnits: Binding<String>,
-    isEstimate: Binding<Bool>,
-    isShowingNext: Binding<Bool>
+    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void
   ) {
     self.substanceName = substanceName
     self.substance = substance
@@ -62,12 +42,9 @@ struct ChooseDoseScreenContent: View {
     self.administrationRoute = administrationRoute
     self.dismiss = dismiss
     self.navigateToCustomUnitChooseDose = navigateToCustomUnitChooseDose
-    self.isEyeOpen = isEyeOpen
-    self._selectedPureDose = selectedPureDose
-    self._selectedDoseDeviation = selectedDoseDeviation
-    self._selectedUnits = selectedUnits
-    self._isEstimate = isEstimate
-    self._isShowingNext = isShowingNext
+    let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: administrationRoute)
+    self.roaDose = roaDose
+    _selectedUnits = State(initialValue: roaDose?.units ?? defaultUnits)
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substanceName))
   }
 
@@ -81,12 +58,12 @@ struct ChooseDoseScreenContent: View {
   let administrationRoute: AdministrationRoute
   let dismiss: () -> Void
   let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
-  let isEyeOpen: Bool
-  @Binding var selectedPureDose: Double?
-  @Binding var selectedDoseDeviation: Double?
-  @Binding var selectedUnits: String
-  @Binding var isEstimate: Bool
-  @Binding var isShowingNext: Bool
+  private let roaDose: RoaDose?
+  @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+  @State private var selectedPureDose: Double?
+  @State private var selectedDoseDeviation: Double?
+  @State private var selectedUnits: String
+  @State private var isEstimate = false
 
   var body: some View {
     screen.toolbar {
@@ -115,10 +92,6 @@ struct ChooseDoseScreenContent: View {
   @FocusState private var isDoseFieldFocused: Bool
   @FocusState private var isEstimatedDeviationFocused: Bool
   @State private var isAddCustomUnitSheetShown: Bool = false
-
-  private var roaDose: RoaDose? {
-    PersistenceController.shared.resolvedDose(for: substanceName, route: administrationRoute)
-  }
 
   @State private var isDosageRemarkExpanded = false
 
@@ -185,9 +158,7 @@ struct ChooseDoseScreenContent: View {
         let units = roaDose?.units,
         let clarification = DosesSection.getUnitClarification(for: units)
       {
-        Section {
-          Text(clarification)
-        }
+        Text(clarification)
       }
     }
     .listRowSeparator(.hidden)
@@ -303,17 +274,11 @@ struct ChooseDoseScreenContent: View {
 
 #Preview {
   NavigationStack {
-    ChooseDoseScreenContent(
+    ChooseDoseScreen(
       substanceName: "Amphetamine",
       substance: SubstanceRepo.shared.getSubstance(name: "Amphetamine")!,
       administrationRoute: .oral,
       dismiss: {},
-      navigateToCustomUnitChooseDose: { _ in },
-      isEyeOpen: true,
-      selectedPureDose: .constant(20),
-      selectedDoseDeviation: .constant(2),
-      selectedUnits: .constant("mg"),
-      isEstimate: .constant(true),
-      isShowingNext: .constant(false))
+      navigateToCustomUnitChooseDose: { _ in })
   }
 }

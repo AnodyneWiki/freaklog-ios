@@ -20,24 +20,7 @@ struct EditCustomSubstanceView: View {
         TextField("Units", text: $units)
       }
       Section {
-        ForEach(AdministrationRoute.allCases) { route in
-          NavigationLink(destination: EditCustomRoaView(
-            substanceName: customSubstance.nameUnwrapped,
-            route: route,
-            customSubstance: customSubstance
-          )) {
-            HStack {
-              Text(route.rawValue.localizedCapitalized)
-              Spacer()
-              if let roa = customSubstance.getRoa(for: route) {
-                if roa.roaDose != nil || roa.roaDuration != nil {
-                  Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.accentColor)
-                }
-              }
-            }
-          }
-        }
+        CustomRoaRouteList(substanceName: customSubstance.nameUnwrapped, customSubstance: customSubstance)
       } header: {
         Text("Routes (Dose & Duration)")
       } footer: {

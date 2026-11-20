@@ -145,7 +145,7 @@ struct Substance: Decodable, Identifiable, Hashable {
     }
 }
 
-struct DurationInfo {
+struct DurationInfo: Equatable {
     let route: AdministrationRoute
     let roaDuration: RoaDuration
 }

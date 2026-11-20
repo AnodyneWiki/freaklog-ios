@@ -4,6 +4,24 @@ struct DurationSection: View {
 
     let substance: Substance
 
+    @FetchRequest private var customRoas: FetchedResults<CustomRoa>
+
+    init(substance: Substance) {
+        self.substance = substance
+        _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
+    }
+
+    // PW routes first, then routes that only have custom data, each with custom data taking priority.
+    private var durationInfos: [DurationInfo] {
+        let pwRoutes = substance.roas.map(\.name)
+        let customRoutes = customRoas.map(\.administrationRouteUnwrapped).filter { !pwRoutes.contains($0) }
+        return (pwRoutes + customRoutes).uniqued().compactMap { route in
+            PersistenceController.shared.resolvedDuration(for: substance.name, route: route).map {
+                DurationInfo(route: route, roaDuration: $0)
+            }
+        }
+    }
+
     @State private var selectedTime = Date()
     @State private var timelineModel: TimelineModel?
     @State private var hiddenRoutes: [AdministrationRoute] = []
@@ -70,11 +88,14 @@ struct DurationSection: View {
         .onChange(of: hiddenRoutes) { _ in
             updateModel()
         }
+        .onChange(of: durationInfos) { _ in
+            updateModel()
+        }
 
     }
 
     private var listItems: some View {
-        ForEach(substance.durationInfos, id: \.route) { info in
+        ForEach(durationInfos, id: \.route) { info in
             let isRouteHidden = hiddenRoutes.contains(info.route)
             HStack(alignment: .center, spacing: 8) {
                 if isRouteHidden {
@@ -101,7 +122,7 @@ struct DurationSection: View {
     }
 
     private func updateModel() {
-        let durationsToShow = substance.durationInfos.filter { info in
+        let durationsToShow = durationInfos.filter { info in
             !hiddenRoutes.contains(info.route)
         }
         let firstAverageCommonDose = substance.doseInfos.compactMap { dose in
@@ -113,7 +134,8 @@ struct DurationSection: View {
                     substanceName: substance.name,
                     color: info.route.color,
                     routeMinInfos: [
-                        RouteMinInfo(
+                        RouteMinInfo.resolved(
+                            substanceName: substance.name,
                             route: info.route,
                             ingestions: [
                                 IngestionMinInfo(

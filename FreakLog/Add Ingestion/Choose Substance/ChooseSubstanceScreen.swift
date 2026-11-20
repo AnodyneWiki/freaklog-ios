@@ -60,7 +60,7 @@ struct ChooseSubstanceContent: View {
                 ChooseRouteScreen(substance: arguments.substance, dismiss: dismiss)
             })
             .navigationDestination(for: CustomChooseDoseScreenArguments.self, destination: { arguments in
-                CustomSubstanceChooseDoseScreen(
+                ChooseDoseScreen(
                     arguments: arguments,
                     dismiss: dismiss,
                     navigateToCustomUnitChooseDose: { customUnit in
@@ -106,7 +106,7 @@ struct ChooseSubstanceContent: View {
     }
 
     @State private var isShowingAddCustomSheet = false
-    @AppStorage("isAddIngestionSiriTipVisible") private var isSiriTipVisible = false
+    @AppStorage(PersistenceController.isAddIngestionSiriTipVisibleKey) private var isSiriTipVisible = false
 
     private var screen: some View {
         ScrollView {

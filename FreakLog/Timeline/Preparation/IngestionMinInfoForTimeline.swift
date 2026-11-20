@@ -20,57 +20,21 @@ struct IngestionWithRepoInfo {
 
 func getSubstanceGroupWithRepoInfo(substanceIngestionGroups: [SubstanceIngestionGroup]) -> [SubstanceGroupWithRepoInfo] {
     substanceIngestionGroups.map { substanceIngestionGroup in
-        let substanceName = substanceIngestionGroup.substanceName
         let routeGroups = substanceIngestionGroup.routeMinInfos.map { routeMinInfo in
-            #if !WIDGET_EXTENSION
-            let roaDuration = PersistenceController.shared.resolvedDuration(for: substanceName, route: routeMinInfo.route)
-            let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: routeMinInfo.route)
-            #else
-            let substance = SubstanceRepo.shared.getSubstance(name: substanceName)
-            let roaDuration = substance?.getDuration(for: routeMinInfo.route)
-            let roaDose = substance?.getDose(for: routeMinInfo.route)
-            #endif
-            let allKnownDoses = routeMinInfo.ingestions.compactMap({ ingestion in
-                ingestion.dose
-            })
+            let allKnownDoses = routeMinInfo.ingestions.compactMap { $0.dose }
             let averageDose = allKnownDoses.reduce(0, +) / max(1.0, Double(allKnownDoses.count))
+            let commonDose = routeMinInfo.commonDose ?? averageDose
             let ingestions = routeMinInfo.ingestions.map { ingestion in
-                var horizontalWeight = 0.5
-                if let dose = ingestion.dose, let roaDose {
-                    let doseType = roaDose.getRangeType(for: dose, with: roaDose.units)
-                    switch doseType {
-                    case .thresh:
-                        horizontalWeight = 0
-                    case .light:
-                        horizontalWeight = 0.25
-                    case .common:
-                        horizontalWeight = 0.5
-                    case .strong:
-                        horizontalWeight = 0.75
-                    case .heavy:
-                        horizontalWeight = 1
-                    case .none:
-                        horizontalWeight = 0.5
-                    }
-                }
-                var commonDose = averageDose
-                if let commonMin = roaDose?.commonMin, let commonMax = roaDose?.strongMin {
-                    commonDose = (commonMin + commonMax)/2
-                }
-                var strengthRelativeToCommonDose = 1.0
-                if let dose = ingestion.dose {
-                    strengthRelativeToCommonDose = dose / commonDose
-                }
-                return IngestionWithRepoInfo(
+                IngestionWithRepoInfo(
                     onsetDelayInHours: ingestion.onsetDelayInHours,
                     time: ingestion.time,
                     endTime: ingestion.endTime,
-                    horizontalWeight: horizontalWeight,
-                    strengthRelativeToCommonDose: strengthRelativeToCommonDose
+                    horizontalWeight: ingestion.horizontalWeight,
+                    strengthRelativeToCommonDose: ingestion.dose.map { $0 / commonDose } ?? 1
                 )
             }
             return RouteGroupWithRepoInfo(
-                roaDuration: roaDuration,
+                roaDuration: routeMinInfo.roaDuration,
                 ingestions: ingestions
             )
         }
@@ -87,9 +51,13 @@ struct SubstanceIngestionGroup: Equatable, Codable {
     let routeMinInfos: [RouteMinInfo]
 }
 
+// Carries the resolved duration and dose info so the timeline (and the widget) never has to look it up.
 struct RouteMinInfo: Equatable, Codable {
     let route: AdministrationRoute
     let ingestions: [IngestionMinInfo]
+    var roaDuration: RoaDuration?
+    // Midpoint of the common dose range, if known
+    var commonDose: Double?
 }
 
 struct IngestionMinInfo: Equatable, Codable {
@@ -97,4 +65,6 @@ struct IngestionMinInfo: Equatable, Codable {
     let time: Date
     let endTime: Date?
     let onsetDelayInHours: Double
+    // 0 (threshold) ... 1 (heavy), 0.5 when unknown
+    var horizontalWeight = 0.5
 }

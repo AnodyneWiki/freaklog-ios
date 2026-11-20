@@ -3,8 +3,13 @@ import SwiftUI
 struct SubstanceScreen: View {
   let substance: Substance
 
-  @State private var isShowingAddIngestionSheet = false
   @State private var isShowingCustomizeSheet = false
+  @FetchRequest private var customRoas: FetchedResults<CustomRoa>
+
+  init(substance: Substance) {
+    self.substance = substance
+    _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
+  }
 
   var body: some View {
     List {
@@ -38,11 +43,10 @@ struct SubstanceScreen: View {
           }
         }
         Group {
-          if substance.dosageRemark != nil || !substance.doseInfos.isEmpty {
+          if substance.dosageRemark != nil || !substance.doseInfos.isEmpty || customRoas.contains(where: { $0.roaDose != nil }) {
             DosesSection(substance: substance)
           }
-          let durationInfos = substance.durationInfos
-          if !durationInfos.isEmpty {
+          if !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil }) {
             DurationSection(substance: substance)
           }
           if let interactions = substance.interactions {
@@ -87,13 +91,6 @@ struct SubstanceScreen: View {
         }
       }
     }
-    .fullScreenCover(isPresented: $isShowingAddIngestionSheet) {
-      NavigationStack {
-        AcknowledgeInteractionsView(substance: substance) {
-          isShowingAddIngestionSheet.toggle()
-        }
-      }
-    }
     .sheet(isPresented: $isShowingCustomizeSheet) {
       SubstanceCustomizeSheet(substance: substance)
     }
@@ -107,20 +104,11 @@ struct SubstanceCustomizeSheet: View {
   let substance: Substance
   @Environment(\.dismiss) private var dismiss
 
-  @FetchRequest private var customRoas: FetchedResults<CustomRoa>
-
-  init(substance: Substance) {
-    self.substance = substance
-    _customRoas = FetchRequest(fetchRequest: PersistenceController.standaloneCustomRoasRequest(for: substance.name))
-  }
-
   var body: some View {
     NavigationStack {
       List {
         Section {
-          ForEach(AdministrationRoute.allCases) { route in
-            customizeRow(for: route)
-          }
+          CustomRoaRouteList(substanceName: substance.name)
         } header: {
           Text("Override Dose & Duration")
         } footer: {
@@ -131,20 +119,6 @@ struct SubstanceCustomizeSheet: View {
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Done") { dismiss() }
-        }
-      }
-    }
-  }
-
-  private func customizeRow(for route: AdministrationRoute) -> some View {
-    let hasData = customRoas.first(where: { $0.administrationRouteUnwrapped == route })
-      .map { $0.roaDose != nil || $0.roaDuration != nil } ?? false
-    return NavigationLink(destination: EditCustomRoaView(substanceName: substance.name, route: route)) {
-      HStack {
-        Text(route.rawValue.localizedCapitalized)
-        Spacer()
-        if hasData {
-          Image(systemName: "pencil.circle.fill").foregroundColor(.accentColor)
         }
       }
     }

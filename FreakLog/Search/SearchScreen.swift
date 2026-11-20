@@ -73,7 +73,7 @@ struct SearchScreen: View {
         )
     }
 
-    @AppStorage("isSearchSubstanceSiriTipVisible") private var isSiriTipVisible = false
+    @AppStorage(PersistenceController.isSearchSubstanceSiriTipVisibleKey) private var isSiriTipVisible = false
 
     var body: some View {
         VStack(spacing: 0) {

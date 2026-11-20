@@ -197,7 +197,19 @@ struct EffectTimeline_Previews: PreviewProvider {
         ),
     ]
 
-    static let substanceGroups: [SubstanceIngestionGroup] = [
+    static let substanceGroups: [SubstanceIngestionGroup] = rawSubstanceGroups.map { group in
+        SubstanceIngestionGroup(
+            substanceName: group.substanceName,
+            color: group.color,
+            routeMinInfos: group.routeMinInfos.map { info in
+                var info = info
+                info.roaDuration = SubstanceRepo.shared.getSubstance(name: group.substanceName)?.getDuration(for: info.route)
+                return info
+            }
+        )
+    }
+
+    private static let rawSubstanceGroups: [SubstanceIngestionGroup] = [
         SubstanceIngestionGroup(
             substanceName: "MDMA",
             color: .blue,

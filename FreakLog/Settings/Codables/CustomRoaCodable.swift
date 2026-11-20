@@ -1,66 +1,125 @@
 import Foundation
 
-struct CustomRoaCodable: Codable {
-  let administrationRoute: AdministrationRoute
-  let doseUnits: String?
-  let lightDose: Double?
-  let commonDose: Double?
-  let strongDose: Double?
-  let heavyDose: Double?
-  let onsetLow: Double?
-  let onsetHigh: Double?
-  let comeupLow: Double?
-  let comeupHigh: Double?
-  let peakLow: Double?
-  let peakHigh: Double?
-  let offsetLow: Double?
-  let offsetHigh: Double?
-  let totalLow: Double?
-  let totalHigh: Double?
-  let afterglowLow: Double?
-  let afterglowHigh: Double?
-}
+// Value form of a CustomRoa. Used for export/import and as the editing model.
+// Unset values are nil here and 0 on the CoreData entity.
+struct CustomRoaCodable: Codable, Equatable {
+  var administrationRoute: AdministrationRoute
+  var doseUnits: String?
+  var lightDose: Double?
+  var commonDose: Double?
+  var strongDose: Double?
+  var heavyDose: Double?
+  var onsetLow: Double?
+  var onsetHigh: Double?
+  var comeupLow: Double?
+  var comeupHigh: Double?
+  var peakLow: Double?
+  var peakHigh: Double?
+  var offsetLow: Double?
+  var offsetHigh: Double?
+  var totalLow: Double?
+  var totalHigh: Double?
+  var afterglowLow: Double?
+  var afterglowHigh: Double?
 
-extension CustomRoaCodable {
+  init(administrationRoute: AdministrationRoute, doseUnits: String? = nil) {
+    self.administrationRoute = administrationRoute
+    self.doseUnits = doseUnits
+  }
+
   init(roa: CustomRoa) {
-    administrationRoute = roa.administrationRouteUnwrapped
-    doseUnits = roa.doseUnits
-    lightDose = roa.lightDose > 0 ? roa.lightDose : nil
-    commonDose = roa.commonDose > 0 ? roa.commonDose : nil
-    strongDose = roa.strongDose > 0 ? roa.strongDose : nil
-    heavyDose = roa.heavyDose > 0 ? roa.heavyDose : nil
-    onsetLow = roa.onsetLow > 0 ? roa.onsetLow : nil
-    onsetHigh = roa.onsetHigh > 0 ? roa.onsetHigh : nil
-    comeupLow = roa.comeupLow > 0 ? roa.comeupLow : nil
-    comeupHigh = roa.comeupHigh > 0 ? roa.comeupHigh : nil
-    peakLow = roa.peakLow > 0 ? roa.peakLow : nil
-    peakHigh = roa.peakHigh > 0 ? roa.peakHigh : nil
-    offsetLow = roa.offsetLow > 0 ? roa.offsetLow : nil
-    offsetHigh = roa.offsetHigh > 0 ? roa.offsetHigh : nil
-    totalLow = roa.totalLow > 0 ? roa.totalLow : nil
-    totalHigh = roa.totalHigh > 0 ? roa.totalHigh : nil
-    afterglowLow = roa.afterglowLow > 0 ? roa.afterglowLow : nil
-    afterglowHigh = roa.afterglowHigh > 0 ? roa.afterglowHigh : nil
+    self.init(administrationRoute: roa.administrationRouteUnwrapped, doseUnits: roa.doseUnits)
+    for field in CustomRoaField.allCases {
+      self[field] = roa[keyPath: field.roaKeyPath]
+    }
+  }
+
+  subscript(field: CustomRoaField) -> Double? {
+    get { self[keyPath: field.keyPath] }
+    set { self[keyPath: field.keyPath] = newValue.flatMap { $0 > 0 ? $0 : nil } }
+  }
+
+  var isEmpty: Bool {
+    CustomRoaField.allCases.allSatisfy { self[$0] == nil }
   }
 
   func apply(to roa: CustomRoa) {
     roa.administrationRoute = administrationRoute.rawValue
-    roa.doseUnits = doseUnits
-    roa.lightDose = lightDose ?? 0
-    roa.commonDose = commonDose ?? 0
-    roa.strongDose = strongDose ?? 0
-    roa.heavyDose = heavyDose ?? 0
-    roa.onsetLow = onsetLow ?? 0
-    roa.onsetHigh = onsetHigh ?? 0
-    roa.comeupLow = comeupLow ?? 0
-    roa.comeupHigh = comeupHigh ?? 0
-    roa.peakLow = peakLow ?? 0
-    roa.peakHigh = peakHigh ?? 0
-    roa.offsetLow = offsetLow ?? 0
-    roa.offsetHigh = offsetHigh ?? 0
-    roa.totalLow = totalLow ?? 0
-    roa.totalHigh = totalHigh ?? 0
-    roa.afterglowLow = afterglowLow ?? 0
-    roa.afterglowHigh = afterglowHigh ?? 0
+    roa.doseUnits = doseUnits?.isEmpty == false ? doseUnits : nil
+    for field in CustomRoaField.allCases {
+      roa[keyPath: field.roaKeyPath] = self[field] ?? 0
+    }
+  }
+
+  func roaDose(fallbackUnits: String?) -> RoaDose? {
+    guard lightDose != nil || commonDose != nil || strongDose != nil || heavyDose != nil else { return nil }
+    guard let units = [doseUnits, fallbackUnits].compactMap({ $0 }).first(where: { !$0.isEmpty }) else { return nil }
+    return RoaDose(units: units, lightMin: lightDose, commonMin: commonDose, strongMin: strongDose, heavyMin: heavyDose)
+  }
+
+  var roaDuration: RoaDuration? {
+    let duration = RoaDuration(
+      onset: Self.range(onsetLow, onsetHigh),
+      comeup: Self.range(comeupLow, comeupHigh),
+      peak: Self.range(peakLow, peakHigh),
+      offset: Self.range(offsetLow, offsetHigh),
+      total: Self.range(totalLow, totalHigh),
+      afterglow: Self.range(afterglowLow, afterglowHigh)
+    )
+    let ranges = [duration.onset, duration.comeup, duration.peak, duration.offset, duration.total, duration.afterglow]
+    return ranges.allSatisfy { $0 == nil } ? nil : duration
+  }
+
+  private static func range(_ low: Double?, _ high: Double?) -> DurationRange? {
+    guard low != nil || high != nil else { return nil }
+    return DurationRange(min: low, max: high, units: .minutes)
+  }
+}
+
+enum CustomRoaField: CaseIterable {
+  case lightDose, commonDose, strongDose, heavyDose
+  case onsetLow, onsetHigh, comeupLow, comeupHigh, peakLow, peakHigh
+  case offsetLow, offsetHigh, totalLow, totalHigh, afterglowLow, afterglowHigh
+
+  var keyPath: WritableKeyPath<CustomRoaCodable, Double?> {
+    switch self {
+    case .lightDose: \.lightDose
+    case .commonDose: \.commonDose
+    case .strongDose: \.strongDose
+    case .heavyDose: \.heavyDose
+    case .onsetLow: \.onsetLow
+    case .onsetHigh: \.onsetHigh
+    case .comeupLow: \.comeupLow
+    case .comeupHigh: \.comeupHigh
+    case .peakLow: \.peakLow
+    case .peakHigh: \.peakHigh
+    case .offsetLow: \.offsetLow
+    case .offsetHigh: \.offsetHigh
+    case .totalLow: \.totalLow
+    case .totalHigh: \.totalHigh
+    case .afterglowLow: \.afterglowLow
+    case .afterglowHigh: \.afterglowHigh
+    }
+  }
+
+  var roaKeyPath: ReferenceWritableKeyPath<CustomRoa, Double> {
+    switch self {
+    case .lightDose: \.lightDose
+    case .commonDose: \.commonDose
+    case .strongDose: \.strongDose
+    case .heavyDose: \.heavyDose
+    case .onsetLow: \.onsetLow
+    case .onsetHigh: \.onsetHigh
+    case .comeupLow: \.comeupLow
+    case .comeupHigh: \.comeupHigh
+    case .peakLow: \.peakLow
+    case .peakHigh: \.peakHigh
+    case .offsetLow: \.offsetLow
+    case .offsetHigh: \.offsetHigh
+    case .totalLow: \.totalLow
+    case .totalHigh: \.totalHigh
+    case .afterglowLow: \.afterglowLow
+    case .afterglowHigh: \.afterglowHigh
+    }
   }
 }

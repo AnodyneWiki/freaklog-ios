@@ -1,7 +1,7 @@
 import CoreData
 import Foundation
 
-struct DurationRange: Codable {
+struct DurationRange: Codable, Equatable {
     let min: Double?
     let max: Double?
     let units: Units

@@ -6,6 +6,7 @@ struct PersistenceController {
     static let preview: PersistenceController = .init(inMemory: true)
 
     let container: NSPersistentCloudKitContainer
+    let roaCache: ResolvedRoaCache
 
     private var isInitialized = false
 
@@ -34,6 +35,23 @@ struct PersistenceController {
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
     static let leaderboardServersKey = "leaderboardServers"
     static let leaderboardDeviceSeedKey = "leaderboardDeviceSeed"
+    static let isOpenLastExperienceSiriTipVisibleKey = "isOpenLastExperienceSiriTipVisible"
+    static let isSearchSubstanceSiriTipVisibleKey = "isSearchSubstanceSiriTipVisible"
+    static let isAddIngestionSiriTipVisibleKey = "isAddIngestionSiriTipVisible"
+    static let hasBeenMigrated2Key = "hasBeenMigrated2"
+    static let hasBeenMigrated3Key = "hasBeenMigrated3"
+    static let hasBeenMigrated4Key = "hasBeenMigrated4"
+    static let hasBeenMigrated5Key = "hasBeenMigrated5"
+    static let hasBeenMigrated6Key = "hasBeenMigrated6"
+    static let hasBeenMigrated7Key = "hasBeenMigrated7"
+    static let openUntilRatedCountKey = "openUntilRatedCount"
+    static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
+
+    #if DEBUG
+    static let cloudKitContainerIdentifier = "iCloud.woof.freaklog-debug"
+    #else
+    static let cloudKitContainerIdentifier = "iCloud.woof.freaklog"
+    #endif
 
     var viewContext: NSManagedObjectContext {
         container.viewContext
@@ -42,29 +60,20 @@ struct PersistenceController {
     init(inMemory: Bool = false) {
         let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
         container = NSPersistentCloudKitContainer(name: "Main")
+        roaCache = ResolvedRoaCache(context: container.viewContext)
 
         if !inMemory {
             container.persistentStoreDescriptions.forEach { description in
                 description.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
 
                 if isICloudSyncEnabled {
-                    #if DEBUG
-                    let containerIdentifier = "iCloud.woof.freaklog-debug"
-                    #else
-                    let containerIdentifier = "iCloud.woof.freaklog"
-                    #endif
-
-                    let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+                    let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier)
                     description.cloudKitContainerOptions = cloudKitContainerOptions
 
                     description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
                 } else {
                     description.configuration = "Local"
                 }
-                
-                #if APP_WIDGET
-                description.setOption(true as NSNumber, forKey: NSReadOnlyPersistentStoreOption)
-                #endif
             }
         }
 
@@ -110,11 +119,10 @@ struct PersistenceController {
         viewContext.automaticallyMergesChangesFromParent = true
         viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
-        let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
-        if !UserDefaults.standard.bool(forKey: didInitializeCloudKitSchemaKey) {
+        if !UserDefaults.standard.bool(forKey: Self.didInitializeCloudKitSchemaKey) {
             do {
                 try container.initializeCloudKitSchema(options: [])
-                UserDefaults.standard.set(true, forKey: didInitializeCloudKitSchemaKey)
+                UserDefaults.standard.set(true, forKey: Self.didInitializeCloudKitSchemaKey)
             } catch {
             }
         }
@@ -137,12 +145,7 @@ struct PersistenceController {
         }
 
         if enabled {
-            #if DEBUG
-            let containerIdentifier = "iCloud.woof.freaklog-debug"
-            #else
-            let containerIdentifier = "iCloud.woof.freaklog"
-            #endif
-            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: containerIdentifier)
+            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier)
             description.cloudKitContainerOptions = cloudKitContainerOptions
             description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
             description.configuration = nil
@@ -170,51 +173,15 @@ struct PersistenceController {
 
     func deleteEverything(blockContext: NSManagedObjectContext? = nil) throws {
         let context = blockContext ?? viewContext
-        let experienceDeleteRequest = Experience.fetchRequest()
-        experienceDeleteRequest.includesPropertyValues = false
-        let experiences = try context.fetch(experienceDeleteRequest)
-        for exp in experiences {
-            context.delete(exp)
-        }
-        let ingestionDeleteRequest = Ingestion.fetchRequest()
-        ingestionDeleteRequest.includesPropertyValues = false
-        let ingestions = try context.fetch(ingestionDeleteRequest)
-        for ing in ingestions {
-            context.delete(ing)
-        }
-        let customDeleteRequest = CustomSubstance.fetchRequest()
-        customDeleteRequest.includesPropertyValues = false
-        let customs = try context.fetch(customDeleteRequest)
-        for cust in customs {
-            context.delete(cust)
-        }
-        let companionDeleteRequest = SubstanceCompanion.fetchRequest()
-        companionDeleteRequest.includesPropertyValues = false
-        let companions = try context.fetch(companionDeleteRequest)
-        for com in companions {
-            context.delete(com)
-        }
-        let unitDeleteRequest = CustomUnit.fetchRequest()
-        unitDeleteRequest.includesPropertyValues = false
-        let customUnits = try context.fetch(unitDeleteRequest)
-        for unit in customUnits {
-            context.delete(unit)
-        }
-        let sprayDeleteRequest = Spray.fetchRequest()
-        sprayDeleteRequest.includesPropertyValues = false
-        let sprays = try context.fetch(sprayDeleteRequest)
-        for spray in sprays {
-            context.delete(spray)
-        }
-        let customRoaDeleteRequest = CustomRoa.fetchRequest()
-        customRoaDeleteRequest.includesPropertyValues = false
-        let customRoas = try context.fetch(customRoaDeleteRequest)
-        for roa in customRoas {
-            context.delete(roa)
+        // Entities not reached via cascade delete rules are listed explicitly
+        let entityNames = ["Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa"]
+        for entityName in entityNames {
+            let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
+            request.includesPropertyValues = false
+            try context.fetch(request).forEach(context.delete)
         }
         try context.save()
-        
-        
+
         let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
         if !isICloudSyncEnabled {
             let purgeHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
@@ -473,13 +440,15 @@ struct PersistenceController {
         return r
     }
 
-    static func standaloneCustomRoasRequest(for substanceName: String) -> NSFetchRequest<CustomRoa> {
+    // Matches both PW overrides and custom substance roas (older ones only carry the parent's name).
+    static func customRoasRequest(for substanceName: String) -> NSFetchRequest<CustomRoa> {
         let r = CustomRoa.fetchRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \CustomRoa.administrationRoute, ascending: true)]
-        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "substanceName == %@", substanceName),
-            NSPredicate(format: "customSubstance == nil"),
-        ])
+        r.predicate = NSPredicate(
+            format: "substanceName == %@ OR (substanceName == nil AND customSubstance.name == %@)",
+            substanceName,
+            substanceName
+        )
         return r
     }
 
@@ -490,6 +459,10 @@ struct PersistenceController {
     }
 
     // MARK: - Instance Fetch Methods
+
+    func getIngestionCount() -> Int {
+        (try? viewContext.count(for: Ingestion.fetchRequest())) ?? 0
+    }
 
     func getAllIngestions() -> [Ingestion] {
         (try? viewContext.fetch(Ingestion.fetchRequest())) ?? []
@@ -553,10 +526,11 @@ struct PersistenceController {
     }
 
     func getPersonalIngestions(from startDate: Date, to endDate: Date) -> [Ingestion] {
-        let r = Ingestion.fetchRequest()
+        let r = Self.personalIngestionsRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: true)]
         r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            r.predicate!,
             NSPredicate(format: "time >= %@ AND time < %@", startDate as NSDate, endDate as NSDate),
-            NSPredicate(format: "consumerName == nil OR consumerName == ''"),
         ])
         return (try? viewContext.fetch(r)) ?? []
     }
@@ -578,11 +552,10 @@ struct PersistenceController {
     }
 
     func getLatestActiveExperience() -> Experience? {
-        let fetchRequest = Experience.fetchRequest()
+        let fetchRequest = Self.experiencesRequest()
         let minusThreeDays: TimeInterval = -3*24*60*60
         let startDate = Date.now.addingTimeInterval(minusThreeDays)
         fetchRequest.predicate = NSPredicate(format: "sortDate >= %@", startDate as NSDate)
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
         let experiences = (try? viewContext.fetch(fetchRequest)) ?? []
         return experiences.first { experience in
             experience.isCurrent
@@ -590,69 +563,121 @@ struct PersistenceController {
     }
 
     func getLatestExperience() -> Experience? {
-        let fetchRequest = Experience.fetchRequest()
-        fetchRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
+        let fetchRequest = Self.experiencesRequest()
         fetchRequest.fetchLimit = 1
-        let experiences = (try? viewContext.fetch(fetchRequest)) ?? []
-        return experiences.first
+        return (try? viewContext.fetch(fetchRequest))?.first
     }
 
     func getSubstanceCompanions() -> [SubstanceCompanion] {
-        let fetchRequest = SubstanceCompanion.fetchRequest()
-        return (try? viewContext.fetch(fetchRequest)) ?? []
+        (try? viewContext.fetch(Self.substanceCompanionsRequest())) ?? []
     }
 
     func getCustomSubstance(name: String) -> CustomSubstance? {
         let fetchRequest = CustomSubstance.fetchRequest()
         fetchRequest.predicate = NSPredicate(format: "name == %@", name)
-        let results = try? viewContext.fetch(fetchRequest)
-        return results?.first
-    }
-
-    func getCustomRoa(for substanceName: String, route: AdministrationRoute) -> CustomRoa? {
-        let fetchRequest = CustomRoa.fetchRequest()
-        fetchRequest.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "substanceName == %@", substanceName),
-            NSPredicate(format: "administrationRoute == %@", route.rawValue),
-            NSPredicate(format: "customSubstance == nil"),
-        ])
+        fetchRequest.fetchLimit = 1
         return (try? viewContext.fetch(fetchRequest))?.first
     }
 
-    // Uniform interface: resolves dose for any substance name (PW or custom),
-    // applying standalone custom overrides with priority over built-in PW data.
+    func getCustomRoa(for substanceName: String, route: AdministrationRoute) -> CustomRoa? {
+        let r = Self.customRoasRequest(for: substanceName)
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            r.predicate!,
+            NSPredicate(format: "administrationRoute == %@", route.rawValue),
+        ])
+        r.fetchLimit = 1
+        return (try? viewContext.fetch(r))?.first
+    }
+
+    // Single entry point for dose/duration of any substance (PW or custom).
+    // Custom data takes priority over PW data, per field.
+    func resolvedRoa(for substanceName: String, route: AdministrationRoute) -> ResolvedRoa {
+        let custom = roaCache.entry(for: substanceName, route: route)
+        let pw = SubstanceRepo.shared.getSubstance(name: substanceName)
+        return ResolvedRoa(
+            dose: custom?.dose ?? pw?.getDose(for: route),
+            duration: custom?.duration ?? pw?.getDuration(for: route)
+        )
+    }
+
     func resolvedDose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
-        if let pw = SubstanceRepo.shared.getSubstance(name: substanceName) {
-            return getCustomRoa(for: substanceName, route: route)?.roaDose
-                ?? pw.getDose(for: route)
-        }
-        return getCustomSubstance(name: substanceName)?.getRoaDose(for: route)
+        resolvedRoa(for: substanceName, route: route).dose
     }
 
     func resolvedDuration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
-        if let pw = SubstanceRepo.shared.getSubstance(name: substanceName) {
-            return getCustomRoa(for: substanceName, route: route)?.roaDuration
-                ?? pw.getDuration(for: route)
-        }
-        return getCustomSubstance(name: substanceName)?.getRoaDuration(for: route)
+        resolvedRoa(for: substanceName, route: route).duration
     }
 
     func renameSubstance(from oldName: String, to newName: String) {
-        let ctx = viewContext
-        let ingFetch = Ingestion.fetchRequest()
-        ingFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
-        ((try? ctx.fetch(ingFetch)) ?? []).forEach { $0.substanceName = newName }
+        for entityName in ["Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa"] {
+            let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
+            r.predicate = NSPredicate(format: "substanceName == %@", oldName)
+            ((try? viewContext.fetch(r)) ?? []).forEach { $0.setValue(newName, forKey: "substanceName") }
+        }
+    }
+}
 
-        let compFetch = SubstanceCompanion.fetchRequest()
-        compFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
-        ((try? ctx.fetch(compFetch)) ?? []).forEach { $0.substanceName = newName }
+struct ResolvedRoa {
+    let dose: RoaDose?
+    let duration: RoaDuration?
+}
 
-        let unitFetch = CustomUnit.fetchRequest()
-        unitFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
-        ((try? ctx.fetch(unitFetch)) ?? []).forEach { $0.substanceName = newName }
+// In-memory copy of all CustomRoa data, keyed by substance name and route. The table is small,
+// so it is loaded at once and dropped whenever a CustomRoa or CustomSubstance changes.
+final class ResolvedRoaCache: @unchecked Sendable {
+    private let context: NSManagedObjectContext
+    private let lock = NSLock()
+    private var entries: [String: [AdministrationRoute: ResolvedRoa]]?
+    private var observer: NSObjectProtocol?
 
-        let roaFetch = CustomRoa.fetchRequest()
-        roaFetch.predicate = NSPredicate(format: "substanceName == %@", oldName)
-        ((try? ctx.fetch(roaFetch)) ?? []).forEach { $0.substanceName = newName }
+    init(context: NSManagedObjectContext) {
+        self.context = context
+        observer = NotificationCenter.default.addObserver(
+            forName: .NSManagedObjectContextObjectsDidChange,
+            object: context,
+            queue: nil
+        ) { [weak self] notification in
+            guard Self.affectsCustomRoas(notification) else { return }
+            self?.invalidate()
+        }
+    }
+
+    func entry(for substanceName: String, route: AdministrationRoute) -> ResolvedRoa? {
+        lock.lock()
+        defer { lock.unlock() }
+        if entries == nil {
+            entries = load()
+        }
+        return entries?[substanceName]?[route]
+    }
+
+    private func invalidate() {
+        lock.lock()
+        entries = nil
+        lock.unlock()
+    }
+
+    private func load() -> [String: [AdministrationRoute: ResolvedRoa]] {
+        var result: [String: [AdministrationRoute: ResolvedRoa]] = [:]
+        context.performAndWait {
+            let roas = (try? context.fetch(CustomRoa.fetchRequest())) ?? []
+            for roa in roas {
+                guard let name = roa.substanceNameResolved, roa.hasData else { continue }
+                result[name, default: [:]][roa.administrationRouteUnwrapped] = ResolvedRoa(
+                    dose: roa.roaDose,
+                    duration: roa.roaDuration
+                )
+            }
+        }
+        return result
+    }
+
+    private static func affectsCustomRoas(_ notification: Notification) -> Bool {
+        let keys = [NSInsertedObjectsKey, NSUpdatedObjectsKey, NSDeletedObjectsKey, NSRefreshedObjectsKey]
+        return keys.contains { key in
+            (notification.userInfo?[key] as? Set<NSManagedObject>)?.contains {
+                $0 is CustomRoa || $0 is CustomSubstance
+            } ?? false
+        } || notification.userInfo?[NSInvalidatedAllObjectsKey] != nil
     }
 }

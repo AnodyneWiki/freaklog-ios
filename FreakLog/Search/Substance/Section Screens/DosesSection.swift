@@ -4,7 +4,7 @@ struct DosesSection: View {
   init(substance: Substance) {
     self.substance = substance
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substance.name))
-    customRoas = FetchRequest(fetchRequest: PersistenceController.standaloneCustomRoasRequest(for: substance.name))
+    customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
   }
 
   let substance: Substance
@@ -65,7 +65,7 @@ struct DosesSection: View {
             isDisclaimerShown = false
           }
         } message: {
-          Text(ChooseDoseScreenContent.doseDisclaimer)
+          Text(ChooseDoseScreen.doseDisclaimer)
         }
 
       if substance.name == "MDMA" {
