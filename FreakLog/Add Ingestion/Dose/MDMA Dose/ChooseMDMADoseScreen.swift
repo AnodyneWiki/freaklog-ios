@@ -6,7 +6,7 @@ struct ChooseMDMADoseScreen: View {
 
     private let mdma = SubstanceRepo.shared.getSubstance(name: "MDMA")!
     private var oralDose: RoaDose {
-        mdma.getDose(for: .oral)!
+        PersistenceController.shared.resolvedDose(for: mdma.name, route: .oral) ?? mdma.getDose(for: .oral)!
     }
 
     @State private var mdmaDoseInMg: Double? = 113.0

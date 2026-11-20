@@ -46,7 +46,7 @@ struct EditIngestionScreen: View {
     }
 
     private var roaDose: RoaDose? {
-        PersistenceController.shared.resolvedDose(for: ingestion.substanceNameUnwrapped, route: ingestion.administrationRouteUnwrapped)
+        ingestion.roaDose
     }
 
     @State private var experiencesWithinLargerRange: [Experience] = []

@@ -34,7 +34,7 @@ extension CustomUnit {
     }
 
     var roaDose: RoaDose? {
-        substance?.getDose(for: administrationRouteUnwrapped)
+        PersistenceController.shared.resolvedDose(for: substanceNameUnwrapped, route: administrationRouteUnwrapped)
     }
 
     var noteUnwrapped: String {

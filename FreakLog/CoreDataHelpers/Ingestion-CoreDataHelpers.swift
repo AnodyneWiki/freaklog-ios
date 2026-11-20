@@ -83,9 +83,12 @@ extension Ingestion: Comparable {
         SubstanceRepo.shared.getSubstance(name: substanceNameUnwrapped)
     }
 
+    var roaDose: RoaDose? {
+        PersistenceController.shared.resolvedDose(for: substanceNameUnwrapped, route: administrationRouteUnwrapped)
+    }
+
     var numberOfDots: Int? {
-        PersistenceController.shared.resolvedDose(for: substanceNameUnwrapped, route: administrationRouteUnwrapped)?
-            .getNumDots(ingestionDose: pureSubstanceDose, ingestionUnits: pureUnits)
+        roaDose?.getNumDots(ingestionDose: pureSubstanceDose, ingestionUnits: pureUnits)
     }
 
     var pureUnits: String {

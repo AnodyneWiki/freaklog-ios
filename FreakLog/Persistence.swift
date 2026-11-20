@@ -341,6 +341,15 @@ struct PersistenceController {
         return r
     }
 
+    static func personalIngestionsRequest(for substanceName: String) -> NSFetchRequest<Ingestion> {
+        let r = personalIngestionsRequest()
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            r.predicate!,
+            NSPredicate(format: "substanceName == %@", substanceName),
+        ])
+        return r
+    }
+
     static func ingestionsRequest(for date: Date) -> NSFetchRequest<Ingestion> {
         let r = ingestionsRequest()
         let startOfDay = Calendar.current.startOfDay(for: date)

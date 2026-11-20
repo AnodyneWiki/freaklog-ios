@@ -9,8 +9,11 @@ struct DosageStatScreen: View {
 
     init(substanceName: String) {
         self.substanceName = substanceName
-        let substance = SubstanceRepo.shared.getSubstance(name: substanceName)
-        let roaDose = substance?.roas.first?.dose
+        // Units of the first route with dose data, PW routes first
+        let pwRoutes = SubstanceRepo.shared.getSubstance(name: substanceName)?.roas.map(\.name) ?? []
+        let roaDose = (pwRoutes + AdministrationRoute.allCases).lazy.compactMap { route in
+            PersistenceController.shared.resolvedDose(for: substanceName, route: route)
+        }.first
         if let roaUnit = roaDose?.units {
             unit = roaUnit
         } else {
@@ -22,12 +25,7 @@ struct DosageStatScreen: View {
         }
         unknownDoseEstimate = roaDose?.commonMin ?? 0
         substanceColor = getColor(for: substanceName)
-        self.ingestions = FetchRequest(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Ingestion.time, ascending: false)],
-            predicate: NSCompoundPredicate(andPredicateWithSubpredicates: [
-                NSPredicate(format: "consumerName=nil OR consumerName=''"),
-                NSPredicate(format: "substanceName == %@", substanceName)
-            ]))
+        self.ingestions = FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest(for: substanceName))
     }
 
     private var ingestions: FetchRequest<Ingestion>

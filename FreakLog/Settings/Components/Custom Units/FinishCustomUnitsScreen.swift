@@ -255,9 +255,9 @@ struct FinishCustomUnitsScreen: View {
     private var roaDose: RoaDose? {
         switch arguments {
         case .substance(let substance, let administrationRoute):
-            return substance.getDose(for: administrationRoute)
-        case .customSubstance(_, _, _):
-            return nil
+            PersistenceController.shared.resolvedDose(for: substance.name, route: administrationRoute)
+        case .customSubstance(let name, let administrationRoute, _):
+            PersistenceController.shared.resolvedDose(for: name, route: administrationRoute)
         }
     }
 

@@ -18,7 +18,7 @@ struct EditCustomUnitsScreen: View {
         EditCustomUnitsScreenContent(
             substanceName: customUnit.substanceNameUnwrapped,
             administrationRoute: customUnit.administrationRouteUnwrapped,
-            roaDose: customUnit.substance?.getDose(for: customUnit.administrationRouteUnwrapped),
+            roaDose: customUnit.roaDose,
             name: $name,
             originalUnit: $originalUnit,
             unit: $unit,
