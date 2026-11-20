@@ -2,26 +2,29 @@ import Foundation
 
 extension Date {
     var asDateString: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM y"
-        return formatter.string(from: self)
+        Self.dateFormatter.string(from: self)
     }
 
     var asDateAndTime: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "d MMM y HH:mm"
-        return formatter.string(from: self)
+        Self.dateAndTimeFormatter.string(from: self)
     }
 
     var asYear: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy"
-        return formatter.string(from: self)
+        Self.yearFormatter.string(from: self)
     }
 
     var asYearAndMonth: String {
+        Self.yearAndMonthFormatter.string(from: self)
+    }
+
+    private static let dateFormatter = formatter("d MMM y")
+    private static let dateAndTimeFormatter = formatter("d MMM y HH:mm")
+    private static let yearFormatter = formatter("yyyy")
+    private static let yearAndMonthFormatter = formatter("yyyy-MM")
+
+    private static func formatter(_ dateFormat: String) -> DateFormatter {
         let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM"
-        return formatter.string(from: self)
+        formatter.dateFormat = dateFormat
+        return formatter
     }
 }

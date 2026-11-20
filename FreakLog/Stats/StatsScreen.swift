@@ -41,22 +41,29 @@ struct StatsScreen: View {
     }
 
     private func calculateStats() {
-        ingestionData = buildIngestionData()
+        // Chart color lookups happen per mark, so resolve colors once instead of fetching per call
+        let colors = Dictionary(
+            substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let colorMapping: (String) -> Color = { colors[$0] ?? SubstanceColor.purple.swiftUIColor }
+        ingestionData = ExperienceData(
+            last30Days: getIngestionCountsLast30Days(),
+            last12Months: getIngestionCountsLast12Months(),
+            years: getIngestionCountsYears(),
+            colorMapping: colorMapping
+        )
         experienceData = ExperienceData(
             last30Days: getExperienceCountsLast30Days(),
             last12Months: getExperienceCountsLast12Months(),
             years: getExperienceCountsYears(),
-            colorMapping: { substanceName in
-                getColor(for: substanceName).swiftUIColor
-            }
+            colorMapping: colorMapping
         )
         substanceData = SubstanceData(
             last30Days: getSortedSubstanceCountsLast30Days(),
             last12Months: getSortedSubstanceCountsLast12Months(),
             years: getSortedSubstanceCountsYears(),
-            colorMapping: { substanceName in
-                getColor(for: substanceName).swiftUIColor
-            }
+            colorMapping: colorMapping
         )
         let ingestionsLast90Days = ingestions.prefix { ing in
             Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: Date()) <= 90
@@ -72,18 +79,6 @@ struct StatsScreen: View {
         let substancesInToleranceWindows = Set(toleranceWindows.map { $0.substanceName })
         let substancesWithoutToleranceWindows = substancesInIngestions.subtracting(substancesInToleranceWindows)
         substancesInIngestionsButNotToleranceChart = Array(substancesWithoutToleranceWindows)
-    }
-
-
-    private func buildIngestionData() -> ExperienceData {
-        ExperienceData(
-            last30Days: getIngestionCountsLast30Days(),
-            last12Months: getIngestionCountsLast12Months(),
-            years: getIngestionCountsYears(),
-            colorMapping: { substanceName in
-                getColor(for: substanceName).swiftUIColor
-            }
-        )
     }
 
     private func getIngestionCountsLast30Days() -> [SubstanceExperienceCountForDay] {

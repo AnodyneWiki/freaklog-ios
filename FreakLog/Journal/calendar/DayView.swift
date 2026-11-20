@@ -17,15 +17,14 @@ struct DayView: View {
     private let colorHeight: Double = 6
 
     var body: some View {
+        let experiences = experiences
         if let firstExperience = experiences.first {
-            if experiences.count > 1 {
-                NavigationLink(value: GlobalNavigationDestination.chooseExperience(experiences: experiences)) {
-                    experienceDayLabel
-                }
-            } else {
-                NavigationLink(value: GlobalNavigationDestination.experience(experience: firstExperience)) {
-                    experienceDayLabel
-                }
+            NavigationLink(
+                value: experiences.count > 1
+                    ? GlobalNavigationDestination.chooseExperience(experiences: experiences)
+                    : .experience(experience: firstExperience)
+            ) {
+                experienceDayLabel
             }
         } else {
             VStack(spacing: 0) {

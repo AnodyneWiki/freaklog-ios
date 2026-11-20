@@ -34,8 +34,12 @@ func getDate(year: Int, month: Int, day: Int) -> Date? {
 }
 
 func getDouble(from text: String) -> Double? {
-    let formatter = NumberFormatter()
-    formatter.locale = Locale.current
-    formatter.numberStyle = .decimal
-    return formatter.number(from: text)?.doubleValue
+    decimalFormatter.number(from: text)?.doubleValue
 }
+
+private let decimalFormatter: NumberFormatter = {
+    let formatter = NumberFormatter()
+    formatter.locale = .autoupdatingCurrent
+    formatter.numberStyle = .decimal
+    return formatter
+}()

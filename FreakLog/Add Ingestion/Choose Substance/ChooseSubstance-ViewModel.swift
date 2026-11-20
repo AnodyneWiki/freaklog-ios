@@ -78,20 +78,20 @@ extension ChooseSubstanceScreen {
                     }
                 }.assign(to: &$filteredCustomSubstances)
             $filteredSubstances.combineLatest($filteredCustomSubstances, $searchText) { [self] filteredSubstances, filteredCustom, searchTextValue in
-                let filteredSuggestions = allPossibleSuggestions.filter { suggestion in
-                    let substanceNames = filteredSubstances.map(\.name) + filteredCustom.map(\.name)
-                    return suggestion.isInResult(searchText: searchTextValue, substanceNames: substanceNames)
+                let substanceNames = filteredSubstances.map(\.name) + filteredCustom.map(\.name)
+                return allPossibleSuggestions.filter { suggestion in
+                    suggestion.isInResult(searchText: searchTextValue, substanceNames: substanceNames)
                 }
-                return filteredSuggestions
             }.assign(to: &$filteredSuggestions)
             $searchText.combineLatest($filteredSubstances) { searchText, filteredSubstances in
-                customUnits.filter { customUnit in
-                    filteredSubstances.contains { substance in
-                        customUnit.substanceNameUnwrapped == substance.name
-                    } || customUnit.nameUnwrapped.lowercased().contains(searchText.lowercased())
-                    || customUnit.substanceNameUnwrapped.lowercased().contains(searchText.lowercased())
-                    || customUnit.unitUnwrapped.lowercased().contains(searchText.lowercased())
-                    || customUnit.noteUnwrapped.lowercased().contains(searchText.lowercased())
+                let substanceNames = Set(filteredSubstances.map(\.name))
+                let search = searchText.lowercased()
+                return customUnits.filter { customUnit in
+                    substanceNames.contains(customUnit.substanceNameUnwrapped)
+                    || customUnit.nameUnwrapped.lowercased().contains(search)
+                    || customUnit.substanceNameUnwrapped.lowercased().contains(search)
+                    || customUnit.unitUnwrapped.lowercased().contains(search)
+                    || customUnit.noteUnwrapped.lowercased().contains(search)
                 }
             }.assign(to: &$filteredCustomUnits)
         }

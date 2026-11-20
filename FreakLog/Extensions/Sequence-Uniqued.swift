@@ -12,3 +12,10 @@ extension Sequence where Element: Equatable {
     }
 }
 
+extension Sequence where Element: Hashable {
+    // Order-preserving, O(n)
+    func uniqued() -> [Element] {
+        var seen = Set<Element>()
+        return filter { seen.insert($0).inserted }
+    }
+}
