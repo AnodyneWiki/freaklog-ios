@@ -126,7 +126,7 @@ extension SubstanceData {
 
 struct SubstanceExperienceCountForDay: Identifiable, Hashable {
     var id: String {
-        day.asDateAndTime + substanceName
+        "\(day.timeIntervalSince1970)\(substanceName)"
     }
 
     let day: Date
@@ -175,83 +175,44 @@ struct ExperienceData: Hashable, Equatable, Sendable {
     }
 
     var monthlyAverage: Double {
-        var dates = last12Months.map { $0.month }
-        guard let minDate = dates.min() else { return 0 }
-        guard let maxDate = dates.max() else { return 0 }
-        guard var fillDate = Calendar.current.date(byAdding: .month, value: 1, to: minDate) else { return 0 }
-        while fillDate < maxDate {
-            dates.append(fillDate)
-            guard let newFill = Calendar.current.date(byAdding: .month, value: 1, to: fillDate) else { return 0 }
-            fillDate = newFill
-        }
-        let numberOfMonthsShown = dates.map { $0.asYearAndMonth }.uniqued().count
-        guard numberOfMonthsShown > 0 else { return 0 }
-        return last12MonthsTotal / Double(numberOfMonthsShown)
+        Self.average(total: last12MonthsTotal, dates: last12Months.map(\.month), per: .month)
     }
 
     var yearlyAverage: Double {
-        var dates = years.map { $0.year }
-        guard let minDate = dates.min() else { return 0 }
-        guard let maxDate = dates.max() else { return 0 }
-        guard var fillDate = Calendar.current.date(byAdding: .year, value: 1, to: minDate) else { return 0 }
-        while fillDate < maxDate {
-            dates.append(fillDate)
-            guard let newFill = Calendar.current.date(byAdding: .year, value: 1, to: fillDate) else { return 0 }
-            fillDate = newFill
+        Self.average(total: yearsTotal, dates: years.map(\.year), per: .year)
+    }
+
+    // Total divided by the number of periods from the first to the last date, empty periods included
+    private static func average(total: Double, dates: [Date], per component: Calendar.Component) -> Double {
+        guard let minDate = dates.min(), let maxDate = dates.max() else { return 0 }
+        let calendar = Calendar.current
+        let periodComponents: Set<Calendar.Component> = component == .year ? [.year] : [.year, .month]
+        var periods: Set<DateComponents> = [calendar.dateComponents(periodComponents, from: maxDate)]
+        var date = minDate
+        while date < maxDate {
+            periods.insert(calendar.dateComponents(periodComponents, from: date))
+            guard let next = calendar.date(byAdding: component, value: 1, to: date) else { break }
+            date = next
         }
-        let numberOfYearsShown = dates.map { $0.asYear }.uniqued().count
-        guard numberOfYearsShown > 0 else { return 0 }
-        return yearsTotal / Double(numberOfYearsShown)
+        return total / Double(periods.count)
     }
 
     func getSubstanceExperienceCounts(in timeRange: TimeRange) -> [SubstanceExperienceCount] {
-        switch timeRange {
-        case .last30Days:
-            let dict = Dictionary(grouping: last30Days) { elem in
-                elem.substanceName
-            }
-            return dict.map { (name: String, counts: [SubstanceExperienceCountForDay]) in
-                SubstanceExperienceCount(
-                    substanceName: name,
-                    experienceCount: counts.map { $0.experienceCount }.reduce(0, +),
-                    color: colorMapping(name)
-                )
-            }
-            .filter { elem in
-                elem.experienceCount > 0
-            }
-            .sorted()
-        case .last12Months:
-            let dict = Dictionary(grouping: last12Months) { elem in
-                elem.substanceName
-            }
-            return dict.map { (name: String, counts: [SubstanceExperienceCountForMonth]) in
-                SubstanceExperienceCount(
-                    substanceName: name,
-                    experienceCount: counts.map { $0.experienceCount }.reduce(0, +),
-                    color: colorMapping(name)
-                )
-            }
-            .filter { elem in
-                elem.experienceCount > 0
-            }
-            .sorted()
-        case .years:
-            let dict = Dictionary(grouping: years) { elem in
-                elem.substanceName
-            }
-            return dict.map { (name: String, counts: [SubstanceExperienceCountForYear]) in
-                SubstanceExperienceCount(
-                    substanceName: name,
-                    experienceCount: counts.map { $0.experienceCount }.reduce(0, +),
-                    color: colorMapping(name)
-                )
-            }
-            .filter { elem in
-                elem.experienceCount > 0
-            }
-            .sorted()
+        let counts: [(substanceName: String, experienceCount: Double)] = switch timeRange {
+        case .last30Days: last30Days.map { ($0.substanceName, $0.experienceCount) }
+        case .last12Months: last12Months.map { ($0.substanceName, $0.experienceCount) }
+        case .years: years.map { ($0.substanceName, $0.experienceCount) }
         }
+        return Dictionary(grouping: counts, by: \.substanceName)
+            .map { name, counts in
+                SubstanceExperienceCount(
+                    substanceName: name,
+                    experienceCount: counts.map(\.experienceCount).reduce(0, +),
+                    color: colorMapping(name)
+                )
+            }
+            .filter { $0.experienceCount > 0 }
+            .sorted()
     }
 }
 

@@ -46,23 +46,22 @@ struct StatsScreen: View {
             substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
             uniquingKeysWith: { first, _ in first }
         )
-        let colorMapping: (String) -> Color = { colors[$0] ?? SubstanceColor.purple.swiftUIColor }
-        ingestionData = ExperienceData(
-            last30Days: getIngestionCountsLast30Days(),
-            last12Months: getIngestionCountsLast12Months(),
-            years: getIngestionCountsYears(),
-            colorMapping: colorMapping
-        )
-        experienceData = ExperienceData(
-            last30Days: getExperienceCountsLast30Days(),
-            last12Months: getExperienceCountsLast12Months(),
-            years: getExperienceCountsYears(),
-            colorMapping: colorMapping
-        )
+        let colorMapping: @Sendable (String) -> Color = { colors[$0] ?? SubstanceColor.purple.swiftUIColor }
+        let ingestionEntries = ingestions.map { ingestion in
+            WeightedSubstanceDate(substanceName: ingestion.substanceNameUnwrapped, date: ingestion.timeUnwrapped, weight: 1)
+        }
+        // One entry per distinct substance in an experience, weighted so each experience adds up to 1
+        let experienceEntries = experiences.flatMap { experience in
+            let date = experience.sortDateUnwrapped
+            let names = experience.myIngestionsSorted.map(\.substanceNameUnwrapped).uniqued()
+            return names.map { WeightedSubstanceDate(substanceName: $0, date: date, weight: 1 / Double(names.count)) }
+        }
+        ingestionData = Self.experienceData(from: ingestionEntries, colorMapping: colorMapping)
+        experienceData = Self.experienceData(from: experienceEntries, colorMapping: colorMapping)
         substanceData = SubstanceData(
-            last30Days: getSortedSubstanceCountsLast30Days(),
-            last12Months: getSortedSubstanceCountsLast12Months(),
-            years: getSortedSubstanceCountsYears(),
+            last30Days: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast30Days),
+            last12Months: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast12Months),
+            years: Self.substanceCounts(of: experienceEntries, where: { _ in true }),
             colorMapping: colorMapping
         )
         let ingestionsLast90Days = ingestions.prefix { ing in
@@ -76,189 +75,62 @@ struct StatsScreen: View {
         substancesInIngestionsButNotToleranceChart = chartData.namesOfSubstancesWithMissingTolerance
     }
 
-    private func getIngestionCountsLast30Days() -> [SubstanceExperienceCountForDay] {
-        let last30Days = ingestions.prefix { ing in
-            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: Date()) <= 30
-        }
-        return Dictionary(grouping: last30Days) { ing in
-            var key = ing.substanceNameUnwrapped
-            let c = Calendar.current.dateComponents([.year, .month, .day], from: ing.timeUnwrapped)
-            if let y = c.year, let m = c.month, let d = c.day { key += "\(y)\(m)\(d)" }
-            return key
-        }.compactMap { (_, ings) in
-            guard let first = ings.first else { return nil }
-            return SubstanceExperienceCountForDay(
-                day: first.timeUnwrapped,
-                substanceName: first.substanceNameUnwrapped,
-                experienceCount: Double(ings.count)
-            )
+    private struct WeightedSubstanceDate {
+        let substanceName: String
+        let date: Date
+        let weight: Double
+    }
+
+    private struct PeriodKey: Hashable {
+        let substanceName: String
+        let period: DateComponents
+    }
+
+    private static func isWithinLast30Days(_ date: Date) -> Bool {
+        Calendar.current.numberOfDaysBetween(date, and: Date()) <= 30
+    }
+
+    private static func isWithinLast12Months(_ date: Date) -> Bool {
+        Calendar.current.numberOfMonthsBetween(date, and: Date()) <= 12
+    }
+
+    private static func experienceData(
+        from entries: [WeightedSubstanceDate],
+        colorMapping: @escaping @Sendable (String) -> Color
+    ) -> ExperienceData {
+        ExperienceData(
+            last30Days: counts(of: entries, per: [.year, .month, .day], where: isWithinLast30Days).map {
+                SubstanceExperienceCountForDay(day: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
+            },
+            last12Months: counts(of: entries, per: [.year, .month], where: isWithinLast12Months).map {
+                SubstanceExperienceCountForMonth(month: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
+            },
+            years: counts(of: entries, per: [.year], where: { _ in true }).map {
+                SubstanceExperienceCountForYear(year: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
+            },
+            colorMapping: colorMapping
+        )
+    }
+
+    // Sums entry weights per substance and calendar period
+    private static func counts(
+        of entries: [WeightedSubstanceDate],
+        per periodComponents: Set<Calendar.Component>,
+        where isIncluded: (Date) -> Bool
+    ) -> [(substanceName: String, date: Date, count: Double)] {
+        Dictionary(grouping: entries.filter { isIncluded($0.date) }) { entry in
+            PeriodKey(substanceName: entry.substanceName, period: Calendar.current.dateComponents(periodComponents, from: entry.date))
+        }.compactMap { _, group in
+            guard let first = group.first else { return nil }
+            return (first.substanceName, first.date, group.map(\.weight).reduce(0, +))
         }
     }
 
-    private func getIngestionCountsLast12Months() -> [SubstanceExperienceCountForMonth] {
-        let last12Months = ingestions.prefix { ing in
-            Calendar.current.numberOfMonthsBetween(ing.timeUnwrapped, and: Date()) <= 12
-        }
-        return Dictionary(grouping: last12Months) { ing in
-            var key = ing.substanceNameUnwrapped
-            let c = Calendar.current.dateComponents([.year, .month], from: ing.timeUnwrapped)
-            if let y = c.year, let m = c.month { key += "\(y)\(m)" }
-            return key
-        }.compactMap { (_, ings) in
-            guard let first = ings.first else { return nil }
-            return SubstanceExperienceCountForMonth(
-                month: first.timeUnwrapped,
-                substanceName: first.substanceNameUnwrapped,
-                experienceCount: Double(ings.count)
-            )
-        }
-    }
-
-    private func getIngestionCountsYears() -> [SubstanceExperienceCountForYear] {
-        Dictionary(grouping: ingestions) { ing in
-            var key = ing.substanceNameUnwrapped
-            let c = Calendar.current.dateComponents([.year], from: ing.timeUnwrapped)
-            if let y = c.year { key += "\(y)" }
-            return key
-        }.compactMap { (_, ings) in
-            guard let first = ings.first else { return nil }
-            return SubstanceExperienceCountForYear(
-                year: first.timeUnwrapped,
-                substanceName: first.substanceNameUnwrapped,
-                experienceCount: Double(ings.count)
-            )
-        }
-    }
-
-    private func getSortedSubstanceCountsLast30Days() -> [SubstanceCount] {
-        let last30Days = experiences.prefix { exp in
-            Calendar.current.numberOfDaysBetween(exp.sortDateUnwrapped, and: Date()) <= 30
-        }
-        return getSortedSubstanceCounts(for: last30Days)
-    }
-
-    private func getSortedSubstanceCountsLast12Months() -> [SubstanceCount] {
-        let last12Months = experiences.prefix { exp in
-            Calendar.current.numberOfMonthsBetween(exp.sortDateUnwrapped, and: Date()) <= 12
-        }
-        return getSortedSubstanceCounts(for: last12Months)
-    }
-
-    private func getSortedSubstanceCountsYears() -> [SubstanceCount] {
-        return getSortedSubstanceCounts(for: experiences)
-    }
-
-    private func getSortedSubstanceCounts(for experiences: any Sequence<Experience>) -> [SubstanceCount] {
-        let substanceNameOccurances = experiences.flatMap { experience in
-            experience.myIngestionsSorted.map { ingestion in
-                ingestion.substanceNameUnwrapped
-            }.uniqued()
-        }
-        var countDict: [String: Int] = [:]
-        for substanceName in substanceNameOccurances {
-            countDict[substanceName, default: 0] += 1
-        }
-        return countDict.map { (substanceName: String, count: Int) in
-            SubstanceCount(
-                substanceName: substanceName,
-                experienceCount: count
-            )
-        }.sorted { count1, count2 in
-            count1.experienceCount > count2.experienceCount
-        }
-    }
-
-    private func getExperienceCountsLast30Days() -> [SubstanceExperienceCountForDay] {
-        let experiencesLast30Days = experiences.prefix { experience in
-            Calendar.current.numberOfDaysBetween(experience.sortDateUnwrapped, and: Date()) <= 30
-        }
-        let ungroupedResult = experiencesLast30Days.flatMap { experience in
-            let distinctSubstanceNames = experience.myIngestionsSorted.map { $0.substanceNameUnwrapped }.uniqued()
-            return distinctSubstanceNames.map { substanceName in
-                SubstanceExperienceCountForDay(
-                    day: experience.sortDateUnwrapped,
-                    substanceName: substanceName,
-                    experienceCount: 1 / Double(distinctSubstanceNames.count)
-                )
-            }
-        }
-        return Dictionary(grouping: ungroupedResult) { result in
-            let components = Calendar.current.dateComponents([.year, .month, .day], from: result.day)
-            var substanceYearMonthDay = result.substanceName
-            if let year = components.year, let month = components.month, let day = components.day {
-                substanceYearMonthDay += String(year) + String(month) + String(day)
-            }
-            return substanceYearMonthDay
-        }.compactMap { (_: _, matchesForSameDay: [SubstanceExperienceCountForDay]) in
-            guard let first = matchesForSameDay.first else { return nil }
-            let experienceCount = matchesForSameDay.map { $0.experienceCount }.reduce(0, +)
-            return SubstanceExperienceCountForDay(
-                day: first.day,
-                substanceName: first.substanceName,
-                experienceCount: experienceCount
-            )
-        }
-    }
-
-    private func getExperienceCountsLast12Months() -> [SubstanceExperienceCountForMonth] {
-        let experiencesLast12Months = experiences.prefix { experience in
-            Calendar.current.numberOfMonthsBetween(experience.sortDateUnwrapped, and: Date()) <= 12
-        }
-        let ungroupedResult = experiencesLast12Months.flatMap { experience in
-            let distinctSubstanceNames = experience.myIngestionsSorted.map { $0.substanceNameUnwrapped }.uniqued()
-            return distinctSubstanceNames.map { substanceName in
-                SubstanceExperienceCountForMonth(
-                    month: experience.sortDateUnwrapped,
-                    substanceName: substanceName,
-                    experienceCount: 1 / Double(distinctSubstanceNames.count)
-                )
-            }
-        }
-        return Dictionary(grouping: ungroupedResult) { result in
-            let components = Calendar.current.dateComponents([.year, .month], from: result.month)
-            var substanceYearMonth = result.substanceName
-            if let year = components.year, let month = components.month {
-                substanceYearMonth += String(year) + String(month)
-            }
-            return substanceYearMonth
-        }.compactMap { (_: _, matchesForSameMonth: [SubstanceExperienceCountForMonth]) in
-            guard let first = matchesForSameMonth.first else { return nil }
-            let experienceCount = matchesForSameMonth.map { $0.experienceCount }.reduce(0, +)
-            return SubstanceExperienceCountForMonth(
-                month: first.month,
-                substanceName: first.substanceName,
-                experienceCount: experienceCount
-            )
-        }
-    }
-
-    private func getExperienceCountsYears() -> [SubstanceExperienceCountForYear] {
-        let ungroupedResult = experiences.flatMap { experience in
-            let distinctSubstanceNames = experience.myIngestionsSorted.map { $0.substanceNameUnwrapped }.uniqued()
-            return distinctSubstanceNames.map { substanceName in
-                SubstanceExperienceCountForYear(
-                    year: experience.sortDateUnwrapped,
-                    substanceName: substanceName,
-                    experienceCount: 1 / Double(distinctSubstanceNames.count)
-                )
-            }
-        }
-        return Dictionary(grouping: ungroupedResult) { result in
-            let components = Calendar.current.dateComponents([.year], from: result.year)
-            var substanceYear = result.substanceName
-            if let year = components.year {
-                substanceYear += String(year)
-            }
-            return substanceYear
-        }.compactMap { (_: _, matchesForSameYear: [SubstanceExperienceCountForYear]) in
-            guard let first = matchesForSameYear.first else { return nil }
-            let experienceCount = matchesForSameYear.map { $0.experienceCount }.reduce(0, +)
-            return SubstanceExperienceCountForYear(
-                year: first.year,
-                substanceName: first.substanceName,
-                experienceCount: experienceCount
-            )
-        }
+    // Number of experiences each substance was part of, most first
+    private static func substanceCounts(of experienceEntries: [WeightedSubstanceDate], where isIncluded: (Date) -> Bool) -> [SubstanceCount] {
+        Dictionary(grouping: experienceEntries.filter { isIncluded($0.date) }, by: \.substanceName)
+            .map { SubstanceCount(substanceName: $0.key, experienceCount: $0.value.count) }
+            .sorted { $0.experienceCount > $1.experienceCount }
     }
 }
 
