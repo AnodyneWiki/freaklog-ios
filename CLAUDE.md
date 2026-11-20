@@ -40,7 +40,6 @@ FreakLog/
   Timeline/               # Canvas-drawn effect timeline (used in experience screens)
   Webhooks/               # WebhookManager, WebhookService (HTTP)
   Main/                   # Navigation, auth, live activity, toast
-  Utilities/              # Misc helpers
 ```
 
 ## CoreData entities
@@ -81,13 +80,19 @@ Pure logic that doesn't need a SwiftUI context lives in `ExperienceLogic.swift` 
 - `ExperienceLogic.myIngestions(from:)` → filter to user's own ingestions
 
 ### "My" vs "other" ingestions
-`consumerName == nil` or empty string = the user themselves. Non-empty `consumerName` = someone else. Always check `consumerNameUnwrapped.isEmpty` (not `consumerName == nil`) for consistency — the save path normalises whitespace-only names to nil.
+`consumerName == nil`, empty or whitespace-only = the user themselves. Anything else = someone else. Use `Ingestion.isMine` (or `ExperienceLogic.myIngestions/otherIngestions`) rather than checking `consumerName` directly.
 
 ### Substance color
 Each substance name maps to a `SubstanceColor` via the `SubstanceCompanion` entity. To look up a color by substance name, call the global `getColor(for: substanceName)`. Returns `.purple` as fallback if no companion exists.
 
-### Fetching experiences near a time
-Use `FinishIngestionScreen.getExperiences(near: date)` — this is the single place that knows the time-range predicate for "nearby experiences".
+### Fetching
+All fetch requests are built by the static factories on `PersistenceController` (`ingestionsRequest()`, `experiencesRequest()`, `customRoasRequest(for:)`, …) or its instance getters. Use them in `@FetchRequest(fetchRequest:)` instead of writing predicates inline. `PersistenceController.shared.getExperiences(near: date)` is the single place that knows the time-range predicate for "nearby experiences".
+
+### Dose and duration data
+Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:route:)` (or `resolvedDose`/`resolvedDuration`). It merges PsychonautWiki data with the user's `CustomRoa` overrides and custom substance data, and is backed by an in-memory cache, so it is cheap to call from views. `CustomRoa` rows are keyed by `substanceName` + route; `CustomRoaCodable` is the value form used for editing and export/import.
+
+### Deleting ingestions
+Delete ingestions and experiences through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)`. It also removes sent webhook messages and notifies leaderboard servers.
 
 ### Administration site strings
 `AdministrationRoute.siteString(nostril:vein:muscle:subQSite:)` converts the route-specific picker selection into the string stored on `Ingestion.administrationSite`.
@@ -96,7 +101,7 @@ Use `FinishIngestionScreen.getExperiences(near: date)` — this is the single pl
 All webhook HTTP calls go through `WebhookManager.shared`. It handles send, edit, and delete (for ingestion deletion and preset deletion). Deletion helpers (`executeDeletions`, `buildPresetDeletionTargets`) are private; call the public `deleteWebhookMessages(for:)` / `deleteMessages(for:)`.
 
 ### Timeline drawing
-The timeline is drawn with SwiftUI Canvas in `Timeline/`. `TimelineModel` is the pure-data input. The widget target shares some of the same drawables via `SubstanceIngestionGroup` / `getSubstanceIngestionGroups()` from `Global Functions.swift`.
+The timeline is drawn with SwiftUI Canvas in `Timeline/`. `TimelineModel` is the pure-data input. `getSubstanceIngestionGroups()` (`Timeline/Preparation/SubstanceIngestionGroup.swift`, app only) builds the `SubstanceIngestionGroup` payload with resolved durations and dose weights already filled in, so the timeline and the live activity widget never look up substance data themselves. Build live activity state with `Experience.liveActivityState(...)`.
 
 ## UserDefaults keys
 All keys are static constants on `PersistenceController`. Never hard-code key strings — add them there.
@@ -120,4 +125,5 @@ All keys are static constants on `PersistenceController`. Never hard-code key st
 - Do not add new `?? ""` unwrapping properties to CoreData helpers unless the empty string case is semantically meaningful. Use the existing `Unwrapped` properties or inline `?? ""`.
 - Do not create a new `ChartData`-style struct in entity extensions — use `ExperienceLogic` for shared logic types.
 - Do not duplicate the `DeletionTarget` pattern in WebhookManager — use `buildPresetDeletionTargets` / `executeDeletions`.
-- Do not add a new fetch-request-then-filter pattern for experiences near a time — use `FinishIngestionScreen.getExperiences(near:)`.
+- Do not add a new fetch-request-then-filter pattern for experiences near a time — use `PersistenceController.shared.getExperiences(near:)`.
+- Do not read `substance.getDose/getDuration` directly outside previews — use the resolver so custom overrides apply.
