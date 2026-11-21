@@ -17,28 +17,36 @@ final class LeaderboardSyncManager: ObservableObject {
   @Published var log: [SyncLogEntry] = []
 
   private let client = LeaderboardClient.shared
+  // Set when a sync is asked for while one runs, so changes saved meanwhile are sent once it finishes
+  private var isSyncRequested = false
 
   private init() {}
 
   func syncAll() async {
-    guard !syncing else { return }
+    guard !syncing else {
+      isSyncRequested = true
+      return
+    }
     syncing = true
     defer { syncing = false }
-    for server in LeaderboardServerStore.shared.servers {
-      if server.isPaused {
-        logEntry(server.nickname, "Skipped: paused")
-        continue
+    repeat {
+      isSyncRequested = false
+      for server in LeaderboardServerStore.shared.servers {
+        if server.isPaused {
+          logEntry(server.nickname, "Skipped: paused")
+          continue
+        }
+        if server.isExpired {
+          logEntry(server.nickname, "Skipped: expired")
+          continue
+        }
+        if !server.hasStarted {
+          logEntry(server.nickname, "Skipped: waiting for start time")
+          continue
+        }
+        await syncServer(server)
       }
-      if server.isExpired {
-        logEntry(server.nickname, "Skipped: expired")
-        continue
-      }
-      if !server.hasStarted {
-        logEntry(server.nickname, "Skipped: waiting for start time")
-        continue
-      }
-      await syncServer(server)
-    }
+    } while isSyncRequested
   }
 
   func syncServer(_ server: LeaderboardServer) async {
