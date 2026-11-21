@@ -202,6 +202,7 @@
 		EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */; };
 		EA48F89229DD50B8007DA8C5 /* RatingCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */; };
 		EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */; };
+		69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */; };
 		846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */; };
 		D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */; };
 		EA48F89A29E70F17007DA8C5 /* String-CaseInsensitiveContains.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */; };
@@ -274,6 +275,7 @@
 		EA8AEA8127E2154D00B30A16 /* DoseRangeType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8AEA8027E2154D00B30A16 /* DoseRangeType.swift */; };
 		EA968AFD2962C9B000779DD9 /* ActivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA968AFC2962C9B000779DD9 /* ActivityManager.swift */; };
 		EA98D9112972968100D94E65 /* Roa.json in Resources */ = {isa = PBXBuildFile; fileRef = EA98D9102972968100D94E65 /* Roa.json */; };
+		37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */ = {isa = PBXBuildFile; fileRef = 38F33FF90417A31F9657159B /* Anodyne.json */; };
 		EAA2C9BA2B28BEAB0045C8DF /* CustomUnitsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA2C9B92B28BEAB0045C8DF /* CustomUnitsScreen.swift */; };
 		EAA2C9BC2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */; };
 		EAA9C36E2A50679100869E5A /* ToleranceType.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C36D2A50679100869E5A /* ToleranceType.swift */; };
@@ -286,6 +288,8 @@
 		EAA9C37D2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */; };
 		EAA9C3812A5478F700869E5A /* AddToleranceIngestionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3802A5478F700869E5A /* AddToleranceIngestionScreen.swift */; };
 		EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3822A5479AE00869E5A /* SearchLogic.swift */; };
+		3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */; };
+		C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */; };
 		EAA9C38C2A54825C00869E5A /* ChooseDateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */; };
 		EAA9C3902A548B9600869E5A /* SubstanceAndDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */; };
 		EAA9C3922A57203800869E5A /* MissingToleranceText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3912A57203800869E5A /* MissingToleranceText.swift */; };
@@ -595,6 +599,7 @@
 		EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSubstanceCodable.swift; sourceTree = "<group>"; };
 		EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingCodable.swift; sourceTree = "<group>"; };
 		EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionTests.swift; sourceTree = "<group>"; };
+		489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneTests.swift; sourceTree = "<group>"; };
 		32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomRoaTests.swift; sourceTree = "<group>"; };
 		877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalFileTests.swift; sourceTree = "<group>"; };
 		EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String-CaseInsensitiveContains.swift"; sourceTree = "<group>"; };
@@ -665,6 +670,7 @@
 		EA8AEA8027E2154D00B30A16 /* DoseRangeType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DoseRangeType.swift; sourceTree = "<group>"; };
 		EA968AFC2962C9B000779DD9 /* ActivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActivityManager.swift; sourceTree = "<group>"; };
 		EA98D9102972968100D94E65 /* Roa.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = Roa.json; sourceTree = "<group>"; };
+		38F33FF90417A31F9657159B /* Anodyne.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = Anodyne.json; sourceTree = "<group>"; };
 		EAA2C9B82B288CD50045C8DF /* PW Version 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 6.xcdatamodel"; sourceTree = "<group>"; };
 		EAA2C9B92B28BEAB0045C8DF /* CustomUnitsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomUnitsScreen.swift; sourceTree = "<group>"; };
 		EAA2C9BB2B28BFBA0045C8DF /* CustomUnit-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CustomUnit-CoreDataHelpers.swift"; sourceTree = "<group>"; };
@@ -678,6 +684,8 @@
 		EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToleranceChartPreviewDataProvider.swift; sourceTree = "<group>"; };
 		EAA9C3802A5478F700869E5A /* AddToleranceIngestionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToleranceIngestionScreen.swift; sourceTree = "<group>"; };
 		EAA9C3822A5479AE00869E5A /* SearchLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchLogic.swift; sourceTree = "<group>"; };
+		9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneClient.swift; sourceTree = "<group>"; };
+		95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSubstance.swift; sourceTree = "<group>"; };
 		EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseDateScreen.swift; sourceTree = "<group>"; };
 		EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceAndDay.swift; sourceTree = "<group>"; };
 		EAA9C3912A57203800869E5A /* MissingToleranceText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MissingToleranceText.swift; sourceTree = "<group>"; };
@@ -1108,6 +1116,8 @@
 				EAB8EF4F2A489DDA00542253 /* SubstanceSearchBarWithFilter.swift */,
 				EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */,
 				EAA9C3822A5479AE00869E5A /* SearchLogic.swift */,
+				9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */,
+				95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */,
 			);
 			path = Search;
 			sourceTree = "<group>";
@@ -1548,9 +1558,11 @@
 			children = (
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
+				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
 				EA98D9102972968100D94E65 /* Roa.json */,
+				38F33FF90417A31F9657159B /* Anodyne.json */,
 			);
 			path = FreakLogTests;
 			sourceTree = "<group>";
@@ -1928,6 +1940,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
+				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1995,6 +2008,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
+				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
 				EACB6E5227D2592800940291 /* DecodingTests.swift in Sources */,
@@ -2263,6 +2277,8 @@
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,
+				3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */,
+				C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */,
 				EAA9C3792A50A54E00869E5A /* ToleranceChartOverView.swift in Sources */,
 				EA55CEBB2A3F292B00FE1A44 /* Dot.swift in Sources */,
 				EA116CDD29FBA3D9007D8BF6 /* RatingExplanationSection.swift in Sources */,
