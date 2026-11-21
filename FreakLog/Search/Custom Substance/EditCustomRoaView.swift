@@ -14,6 +14,7 @@ struct EditCustomRoaView: View {
   @State private var existingRoa: CustomRoa?
   @State private var saveTask: Task<Void, Never>?
   @State private var copySources: [CopySource] = []
+  @State private var anodyneSources: [CopySource] = []
   @State private var pendingCopy: CopySource?
 
   init(substanceName: String, route: AdministrationRoute, customSubstance: CustomSubstance? = nil) {
@@ -52,7 +53,7 @@ struct EditCustomRoaView: View {
           }
         }
       }
-      if !copySources.isEmpty {
+      if !copySources.isEmpty || !anodyneSources.isEmpty {
         copySection
       }
       doseSection
@@ -70,6 +71,9 @@ struct EditCustomRoaView: View {
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(route.rawValue.localizedCapitalized)
     .onAppear(perform: load)
+    .task {
+      await loadAnodyneSources()
+    }
     .onChange(of: values) { _ in saveDebounced() }
     .confirmationDialog(
       "Replace the data of this route?",
@@ -77,9 +81,13 @@ struct EditCustomRoaView: View {
       titleVisibility: .visible,
       presenting: pendingCopy
     ) { source in
-      Button("Copy \(source.route.rawValue.localizedCapitalized) Data", role: .destructive) { copy(source) }
+      Button("Copy \(source.title)", role: .destructive) { copy(source) }
     } message: { source in
-      Text("The dose and duration entered here are replaced with those of \(source.route.rawValue).")
+      if source.isDoseOnly {
+        Text("The dose entered here is replaced with AnodyneWiki's \(source.route.rawValue) dose. Durations stay.")
+      } else {
+        Text("The dose and duration entered here are replaced with those of \(source.route.rawValue).")
+      }
     }
   }
 
@@ -88,20 +96,38 @@ struct EditCustomRoaView: View {
   private var copySection: some View {
     Section {
       Menu {
-        ForEach(copySources) { source in
-          Button(source.title) {
-            if values.isEmpty {
-              copy(source)
-            } else {
-              pendingCopy = source
-            }
+        if !copySources.isEmpty {
+          Section("Other Routes") {
+            ForEach(copySources, content: copyButton)
+          }
+        }
+        if !anodyneSources.isEmpty {
+          Section("AnodyneWiki Doses") {
+            ForEach(anodyneSources, content: copyButton)
           }
         }
       } label: {
-        Label("Copy from Another Route", systemImage: "doc.on.doc")
+        Label("Copy Data From…", systemImage: "doc.on.doc")
       }
     } footer: {
-      Text("Start from the dose and duration of another route, then adjust them for this one.")
+      Text(
+        "Start from another route's dose and duration, or from AnodyneWiki's doses for a route, "
+          + "then adjust them for this one."
+      )
+    }
+  }
+
+  // Asks first when it would replace something already entered
+  private func copyButton(_ source: CopySource) -> some View {
+    Button(source.title) {
+      let isReplacingNothing = source.isDoseOnly
+        ? CustomRoaField.doseFields.allSatisfy { values[$0] == nil }
+        : values.isEmpty
+      if isReplacingNothing {
+        copy(source)
+      } else {
+        pendingCopy = source
+      }
     }
   }
 
@@ -225,13 +251,35 @@ struct EditCustomRoaView: View {
       let otherValues = customValues
         ?? CustomRoaCodable.psychonautWikiValues(for: customSubstance == nil ? substanceName : nil, route: otherRoute)
       guard !otherValues.isEmpty else { return nil }
-      return CopySource(route: otherRoute, values: otherValues, isCustom: customValues != nil)
+      return CopySource(route: otherRoute, values: otherValues, origin: customValues != nil ? .userData : .psychonautWiki)
     }
   }
 
-  // Takes over the other route's values as they are; saving happens as for any edit
+  // AnodyneWiki's doses per route, if they are cached or load automatically
+  private func loadAnodyneSources() async {
+    let otherNames = customSubstance == nil ? SubstanceRepo.shared.getSubstance(name: substanceName)?.commonNames ?? [] : []
+    var lookup = await AnodyneClient.shared.cachedLookup(for: substanceName)
+    if lookup == nil, AnodyneClient.isAutomaticLoadingEnabled {
+      lookup = try? await AnodyneClient.shared.lookup(substanceName, otherNames: otherNames)
+    }
+    guard case let .found(substance) = lookup else { return }
+    var seenRoutes = Set<AdministrationRoute>()
+    anodyneSources = substance.dosing.compactMap { dosing in
+      guard let dosingRoute = dosing.route, seenRoutes.insert(dosingRoute).inserted else { return nil }
+      return CopySource(route: dosingRoute, values: dosing.doseValues(for: dosingRoute), origin: .anodyneWiki)
+    }
+  }
+
+  // Takes over the other route's values as they are, or only AnodyneWiki's doses; saving happens as for any edit
   private func copy(_ source: CopySource) {
     var copied = source.values
+    if source.isDoseOnly {
+      copied = values
+      copied.doseUnits = source.values.doseUnits
+      for field in CustomRoaField.doseFields {
+        copied[field] = source.values[field]
+      }
+    }
     copied.administrationRoute = route
     values = copied
     durationUnit = DurationInputUnit.suggested(for: values)
@@ -283,16 +331,28 @@ struct EditCustomRoaView: View {
   }
 }
 
-// Another route's dose and duration, from the user's data or PsychonautWiki, to copy into the edited route
+// A route's dose and duration to copy into the edited route: the user's data or PsychonautWiki's, or
+// AnodyneWiki's doses (it has no durations to copy)
 private struct CopySource: Identifiable {
+  enum Origin {
+    case userData, psychonautWiki, anodyneWiki
+  }
+
   let route: AdministrationRoute
   let values: CustomRoaCodable
-  let isCustom: Bool
+  let origin: Origin
 
-  var id: AdministrationRoute { route }
+  var id: String { "\(route.rawValue)-\(origin)" }
+
+  var isDoseOnly: Bool { origin == .anodyneWiki }
 
   var title: String {
-    "\(route.rawValue.localizedCapitalized) (\(isCustom ? "your data" : "PsychonautWiki"))"
+    let source = switch origin {
+    case .userData: "your data"
+    case .psychonautWiki: "PsychonautWiki"
+    case .anodyneWiki: "AnodyneWiki"
+    }
+    return "\(route.rawValue.localizedCapitalized) (\(source))"
   }
 }
 
