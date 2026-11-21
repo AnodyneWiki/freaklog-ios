@@ -19,3 +19,21 @@ struct RoaDuration: Codable, Hashable {
         return (onset, comeup, peak, offset)
     }
 }
+
+extension RoaDuration {
+    // A phase with unreadable data is left out instead of failing the route, and so the whole substance
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        func phase(_ key: CodingKeys) -> DurationRange? {
+            (try? container.decodeIfPresent(DurationRange.self, forKey: key)) ?? nil
+        }
+        self.init(
+            onset: phase(.onset),
+            comeup: phase(.comeup),
+            peak: phase(.peak),
+            offset: phase(.offset),
+            total: phase(.total),
+            afterglow: phase(.afterglow)
+        )
+    }
+}
