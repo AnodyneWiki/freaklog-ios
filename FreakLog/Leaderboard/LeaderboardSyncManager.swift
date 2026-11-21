@@ -52,6 +52,12 @@ final class LeaderboardSyncManager: ObservableObject {
   func syncServer(_ server: LeaderboardServer) async {
     let deviceId = DeviceIdDeriver.deviceId(for: server.host)
     let ingestions = fetchIngestions(from: server.startsAt, to: server.expiresAt)
+    // Entries are keyed by the ingestion's identifier, which older and imported ingestions don't have yet
+    let ingestionsWithoutIdentifier = ingestions.filter { $0.identifier == nil }
+    if !ingestionsWithoutIdentifier.isEmpty {
+      ingestionsWithoutIdentifier.forEach { $0.identifier = UUID() }
+      PersistenceController.shared.saveViewContext()
+    }
     if !ingestions.isEmpty {
       let entries = ingestions.map { entryPayload(ingestion: $0, deviceId: deviceId, nickname: server.nickname) }
       let result = await client.submitBatch(baseURL: server.endpoint, entries: entries)
@@ -115,6 +121,7 @@ final class LeaderboardSyncManager: ObservableObject {
 
   private func entryPayload(ingestion: Ingestion, deviceId: String, nickname: String) -> LeaderboardEntryPayload {
     let ingestionId = (ingestion.identifier ?? UUID()).leaderboardId
+    let customUnitDose = ingestion.customUnitDose
     let timeEpoch = Int64(ingestion.timeUnwrapped.timeIntervalSince1970)
     let endTimeEpoch = Int64((ingestion.endTime ?? ingestion.timeUnwrapped).timeIntervalSince1970)
     let creationEpoch = Int64((ingestion.creationDate ?? ingestion.timeUnwrapped).timeIntervalSince1970)
@@ -126,10 +133,11 @@ final class LeaderboardSyncManager: ObservableObject {
       EndTime: endTimeEpoch,
       CreationDate: creationEpoch,
       AdministrationRoute: ingestion.administrationRouteUnwrapped.rawValue,
-      Dose: ingestion.doseUnwrapped ?? 0.0,
-      IsDoseAnEstimate: ingestion.isEstimate ? 1 : 0,
-      EstimatedDoseStandardDeviation: ingestion.estimatedDoseStandardDeviation,
-      Units: ingestion.unitsUnwrapped,
+      // Custom unit ingestions store the number of units; servers compare amounts of the substance itself
+      Dose: ingestion.pureSubstanceDose ?? 0.0,
+      IsDoseAnEstimate: ingestion.isEstimate || customUnitDose?.customUnit.isEstimate == true ? 1 : 0,
+      EstimatedDoseStandardDeviation: ingestion.pureSubstanceEstimatedDoseStandardDeviation ?? 0,
+      Units: ingestion.pureUnits,
       Notes: ingestion.noteUnwrapped,
       StomachFullness: ingestion.stomachFullness ?? "",
       Category: category
