@@ -366,9 +366,9 @@ extension SettingsScreen {
         func deleteEverything() {
             Task {
                 do {
-                    await WebhookManager.shared.deleteWebhookMessages(for: PersistenceController.shared.getAllIngestions())
-
+                    let cleanUp = await IngestionDeletion.remoteCleanUp(for: PersistenceController.shared.getAllIngestions())
                     try PersistenceController.shared.deleteEverything()
+                    cleanUp()
                     showSuccessToast(message: "Delete Successful")
                 } catch {
                     showErrorToast(message: "Delete Failed")

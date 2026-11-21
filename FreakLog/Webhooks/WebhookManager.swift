@@ -109,13 +109,26 @@ final class WebhookManager: Sendable {
 
     // MARK: - Deleting Webhooks
 
-    private struct DeletionTarget: Sendable {
+    fileprivate struct DeletionTarget: Sendable {
         let messageObjectID: NSManagedObjectID
         let url: String
         let messageId: String
     }
 
-    private func executeDeletions(_ targets: [DeletionTarget], in container: NSPersistentContainer, also extraObjectID: NSManagedObjectID? = nil) async {
+    // Messages to delete, collected before their ingestions are deleted locally
+    struct PendingMessageDeletion: Sendable {
+        fileprivate let targets: [DeletionTarget]
+
+        func run() async {
+            await WebhookManager.shared.executeDeletions(targets, in: PersistenceController.shared.container)
+        }
+    }
+
+    fileprivate func executeDeletions(
+        _ targets: [DeletionTarget],
+        in container: NSPersistentContainer,
+        also extraObjectID: NSManagedObjectID? = nil
+    ) async {
         await withTaskGroup(of: Void.self) { group in
             for target in targets {
                 group.addTask {
@@ -149,11 +162,12 @@ final class WebhookManager: Sendable {
     }
 
     func deleteWebhookMessages(for ingestions: [Ingestion]) async {
-        await deleteWebhookMessages(forIngestionObjectIDs: ingestions.map { $0.objectID })
+        await prepareMessageDeletion(for: ingestions).run()
     }
 
-    func deleteWebhookMessages(forIngestionObjectIDs ingestionObjectIDs: [NSManagedObjectID]) async {
-        guard !ingestionObjectIDs.isEmpty else { return }
+    func prepareMessageDeletion(for ingestions: [Ingestion]) async -> PendingMessageDeletion {
+        let ingestionObjectIDs = ingestions.map(\.objectID)
+        guard !ingestionObjectIDs.isEmpty else { return PendingMessageDeletion(targets: []) }
         let container = PersistenceController.shared.container
         let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
             ingestionObjectIDs.flatMap { ingestionID -> [DeletionTarget] in
@@ -167,7 +181,7 @@ final class WebhookManager: Sendable {
                 }
             }
         }
-        await executeDeletions(targets, in: container)
+        return PendingMessageDeletion(targets: targets)
     }
 
     // Deletes one sent message remotely and, only if that worked, locally

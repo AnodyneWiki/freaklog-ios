@@ -350,9 +350,6 @@ struct ExperienceScreen: View {
 
     private func delete() {
         Task {
-            if #available(iOS 16.2, *) {
-                stopLiveActivity()
-            }
             await IngestionDeletion.delete(experience: experience)
             dismiss()
         }

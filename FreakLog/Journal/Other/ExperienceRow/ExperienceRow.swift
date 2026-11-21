@@ -33,13 +33,6 @@ struct ExperienceRow: View {
             .swipeActions(allowsFullSwipe: false) {
                 Button(role: .destructive) {
                     Task {
-                        if #available(iOS 16.2, *) {
-                            if experience.isCurrent {
-                                await ActivityManager.shared.stopActivity(
-                                    experience.liveActivityState(areRedosesDrawnIndividually: false, areSubstanceHeightsIndependent: false)
-                                )
-                            }
-                        }
                         await IngestionDeletion.delete(experience: experience)
                     }
                 } label: {

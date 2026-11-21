@@ -64,18 +64,26 @@ final class LeaderboardSyncManager: ObservableObject {
     }
   }
 
-  func notifyDeletion(identifier: UUID) async {
+  func notifyDeletion(identifiers: [UUID]) async {
     let servers = LeaderboardServerStore.shared.servers.filter { $0.isActive }
-    guard !servers.isEmpty else { return }
-    for server in servers {
-      let deviceId = DeviceIdDeriver.deviceId(for: server.host)
-      let rawId = identifier.hashValue
-      let ingestionId = Int32(bitPattern: UInt32(truncatingIfNeeded: rawId))
-      let payload = LeaderboardEntryPayload(
-        Id: deviceId,
-        Nickname: server.nickname,
-        Ingestion: LeaderboardIngestionPayload(
-          Id: ingestionId,
+    let payloads = servers.flatMap { server in
+      identifiers.map { (endpoint: server.endpoint, payload: deletionPayload(identifier: $0, server: server)) }
+    }
+    await withTaskGroup(of: Void.self) { group in
+      for (endpoint, payload) in payloads {
+        group.addTask {
+          _ = await LeaderboardClient.shared.submitDelete(baseURL: endpoint, entry: payload)
+        }
+      }
+    }
+  }
+
+  private func deletionPayload(identifier: UUID, server: LeaderboardServer) -> LeaderboardEntryPayload {
+    LeaderboardEntryPayload(
+      Id: DeviceIdDeriver.deviceId(for: server.host),
+      Nickname: server.nickname,
+      Ingestion: LeaderboardIngestionPayload(
+        Id: identifier.leaderboardId,
           SubstanceName: "",
           Time: 0,
           EndTime: 0,
@@ -86,13 +94,11 @@ final class LeaderboardSyncManager: ObservableObject {
           EstimatedDoseStandardDeviation: 0,
           Units: "",
           Notes: "",
-          StomachFullness: "",
-          Category: ""
-        ),
-        Normalized: nil
-      )
-      _ = await client.submitDelete(baseURL: server.endpoint, entry: payload)
-    }
+        StomachFullness: "",
+        Category: ""
+      ),
+      Normalized: nil
+    )
   }
 
   private func fetchIngestions(from start: Date, to end: Date) -> [Ingestion] {
@@ -100,8 +106,7 @@ final class LeaderboardSyncManager: ObservableObject {
   }
 
   private func entryPayload(ingestion: Ingestion, deviceId: String, nickname: String) -> LeaderboardEntryPayload {
-    let rawId = (ingestion.identifier ?? UUID()).hashValue
-    let ingestionId = Int32(bitPattern: UInt32(truncatingIfNeeded: rawId))
+    let ingestionId = (ingestion.identifier ?? UUID()).leaderboardId
     let timeEpoch = Int64(ingestion.timeUnwrapped.timeIntervalSince1970)
     let endTimeEpoch = Int64((ingestion.endTime ?? ingestion.timeUnwrapped).timeIntervalSince1970)
     let creationEpoch = Int64((ingestion.creationDate ?? ingestion.timeUnwrapped).timeIntervalSince1970)
@@ -135,5 +140,14 @@ final class LeaderboardSyncManager: ObservableObject {
     if log.count > 300 {
       log = Array(log.prefix(300))
     }
+  }
+}
+
+extension UUID {
+  // Leaderboard entries are keyed by an Int32. Taken from the UUID's bytes so it is the same on every launch,
+  // unlike hashValue, which is seeded per process and made deletions miss the submitted entry.
+  var leaderboardId: Int32 {
+    let bytes = uuid
+    return Int32(bitPattern: UInt32(bytes.0) << 24 | UInt32(bytes.1) << 16 | UInt32(bytes.2) << 8 | UInt32(bytes.3))
   }
 }

@@ -92,7 +92,7 @@ All fetch requests are built by the static factories on `PersistenceController` 
 Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:route:)` (or `resolvedDose`/`resolvedDuration`). It merges PsychonautWiki data with the user's `CustomRoa` overrides and custom substance data, and is backed by an in-memory cache, so it is cheap to call from views. `CustomRoa` rows are keyed by `substanceName` + route; `CustomRoaCodable` is the value form used for editing and export/import.
 
 ### Deleting ingestions
-Delete ingestions and experiences through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)`. It also removes sent webhook messages and notifies leaderboard servers.
+Delete ingestions, experiences and custom units through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)` / `delete(customUnit:)`. It deletes locally right away, then removes sent webhook messages and notifies leaderboard servers in the background; it also ends the live activity of a deleted current experience. For bulk deletes elsewhere, collect `remoteCleanUp(for:)` before deleting and call it afterwards.
 
 ### Administration site strings
 `AdministrationSiteSelection` holds the route-specific site (nostril, vein, muscle, subcutaneous site). `siteString(for:)` converts it into the string stored on `Ingestion.administrationSite` and `init(route:storedSite:)` parses it back. Use `AdministrationSitePicker` for the picker.
