@@ -9,25 +9,9 @@ struct ExperienceRow: View {
         NavigationLink(value: GlobalNavigationDestination.experience(experience: experience)) {
             Group {
                 if let location = experience.location {
-                    ExperienceRowObservedLocation(
-                        experience: experience,
-                        location: location,
-                        timeDisplayStyle: timeDisplayStyle,
-                        rating: experience.maxRating
-                    )
+                    ExperienceRowObservedLocation(experience: experience, location: location, timeDisplayStyle: timeDisplayStyle)
                 } else {
-                    ExperienceRowContent(
-                        ingestionColors: experience.ingestionColors,
-                        title: experience.titleUnwrapped,
-                        distinctSubstanceNames: experience.distinctUsedSubstanceNames,
-                        sortDate: experience.sortDateUnwrapped,
-                        isFavorite: experience.isFavorite,
-                        timeDisplayStyle: timeDisplayStyle,
-                        locationName: nil,
-                        rating: experience.overallRating?.optionUnwrapped ?? experience.maxRating,
-                        isCurrent: experience.isCurrent,
-                        consumerNames: experience.consumerNames
-                    )
+                    ExperienceRowContent(experience: experience, timeDisplayStyle: timeDisplayStyle, locationName: nil)
                 }
             }
             .swipeActions(allowsFullSwipe: false) {
@@ -49,22 +33,28 @@ struct ExperienceRow: View {
     }
 }
 
+// Observes the location too, so renaming it updates the row
 struct ExperienceRowObservedLocation: View {
     @ObservedObject var experience: Experience
     @ObservedObject var location: ExperienceLocation
     let timeDisplayStyle: SaveableTimeDisplayStyle
-    let rating: ShulginRatingOption?
 
     var body: some View {
-        ExperienceRowContent(
+        ExperienceRowContent(experience: experience, timeDisplayStyle: timeDisplayStyle, locationName: location.name)
+    }
+}
+
+extension ExperienceRowContent {
+    init(experience: Experience, timeDisplayStyle: SaveableTimeDisplayStyle, locationName: String?) {
+        self.init(
             ingestionColors: experience.ingestionColors,
             title: experience.titleUnwrapped,
             distinctSubstanceNames: experience.distinctUsedSubstanceNames,
             sortDate: experience.sortDateUnwrapped,
             isFavorite: experience.isFavorite,
             timeDisplayStyle: timeDisplayStyle,
-            locationName: location.name,
-            rating: rating,
+            locationName: locationName,
+            rating: experience.overallRating?.optionUnwrapped ?? experience.maxRating,
             isCurrent: experience.isCurrent,
             consumerNames: experience.consumerNames
         )

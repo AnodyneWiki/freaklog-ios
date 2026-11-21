@@ -84,11 +84,7 @@ extension Experience: Comparable {
     }
 
     var ingestionColors: [Color] {
-        var colors = [Color]()
-        for ingestion in ingestionsSorted {
-            colors.append(ingestion.substanceColor.swiftUIColor)
-        }
-        return colors
+        ingestionsSorted.map(\.substanceColor.swiftUIColor)
     }
 
     var distinctUsedSubstanceNames: [String] {

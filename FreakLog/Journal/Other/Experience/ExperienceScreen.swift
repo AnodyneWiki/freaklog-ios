@@ -62,10 +62,9 @@ struct ExperienceScreen: View {
     }
 
     func updateActivityIfActive() {
-        if #available(iOS 16.2, *) {
-            if !ProcessInfo.processInfo.isiOSAppOnMac, let lastTime = experience.myIngestionsSorted.last?.time, lastTime > Date.now.addingTimeInterval(-12 * 60 * 60) && ActivityManager.shared.isActivityActive {
-                startOrUpdateLiveActivity()
-            }
+        guard #available(iOS 16.2, *), LiveActivities.areAvailable, ActivityManager.shared.isActivityActive else { return }
+        if let lastTime = experience.myIngestionsSorted.last?.time, lastTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
+            startOrUpdateLiveActivity()
         }
     }
 
@@ -135,6 +134,7 @@ struct ExperienceScreen: View {
                             isCurrentExperience: isCurrent
                         )
                         if #available(iOS 16.2, *) {
+                            // The button itself follows whether the user allows live activities
                             if !ProcessInfo.processInfo.isiOSAppOnMac, isCurrent && timelineModel.isWorthDrawing {
                                 LiveActivityButton(
                                     stopLiveActivity: {
