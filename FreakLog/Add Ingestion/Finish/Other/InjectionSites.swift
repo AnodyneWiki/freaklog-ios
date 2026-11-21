@@ -102,14 +102,53 @@ struct SubQSitePicker: View {
     }
 }
 
-extension AdministrationRoute {
-    func siteString(nostril: Nostril?, vein: Vein?, muscle: Muscle?, subQSite: SubcutaneousSite?) -> String {
-        switch self {
-        case .insufflated: return nostril?.rawValue ?? ""
-        case .intravenous: return vein?.rawValue ?? ""
-        case .intramuscular: return muscle?.rawValue ?? ""
-        case .subcutaneous: return subQSite?.rawValue ?? ""
-        default: return ""
+// The site picked for routes that have one. Stored on Ingestion.administrationSite as the picked case's raw value.
+struct AdministrationSiteSelection {
+    var nostril: Nostril?
+    var vein: Vein?
+    var muscle: Muscle?
+    var subQSite: SubcutaneousSite?
+
+    init() {}
+
+    init(route: AdministrationRoute, storedSite: String) {
+        switch route {
+        case .insufflated: nostril = Nostril(rawValue: storedSite)
+        case .intravenous: vein = Vein(rawValue: storedSite)
+        case .intramuscular: muscle = Muscle(rawValue: storedSite)
+        case .subcutaneous: subQSite = SubcutaneousSite(rawValue: storedSite)
+        default: break
+        }
+    }
+
+    func siteString(for route: AdministrationRoute) -> String {
+        switch route {
+        case .insufflated: nostril?.rawValue ?? ""
+        case .intravenous: vein?.rawValue ?? ""
+        case .intramuscular: muscle?.rawValue ?? ""
+        case .subcutaneous: subQSite?.rawValue ?? ""
+        default: ""
+        }
+    }
+}
+
+// Picker for the route's site, or nothing for routes without one
+struct AdministrationSitePicker: View {
+    let route: AdministrationRoute
+    @Binding var selection: AdministrationSiteSelection
+
+    var body: some View {
+        switch route {
+        case .insufflated:
+            NostrilPicker(selection: $selection.nostril).pickerStyle(.menu)
+        case .intravenous:
+            VeinPicker(selection: $selection.vein).pickerStyle(.menu)
+        case .intramuscular:
+            MusclePicker(selection: $selection.muscle).pickerStyle(.menu)
+        case .subcutaneous:
+            SubQSitePicker(selection: $selection.subQSite).pickerStyle(.menu)
+        default:
+            EmptyView()
         }
     }
 }

@@ -27,10 +27,7 @@ struct FinishIngestionScreen: View {
     @State private var enteredNote = ""
     @State private var enteredTitle = ""
     @State private var consumerName = ""
-    @State private var selectedNostril: Nostril?
-    @State private var selectedVein: Vein?
-    @State private var selectedMuscle: Muscle?
-    @State private var selectedSubQSite: SubcutaneousSite?
+    @State private var siteSelection = AdministrationSiteSelection()
     @State private var alreadyUsedColors = [SubstanceColor]()
     @State private var otherColors = [SubstanceColor]()
     @State private var foundCompanion: SubstanceCompanion?
@@ -124,7 +121,7 @@ struct FinishIngestionScreen: View {
                         Label(displayedName, systemImage: "person")
                     }
                 }
-                routeSpecificPickers
+                AdministrationSitePicker(route: arguments.administrationRoute, selection: $siteSelection)
                 Button {
                     sheetToShow = .editLocation
                 } label: {
@@ -288,30 +285,8 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    @ViewBuilder
-    var routeSpecificPickers: some View {
-        switch arguments.administrationRoute {
-        case .oral:
-            EmptyView()
-        case .insufflated:
-            NostrilPicker(selection: $selectedNostril)
-                .pickerStyle(.menu)
-        case .intravenous:
-            VeinPicker(selection: $selectedVein)
-                .pickerStyle(.menu)
-        case .intramuscular:
-            MusclePicker(selection: $selectedMuscle)
-                .pickerStyle(.menu)
-        case .subcutaneous:
-            SubQSitePicker(selection: $selectedSubQSite)
-                .pickerStyle(.menu)
-        default:
-            EmptyView()
-        }
-    }
-
     private func siteString() -> String {
-        arguments.administrationRoute.siteString(nostril: selectedNostril, vein: selectedVein, muscle: selectedMuscle, subQSite: selectedSubQSite)
+        siteSelection.siteString(for: arguments.administrationRoute)
     }
 
     func addIngestionWithExperience() throws {

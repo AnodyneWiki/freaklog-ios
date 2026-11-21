@@ -95,7 +95,7 @@ Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:
 Delete ingestions and experiences through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)`. It also removes sent webhook messages and notifies leaderboard servers.
 
 ### Administration site strings
-`AdministrationRoute.siteString(nostril:vein:muscle:subQSite:)` converts the route-specific picker selection into the string stored on `Ingestion.administrationSite`.
+`AdministrationSiteSelection` holds the route-specific site (nostril, vein, muscle, subcutaneous site). `siteString(for:)` converts it into the string stored on `Ingestion.administrationSite` and `init(route:storedSite:)` parses it back. Use `AdministrationSitePicker` for the picker.
 
 ### WebhookManager
 All webhook HTTP calls go through `WebhookManager.shared`. It handles send, edit, and delete (for ingestion deletion and preset deletion). Deletion helpers (`executeDeletions`, `buildPresetDeletionTargets`) are private; call the public `deleteWebhookMessages(for:)` / `deleteMessages(for:)`.

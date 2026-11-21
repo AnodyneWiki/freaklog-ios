@@ -15,10 +15,7 @@ struct EditIngestionScreen: View {
     @State private var consumerName = ""
     @State private var selectedCustomUnit: CustomUnit? = nil
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
-    @State private var selectedNostril: Nostril?
-    @State private var selectedVein: Vein?
-    @State private var selectedMuscle: Muscle?
-    @State private var selectedSubQSite: SubcutaneousSite?
+    @State private var siteSelection = AdministrationSiteSelection()
 
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
 
@@ -75,10 +72,7 @@ struct EditIngestionScreen: View {
             estimatedDoseStandardDeviation: $estimatedDoseStandardDeviation,
             note: $note,
             consumerName: $consumerName,
-            selectedNostril: $selectedNostril,
-            selectedVein: $selectedVein,
-            selectedMuscle: $selectedMuscle,
-            selectedSubQSite: $selectedSubQSite,
+            siteSelection: $siteSelection,
             save: save,
             delete: delete,
             deleteWebhookMessage: deleteWebhookMessage,
@@ -108,21 +102,10 @@ struct EditIngestionScreen: View {
             consumerName = ingestion.consumerName ?? ""
             selectedCustomUnit = ingestion.customUnit
             selectedExperience = ingestion.experience
-            let site = ingestion.administrationSiteUnwrapped
-            if !site.isEmpty {
-                switch ingestion.administrationRouteUnwrapped {
-                case .insufflated:
-                    selectedNostril = Nostril(rawValue: site)
-                case .intravenous:
-                    selectedVein = Vein(rawValue: site)
-                case .intramuscular:
-                    selectedMuscle = Muscle(rawValue: site)
-                case .subcutaneous:
-                    selectedSubQSite = SubcutaneousSite(rawValue: site)
-                default:
-                    break
-                }
-            }
+            siteSelection = AdministrationSiteSelection(
+                route: ingestion.administrationRouteUnwrapped,
+                storedSite: ingestion.administrationSiteUnwrapped
+            )
             setExperiencesBasedOnTime()
         }
         .onChange(of: time) { _ in
@@ -162,7 +145,7 @@ struct EditIngestionScreen: View {
         } else {
             ingestion.consumerName = consumerName
         }
-        let site = ingestion.administrationRouteUnwrapped.siteString(nostril: selectedNostril, vein: selectedVein, muscle: selectedMuscle, subQSite: selectedSubQSite)
+        let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
         ingestion.administrationSite = site.isEmpty ? nil : site
 
         if let selectedLocation = locationManager.selectedLocation {
@@ -245,10 +228,7 @@ struct EditIngestionContent: View {
     @Binding var estimatedDoseStandardDeviation: Double?
     @Binding var note: String
     @Binding var consumerName: String
-    @Binding var selectedNostril: Nostril?
-    @Binding var selectedVein: Vein?
-    @Binding var selectedMuscle: Muscle?
-    @Binding var selectedSubQSite: SubcutaneousSite?
+    @Binding var siteSelection: AdministrationSiteSelection
     let save: () -> Void
     let delete: () -> Void
     let deleteWebhookMessage: (WebhookMessage) async -> Bool
@@ -372,22 +352,7 @@ struct EditIngestionContent: View {
                             Label(displayedName, systemImage: "person")
                         }
                     }
-                    if route == .insufflated {
-                        NostrilPicker(selection: $selectedNostril)
-                            .pickerStyle(.menu)
-                    }
-                    if route == .intravenous {
-                        VeinPicker(selection: $selectedVein)
-                            .pickerStyle(.menu)
-                    }
-                    if route == .intramuscular {
-                        MusclePicker(selection: $selectedMuscle)
-                            .pickerStyle(.menu)
-                    }
-                    if route == .subcutaneous {
-                        SubQSitePicker(selection: $selectedSubQSite)
-                            .pickerStyle(.menu)
-                    }
+                    AdministrationSitePicker(route: route, selection: $siteSelection)
                     Button {
                         sheetToShow = .editLocation
                     } label: {
@@ -484,10 +449,7 @@ struct EditIngestionContent: View {
         estimatedDoseStandardDeviation: .constant(nil),
         note: .constant("These are my notes"),
         consumerName: .constant("Marc"),
-        selectedNostril: .constant(nil),
-        selectedVein: .constant(nil),
-        selectedMuscle: .constant(nil),
-        selectedSubQSite: .constant(nil),
+        siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
         delete: { },
         deleteWebhookMessage: { _ in return true },
@@ -517,10 +479,7 @@ struct EditIngestionContent: View {
         estimatedDoseStandardDeviation: .constant(nil),
         note: .constant("These are my notes"),
         consumerName: .constant("Marc"),
-        selectedNostril: .constant(nil),
-        selectedVein: .constant(nil),
-        selectedMuscle: .constant(nil),
-        selectedSubQSite: .constant(nil),
+        siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
         delete: { },
         deleteWebhookMessage: { _ in return true },
