@@ -3,7 +3,7 @@ import SwiftUI
 struct AddCustomSubstanceView: View {
 
     let searchText: String
-    let onAdded: (CustomSubstanceChooseRouteScreenArguments) -> Void
+    let onAdded: (ChooseRouteScreenArguments) -> Void
 
     @StateObject private var viewModel = ViewModel()
     @Environment(\.dismiss) private var dismiss
@@ -56,7 +56,8 @@ struct AddCustomSubstanceView: View {
                     if viewModel.isEverythingNeededDefined {
                         DoneButton {
                             viewModel.saveCustom {
-                                onAdded(CustomSubstanceChooseRouteScreenArguments(substanceName: viewModel.name, units: viewModel.units))
+                                let substance = AddIngestionSubstance.custom(name: viewModel.name, units: viewModel.units)
+                                onAdded(ChooseRouteScreenArguments(substance: substance))
                                 dismiss()
                             }
                         }

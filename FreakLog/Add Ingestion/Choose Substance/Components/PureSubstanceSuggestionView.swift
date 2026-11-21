@@ -45,7 +45,9 @@ struct PureSubstanceSuggestionView: View {
                 }
                 NavigationLink(
                     "Other dose",
-                    value: SubstanceAndRoute(substance: pureSubstanceSuggestions.substance, administrationRoute: pureSubstanceSuggestions.route))
+                    value: SubstanceAndRoute(
+                        substance: .psychonautWiki(pureSubstanceSuggestions.substance),
+                        administrationRoute: pureSubstanceSuggestions.route))
                 .buttonStyle(.borderedProminent).fixedSize()
             }
         }

@@ -45,9 +45,8 @@ struct CustomSubstanceSuggestionView: View {
                     }
                 }
                 if let units = customSubstanceSuggestions.dosesAndUnit.first?.units {
-                    NavigationLink("Other dose", value: CustomChooseDoseScreenArguments(
-                        substanceName: customSubstanceSuggestions.customSubstanceName,
-                        units: units,
+                    NavigationLink("Other dose", value: SubstanceAndRoute(
+                        substance: .custom(name: customSubstanceSuggestions.customSubstanceName, units: units),
                         administrationRoute: administrationRoute))
                     .buttonStyle(.borderedProminent).fixedSize()
                 }

@@ -11,6 +11,10 @@ struct CustomSubstanceModel: Identifiable {
 }
 
 extension CustomSubstanceModel {
+    var addIngestionSubstance: AddIngestionSubstance {
+        .custom(name: name, units: units)
+    }
+
     init(_ customSubstance: CustomSubstance) {
         self.init(
             name: customSubstance.nameUnwrapped,

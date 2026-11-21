@@ -1,28 +1,5 @@
 import SwiftUI
 
-enum CustomUnitArguments: Hashable {
-    case substance(substance: Substance, administrationRoute: AdministrationRoute)
-    case customSubstance(customSubstanceName: String, administrationRoute: AdministrationRoute, customSubstanceUnit: String)
-
-    var substanceName: String {
-        switch self {
-        case .substance(let substance, _):
-            return substance.name
-        case .customSubstance(let customSubstanceName, _, _):
-            return customSubstanceName
-        }
-    }
-
-    var administrationRoute: AdministrationRoute {
-        switch self {
-        case .substance(_, let administrationRoute):
-            return administrationRoute
-        case .customSubstance( _, let administrationRoute, _):
-            return administrationRoute
-        }
-    }
-}
-
 struct FinishCustomUnitsScreen: View {
     enum Field: Hashable {
         case name
@@ -32,7 +9,7 @@ struct FinishCustomUnitsScreen: View {
         case note
     }
 
-    let arguments: CustomUnitArguments
+    let arguments: SubstanceAndRoute
     let cancel: () -> Void
     let onAdded: (CustomUnit) -> Void
 
@@ -43,7 +20,7 @@ struct FinishCustomUnitsScreen: View {
     }
 
     var prompt: Prompt {
-        switch arguments.substanceName {
+        switch arguments.substance.name {
         case "Cannabis":
             return Prompt(name: "e.g. Joint weed 20%, Bong weed, Vaporizer weed", unit: "mg", unitPlural: "mg")
         case "Psilocybin mushrooms":
@@ -72,7 +49,7 @@ struct FinishCustomUnitsScreen: View {
     }
     
     var body: some View {
-        let substanceName = arguments.substanceName
+        let substanceName = arguments.substance.name
         Form {
             if substanceName == "Cannabis" && arguments.administrationRoute == .smoked {
                 Section {
@@ -139,7 +116,7 @@ struct FinishCustomUnitsScreen: View {
                     }
             }
             let areUnitsDefined = roaDose?.units != nil
-            if case .substance = arguments, !areUnitsDefined  {
+            if arguments.substance.customSubstanceUnits == nil, !areUnitsDefined {
                 Section("Original Unit") {
                     UnitsPicker(units: $originalUnit)
                         .padding(.bottom, 10)
@@ -195,12 +172,7 @@ struct FinishCustomUnitsScreen: View {
         .navigationTitle("Add Custom Unit")
         .onAppear {
             focusedField = .name
-            switch arguments {
-            case .substance(_, _):
-                originalUnit = roaDose?.units ?? "mg"
-            case .customSubstance(_, _, let customSubstanceUnit):
-                originalUnit = customSubstanceUnit
-            }
+            originalUnit = arguments.substance.customSubstanceUnits ?? roaDose?.units ?? "mg"
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
@@ -226,12 +198,7 @@ struct FinishCustomUnitsScreen: View {
     @FocusState private var focusedField: Field?
 
     private var roaDose: RoaDose? {
-        switch arguments {
-        case .substance(let substance, let administrationRoute):
-            PersistenceController.shared.resolvedDose(for: substance.name, route: administrationRoute)
-        case .customSubstance(let name, let administrationRoute, _):
-            PersistenceController.shared.resolvedDose(for: name, route: administrationRoute)
-        }
+        PersistenceController.shared.resolvedDose(for: arguments.substance.name, route: arguments.administrationRoute)
     }
 
     private var unitOrPlaceholder: String {
@@ -252,7 +219,7 @@ struct FinishCustomUnitsScreen: View {
         newCustomUnit.dose = dosePerUnit ?? 0
         newCustomUnit.note = note
         newCustomUnit.originalUnit = originalUnit
-        newCustomUnit.substanceName = arguments.substanceName
+        newCustomUnit.substanceName = arguments.substance.name
         newCustomUnit.unit = unit
         newCustomUnit.unitPlural = unitPlural
         newCustomUnit.isEstimate = isEstimate
@@ -302,8 +269,8 @@ struct IngestionRowPreview: View {
 #Preview {
     NavigationStack {
         FinishCustomUnitsScreen(
-            arguments: CustomUnitArguments.substance(
-                substance: SubstanceRepo.shared.getSubstance(name: "MDMA")!,
+            arguments: SubstanceAndRoute(
+                substance: .psychonautWiki(SubstanceRepo.shared.getSubstance(name: "MDMA")!),
                 administrationRoute: .oral),
             cancel: {},
             onAdded: { _ in })

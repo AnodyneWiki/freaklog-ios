@@ -22,7 +22,7 @@ struct SubstanceBox: View {
             }
         } else {
             NavigationLink(value: SubstanceAndRoute(
-                substance: substance,
+                substance: .psychonautWiki(substance),
                 administrationRoute: .oral
             )) {
                 content

@@ -1,6 +1,6 @@
 import Foundation
 
 struct ChooseOtherRouteScreenArguments: Hashable {
-    let substance: Substance
+    let substance: AddIngestionSubstance
     let otherRoutes: [AdministrationRoute]
 }

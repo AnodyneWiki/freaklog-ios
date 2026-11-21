@@ -1,49 +1,25 @@
 import SwiftUI
 
 struct ChooseDoseScreen: View {
-  init(arguments: SubstanceAndRoute, dismiss: @escaping () -> Void, navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void) {
-    self.init(
-      substanceName: arguments.substance.name,
-      substance: arguments.substance,
-      administrationRoute: arguments.administrationRoute,
-      dismiss: dismiss,
-      navigateToCustomUnitChooseDose: navigateToCustomUnitChooseDose)
-  }
-
   init(
-    arguments: CustomChooseDoseScreenArguments,
+    arguments: SubstanceAndRoute,
     dismiss: @escaping () -> Void,
     navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void
   ) {
-    let description = PersistenceController.shared.getCustomSubstance(name: arguments.substanceName)?.explanationUnwrapped
-    self.init(
-      substanceName: arguments.substanceName,
-      substance: nil,
-      customSubstanceDescription: description?.isEmpty == false ? description : nil,
-      defaultUnits: arguments.units,
-      administrationRoute: arguments.administrationRoute,
-      dismiss: dismiss,
-      navigateToCustomUnitChooseDose: navigateToCustomUnitChooseDose)
-  }
-
-  init(
-    substanceName: String,
-    substance: Substance?,
-    customSubstanceDescription: String? = nil,
-    defaultUnits: String = UnitPickerOptions.mg.rawValue,
-    administrationRoute: AdministrationRoute,
-    dismiss: @escaping () -> Void,
-    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void
-  ) {
-    self.substanceName = substanceName
-    self.substance = substance
-    self.customSubstanceDescription = customSubstanceDescription
-    self.defaultUnits = defaultUnits
-    self.administrationRoute = administrationRoute
+    let substanceName = arguments.substance.name
+    let administrationRoute = arguments.administrationRoute
+    self.arguments = arguments
     self.dismiss = dismiss
     self.navigateToCustomUnitChooseDose = navigateToCustomUnitChooseDose
+    if arguments.substance.customSubstanceUnits != nil {
+      let description = PersistenceController.shared.getCustomSubstance(name: substanceName)?.explanationUnwrapped
+      customSubstanceDescription = description?.isEmpty == false ? description : nil
+    } else {
+      customSubstanceDescription = nil
+    }
     let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: administrationRoute)
     self.roaDose = roaDose
+    let defaultUnits = arguments.substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue
     _selectedUnits = State(initialValue: roaDose?.units ?? defaultUnits)
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substanceName))
   }
@@ -51,14 +27,15 @@ struct ChooseDoseScreen: View {
   static let doseDisclaimer =
     "Dosage information is gathered from users and various resources. It is not a recommendation and should be verified with other sources for accuracy. Always start with lower doses due to differences between individual body weight, tolerance, metabolism, and personal sensitivity."
 
-  let substanceName: String
-  let substance: Substance?
+  let arguments: SubstanceAndRoute
   let customSubstanceDescription: String?
-  let defaultUnits: String
-  let administrationRoute: AdministrationRoute
   let dismiss: () -> Void
   let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
   private let roaDose: RoaDose?
+  private var substanceName: String { arguments.substance.name }
+  private var substance: Substance? { arguments.substance.psychonautWikiSubstance }
+  private var defaultUnits: String { arguments.substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue }
+  private var administrationRoute: AdministrationRoute { arguments.administrationRoute }
   @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
   @State private var selectedPureDose: Double?
   @State private var selectedDoseDeviation: Double?
@@ -176,17 +153,6 @@ struct ChooseDoseScreen: View {
     }
   }
 
-  private var customUnitArguments: CustomUnitArguments {
-    if let substance {
-      .substance(substance: substance, administrationRoute: administrationRoute)
-    } else {
-      .customSubstance(
-        customSubstanceName: substanceName,
-        administrationRoute: administrationRoute,
-        customSubstanceUnit: defaultUnits)
-    }
-  }
-
   private var filteredCustomUnits: [CustomUnit] {
     customUnits.wrappedValue.filter { $0.administrationRouteUnwrapped == administrationRoute }
   }
@@ -238,7 +204,7 @@ struct ChooseDoseScreen: View {
     .sheet(isPresented: $isAddCustomUnitSheetShown, content: {
       NavigationStack {
         FinishCustomUnitsScreen(
-          arguments: customUnitArguments,
+          arguments: arguments,
           cancel: {
             isAddCustomUnitSheetShown = false
           },
@@ -256,9 +222,9 @@ struct ChooseDoseScreen: View {
 #Preview {
   NavigationStack {
     ChooseDoseScreen(
-      substanceName: "Amphetamine",
-      substance: SubstanceRepo.shared.getSubstance(name: "Amphetamine")!,
-      administrationRoute: .oral,
+      arguments: SubstanceAndRoute(
+        substance: .psychonautWiki(SubstanceRepo.shared.getSubstance(name: "Amphetamine")!),
+        administrationRoute: .oral),
       dismiss: {},
       navigateToCustomUnitChooseDose: { _ in })
   }

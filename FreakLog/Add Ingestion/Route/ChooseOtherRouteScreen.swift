@@ -27,7 +27,7 @@ struct ChooseOtherRouteScreen: View {
 
 #Preview {
     ChooseOtherRouteScreen(
-        arguments: .init(substance: SubstanceRepo.shared.getSubstance(name: "MDMA")!,
+        arguments: .init(substance: .psychonautWiki(SubstanceRepo.shared.getSubstance(name: "MDMA")!),
                          otherRoutes: [.inhaled, .intravenous, .intramuscular, .smoked]),
         dismiss: {}
     )

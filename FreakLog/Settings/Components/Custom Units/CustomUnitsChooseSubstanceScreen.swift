@@ -39,12 +39,15 @@ struct CustomUnitsChooseSubstanceScreen: View {
         NavigationStack {
             List {
                 ForEach(substancesFilteredAndSorted) { sub in
-                    NavigationLink(value: ChooseRouteScreenArguments(substance: sub)) {
+                    NavigationLink(value: ChooseRouteScreenArguments(substance: .psychonautWiki(sub))) {
                         SubstanceRowLabel(substance: sub)
                     }
                 }
                 ForEach(customSubstancesFiltered) { customSubstance in
-                    NavigationLink(value: CustomSubstanceChooseRouteScreenArguments(substanceName: customSubstance.nameUnwrapped, units: customSubstance.unitsUnwrapped)) {
+                    NavigationLink(value: ChooseRouteScreenArguments(substance: .custom(
+                        name: customSubstance.nameUnwrapped,
+                        units: customSubstance.unitsUnwrapped
+                    ))) {
                         VStack(alignment: .leading) {
                             Text(customSubstance.nameUnwrapped).font(.headline)
                             Text("custom").font(.subheadline).foregroundColor(.secondary)
@@ -74,25 +77,8 @@ struct CustomUnitsChooseSubstanceScreen: View {
             .navigationDestination(for: ChooseOtherRouteScreenArguments.self, destination: { arguments in
                 ChooseOtherRouteScreen(arguments: arguments, dismiss: dismissSheet)
             })
-            .navigationDestination(for: CustomSubstanceChooseRouteScreenArguments.self, destination: { arguments in
-                CustomSubstanceChooseRouteScreen(arguments: arguments, dismiss: dismissSheet)
-            })
-            .navigationDestination(for: CustomUnitArguments.self) { arguments in
-                FinishCustomUnitsScreen(arguments: arguments, cancel: dismissSheet, onAdded: { _ in dismissSheet()})
-            }
             .navigationDestination(for: SubstanceAndRoute.self) { substanceAndRoute in
-                FinishCustomUnitsScreen(arguments: CustomUnitArguments.substance(substance: substanceAndRoute.substance, administrationRoute: substanceAndRoute.administrationRoute), cancel: dismissSheet, onAdded: { _ in dismissSheet()})
-            }
-            .navigationDestination(for: CustomChooseDoseScreenArguments.self) { arguments in
-                FinishCustomUnitsScreen(
-                    arguments: CustomUnitArguments.customSubstance(
-                        customSubstanceName: arguments.substanceName,
-                        administrationRoute: arguments.administrationRoute,
-                        customSubstanceUnit: arguments.units
-                    ),
-                    cancel: dismissSheet,
-                    onAdded: { _ in dismissSheet()}
-                )
+                FinishCustomUnitsScreen(arguments: substanceAndRoute, cancel: dismissSheet, onAdded: { _ in dismissSheet() })
             }
         }
     }

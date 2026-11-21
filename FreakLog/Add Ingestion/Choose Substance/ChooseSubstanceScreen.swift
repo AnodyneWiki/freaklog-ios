@@ -59,23 +59,11 @@ struct ChooseSubstanceContent: View {
             .navigationDestination(for: ChooseRouteScreenArguments.self, destination: { arguments in
                 ChooseRouteScreen(substance: arguments.substance, dismiss: dismiss)
             })
-            .navigationDestination(for: CustomChooseDoseScreenArguments.self, destination: { arguments in
-                ChooseDoseScreen(
-                    arguments: arguments,
-                    dismiss: dismiss,
-                    navigateToCustomUnitChooseDose: { customUnit in
-                        navPath.append(customUnit)
-                    })
-            })
             .navigationDestination(for: ChooseOtherRouteScreenArguments.self, destination: { arguments in
                 ChooseOtherRouteScreen(arguments: arguments, dismiss: dismiss)
             })
-            .navigationDestination(for: CustomSubstanceChooseRouteScreenArguments.self, destination: { arguments in
-                CustomSubstanceChooseRouteScreen(arguments: arguments, dismiss: dismiss)
-            })
             .navigationDestination(for: SubstanceAndRoute.self) { arguments in
-                let substanceName = arguments.substance.name
-                if substanceName == "MDMA", arguments.administrationRoute == .oral {
+                if arguments.substance.psychonautWikiSubstance?.name == "MDMA", arguments.administrationRoute == .oral {
                     ChooseMDMADoseScreen(
                         dismiss: dismiss,
                         navigateToCustomUnitChooseDose: { customUnit in
@@ -141,8 +129,8 @@ struct ChooseSubstanceContent: View {
                     Label("New Custom Substance", systemImage: "plus.circle.fill").labelStyle(.titleAndIcon).font(.headline)
                 }.padding(.horizontal)
                     .sheet(isPresented: $isShowingAddCustomSheet) {
-                        AddCustomSubstanceView(searchText: searchText) { customChooseRouteScreenArguments in
-                            navPath.append(customChooseRouteScreenArguments)
+                        AddCustomSubstanceView(searchText: searchText) { chooseRouteScreenArguments in
+                            navPath.append(chooseRouteScreenArguments)
                         }
                     }
             }

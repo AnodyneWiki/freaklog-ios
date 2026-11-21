@@ -79,7 +79,7 @@ struct ChooseMDMADoseScreen: View {
         .sheet(isPresented: $isAddCustomUnitSheetShown, content: {
             NavigationStack {
                 FinishCustomUnitsScreen(
-                    arguments: CustomUnitArguments.substance(substance: mdma, administrationRoute: .oral),
+                    arguments: SubstanceAndRoute(substance: .psychonautWiki(mdma), administrationRoute: .oral),
                     cancel: {
                         isAddCustomUnitSheetShown = false
                     },

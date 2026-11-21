@@ -6,16 +6,16 @@ struct CustomSubstanceBox: View {
 
     var body: some View {
         if isEyeOpen {
-            NavigationLink(value: CustomSubstanceChooseRouteScreenArguments(substanceName: customSubstanceModel.name,
-                                                                   units: customSubstanceModel.units)) {
+            NavigationLink(value: ChooseRouteScreenArguments(substance: customSubstanceModel.addIngestionSubstance)) {
                 content
             }.overlay(alignment: .bottom) {
                 Divider()
             }
         } else {
-            NavigationLink(value: CustomChooseDoseScreenArguments(substanceName: customSubstanceModel.name,
-                                                                  units: customSubstanceModel.units,
-                                                                  administrationRoute: .oral)) {
+            NavigationLink(value: SubstanceAndRoute(
+                substance: customSubstanceModel.addIngestionSubstance,
+                administrationRoute: .oral
+            )) {
                 content
             }.overlay(alignment: .bottom) {
                 Divider()

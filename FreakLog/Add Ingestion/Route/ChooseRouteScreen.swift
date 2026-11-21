@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct ChooseRouteScreen: View {
-    let substance: Substance
+    let substance: AddIngestionSubstance
     let dismiss: () -> Void
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
     var body: some View {
         screen.toolbar {
@@ -17,7 +18,7 @@ struct ChooseRouteScreen: View {
     var screen: some View {
         VStack(alignment: .center) {
             VStack(alignment: .leading) {
-                let documentedRoutes = substance.administrationRoutesUnwrapped
+                let documentedRoutes = substance.documentedRoutes
                 let otherRoutes = AdministrationRoute.allCases.filter { route in
                     !documentedRoutes.contains(route)
                 }
@@ -43,10 +44,12 @@ struct ChooseRouteScreen: View {
                     }
                 }
             }
-            NavigationLink(value: AddIngestionDestination.saferRoutes) {
-                Label("Safer Routes", systemImage: "info.circle")
+            if isEyeOpen {
+                NavigationLink(value: AddIngestionDestination.saferRoutes) {
+                    Label("Safer Routes", systemImage: "info.circle")
+                }
+                .padding(.vertical)
             }
-            .padding(.vertical)
         }
         .padding(.horizontal)
         .navigationBarTitle("\(substance.name) Routes")
@@ -76,7 +79,7 @@ struct ChooseRouteScreen: View {
 #Preview {
     NavigationStack {
         ChooseRouteScreen(
-            substance: SubstanceRepo.shared.getSubstance(name: "MDMA")!,
+            substance: .psychonautWiki(SubstanceRepo.shared.getSubstance(name: "MDMA")!),
             dismiss: {}
         )
     }

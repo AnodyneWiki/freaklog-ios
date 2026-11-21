@@ -107,16 +107,15 @@ struct CustomUnitsChooseDoseScreen: View {
         .navigationBarTitle("\(customUnit.substanceNameUnwrapped) Dose")
     }
 
-    var customUnitArguments: CustomUnitArguments {
-        if let substance = customUnit.substance {
-            return CustomUnitArguments.substance(substance: substance, administrationRoute: customUnit.administrationRouteUnwrapped)
-            } else {
-                return CustomUnitArguments.customSubstance(
-                    customSubstanceName: customUnit.substanceNameUnwrapped,
-                    administrationRoute: customUnit.administrationRouteUnwrapped,
-                    customSubstanceUnit: customUnit.originalUnitUnwrapped)
-            }
+    // A new unit made from here is for the same substance and route
+    var customUnitArguments: SubstanceAndRoute {
+        let substance: AddIngestionSubstance = if let substance = customUnit.substance {
+            .psychonautWiki(substance)
+        } else {
+            .custom(name: customUnit.substanceNameUnwrapped, units: customUnit.originalUnitUnwrapped)
         }
+        return SubstanceAndRoute(substance: substance, administrationRoute: customUnit.administrationRouteUnwrapped)
+    }
 }
 
 #Preview {

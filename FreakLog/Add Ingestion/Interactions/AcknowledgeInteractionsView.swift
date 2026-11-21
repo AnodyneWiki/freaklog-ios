@@ -44,7 +44,7 @@ struct AcknowledgeInteractionsContent: View {
     }
 
     private var nextLink: some View {
-        NavigationLink(value: ChooseRouteScreenArguments(substance: substance)) {
+        NavigationLink(value: ChooseRouteScreenArguments(substance: .psychonautWiki(substance))) {
             NextLabel()
         }
     }
