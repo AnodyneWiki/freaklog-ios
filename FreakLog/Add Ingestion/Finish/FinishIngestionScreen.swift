@@ -60,7 +60,6 @@ struct FinishIngestionScreen: View {
         DoneButton {
             do {
                 try addIngestionWithExperience()
-                Task { await LeaderboardSyncManager.shared.syncAll() }
                 toastViewModel.showSuccessToast()
                 generateSuccessHaptic()
             } catch {
@@ -239,20 +238,17 @@ struct FinishIngestionScreen: View {
         let context = PersistenceController.shared.viewContext
         let selectedLocationValue = locationManager.selectedLocation
         let isNewExperience = selectedExperience == nil
+        let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
+        let ingestion = createIngestionWithCompanion(with: experience, location: selectedLocationValue, and: context)
+        try IngestionSaving.save(ingestion, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
+        startLiveActivityIfWanted(for: experience, isNewExperience: isNewExperience)
+    }
 
-        try context.performAndWait {
-            let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
-            let ingestion = createIngestionWithCompanion(with: experience, location: selectedLocationValue, and: context)
-            try context.save()
-            startLiveActivityIfWanted(for: experience, isNewExperience: isNewExperience)
-
-            if isWebhookSectionExpanded, !selectedWebhookPresetIDs.isEmpty {
-                let presetObjectIDs = enabledWebhookPresets
-                    .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
-                    .map { $0.objectID }
-                WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
-            }
-        }
+    private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
+        guard isWebhookSectionExpanded else { return [] }
+        return enabledWebhookPresets
+            .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
+            .map(\.objectID)
     }
 
     // A running activity follows its experience by itself; a new experience starts one, if wanted

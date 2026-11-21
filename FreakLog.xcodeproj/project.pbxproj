@@ -57,6 +57,7 @@
 		83EB3F882E4475B862DC7F44 /* ExperienceSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD58C264C484D0F244B11511 /* ExperienceSections.swift */; };
 		A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */; };
 		28EAF0C77695839A342FBFCE /* IngestionDeletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */; };
+		AE66BCF433CE76CD7CC46381 /* IngestionSaving.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */; };
 		A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
 		A15CA2FF2EFB73E100D90023 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
 		A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
@@ -472,6 +473,7 @@
 		AD58C264C484D0F244B11511 /* ExperienceSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceSections.swift; sourceTree = "<group>"; };
 		A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceLogic.swift; sourceTree = "<group>"; };
 		7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionDeletion.swift; sourceTree = "<group>"; };
+		D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSaving.swift; sourceTree = "<group>"; };
 		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
 		A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViewOption.swift; sourceTree = "<group>"; };
 		A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSettingsScreen.swift; sourceTree = "<group>"; };
@@ -1675,6 +1677,7 @@
 				A159D8F82FDAC57800E19083 /* CustomRoa+CoreDataProperties.swift */,
 				A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */,
 				7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */,
+				D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */,
 				0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */,
 				0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */,
 				0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */,
@@ -2058,6 +2061,7 @@
 				EA4B8A072A969301009918DE /* WeightedLine.swift in Sources */,
 				A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */,
 				28EAF0C77695839A342FBFCE /* IngestionDeletion.swift in Sources */,
+				AE66BCF433CE76CD7CC46381 /* IngestionSaving.swift in Sources */,
 				EAB794752D02DA9B00ED37C8 /* TimePointOrRangePicker.swift in Sources */,
 				C7B4BB7711C6004014A6FE17 /* IngestionDetailRows.swift in Sources */,
 				EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */,

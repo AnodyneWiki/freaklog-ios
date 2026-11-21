@@ -19,6 +19,7 @@ struct EditIngestionScreen: View {
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
+    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     @State private var sheetToShow: SheetOption?
 
@@ -146,9 +147,12 @@ struct EditIngestionScreen: View {
         } else {
             ingestion.experience = selectedExperience
         }
-        PersistenceController.shared.saveViewContext()
+        do {
+            try IngestionSaving.save(ingestion)
+        } catch {
+            toastViewModel.showErrorToast(message: "Failed to save ingestion")
+        }
         ingestion.experience?.objectWillChange.send()
-        WebhookManager.shared.editWebhookMessages(for: ingestion)
         dismiss()
     }
 
