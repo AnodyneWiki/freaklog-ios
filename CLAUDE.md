@@ -69,7 +69,7 @@ CoreData helper extensions live in `CoreDataHelpers/`. Each entity has a corresp
 - `managedObjectContext` — SwiftUI environment key for CoreData
 
 ### Navigation
-`GlobalNavigationDestination` enum is the single type used as `NavigationLink` values throughout the app. Add a new case there when adding a new destination.
+`GlobalNavigationDestination` enum is the single type used as `NavigationLink` values throughout the app. Add a new case there when adding a new destination. Each tab's stack is built by `ContentScreen.view(for:)`; `Navigator.pathKeyPath(for:)` maps a `Tab` to its path.
 
 ### Logic separation
 Pure logic that doesn't need a SwiftUI context lives in `ExperienceLogic.swift` (static methods). Use these instead of duplicating logic on the entity extension:
@@ -78,21 +78,28 @@ Pure logic that doesn't need a SwiftUI context lives in `ExperienceLogic.swift` 
 - `ExperienceLogic.substancesUsed(from:)` → distinct substances
 - `ExperienceLogic.timelineModel(from:...)` → timeline render model
 - `ExperienceLogic.myIngestions(from:)` → filter to user's own ingestions
+- `ExperienceLogic.dynamicTimelineModel(from:range:...)` → timeline for the configured dynamic range (`DynamicRangeOption`)
 
 ### "My" vs "other" ingestions
-`consumerName == nil`, empty or whitespace-only = the user themselves. Anything else = someone else. Use `Ingestion.isMine` (or `ExperienceLogic.myIngestions/otherIngestions`) rather than checking `consumerName` directly.
+`consumerName == nil`, empty or whitespace-only = the user themselves. Anything else = someone else. Use `Ingestion.isMine` (or `ExperienceLogic.myIngestions/otherIngestions`) rather than checking `consumerName` directly, and store entered names with `Ingestion.storedConsumerName(_:)` (nil for the user).
 
 ### Substance color
-Each substance name maps to a `SubstanceColor` via the `SubstanceCompanion` entity. To look up a color by substance name, call the global `getColor(for: substanceName)`. Returns `.purple` as fallback if no companion exists.
+Each substance name maps to a `SubstanceColor` via the `SubstanceCompanion` entity. To look up a color by substance name, call the global `getColor(for: substanceName)`. Returns `SubstanceColor.fallback` (purple) if no companion exists. Use `ColorPickerScreen(selectedColor:usedColors:)` to pick a color and `SubstanceColor.suggested(avoiding:)` for a new substance's default.
 
 ### Fetching
 All fetch requests are built by the static factories on `PersistenceController` (`ingestionsRequest()`, `experiencesRequest()`, `customRoasRequest(for:)`, …) or its instance getters. Use them in `@FetchRequest(fetchRequest:)` instead of writing predicates inline. `PersistenceController.shared.getExperiences(near: date)` is the single place that knows the time-range predicate for "nearby experiences".
 
 ### Dose and duration data
-Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:route:)` (or `resolvedDose`/`resolvedDuration`). It merges PsychonautWiki data with the user's `CustomRoa` overrides and custom substance data, and is backed by an in-memory cache, so it is cheap to call from views. `CustomRoa` rows are keyed by `substanceName` + route; `CustomRoaCodable` is the value form used for editing and export/import.
+Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:route:)` (or `resolvedDose`/`resolvedDuration`). It merges PsychonautWiki data with the user's `CustomRoa` overrides and custom substance data, and is backed by an in-memory cache, so it is cheap to call from views. `CustomRoa` rows are keyed by `substanceName` + route; `CustomRoaCodable` is the value form used for editing and export/import. A duration phase with a single value is a fixed time. The editor starts from `CustomRoaCodable.psychonautWikiValues(for:route:)` and only saves an override when the values differ from it.
 
 ### Deleting ingestions
 Delete ingestions, experiences and custom units through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)` / `delete(customUnit:)`. It deletes locally right away, then removes sent webhook messages and notifies leaderboard servers in the background; it also ends the live activity of a deleted current experience. For bulk deletes elsewhere, collect `remoteCleanUp(for:)` before deleting and call it afterwards.
+
+### Adding and editing ingestions
+The add (`FinishIngestionScreen`) and edit (`EditIngestionScreen`) forms share `ExperiencePickerRow`, `ConsumerRow`, `LocationButton` and `EstimateFields` (the estimate toggle with ± deviation field). Create experiences with `Experience.create(at:title:in:)` and set locations with `Ingestion.setLocation(_:)`; `ExperienceLocation.make(from:in:)` / `update(from:)` convert anything that is a `LocationValue` (`Location`, `LocationCodable`). Time labels for ingestions, notes and ratings under each `TimeDisplayStyle` come from `EventTimeText`.
+
+### Live activities
+Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user) rather than repeating the checks.
 
 ### Administration site strings
 `AdministrationSiteSelection` holds the route-specific site (nostril, vein, muscle, subcutaneous site). `siteString(for:)` converts it into the string stored on `Ingestion.administrationSite` and `init(route:storedSite:)` parses it back. Use `AdministrationSitePicker` for the picker.
@@ -104,7 +111,7 @@ All webhook HTTP calls go through `WebhookManager.shared`. It handles send, edit
 The timeline is drawn with SwiftUI Canvas in `Timeline/`. `TimelineModel` is the pure-data input. `getSubstanceIngestionGroups()` (`Timeline/Preparation/SubstanceIngestionGroup.swift`, app only) builds the `SubstanceIngestionGroup` payload with resolved durations and dose weights already filled in, so the timeline and the live activity widget never look up substance data themselves. Build live activity state with `Experience.liveActivityState(...)`.
 
 ## UserDefaults keys
-All keys are static constants on `PersistenceController`. Never hard-code key strings — add them there.
+All keys are static constants on `PersistenceController`. Never hard-code key strings — add them there. Store enum settings as typed `@AppStorage` values (e.g. `SaveableTimeDisplayStyle`) instead of raw strings. One-off data migrations go in the list in `PersistenceController.runPendingMigrations()`.
 
 ## Formatting rules
 - SwiftFormat enforces style automatically (`airbnb.swiftformat`)
