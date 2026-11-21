@@ -23,6 +23,12 @@ struct DosePicker: View {
                 doseText = doseMaybe.formatted()
             }
         }
+        // The dose can also be set from outside, like the MDMA max dose calculator
+        .onChange(of: doseMaybe) { dose in
+            if getDouble(from: doseText) != dose {
+                doseText = dose?.formatted() ?? ""
+            }
+        }
     }
 
     var doseType: DoseRangeType {

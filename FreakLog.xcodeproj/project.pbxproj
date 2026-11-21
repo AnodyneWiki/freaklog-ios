@@ -141,7 +141,6 @@
 		EA4189EE2962E67600DEA663 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189ED2962E67600DEA663 /* Constants.swift */; };
 		EA4189EF2962E69000DEA663 /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189ED2962E67600DEA663 /* Constants.swift */; };
 		EA4189F12963219100DEA663 /* LiveActivityButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189F02963219100DEA663 /* LiveActivityButton.swift */; };
-		EA4189FB2966B84500DEA663 /* ChooseMDMADoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189FA2966B84500DEA663 /* ChooseMDMADoseScreen.swift */; };
 		EA4189FD2966DA4500DEA663 /* MDMAOptimalDoseSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189FC2966DA4500DEA663 /* MDMAOptimalDoseSection.swift */; };
 		EA418A002967397D00DEA663 /* MDMAMaxDoseCalculator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4189FF2967397D00DEA663 /* MDMAMaxDoseCalculator.swift */; };
 		EA418A0229673FFF00DEA663 /* MDMAPillsSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0129673FFF00DEA663 /* MDMAPillsSection.swift */; };
@@ -532,7 +531,6 @@
 		EA39B2062BB98211000B1C4E /* AppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIntents.swift; sourceTree = "<group>"; };
 		EA4189ED2962E67600DEA663 /* Constants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Constants.swift; sourceTree = "<group>"; };
 		EA4189F02963219100DEA663 /* LiveActivityButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveActivityButton.swift; sourceTree = "<group>"; };
-		EA4189FA2966B84500DEA663 /* ChooseMDMADoseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseMDMADoseScreen.swift; sourceTree = "<group>"; };
 		EA4189FC2966DA4500DEA663 /* MDMAOptimalDoseSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDMAOptimalDoseSection.swift; sourceTree = "<group>"; };
 		EA4189FF2967397D00DEA663 /* MDMAMaxDoseCalculator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDMAMaxDoseCalculator.swift; sourceTree = "<group>"; };
 		EA418A0129673FFF00DEA663 /* MDMAPillsSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MDMAPillsSection.swift; sourceTree = "<group>"; };
@@ -1032,7 +1030,6 @@
 		EA4189FE296738BC00DEA663 /* MDMA Dose */ = {
 			isa = PBXGroup;
 			children = (
-				EA4189FA2966B84500DEA663 /* ChooseMDMADoseScreen.swift */,
 				EA4189FC2966DA4500DEA663 /* MDMAOptimalDoseSection.swift */,
 				EA418A0129673FFF00DEA663 /* MDMAPillsSection.swift */,
 				EA4189FF2967397D00DEA663 /* MDMAMaxDoseCalculator.swift */,
@@ -2115,7 +2112,6 @@
 				EA302E442B2F3349007F113F /* CustomUnitsChooseSubstanceScreen.swift in Sources */,
 				EAC4C0002B893EB300293B44 /* CustomUnitCalculationText.swift in Sources */,
 				EABD922029427A9C0073303A /* DosesSection.swift in Sources */,
-				EA4189FB2966B84500DEA663 /* ChooseMDMADoseScreen.swift in Sources */,
 				EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */,
 				EAE4720026CBA664009FB0EC /* Date-String.swift in Sources */,
 				EAE4720B26CBA664009FB0EC /* ExperienceScreen.swift in Sources */,

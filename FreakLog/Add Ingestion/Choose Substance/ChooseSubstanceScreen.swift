@@ -63,22 +63,13 @@ struct ChooseSubstanceContent: View {
                 ChooseOtherRouteScreen(arguments: arguments, dismiss: dismiss)
             })
             .navigationDestination(for: SubstanceAndRoute.self) { arguments in
-                if arguments.substance.psychonautWikiSubstance?.name == "MDMA", arguments.administrationRoute == .oral {
-                    ChooseMDMADoseScreen(
-                        dismiss: dismiss,
-                        navigateToCustomUnitChooseDose: { customUnit in
-                            navPath.append(customUnit)
-                        }
-                    )
-                } else {
-                    ChooseDoseScreen(
-                        arguments: arguments,
-                        dismiss: dismiss,
-                        navigateToCustomUnitChooseDose: { customUnit in
-                            navPath.append(customUnit)
-                        }
-                    )
-                }
+                ChooseDoseScreen(
+                    arguments: arguments,
+                    dismiss: dismiss,
+                    navigateToCustomUnitChooseDose: { customUnit in
+                        navPath.append(customUnit)
+                    }
+                )
             }
             .navigationDestination(for: CustomUnit.self) { customUnit in
                 CustomUnitsChooseDoseScreen(customUnit: customUnit, dismiss: dismiss, navigateToCustomUnitChooseDose: { newCustomUnit in

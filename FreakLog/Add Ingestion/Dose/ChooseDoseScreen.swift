@@ -21,6 +21,7 @@ struct ChooseDoseScreen: View {
     self.roaDose = roaDose
     let defaultUnits = arguments.substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue
     _selectedUnits = State(initialValue: roaDose?.units ?? defaultUnits)
+    _selectedPureDose = State(initialValue: Self.isOralMDMA(arguments) ? 113 : nil)
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substanceName))
   }
 
@@ -36,6 +37,11 @@ struct ChooseDoseScreen: View {
   private var substance: Substance? { arguments.substance.psychonautWikiSubstance }
   private var defaultUnits: String { arguments.substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue }
   private var administrationRoute: AdministrationRoute { arguments.administrationRoute }
+
+  // Oral MDMA gets a max dose calculator and pill info, and starts at a common dose
+  private static func isOralMDMA(_ arguments: SubstanceAndRoute) -> Bool {
+    arguments.substance.psychonautWikiSubstance?.name == "MDMA" && arguments.administrationRoute == .oral
+  }
   @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
   @State private var selectedPureDose: Double?
   @State private var selectedDoseDeviation: Double?
@@ -129,6 +135,8 @@ struct ChooseDoseScreen: View {
       "Prefer to log weight of mushrooms instead of mg Psilocybin?"
     } else if substanceName == "Alcohol" {
       "Prefer to log number of drinks, beer or wine instead of g of Ethanol?"
+    } else if substanceName == "MDMA" {
+      "Prefer to log pills instead of mg MDMA?"
     } else if substanceName == "Caffeine" {
       "Prefer to log coffee, tea or energy drink instead of mg Caffeine?"
     } else {
@@ -159,6 +167,13 @@ struct ChooseDoseScreen: View {
 
   private var screen: some View {
     Form {
+      if isEyeOpen, Self.isOralMDMA(arguments) {
+        Section("Max Dose Calculator") {
+          MDMAMaxDoseCalculator(showResult: false) { maxDose in
+            selectedPureDose = maxDose
+          }
+        }
+      }
       doseSection
       if isEyeOpen {
         Section {
@@ -180,6 +195,10 @@ struct ChooseDoseScreen: View {
         }
         if administrationRoute == .smoked, substance?.categories.contains("opioid") == true {
           ChasingTheDragonSection()
+        }
+        if Self.isOralMDMA(arguments) {
+          MDMAOptimalDoseSection()
+          MDMAPillsSection()
         }
         let isSmokedRoute = administrationRoute == .smoked || administrationRoute == .inhaled
         let shouldUseVolumetricDosing = roaDose?.shouldUseVolumetricDosing ?? false
