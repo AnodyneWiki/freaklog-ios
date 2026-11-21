@@ -74,6 +74,9 @@ struct WebhooksScreen: View {
                         .keyboardType(.URL)
                         .autocorrectionDisabled()
                         .textInputAutocapitalization(.never)
+                    Button("Link to AnodyneWiki") {
+                        substanceInfoUrl = "\(AnodyneSubstance.baseURL.absoluteString)/substance/"
+                    }
                 }
             }
 
