@@ -112,7 +112,10 @@ struct SubstanceCustomizeSheet: View {
         } header: {
           Text("Override Dose & Duration")
         } footer: {
-          Text("Custom data takes priority over PsychonautWiki values in the timeline and dose display.")
+          Text(
+            "Routes open with the PsychonautWiki data filled in. "
+              + "Your changes take priority over it in the timeline and dose display."
+          )
         }
       }
       .navigationTitle(substance.name)

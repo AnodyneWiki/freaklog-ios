@@ -13,15 +13,24 @@ struct CustomRoaRouteList: View {
     _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substanceName))
   }
 
+  private var routesWithPsychonautWikiData: Set<AdministrationRoute> {
+    guard customSubstance == nil, let substance = SubstanceRepo.shared.getSubstance(name: substanceName) else { return [] }
+    return Set(substance.administrationRoutesUnwrapped)
+  }
+
   var body: some View {
+    let routesWithPsychonautWikiData = routesWithPsychonautWikiData
     ForEach(AdministrationRoute.allCases) { route in
       NavigationLink(destination: EditCustomRoaView(substanceName: substanceName, route: route, customSubstance: customSubstance)) {
         HStack {
           Text(route.rawValue.localizedCapitalized)
           Spacer()
           if customRoas.contains(where: { $0.administrationRouteUnwrapped == route && $0.hasData }) {
-            Image(systemName: "checkmark.circle.fill")
+            Text("Custom")
               .foregroundColor(.accentColor)
+          } else if routesWithPsychonautWikiData.contains(route) {
+            Text("PsychonautWiki")
+              .foregroundStyle(.secondary)
           }
         }
       }

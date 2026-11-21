@@ -25,14 +25,13 @@ struct EditCustomRoaView: View {
     CustomRoa.fallbackUnits(substanceName: substanceName, route: route, customSubstance: customSubstance)
   }
 
-  private var psychonautWikiValues: CustomRoaCodable? {
-    guard customSubstance == nil, let substance = SubstanceRepo.shared.getSubstance(name: substanceName) else { return nil }
-    let values = CustomRoaCodable(
-      administrationRoute: route,
-      dose: substance.getDose(for: route),
-      duration: substance.getDuration(for: route)
-    )
-    return values.isEmpty ? nil : values
+  // What the form shows without custom data: the PsychonautWiki data, if any. Matching it means no override is needed.
+  private var baseline: CustomRoaCodable {
+    CustomRoaCodable.psychonautWikiValues(for: customSubstance == nil ? substanceName : nil, route: route)
+  }
+
+  private var isShowingPsychonautWikiData: Bool {
+    existingRoa == nil && !baseline.isEmpty
   }
 
   var body: some View {
@@ -40,22 +39,26 @@ struct EditCustomRoaView: View {
       let roaDose = values.roaDose(fallbackUnits: fallbackUnits)
       let roaDuration = values.roaDuration
       if roaDose != nil || roaDuration != nil {
-        Section("Preview") {
+        Section {
           RoaPreview(substanceName: substanceName, route: route, roaDose: roaDose, roaDuration: roaDuration)
             .padding(.vertical, 4)
-        }
-      } else if let psychonautWikiValues {
-        Section {
-          Button("Start from PsychonautWiki Data") { fill(with: psychonautWikiValues) }
+        } header: {
+          Text("Preview")
         } footer: {
-          Text("Copies the PsychonautWiki dose and duration for this route so you only need to change what differs.")
+          if isShowingPsychonautWikiData {
+            Text("Showing the PsychonautWiki data. Any change is saved as your own data for this route.")
+          }
         }
       }
       doseSection
       durationSection
       if existingRoa != nil {
         Section {
-          Button("Clear All Custom Data", role: .destructive) { clear() }
+          if baseline.isEmpty {
+            Button("Clear All Custom Data", role: .destructive) { clear() }
+          } else {
+            Button("Reset to PsychonautWiki Data", role: .destructive) { clear() }
+          }
         }
       }
     }
@@ -177,16 +180,8 @@ struct EditCustomRoaView: View {
 
   private func load() {
     existingRoa = PersistenceController.shared.getCustomRoa(for: substanceName, route: route)
-    if let existingRoa {
-      values = existingRoa.values
-    }
+    values = existingRoa?.values ?? baseline
     durationUnit = DurationInputUnit.suggested(for: values)
-    fillText()
-  }
-
-  private func fill(with newValues: CustomRoaCodable) {
-    values = newValues
-    durationUnit = DurationInputUnit.suggested(for: newValues)
     fillText()
   }
 
@@ -201,8 +196,8 @@ struct EditCustomRoaView: View {
   private func clear() {
     saveTask?.cancel()
     deleteExisting()
-    values = CustomRoaCodable(administrationRoute: route)
-    text = [:]
+    values = baseline
+    fillText()
   }
 
   private func deleteExisting() {
@@ -222,7 +217,7 @@ struct EditCustomRoaView: View {
   }
 
   private func save() {
-    guard !values.isEmpty else {
+    guard !values.isEmpty, values != baseline else {
       deleteExisting()
       return
     }

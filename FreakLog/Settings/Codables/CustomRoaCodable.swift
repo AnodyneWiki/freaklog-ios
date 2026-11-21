@@ -41,6 +41,16 @@ struct CustomRoaCodable: Codable, Equatable {
     }
   }
 
+  // The PsychonautWiki data for a route as form values, empty when there is none (e.g. for custom substances)
+  static func psychonautWikiValues(for substanceName: String?, route: AdministrationRoute) -> CustomRoaCodable {
+    let substance = substanceName.flatMap { SubstanceRepo.shared.getSubstance(name: $0) }
+    return CustomRoaCodable(
+      administrationRoute: route,
+      dose: substance?.getDose(for: route),
+      duration: substance?.getDuration(for: route)
+    )
+  }
+
   init(roa: CustomRoa) {
     self.init(administrationRoute: roa.administrationRouteUnwrapped, doseUnits: roa.doseUnits)
     for field in CustomRoaField.allCases {
