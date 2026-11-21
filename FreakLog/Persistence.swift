@@ -118,13 +118,19 @@ struct PersistenceController {
         viewContext.automaticallyMergesChangesFromParent = true
         viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
         
-        if !UserDefaults.standard.bool(forKey: Self.didInitializeCloudKitSchemaKey) {
+        // Pushes the schema to the CloudKit development environment. This blocks launch and fails against
+        // production and without sync enabled (retrying on every launch), so only debug builds with sync try it.
+        #if DEBUG
+        let isSyncConfigured = container.persistentStoreDescriptions.contains { $0.cloudKitContainerOptions != nil }
+        if isSyncConfigured, !UserDefaults.standard.bool(forKey: Self.didInitializeCloudKitSchemaKey) {
             do {
                 try container.initializeCloudKitSchema(options: [])
                 UserDefaults.standard.set(true, forKey: Self.didInitializeCloudKitSchemaKey)
             } catch {
+                print("Failed to initialize CloudKit schema: \(error)")
             }
         }
+        #endif
 
 
         return
@@ -336,7 +342,8 @@ struct PersistenceController {
 
     static func personalIngestionsRequest() -> NSFetchRequest<Ingestion> {
         let r = ingestionsRequest()
-        r.predicate = NSPredicate(format: "consumerName == nil OR consumerName == ''")
+        // Matches Ingestion.isMine: no name, or one made of spaces only
+        r.predicate = NSPredicate(format: "consumerName == nil OR consumerName MATCHES %@", "\\h*")
         return r
     }
 
@@ -373,9 +380,13 @@ struct PersistenceController {
         return r
     }
 
-    static func experiencesRequest() -> NSFetchRequest<Experience> {
+    // Prefetching avoids one fault per experience when every experience's ingestions are read
+    static func experiencesRequest(prefetchingIngestions: Bool = false) -> NSFetchRequest<Experience> {
         let r = Experience.fetchRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)]
+        if prefetchingIngestions {
+            r.relationshipKeyPathsForPrefetching = ["ingestions"]
+        }
         return r
     }
 

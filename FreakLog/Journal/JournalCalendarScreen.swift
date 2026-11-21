@@ -29,6 +29,8 @@ struct JournalCalendarScreen: View {
     }
 
     var body: some View {
+        // Grouped once here instead of a fetch request per visible day cell
+        let ingestionsByDay = Dictionary(grouping: ingestions) { calendar.startOfDay(for: $0.timeUnwrapped) }
         CalendarViewRepresentable(
             calendar: calendar,
             visibleDateRange: visibleDateRange,
@@ -50,7 +52,7 @@ struct JournalCalendarScreen: View {
         }
 
         .days { dayComponents in
-            DayView(dayComponents: dayComponents)
+            DayView(dayComponents: dayComponents, ingestionsByDay: ingestionsByDay)
         }
         .onAppear {
             if isFirstAppear {

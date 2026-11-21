@@ -15,7 +15,8 @@ struct SearchScreen: View {
     @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
     private var customSubstances: FetchedResults<CustomSubstance>
 
-    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    // Only the most recent ingestions are used to rank substances
+    @FetchRequest(fetchRequest: PersistenceController.recentIngestionsRequest(limit: 500))
     private var ingestions: FetchedResults<Ingestion>
     
     private static let custom = "custom"
@@ -63,7 +64,7 @@ struct SearchScreen: View {
                 sub.categories.contains(selected)
             }
         }
-        let substanceNamesInOrder = ingestions.prefix(500).map { ing in
+        let substanceNamesInOrder = ingestions.map { ing in
             ing.substanceNameUnwrapped
         }.uniqued()
         return SearchLogic.getFilteredSubstancesSorted(

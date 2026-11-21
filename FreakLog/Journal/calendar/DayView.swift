@@ -4,13 +4,13 @@ import HorizonCalendar
 struct DayView: View {
 
     private let dayComponents: DayComponents
-    @FetchRequest var ingestions : FetchedResults<Ingestion>
+    let ingestions: [Ingestion]
     let isToday: Bool
 
-    init(dayComponents: DayComponents) {
+    init(dayComponents: DayComponents, ingestionsByDay: [Date: [Ingestion]]) {
         self.dayComponents = dayComponents
         let startOfDay = Calendar.current.date(from: dayComponents.components) ?? .now
-        self._ingestions = FetchRequest(fetchRequest: PersistenceController.ingestionsRequest(for: startOfDay))
+        ingestions = ingestionsByDay[startOfDay] ?? []
         isToday = startOfDay == Calendar.current.startOfDay(for: .now)
     }
 

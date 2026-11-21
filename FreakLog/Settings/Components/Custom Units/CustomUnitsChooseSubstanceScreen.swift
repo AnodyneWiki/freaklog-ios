@@ -4,14 +4,15 @@ struct CustomUnitsChooseSubstanceScreen: View {
     @State private var searchText = ""
     @Environment(\.dismiss) var dismiss
 
-    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    // Only the most recent ingestions are used to rank substances
+    @FetchRequest(fetchRequest: PersistenceController.recentIngestionsRequest(limit: 500))
     private var ingestions: FetchedResults<Ingestion>
 
     @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
     private var customSubstances: FetchedResults<CustomSubstance>
 
     private var substancesFilteredAndSorted: [Substance] {
-        let substanceNamesInOrder = ingestions.prefix(500).map { ing in
+        let substanceNamesInOrder = ingestions.map { ing in
             ing.substanceNameUnwrapped
         }.uniqued()
         return SearchLogic.getFilteredSubstancesSorted(

@@ -5,7 +5,7 @@ struct StatsScreen: View {
     @FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest())
     var ingestions: FetchedResults<Ingestion>
 
-    @FetchRequest(fetchRequest: PersistenceController.experiencesRequest())
+    @FetchRequest(fetchRequest: PersistenceController.experiencesRequest(prefetchingIngestions: true))
     var experiences: FetchedResults<Experience>
 
     @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
