@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct RatingCodable: Codable {
@@ -42,5 +43,19 @@ struct RatingCodable: Codable {
         }
         try container.encode(timeInMillis, forKey: .time)
         try container.encode(option, forKey: .option)
+    }
+}
+
+extension RatingCodable {
+    init(_ rating: ShulginRating) {
+        self.init(creationDate: rating.creationDateUnwrapped, time: rating.time, option: rating.optionUnwrapped)
+    }
+
+    func insert(into context: NSManagedObjectContext) -> ShulginRating {
+        let rating = ShulginRating(context: context)
+        rating.creationDate = creationDate
+        rating.time = time
+        rating.option = option.rawValue
+        return rating
     }
 }

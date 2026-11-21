@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct CompanionCodable: Codable {
@@ -24,5 +25,14 @@ struct CompanionCodable: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(substanceName, forKey: .substanceName)
         try container.encode(color.rawValue, forKey: .color)
+    }
+}
+
+extension CompanionCodable {
+    func insert(into context: NSManagedObjectContext) -> SubstanceCompanion {
+        let companion = SubstanceCompanion(context: context)
+        companion.substanceName = substanceName
+        companion.colorAsText = color.rawValue
+        return companion
     }
 }

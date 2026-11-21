@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct IngestionCodable: Codable {
@@ -123,5 +124,49 @@ struct IngestionCodable: Codable {
         try container.encode(customUnitId, forKey: .customUnitId)
         try container.encode(administrationSite, forKey: .administrationSite)
         try container.encode(location, forKey: .location)
+    }
+}
+
+// Export and import mapping. The importer links companions, custom units and the experience.
+extension IngestionCodable {
+    init(_ ingestion: Ingestion) {
+        self.init(
+            substanceName: ingestion.substanceNameUnwrapped,
+            time: ingestion.timeUnwrapped,
+            endTime: ingestion.endTime,
+            creationDate: ingestion.creationDate,
+            administrationRoute: ingestion.administrationRouteUnwrapped,
+            dose: ingestion.doseUnwrapped,
+            estimatedDoseStandardDeviation: ingestion.estimatedDoseStandardDeviationUnwrapped,
+            isDoseAnEstimate: ingestion.isEstimate,
+            units: ingestion.unitsUnwrapped,
+            notes: ingestion.noteUnwrapped,
+            consumerName: ingestion.consumerName,
+            customUnitId: ingestion.customUnit?.idForAndroid,
+            administrationSite: ingestion.administrationSite,
+            location: ingestion.location.map(LocationCodable.init)
+        )
+    }
+
+    // An older export only has a location on the experience, which then goes to each of its ingestions
+    func insert(into context: NSManagedObjectContext, fallbackLocation: LocationCodable?) -> Ingestion {
+        let ingestion = Ingestion(context: context)
+        ingestion.identifier = UUID()
+        ingestion.substanceName = substanceName
+        ingestion.time = time
+        ingestion.endTime = endTime
+        ingestion.creationDate = creationDate
+        ingestion.administrationRoute = administrationRoute.rawValue
+        ingestion.dose = dose ?? 0
+        ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
+        ingestion.isEstimate = isDoseAnEstimate
+        ingestion.units = units
+        ingestion.note = notes
+        ingestion.consumerName = consumerName
+        ingestion.administrationSite = administrationSite
+        if let location = location ?? fallbackLocation {
+            ingestion.location = ExperienceLocation.make(from: location, in: context)
+        }
+        return ingestion
     }
 }

@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -10,114 +11,52 @@ struct JournalFile: FileDocument, Codable {
     var customUnits: [CustomUnitCodable]
     var substanceDataOverrides: [SubstanceDataOverrideCodable]
 
-    // swiftlint:disable function_body_length
     init(
         experiences: [Experience],
         customSubstances: [CustomSubstance],
         customUnits: [CustomUnit],
         substanceOverrideRoas: [CustomRoa] = []
     ) {
-        var experiencesToStore: [ExperienceCodable] = []
-        var companionsToStore: [CompanionCodable] = []
-        for experience in experiences {
-            var ingestionsInExperience: [IngestionCodable] = []
-            for ingestion in experience.ingestionsSorted {
-                ingestionsInExperience.append(
-                    IngestionCodable(
-                        substanceName: ingestion.substanceNameUnwrapped,
-                        time: ingestion.timeUnwrapped,
-                        endTime: ingestion.endTime,
-                        creationDate: ingestion.creationDate,
-                        administrationRoute: ingestion.administrationRouteUnwrapped,
-                        dose: ingestion.doseUnwrapped,
-                        estimatedDoseStandardDeviation: ingestion.estimatedDoseStandardDeviationUnwrapped,
-                        isDoseAnEstimate: ingestion.isEstimate,
-                        units: ingestion.unitsUnwrapped,
-                        notes: ingestion.noteUnwrapped,
-                        consumerName: ingestion.consumerName,
-                        customUnitId: ingestion.customUnit?.idForAndroid,
-                        administrationSite: ingestion.administrationSite,
-                        location: ingestion.location.map(LocationCodable.init)
-                    )
-                )
-                let doesCompanionAlreadyExist = companionsToStore.contains { com in
-                    com.substanceName == ingestion.substanceNameUnwrapped
-                }
-                if !doesCompanionAlreadyExist {
-                    companionsToStore.append(
-                        CompanionCodable(
-                            substanceName: ingestion.substanceNameUnwrapped,
-                            color: ingestion.substanceColor
-                        )
-                    )
-                }
-            }
-            let ratings = experience.ratingsUnwrapped.map { shulginRating in
-                RatingCodable(
-                    creationDate: shulginRating.creationDateUnwrapped,
-                    time: shulginRating.time,
-                    option: shulginRating.optionUnwrapped
-                )
-            }
-            let timedNotes = experience.timedNotesSorted.map { timedNote in
-                TimedNoteCodable(
-                    creationDate: timedNote.creationDateUnwrapped,
-                    time: timedNote.timeUnwrapped,
-                    note: timedNote.noteUnwrapped,
-                    color: timedNote.color,
-                    isPartOfTimeline: timedNote.isPartOfTimeline
-                )
-            }
-            experiencesToStore.append(
-                ExperienceCodable(
-                    title: experience.titleUnwrapped,
-                    text: experience.textUnwrapped,
-                    creationDate: experience.creationDateUnwrapped,
-                    sortDate: experience.sortDate,
-                    isFavorite: experience.isFavorite,
-                    ingestions: ingestionsInExperience,
-                    ratings: ratings,
-                    timedNotes: timedNotes,
-                    experienceLocation: experience.legacyLocation
-                )
-            )
+        self.experiences = experiences.map(ExperienceCodable.init)
+        // One color for each substance that was taken
+        var substanceNames = Set<String>()
+        substanceCompanions = experiences.flatMap(\.ingestionsSorted).compactMap { ingestion in
+            guard substanceNames.insert(ingestion.substanceNameUnwrapped).inserted else { return nil }
+            return CompanionCodable(substanceName: ingestion.substanceNameUnwrapped, color: ingestion.substanceColor)
         }
-        self.experiences = experiencesToStore
-        substanceCompanions = companionsToStore
-        self.customSubstances = customSubstances.map { cust in
-            CustomSubstanceCodable(
-                name: cust.nameUnwrapped,
-                units: cust.unitsUnwrapped,
-                description: cust.explanationUnwrapped,
-                roas: cust.customRoasSorted.map(CustomRoaCodable.init(roa:))
-            )
-        }
-        self.customUnits = customUnits.map { customUnit in
-            CustomUnitCodable(
-                id: customUnit.idForAndroid,
-                substanceName: customUnit.substanceNameUnwrapped,
-                name: customUnit.nameUnwrapped,
-                creationDate: customUnit.creationDateUnwrapped,
-                administrationRoute: customUnit.administrationRouteUnwrapped,
-                dose: customUnit.doseUnwrapped,
-                estimatedDoseStandardDeviation: customUnit.estimatedDoseStandardDeviationUnwrapped,
-                isEstimate: customUnit.isEstimate,
-                isArchived: customUnit.isArchived,
-                unit: customUnit.unitUnwrapped,
-                unitPlural: customUnit.unitPlural,
-                originalUnit: customUnit.originalUnitUnwrapped,
-                note: customUnit.noteUnwrapped)
-        }
-        let groupedByName = Dictionary(grouping: substanceOverrideRoas) { $0.substanceName ?? "" }
-            .filter { !$0.key.isEmpty }
-        self.substanceDataOverrides = groupedByName.map { name, roas in
-            SubstanceDataOverrideCodable(
-                substanceName: name,
-                roas: roas.map(CustomRoaCodable.init(roa:))
-            )
-        }
+        self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
+        self.customUnits = customUnits.map(CustomUnitCodable.init)
+        substanceDataOverrides = SubstanceDataOverrideCodable.grouped(substanceOverrideRoas)
     }
-    // swiftlint:enable function_body_length
+
+    // Inserts everything in the file. The caller clears the journal before and saves after.
+    func insert(into context: NSManagedObjectContext) {
+        var companions: [String: SubstanceCompanion] = [:]
+        for companionCodable in substanceCompanions where companions[companionCodable.substanceName] == nil {
+            companions[companionCodable.substanceName] = companionCodable.insert(into: context)
+        }
+        var customUnitsById: [Int32: CustomUnit] = [:]
+        for customUnitCodable in customUnits {
+            customUnitsById[customUnitCodable.id] = customUnitCodable.insert(into: context)
+        }
+        for experienceCodable in experiences {
+            _ = experienceCodable.insert(
+                into: context,
+                companion: { substanceName in
+                    if let companion = companions[substanceName] {
+                        return companion
+                    }
+                    let color = SubstanceColor.allCases.randomElement() ?? .red
+                    let companion = CompanionCodable(substanceName: substanceName, color: color).insert(into: context)
+                    companions[substanceName] = companion
+                    return companion
+                },
+                customUnits: customUnitsById
+            )
+        }
+        substanceDataOverrides.forEach { $0.insert(into: context) }
+        customSubstances.forEach { _ = $0.insert(into: context) }
+    }
 
     init(configuration: ReadConfiguration) throws {
         if let data = configuration.file.regularFileContents {

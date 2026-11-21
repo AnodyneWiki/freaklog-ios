@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct CustomSubstanceCodable: Codable {
@@ -19,5 +20,28 @@ struct CustomSubstanceCodable: Codable {
     units = try container.decode(String.self, forKey: .units)
     description = try container.decode(String.self, forKey: .description)
     roas = try container.decodeIfPresent([CustomRoaCodable].self, forKey: .roas) ?? []
+  }
+}
+
+extension CustomSubstanceCodable {
+  init(_ customSubstance: CustomSubstance) {
+    self.init(
+      name: customSubstance.nameUnwrapped,
+      units: customSubstance.unitsUnwrapped,
+      description: customSubstance.explanationUnwrapped,
+      roas: customSubstance.customRoasSorted.map(CustomRoaCodable.init(roa:))
+    )
+  }
+
+  // Inserts the substance with its dose and duration data
+  func insert(into context: NSManagedObjectContext) -> CustomSubstance {
+    let customSubstance = CustomSubstance(context: context)
+    customSubstance.name = name
+    customSubstance.units = units
+    customSubstance.explanation = description
+    for roaCodable in roas {
+      roaCodable.insert(into: context, substanceName: name).customSubstance = customSubstance
+    }
+    return customSubstance
   }
 }

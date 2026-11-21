@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct ExperienceCodable: Codable {
@@ -80,5 +81,51 @@ struct ExperienceCodable: Codable {
         try container.encode(timedNotes, forKey: .timedNotes)
         try container.encode(ingestions, forKey: .ingestions)
         try container.encode(location, forKey: .location)
+    }
+}
+
+extension ExperienceCodable {
+    init(_ experience: Experience) {
+        self.init(
+            title: experience.titleUnwrapped,
+            text: experience.textUnwrapped,
+            creationDate: experience.creationDateUnwrapped,
+            sortDate: experience.sortDate,
+            isFavorite: experience.isFavorite,
+            ingestions: experience.ingestionsSorted.map(IngestionCodable.init),
+            ratings: experience.ratingsUnwrapped.map(RatingCodable.init),
+            timedNotes: experience.timedNotesSorted.map(TimedNoteCodable.init),
+            experienceLocation: experience.legacyLocation
+        )
+    }
+
+    // Inserts the experience with its ingestions, ratings and timed notes
+    func insert(
+        into context: NSManagedObjectContext,
+        companion: (String) -> SubstanceCompanion,
+        customUnits: [Int32: CustomUnit]
+    ) -> Experience {
+        let experience = Experience(context: context)
+        experience.title = title
+        experience.text = text
+        experience.creationDate = creationDate
+        experience.sortDate = sortDate
+        experience.isFavorite = isFavorite
+        for ingestionCodable in ingestions {
+            let ingestion = ingestionCodable.insert(into: context, fallbackLocation: location)
+            ingestion.substanceCompanion = companion(ingestionCodable.substanceName)
+            ingestion.customUnit = ingestionCodable.customUnitId.flatMap { customUnits[$0] }
+            experience.addToIngestions(ingestion)
+        }
+        for ratingCodable in ratings {
+            ratingCodable.insert(into: context).experience = experience
+        }
+        for timedNoteCodable in timedNotes {
+            timedNoteCodable.insert(into: context).experience = experience
+        }
+        if let location {
+            experience.legacyLocation = ExperienceLocation.make(from: location, in: context)
+        }
+        return experience
     }
 }

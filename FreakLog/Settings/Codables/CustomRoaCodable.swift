@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 // Value form of a CustomRoa. Used for export/import and as the editing model.
@@ -73,6 +74,13 @@ struct CustomRoaCodable: Codable, Equatable {
     for field in CustomRoaField.allCases {
       roa[keyPath: field.roaKeyPath] = self[field] ?? 0
     }
+  }
+
+  func insert(into context: NSManagedObjectContext, substanceName: String) -> CustomRoa {
+    let roa = CustomRoa(context: context)
+    roa.substanceName = substanceName
+    apply(to: roa)
+    return roa
   }
 
   func roaDose(fallbackUnits: String?) -> RoaDose? {

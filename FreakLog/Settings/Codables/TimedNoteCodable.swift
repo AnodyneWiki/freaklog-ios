@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct TimedNoteCodable: Codable {
@@ -41,5 +42,27 @@ struct TimedNoteCodable: Codable {
         try container.encode(note, forKey: .note)
         try container.encode(color.rawValue.uppercased(), forKey: .color)
         try container.encode(isPartOfTimeline, forKey: .isPartOfTimeline)
+    }
+}
+
+extension TimedNoteCodable {
+    init(_ timedNote: TimedNote) {
+        self.init(
+            creationDate: timedNote.creationDateUnwrapped,
+            time: timedNote.timeUnwrapped,
+            note: timedNote.noteUnwrapped,
+            color: timedNote.color,
+            isPartOfTimeline: timedNote.isPartOfTimeline
+        )
+    }
+
+    func insert(into context: NSManagedObjectContext) -> TimedNote {
+        let timedNote = TimedNote(context: context)
+        timedNote.creationDate = creationDate
+        timedNote.time = time
+        timedNote.note = note
+        timedNote.colorAsText = color.rawValue
+        timedNote.isPartOfTimeline = isPartOfTimeline
+        return timedNote
     }
 }

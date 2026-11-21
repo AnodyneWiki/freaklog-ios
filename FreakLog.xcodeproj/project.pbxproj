@@ -201,6 +201,7 @@
 		EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */; };
 		EA48F89229DD50B8007DA8C5 /* RatingCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */; };
 		EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */; };
+		D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */; };
 		EA48F89A29E70F17007DA8C5 /* String-CaseInsensitiveContains.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */; };
 		EA48F8A029E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */; };
 		EA48F8A229E98E88007DA8C5 /* TimeDisplayStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */; };
@@ -589,6 +590,7 @@
 		EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSubstanceCodable.swift; sourceTree = "<group>"; };
 		EA48F89129DD50B8007DA8C5 /* RatingCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RatingCodable.swift; sourceTree = "<group>"; };
 		EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InteractionTests.swift; sourceTree = "<group>"; };
+		877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalFileTests.swift; sourceTree = "<group>"; };
 		EA48F89929E70F17007DA8C5 /* String-CaseInsensitiveContains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String-CaseInsensitiveContains.swift"; sourceTree = "<group>"; };
 		EA48F89F29E95AD0007DA8C5 /* AcknowledgeSaferUseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcknowledgeSaferUseScreen.swift; sourceTree = "<group>"; };
 		EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeDisplayStyle.swift; sourceTree = "<group>"; };
@@ -1538,6 +1540,7 @@
 			children = (
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
+				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
 				EA98D9102972968100D94E65 /* Roa.json */,
 			);
 			path = FreakLogTests;
@@ -1982,6 +1985,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
+				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
 				EACB6E5227D2592800940291 /* DecodingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

@@ -1,3 +1,4 @@
+import CoreData
 import Foundation
 
 struct CustomUnitCodable: Codable {
@@ -99,5 +100,43 @@ struct CustomUnitCodable: Codable {
         try container.encode(unitPlural, forKey: .unitPlural)
         try container.encode(originalUnit, forKey: .originalUnit)
         try container.encode(note, forKey: .note)
+    }
+}
+
+extension CustomUnitCodable {
+    init(_ customUnit: CustomUnit) {
+        self.init(
+            id: customUnit.idForAndroid,
+            substanceName: customUnit.substanceNameUnwrapped,
+            name: customUnit.nameUnwrapped,
+            creationDate: customUnit.creationDateUnwrapped,
+            administrationRoute: customUnit.administrationRouteUnwrapped,
+            dose: customUnit.doseUnwrapped,
+            estimatedDoseStandardDeviation: customUnit.estimatedDoseStandardDeviationUnwrapped,
+            isEstimate: customUnit.isEstimate,
+            isArchived: customUnit.isArchived,
+            unit: customUnit.unitUnwrapped,
+            unitPlural: customUnit.unitPlural,
+            originalUnit: customUnit.originalUnitUnwrapped,
+            note: customUnit.noteUnwrapped
+        )
+    }
+
+    func insert(into context: NSManagedObjectContext) -> CustomUnit {
+        let customUnit = CustomUnit(context: context)
+        customUnit.idForAndroid = id
+        customUnit.substanceName = substanceName
+        customUnit.name = name
+        customUnit.creationDate = creationDate
+        customUnit.administrationRoute = administrationRoute.rawValue
+        customUnit.dose = dose ?? 0
+        customUnit.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
+        customUnit.isEstimate = isEstimate
+        customUnit.isArchived = isArchived
+        customUnit.unit = unit
+        customUnit.unitPlural = unitPlural
+        customUnit.originalUnit = originalUnit
+        customUnit.note = note
+        return customUnit
     }
 }
