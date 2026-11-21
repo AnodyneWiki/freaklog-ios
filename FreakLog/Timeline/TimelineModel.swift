@@ -36,7 +36,6 @@ struct TimelineModel: Hashable {
     }
 
     // swiftlint:disable function_body_length
-    // swiftlint:disable function_body_length
     init(
         substanceGroups: [SubstanceIngestionGroup],
         everythingForEachRating: [EverythingForOneRating],
@@ -169,13 +168,21 @@ struct TimelineModel: Hashable {
         
         axisDrawable = AxisDrawable(startTime: startTime, widthInSeconds: finalWidth)
 
+        // The drawables follow from these inputs plus the start and width, so hash them instead of the drawables
         var hasher = Hasher()
         hasher.combine(startTime)
         hasher.combine(finalWidth)
-        hasher.combine(groupDrawables.description)
-        hasher.combine(timeRangeDrawables.description)
-        hasher.combine(ratingDrawables.description)
-        hasher.combine(timedNoteDrawables.description)
+        hasher.combine(substanceGroups)
+        for rating in everythingForEachRating {
+            hasher.combine(rating.time)
+            hasher.combine(rating.option)
+        }
+        for timedNote in everythingForEachTimedNote {
+            hasher.combine(timedNote.time)
+            hasher.combine(timedNote.color)
+        }
+        hasher.combine(areRedosesDrawnIndividually)
+        hasher.combine(areSubstanceHeightsIndependent)
         contentHash = hasher.finalize()
     }
     // swiftlint:enable function_body_length

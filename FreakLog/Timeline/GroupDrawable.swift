@@ -55,73 +55,47 @@ struct GroupDrawable {
             return
         }
 
+        let makeTimeline = { (weightedLine: WeightedLine) -> TimelineDrawable in
+            UnifiedTimelineDrawable(
+                onset: roaDuration.onset?.maybeFullDurationRange,
+                comeup: roaDuration.comeup?.maybeFullDurationRange,
+                peak: roaDuration.peak?.maybeFullDurationRange,
+                offset: roaDuration.offset?.maybeFullDurationRange,
+                total: roaDuration.total?.maybeFullDurationRange,
+                onsetDelayInHours: weightedLine.onsetDelayInHours,
+                ingestionTimeRelativeToStartInSeconds: GroupDrawable.getDistanceFromStartGraphInSeconds(
+                    graphStartTime: startGraph,
+                    time: weightedLine.startTime
+                ),
+                nonNormalizedHeight: weightedLine.strengthRelativeToCommonDose,
+                nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
+                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+                peakWeight: weightedLine.horizontalWeight,
+                offsetWeight: weightedLine.horizontalWeight,
+                totalWeight: weightedLine.horizontalWeight
+            )
+        }
+
+        // Redoses add up into one curve unless drawn individually, which needs all four phases
         var results: [TimelineDrawable] = []
-        
-        // Point Ingestions (Normal)
         if !weightedLinesForPointIngestions.isEmpty {
-            if areRedosesDrawnIndividually {
-                 results += weightedLinesForPointIngestions.compactMap { weightedLine in
-                     UnifiedTimelineDrawable(
-                         onset: roaDuration.onset?.maybeFullDurationRange,
-                         comeup: roaDuration.comeup?.maybeFullDurationRange,
-                         peak: roaDuration.peak?.maybeFullDurationRange,
-                         offset: roaDuration.offset?.maybeFullDurationRange,
-                         total: roaDuration.total?.maybeFullDurationRange,
-                         onsetDelayInHours: weightedLine.onsetDelayInHours,
-                         ingestionTimeRelativeToStartInSeconds: GroupDrawable.getDistanceFromStartGraphInSeconds(graphStartTime: startGraph, time: weightedLine.startTime),
-                         nonNormalizedHeight: weightedLine.strengthRelativeToCommonDose,
-                         nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
-                         areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-                         onsetWeight: 0.5,
-                         comeupWeight: 0.5,
-                         peakWeight: weightedLine.horizontalWeight,
-                         offsetWeight: weightedLine.horizontalWeight,
-                         totalWeight: weightedLine.horizontalWeight
-                     )
-                 }
-            } else {
-                 if let fullCumulative = roaDuration.toFullCumulativeTimeline(
-                     weightedLines: weightedLines,
-                     graphStartTime: startGraph,
-                     areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                 ) {
-                     results = [fullCumulative]
-                 } else {
-                     results += weightedLinesForPointIngestions.compactMap { weightedLine in
-                         UnifiedTimelineDrawable(
-                             onset: roaDuration.onset?.maybeFullDurationRange,
-                             comeup: roaDuration.comeup?.maybeFullDurationRange,
-                             peak: roaDuration.peak?.maybeFullDurationRange,
-                             offset: roaDuration.offset?.maybeFullDurationRange,
-                             total: roaDuration.total?.maybeFullDurationRange,
-                             onsetDelayInHours: weightedLine.onsetDelayInHours,
-                             ingestionTimeRelativeToStartInSeconds: GroupDrawable.getDistanceFromStartGraphInSeconds(graphStartTime: startGraph, time: weightedLine.startTime),
-                             nonNormalizedHeight: weightedLine.strengthRelativeToCommonDose,
-                             nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
-                             areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-                             peakWeight: weightedLine.horizontalWeight,
-                             offsetWeight: weightedLine.horizontalWeight,
-                             totalWeight: weightedLine.horizontalWeight
-                         )
-                     }
-                 }
-            }
+            let cumulative = areRedosesDrawnIndividually ? nil : roaDuration.toFullCumulativeTimeline(
+                weightedLines: weightedLines,
+                graphStartTime: startGraph,
+                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            )
+            results = cumulative.map { [$0] } ?? weightedLinesForPointIngestions.map(makeTimeline)
         }
-        
-        if !weightedLinesForRangeIngestions.isEmpty {
-             results += weightedLinesForRangeIngestions.compactMap { weightedLine in
-                 roaDuration.toFullRangeTimeline(
-                     nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
-                     areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-                     graphStartTime: startGraph,
-                     weightedLine: weightedLine
-                 )
-             }
+        results += weightedLinesForRangeIngestions.compactMap { weightedLine in
+            roaDuration.toFullRangeTimeline(
+                nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
+                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+                graphStartTime: startGraph,
+                weightedLine: weightedLine
+            )
         }
-        
         timelineDrawables = results
     }
-    // swiftlint:enable function_body_length
     // swiftlint:enable function_body_length
 
     private static func getDistanceFromStartGraphInSeconds(graphStartTime: Date, time: Date) -> TimeInterval {

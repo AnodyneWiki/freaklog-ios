@@ -45,14 +45,14 @@ func getSubstanceGroupWithRepoInfo(substanceIngestionGroups: [SubstanceIngestion
     }
 }
 
-struct SubstanceIngestionGroup: Equatable, Codable {
+struct SubstanceIngestionGroup: Hashable, Codable {
     let substanceName: String
     let color: SubstanceColor
     let routeMinInfos: [RouteMinInfo]
 }
 
 // Carries the resolved duration and dose info so the timeline (and the widget) never has to look it up.
-struct RouteMinInfo: Equatable, Codable {
+struct RouteMinInfo: Hashable, Codable {
     let route: AdministrationRoute
     let ingestions: [IngestionMinInfo]
     var roaDuration: RoaDuration?
@@ -60,7 +60,7 @@ struct RouteMinInfo: Equatable, Codable {
     var commonDose: Double?
 }
 
-struct IngestionMinInfo: Equatable, Codable {
+struct IngestionMinInfo: Hashable, Codable {
     let dose: Double?
     let time: Date
     let endTime: Date?

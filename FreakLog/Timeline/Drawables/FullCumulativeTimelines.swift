@@ -345,22 +345,16 @@ extension RoaDuration {
         graphStartTime: Date,
         areSubstanceHeightsIndependent: Bool
     ) -> FullCumulativeTimelines? {
-        if let fullOnset = onset?.maybeFullDurationRange,
-           let fullComeup = comeup?.maybeFullDurationRange,
-           let fullPeak = peak?.maybeFullDurationRange,
-           let fullOffset = offset?.maybeFullDurationRange {
-            return FullCumulativeTimelines(
-                onset: fullOnset,
-                comeup: fullComeup,
-                peak: fullPeak,
-                offset: fullOffset,
-                weightedLines: weightedLines,
-                graphStartTime: graphStartTime,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-            )
-        } else {
-            return nil
-        }
+        guard let phases = fullPhases else { return nil }
+        return FullCumulativeTimelines(
+            onset: phases.onset,
+            comeup: phases.comeup,
+            peak: phases.peak,
+            offset: phases.offset,
+            weightedLines: weightedLines,
+            graphStartTime: graphStartTime,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
     }
 }
 

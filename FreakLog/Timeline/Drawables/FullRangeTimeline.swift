@@ -1,10 +1,6 @@
 import SwiftUI
 
 struct FullRangeTimeline: TimelineDrawable {
-    let onset: FullDurationRange
-    let comeup: FullDurationRange
-    let peak: FullDurationRange
-    let offset: FullDurationRange
     let nonNormalizedMaxOfRoute: Double
     let areSubstanceHeightsIndependent: Bool
     let points: [FullCumulativeTimelines.Point]
@@ -20,10 +16,6 @@ struct FullRangeTimeline: TimelineDrawable {
         weightedLine: WeightedLine,
         nonNormalizedOverallMax: Double = 1.0
     ) {
-        self.onset = onset
-        self.comeup = comeup
-        self.peak = peak
-        self.offset = offset
         self.nonNormalizedMaxOfRoute = nonNormalizedMaxOfRoute
         self.areSubstanceHeightsIndependent = areSubstanceHeightsIndependent
         self.nonNormalizedOverallMax = nonNormalizedOverallMax
@@ -87,22 +79,16 @@ extension RoaDuration {
         graphStartTime: Date,
         weightedLine: WeightedLine
     ) -> FullRangeTimeline? {
-        if let fullOnset = onset?.maybeFullDurationRange,
-           let fullComeup = comeup?.maybeFullDurationRange,
-           let fullPeak = peak?.maybeFullDurationRange,
-           let fullOffset = offset?.maybeFullDurationRange {
-            return FullRangeTimeline(
-                onset: fullOnset,
-                comeup: fullComeup,
-                peak: fullPeak,
-                offset: fullOffset,
-                nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-                graphStartTime: graphStartTime,
-                weightedLine: weightedLine
-            )
-        } else {
-            return nil
-        }
+        guard let phases = fullPhases else { return nil }
+        return FullRangeTimeline(
+            onset: phases.onset,
+            comeup: phases.comeup,
+            peak: phases.peak,
+            offset: phases.offset,
+            nonNormalizedMaxOfRoute: nonNormalizedMaxOfRoute,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            graphStartTime: graphStartTime,
+            weightedLine: weightedLine
+        )
     }
 }

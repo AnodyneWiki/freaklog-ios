@@ -7,7 +7,7 @@ struct TimelineWidgetAttributes: ActivityAttributes {
         }
 
         func hash(into hasher: inout Hasher) {
-            hasher.combine(substanceGroups.description)
+            hasher.combine(substanceGroups)
         }
 
         // Dynamic stateful properties about your activity go here!
