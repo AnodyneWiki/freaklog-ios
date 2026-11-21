@@ -52,6 +52,28 @@ struct CustomRoaCodable: Codable, Equatable {
     )
   }
 
+  // Overrides saved before the editor started from the PsychonautWiki data often have only some values.
+  // Fills each empty phase and dose level from the baseline, only in the parts the override already sets,
+  // and dose levels only when the units agree. A phase with one bound set stays a fixed time.
+  func fillingGaps(from baseline: CustomRoaCodable) -> CustomRoaCodable {
+    var filled = self
+    let hasDuration = CustomRoaField.allCases.contains { $0.isDuration && self[$0] != nil }
+    if hasDuration {
+      for phase in DurationPhase.allCases where self[phase.low] == nil && self[phase.high] == nil {
+        filled[phase.low] = baseline[phase.low]
+        filled[phase.high] = baseline[phase.high]
+      }
+    }
+    let hasDose = CustomRoaField.doseFields.contains { self[$0] != nil }
+    let unitsAgree = doseUnits?.isEmpty != false || doseUnits == baseline.doseUnits
+    if hasDose, unitsAgree {
+      for field in CustomRoaField.doseFields where self[field] == nil {
+        filled[field] = baseline[field]
+      }
+    }
+    return filled
+  }
+
   init(roa: CustomRoa) {
     self.init(administrationRoute: roa.administrationRouteUnwrapped, doseUnits: roa.doseUnits)
     for field in CustomRoaField.allCases {

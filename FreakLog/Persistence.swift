@@ -45,6 +45,7 @@ struct PersistenceController {
     static let hasBeenMigrated5Key = "hasBeenMigrated5"
     static let hasBeenMigrated6Key = "hasBeenMigrated6"
     static let hasBeenMigrated7Key = "hasBeenMigrated7"
+    static let hasBeenMigrated8Key = "hasBeenMigrated8"
     static let openUntilRatedCountKey = "openUntilRatedCount"
     static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
 
@@ -220,6 +221,7 @@ struct PersistenceController {
             (Self.hasBeenMigrated5Key, migrateBenzydamineUnits),
             (Self.hasBeenMigrated6Key, migrateCannabisAndMushroomUnits),
             (Self.hasBeenMigrated7Key, migrateRemoveDuplicateCompanions),
+            (Self.hasBeenMigrated8Key, migrateFillPartialSubstanceOverrides),
         ]
         for migration in migrations where !defaults.bool(forKey: migration.key) {
             migration.run()
@@ -326,6 +328,21 @@ struct PersistenceController {
             let allTimedNotes = (try? viewContext.fetch(timedNotesFetchRequest)) ?? []
             for timedNote in allTimedNotes {
                 timedNote.colorAsText = timedNote.colorAsText?.uppercased()
+            }
+            try? viewContext.save()
+        }
+    }
+
+    // Overrides of PsychonautWiki data with only some phases or dose levels left the rest undrawn
+    func migrateFillPartialSubstanceOverrides() {
+        viewContext.performAndWait {
+            for roa in getAllStandaloneCustomRoas() {
+                guard let name = roa.substanceName, SubstanceRepo.shared.getSubstance(name: name) != nil else { continue }
+                let values = CustomRoaCodable(roa: roa)
+                let filled = values.fillingGaps(from: .psychonautWikiValues(for: name, route: values.administrationRoute))
+                if filled != values {
+                    filled.apply(to: roa)
+                }
             }
             try? viewContext.save()
         }
