@@ -3,19 +3,15 @@ import SwiftUI
 
 struct TimelineModel: Hashable {
     static func == (lhs: TimelineModel, rhs: TimelineModel) -> Bool {
-        lhs.hashValue == rhs.hashValue
+        lhs.contentHash == rhs.contentHash
     }
 
     func hash(into hasher: inout Hasher) {
-        // some unique hash
-        hasher.combine(startTime)
-        hasher.combine(totalWidth)
-        hasher.combine(groupDrawables.description)
-        hasher.combine(timeRangeDrawables.description)
-        hasher.combine(ratingDrawables.description)
-        hasher.combine(timedNoteDrawables.description)
-        hasher.combine(axisDrawable.widthInSeconds)
+        hasher.combine(contentHash)
     }
+
+    // Computed once in init, since equality checks happen on every navigation path diff
+    private var contentHash = 0
 
     let startTime: Date
     let totalWidth: TimeInterval
@@ -172,6 +168,15 @@ struct TimelineModel: Hashable {
         self.totalWidth = finalWidth
         
         axisDrawable = AxisDrawable(startTime: startTime, widthInSeconds: finalWidth)
+
+        var hasher = Hasher()
+        hasher.combine(startTime)
+        hasher.combine(finalWidth)
+        hasher.combine(groupDrawables.description)
+        hasher.combine(timeRangeDrawables.description)
+        hasher.combine(ratingDrawables.description)
+        hasher.combine(timedNoteDrawables.description)
+        contentHash = hasher.finalize()
     }
     // swiftlint:enable function_body_length
 
