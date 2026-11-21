@@ -27,6 +27,20 @@ struct CustomRoaCodable: Codable, Equatable {
     self.doseUnits = doseUnits
   }
 
+  // Prefills the form from existing data (e.g. PsychonautWiki). Durations are converted to minutes.
+  init(administrationRoute: AdministrationRoute, dose: RoaDose?, duration: RoaDuration?) {
+    self.init(administrationRoute: administrationRoute, doseUnits: dose?.units)
+    self[.lightDose] = dose?.lightMin
+    self[.commonDose] = dose?.commonMin
+    self[.strongDose] = dose?.strongMin
+    self[.heavyDose] = dose?.heavyMin
+    for phase in DurationPhase.allCases {
+      let range = duration.flatMap(phase.range(in:))
+      self[phase.low] = range?.minSec.map { $0 / 60 }
+      self[phase.high] = range?.maxSec.map { $0 / 60 }
+    }
+  }
+
   init(roa: CustomRoa) {
     self.init(administrationRoute: roa.administrationRouteUnwrapped, doseUnits: roa.doseUnits)
     for field in CustomRoaField.allCases {
@@ -59,20 +73,80 @@ struct CustomRoaCodable: Codable, Equatable {
 
   var roaDuration: RoaDuration? {
     let duration = RoaDuration(
-      onset: Self.range(onsetLow, onsetHigh),
-      comeup: Self.range(comeupLow, comeupHigh),
-      peak: Self.range(peakLow, peakHigh),
-      offset: Self.range(offsetLow, offsetHigh),
-      total: Self.range(totalLow, totalHigh),
-      afterglow: Self.range(afterglowLow, afterglowHigh)
+      onset: range(of: .onset),
+      comeup: range(of: .comeup),
+      peak: range(of: .peak),
+      offset: range(of: .offset),
+      total: range(of: .total),
+      afterglow: range(of: .afterglow)
     )
-    let ranges = [duration.onset, duration.comeup, duration.peak, duration.offset, duration.total, duration.afterglow]
-    return ranges.allSatisfy { $0 == nil } ? nil : duration
+    return DurationPhase.allCases.allSatisfy { $0.range(in: duration) == nil } ? nil : duration
   }
 
-  private static func range(_ low: Double?, _ high: Double?) -> DurationRange? {
-    guard low != nil || high != nil else { return nil }
-    return DurationRange(min: low, max: high, units: .minutes)
+  // A single value is a fixed time rather than a half-open range, so the timeline can still draw the phase.
+  private func range(of phase: DurationPhase) -> DurationRange? {
+    let bounds = [self[phase.low], self[phase.high]].compactMap { $0 }
+    guard let min = bounds.min(), let max = bounds.max() else { return nil }
+    return DurationRange(min: min, max: max, units: .minutes)
+  }
+}
+
+enum DurationPhase: CaseIterable {
+  case onset, comeup, peak, offset, total, afterglow
+
+  var title: String {
+    switch self {
+    case .onset: "Onset"
+    case .comeup: "Come-up"
+    case .peak: "Peak"
+    case .offset: "Offset"
+    case .total: "Total"
+    case .afterglow: "Afterglow"
+    }
+  }
+
+  var explanation: String {
+    switch self {
+    case .onset: "Until the first effects"
+    case .comeup: "From first effects to the peak"
+    case .peak: "How long the peak lasts"
+    case .offset: "From the peak back to baseline"
+    case .total: "From ingestion to baseline"
+    case .afterglow: "Lingering after-effects"
+    }
+  }
+
+  var low: CustomRoaField {
+    switch self {
+    case .onset: .onsetLow
+    case .comeup: .comeupLow
+    case .peak: .peakLow
+    case .offset: .offsetLow
+    case .total: .totalLow
+    case .afterglow: .afterglowLow
+    }
+  }
+
+  var high: CustomRoaField {
+    switch self {
+    case .onset: .onsetHigh
+    case .comeup: .comeupHigh
+    case .peak: .peakHigh
+    case .offset: .offsetHigh
+    case .total: .totalHigh
+    case .afterglow: .afterglowHigh
+    }
+  }
+
+  func range(in duration: RoaDuration) -> DurationRange? {
+    switch self {
+    case .onset: duration.onset
+    case .comeup: duration.comeup
+    case .peak: duration.peak
+    case .offset: duration.offset
+    case .total: duration.total
+    case .afterglow: duration.afterglow
+    }
   }
 }
 
@@ -80,6 +154,12 @@ enum CustomRoaField: CaseIterable {
   case lightDose, commonDose, strongDose, heavyDose
   case onsetLow, onsetHigh, comeupLow, comeupHigh, peakLow, peakHigh
   case offsetLow, offsetHigh, totalLow, totalHigh, afterglowLow, afterglowHigh
+
+  static let doseFields: [CustomRoaField] = [.lightDose, .commonDose, .strongDose, .heavyDose]
+
+  var isDuration: Bool {
+    !Self.doseFields.contains(self)
+  }
 
   var keyPath: WritableKeyPath<CustomRoaCodable, Double?> {
     switch self {

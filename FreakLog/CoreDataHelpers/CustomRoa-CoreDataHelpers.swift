@@ -14,9 +14,20 @@ extension CustomRoa {
     CustomRoaCodable(roa: self)
   }
 
-  // Falls back to the parent custom substance's units if doseUnits is blank.
   var roaDose: RoaDose? {
-    values.roaDose(fallbackUnits: customSubstance?.units)
+    values.roaDose(fallbackUnits: Self.fallbackUnits(
+      substanceName: substanceNameResolved,
+      route: administrationRouteUnwrapped,
+      customSubstance: customSubstance
+    ))
+  }
+
+  // Units used when doseUnits is blank: the custom substance's, else PsychonautWiki's for that route.
+  static func fallbackUnits(substanceName: String?, route: AdministrationRoute, customSubstance: CustomSubstance?) -> String? {
+    if let customSubstance {
+      return customSubstance.units
+    }
+    return substanceName.flatMap { SubstanceRepo.shared.getSubstance(name: $0)?.getDose(for: route)?.units }
   }
 
   var roaDuration: RoaDuration? {

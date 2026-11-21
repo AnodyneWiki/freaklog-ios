@@ -6,33 +6,53 @@ struct EditCustomRoaView: View {
   var customSubstance: CustomSubstance? = nil
   @Environment(\.managedObjectContext) private var context
 
-  @State private var doseUnits = ""
+  // Saved form state; durations are always in minutes here
+  @State private var values: CustomRoaCodable
+  // What is typed in each field, with durations in `durationUnit`
   @State private var text: [CustomRoaField: String] = [:]
+  @State private var durationUnit = DurationInputUnit.minutes
   @State private var existingRoa: CustomRoa?
   @State private var saveTask: Task<Void, Never>?
 
-  // Current form state, which drives both the preview and what gets saved
-  private var values: CustomRoaCodable {
-    var values = CustomRoaCodable(administrationRoute: route, doseUnits: doseUnits)
-    for (field, string) in text {
-      values[field] = getDouble(from: string)
-    }
-    return values
+  init(substanceName: String, route: AdministrationRoute, customSubstance: CustomSubstance? = nil) {
+    self.substanceName = substanceName
+    self.route = route
+    self.customSubstance = customSubstance
+    _values = State(initialValue: CustomRoaCodable(administrationRoute: route))
+  }
+
+  private var fallbackUnits: String? {
+    CustomRoa.fallbackUnits(substanceName: substanceName, route: route, customSubstance: customSubstance)
+  }
+
+  private var psychonautWikiValues: CustomRoaCodable? {
+    guard customSubstance == nil, let substance = SubstanceRepo.shared.getSubstance(name: substanceName) else { return nil }
+    let values = CustomRoaCodable(
+      administrationRoute: route,
+      dose: substance.getDose(for: route),
+      duration: substance.getDuration(for: route)
+    )
+    return values.isEmpty ? nil : values
   }
 
   var body: some View {
-    let values = values
     Form {
-      doseSection
-      durationSection
-      let roaDose = values.roaDose(fallbackUnits: customSubstance?.units)
+      let roaDose = values.roaDose(fallbackUnits: fallbackUnits)
       let roaDuration = values.roaDuration
       if roaDose != nil || roaDuration != nil {
         Section("Preview") {
           RoaPreview(substanceName: substanceName, route: route, roaDose: roaDose, roaDuration: roaDuration)
             .padding(.vertical, 4)
         }
+      } else if let psychonautWikiValues {
+        Section {
+          Button("Start from PsychonautWiki Data") { fill(with: psychonautWikiValues) }
+        } footer: {
+          Text("Copies the PsychonautWiki dose and duration for this route so you only need to change what differs.")
+        }
       }
+      doseSection
+      durationSection
       if existingRoa != nil {
         Section {
           Button("Clear All Custom Data", role: .destructive) { clear() }
@@ -42,8 +62,7 @@ struct EditCustomRoaView: View {
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(route.rawValue.localizedCapitalized)
     .onAppear(perform: load)
-    .onChange(of: doseUnits) { _ in saveDebounced() }
-    .onChange(of: text) { _ in saveDebounced() }
+    .onChange(of: values) { _ in saveDebounced() }
   }
 
   // MARK: - Dose Section
@@ -51,36 +70,41 @@ struct EditCustomRoaView: View {
   private var doseSection: some View {
     Section {
       HStack {
-        Text("Units").foregroundStyle(.secondary)
+        Text("Units")
         Spacer()
-        TextField("e.g. mg, µg, mL", text: $doseUnits)
+        TextField(fallbackUnits ?? "e.g. mg, µg, mL", text: doseUnitsBinding)
           .multilineTextAlignment(.trailing)
+          .autocorrectionDisabled()
+          .textInputAutocapitalization(.never)
       }
-      thresholdRow("Threshold", color: DoseRangeType.thresh.color, field: .lightDose)
-      thresholdRow("Common", color: DoseRangeType.common.color, field: .commonDose)
-      thresholdRow("Strong", color: DoseRangeType.strong.color, field: .strongDose)
-      thresholdRow("Heavy", color: DoseRangeType.heavy.color, field: .heavyDose)
+      doseRow("Light", color: DoseRangeType.light.color, field: .lightDose)
+      doseRow("Common", color: DoseRangeType.common.color, field: .commonDose)
+      doseRow("Strong", color: DoseRangeType.strong.color, field: .strongDose)
+      doseRow("Heavy", color: DoseRangeType.heavy.color, field: .heavyDose)
     } header: {
       Text("Dose")
     } footer: {
-      Text("Each value is the minimum dose for that classification. Leave blank to skip.")
+      Text(
+        "Enter the dose where each range starts. Anything below light counts as threshold. Leave blank to skip. "
+          + (fallbackUnits.map { "Without units, \($0) is used." } ?? "Units are needed for the dose to be used.")
+      )
     }
   }
 
-  private func thresholdRow(_ label: String, color: Color, field: CustomRoaField) -> some View {
+  private var doseUnitsBinding: Binding<String> {
+    Binding(get: { values.doseUnits ?? "" }, set: { values.doseUnits = $0 })
+  }
+
+  private func doseRow(_ label: String, color: Color, field: CustomRoaField) -> some View {
     HStack(spacing: 10) {
       Circle().fill(color).frame(width: 10, height: 10)
       Text(label)
       Spacer()
-      TextField("—", text: binding(for: field))
-        .keyboardType(.decimalPad)
-        .multilineTextAlignment(.trailing)
-        .frame(width: 90)
-      if !doseUnits.isEmpty {
-        Text(doseUnits)
-          .foregroundStyle(.secondary)
-          .frame(minWidth: 30, alignment: .leading)
-      }
+      Text("from").foregroundStyle(.secondary)
+      numberField("—", field: field)
+      Text(values.doseUnits.flatMap { $0.isEmpty ? nil : $0 } ?? fallbackUnits ?? "")
+        .foregroundStyle(.secondary)
+        .frame(minWidth: 30, alignment: .leading)
     }
   }
 
@@ -88,65 +112,96 @@ struct EditCustomRoaView: View {
 
   private var durationSection: some View {
     Section {
-      durationRow("Onset", low: .onsetLow, high: .onsetHigh)
-      durationRow("Come-up", low: .comeupLow, high: .comeupHigh)
-      durationRow("Peak", low: .peakLow, high: .peakHigh)
-      durationRow("Offset", low: .offsetLow, high: .offsetHigh)
-      durationRow("Total", low: .totalLow, high: .totalHigh)
-      durationRow("Afterglow", low: .afterglowLow, high: .afterglowHigh)
+      Picker("Units", selection: durationUnitBinding) {
+        ForEach(DurationInputUnit.allCases, id: \.self) { unit in
+          Text(unit.title).tag(unit)
+        }
+      }
+      .pickerStyle(.segmented)
+      .listRowSeparator(.hidden)
+      ForEach(DurationPhase.allCases, id: \.self, content: durationRow)
     } header: {
       Text("Duration")
     } footer: {
-      Text("All times in minutes. Leave both blank to skip a phase.")
+      Text(
+        "Enter one value for a fixed time or two for a range. Leave a phase blank to skip it. "
+          + "The timeline is complete with onset, come-up, peak and offset, and drawn dotted where phases are missing."
+      )
     }
   }
 
-  private func durationRow(_ label: String, low: CustomRoaField, high: CustomRoaField) -> some View {
-    HStack {
-      Text(label).frame(minWidth: 70, alignment: .leading)
-      Spacer()
-      durationField("min", field: low)
+  private var durationUnitBinding: Binding<DurationInputUnit> {
+    Binding(get: { durationUnit }, set: { unit in
+      durationUnit = unit
+      fillText()
+    })
+  }
+
+  private func durationRow(_ phase: DurationPhase) -> some View {
+    HStack(spacing: 6) {
+      VStack(alignment: .leading, spacing: 2) {
+        Text(phase.title)
+        Text(phase.explanation)
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
+      Spacer(minLength: 4)
+      numberField("from", field: phase.low)
       Text("–").foregroundStyle(.secondary)
-      durationField("max", field: high)
-      Text("min")
+      numberField("to", field: phase.high)
+      Text(durationUnit.symbol)
         .foregroundStyle(.secondary)
-        .frame(width: 28, alignment: .leading)
+        .frame(width: 26, alignment: .leading)
     }
   }
 
-  private func durationField(_ placeholder: String, field: CustomRoaField) -> some View {
+  private func numberField(_ placeholder: String, field: CustomRoaField) -> some View {
     TextField(placeholder, text: binding(for: field))
       .keyboardType(.decimalPad)
       .multilineTextAlignment(.trailing)
       .frame(width: 52)
       .padding(5)
-      .background(Color(.secondarySystemGroupedBackground))
+      .background(Color(.tertiarySystemFill))
       .cornerRadius(6)
   }
 
   private func binding(for field: CustomRoaField) -> Binding<String> {
-    Binding(get: { text[field] ?? "" }, set: { text[field] = $0 })
+    Binding(get: { text[field] ?? "" }, set: { string in
+      text[field] = string
+      let factor = field.isDuration ? durationUnit.minutes : 1
+      values[field] = getDouble(from: string).map { $0 * factor }
+    })
   }
 
   // MARK: - Data
 
   private func load() {
     existingRoa = PersistenceController.shared.getCustomRoa(for: substanceName, route: route)
-    guard let existingRoa else {
-      doseUnits = customSubstance?.unitsUnwrapped ?? ""
-      return
+    if let existingRoa {
+      values = existingRoa.values
     }
-    let stored = existingRoa.values
-    doseUnits = stored.doseUnits ?? ""
+    durationUnit = DurationInputUnit.suggested(for: values)
+    fillText()
+  }
+
+  private func fill(with newValues: CustomRoaCodable) {
+    values = newValues
+    durationUnit = DurationInputUnit.suggested(for: newValues)
+    fillText()
+  }
+
+  // Rebuilds the typed text from `values`, e.g. after loading or switching the duration unit.
+  private func fillText() {
     for field in CustomRoaField.allCases {
-      text[field] = stored[field]?.formatted() ?? ""
+      let factor = field.isDuration ? durationUnit.minutes : 1
+      text[field] = values[field].map { ($0 / factor).formatted(.number.precision(.fractionLength(0 ... 2))) } ?? ""
     }
   }
 
   private func clear() {
     saveTask?.cancel()
     deleteExisting()
-    doseUnits = ""
+    values = CustomRoaCodable(administrationRoute: route)
     text = [:]
   }
 
@@ -167,7 +222,6 @@ struct EditCustomRoaView: View {
   }
 
   private func save() {
-    let values = values
     guard !values.isEmpty else {
       deleteExisting()
       return
@@ -178,5 +232,36 @@ struct EditCustomRoaView: View {
     values.apply(to: target)
     try? context.save()
     existingRoa = target
+  }
+}
+
+private enum DurationInputUnit: CaseIterable {
+  case minutes, hours
+
+  var title: String {
+    switch self {
+    case .minutes: "Minutes"
+    case .hours: "Hours"
+    }
+  }
+
+  var symbol: String {
+    switch self {
+    case .minutes: "min"
+    case .hours: "h"
+    }
+  }
+
+  var minutes: Double {
+    switch self {
+    case .minutes: 1
+    case .hours: 60
+    }
+  }
+
+  // Hours read better once the total runs to several hours.
+  static func suggested(for values: CustomRoaCodable) -> DurationInputUnit {
+    let longest = CustomRoaField.allCases.filter(\.isDuration).compactMap { values[$0] }.max() ?? 0
+    return longest >= 180 ? .hours : .minutes
   }
 }

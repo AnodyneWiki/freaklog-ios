@@ -26,9 +26,12 @@ struct DurationRange: Codable, Equatable {
 
     var displayString: String? {
         guard min != nil || max != nil else { return nil }
-        let min = min?.formatted() ?? ".."
-        let max = max?.formatted() ?? ".."
-        var result = "\(min)-\(max)"
+        var result: String
+        if let min, min == max {
+            result = min.formatted()
+        } else {
+            result = "\(min?.formatted() ?? "..")-\(max?.formatted() ?? "..")"
+        }
         switch units {
         case .seconds:
             result += "s"
