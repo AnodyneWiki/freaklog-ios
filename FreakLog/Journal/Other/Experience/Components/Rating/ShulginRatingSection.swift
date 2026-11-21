@@ -2,9 +2,7 @@ import SwiftUI
 
 struct ShulginRatingSection: View {
     @ObservedObject var experience: Experience
-    let hiddenRatings: [ObjectIdentifier]
-    let showRating: (ObjectIdentifier) -> Void
-    let hideRating: (ObjectIdentifier) -> Void
+    @Binding var hiddenRatings: Set<ObjectIdentifier>
     let timeDisplayStyle: TimeDisplayStyle
     let firstIngestionTime: Date?
 
@@ -55,17 +53,7 @@ struct ShulginRatingSection: View {
             NavigationStack {
                 switch sheetOption {
                 case .editRegular(let rating):
-                    let isHidden = Binding(
-                        get: { hiddenRatings.contains(rating.id) },
-                        set: { newIsHidden in
-                            if newIsHidden {
-                                hideRating(rating.id)
-                            } else {
-                                showRating(rating.id)
-                            }
-                        }
-                    )
-                    EditRatingScreen(rating: rating, isHidden: isHidden)
+                    EditRatingScreen(rating: rating, isHidden: $hiddenRatings.contains(rating.id))
                 case .editOverall(let rating):
                     EditOverallRatingScreen(rating: rating)
                 }

@@ -8,8 +8,8 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var saveableTimeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @State private var isShowingDeleteConfirmation = false
     @State private var sheetToShow: SheetOption?
-    @State private var hiddenIngestions: [ObjectIdentifier] = []
-    @State private var hiddenRatings: [ObjectIdentifier] = []
+    @State private var hiddenIngestions: Set<ObjectIdentifier> = []
+    @State private var hiddenRatings: Set<ObjectIdentifier> = []
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
@@ -35,30 +35,6 @@ struct ExperienceScreen: View {
         var id: Self {
             return self
         }
-    }
-
-    private func showIngestion(id: ObjectIdentifier) {
-        hiddenIngestions.removeAll { hiddenID in
-            hiddenID == id
-        }
-        updateActivityIfActive()
-    }
-
-    private func hideIngestion(id: ObjectIdentifier) {
-        hiddenIngestions.append(id)
-        updateActivityIfActive()
-    }
-
-    private func showRating(id: ObjectIdentifier) {
-        hiddenRatings.removeAll { hiddenID in
-            hiddenID == id
-        }
-        updateActivityIfActive()
-    }
-
-    private func hideRating(id: ObjectIdentifier) {
-        hiddenRatings.append(id)
-        updateActivityIfActive()
     }
 
     func updateActivityIfActive() {
@@ -202,9 +178,7 @@ struct ExperienceScreen: View {
                 if isEyeOpen && !experience.ratingsUnwrapped.isEmpty {
                     ShulginRatingSection(
                         experience: experience,
-                        hiddenRatings: hiddenRatings,
-                        showRating: showRating,
-                        hideRating: hideRating,
+                        hiddenRatings: $hiddenRatings,
                         timeDisplayStyle: timeDisplayStyle,
                         firstIngestionTime: firstIngestionTime
                     )
@@ -292,19 +266,9 @@ struct ExperienceScreen: View {
                     case let .editTimedNote(timedNote):
                         EditTimedNoteScreen(timedNote: timedNote, experience: experience)
                     case let .editIngestion(ingestion):
-                        let isHidden = Binding(
-                            get: { hiddenIngestions.contains(ingestion.id) },
-                            set: { newIsHidden in
-                                if newIsHidden {
-                                    hideIngestion(id: ingestion.id)
-                                } else {
-                                    showIngestion(id: ingestion.id)
-                                }
-                            }
-                        )
                         EditIngestionScreen(
                             ingestion: ingestion,
-                            isHidden: isHidden)
+                            isHidden: $hiddenIngestions.contains(ingestion.id))
                     }
                 })
         }
@@ -320,6 +284,9 @@ struct ExperienceScreen: View {
                 )
             }
         }
+        // Hiding ingestions or ratings also hides them in the live activity
+        .onChange(of: hiddenIngestions) { _ in updateActivityIfActive() }
+        .onChange(of: hiddenRatings) { _ in updateActivityIfActive() }
         .confirmationDialog(
             "Delete Experience?",
             isPresented: $isShowingDeleteConfirmation,

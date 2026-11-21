@@ -125,8 +125,8 @@ extension Experience: Comparable {
     }
 
     func getMyTimeLineModel(
-        hiddenIngestions: [ObjectIdentifier],
-        hiddenRatings: [ObjectIdentifier],
+        hiddenIngestions: Set<ObjectIdentifier>,
+        hiddenRatings: Set<ObjectIdentifier>,
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) -> TimelineModel {
@@ -140,8 +140,8 @@ extension Experience: Comparable {
 
     // The user's own timeline, in the form sent to the live activity
     func liveActivityState(
-        hiddenIngestions: [ObjectIdentifier] = [],
-        hiddenRatings: [ObjectIdentifier] = [],
+        hiddenIngestions: Set<ObjectIdentifier> = [],
+        hiddenRatings: Set<ObjectIdentifier> = [],
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) -> TimelineWidgetAttributes.ContentState {
@@ -156,7 +156,11 @@ extension Experience: Comparable {
         )
     }
 
-    func getConsumers(hiddenIngestions: [ObjectIdentifier], areRedosesDrawnIndividually: Bool, areSubstanceHeightsIndependent: Bool) -> [ConsumerWithIngestions] {
+    func getConsumers(
+        hiddenIngestions: Set<ObjectIdentifier>,
+        areRedosesDrawnIndividually: Bool,
+        areSubstanceHeightsIndependent: Bool
+    ) -> [ConsumerWithIngestions] {
         Dictionary(grouping: otherIngestions, by: \.consumerNameUnwrapped).map { consumerName, ingestions in
             ConsumerWithIngestions(
                 consumerName: consumerName,

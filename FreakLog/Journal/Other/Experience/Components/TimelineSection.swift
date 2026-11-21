@@ -7,7 +7,7 @@ struct TimelineSection: View {
     let timeDisplayStyle: TimeDisplayStyle
     let isEyeOpen: Bool
     let isHidingDosageDots: Bool
-    let hiddenIngestions: [ObjectIdentifier]
+    let hiddenIngestions: Set<ObjectIdentifier>
     let isCurrentExperience: Bool
 
     var body: some View {

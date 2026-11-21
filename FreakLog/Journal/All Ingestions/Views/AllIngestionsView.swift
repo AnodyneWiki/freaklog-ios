@@ -13,7 +13,7 @@ struct AllIngestionsView: View {
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var ingestionToEdit: Ingestion?
-    @State private var hiddenIngestions: [ObjectIdentifier] = []
+    @State private var hiddenIngestions: Set<ObjectIdentifier> = []
 
     var body: some View {
         List {
@@ -49,19 +49,9 @@ struct AllIngestionsView: View {
         .scrollContentBackground(.hidden)
         .coordinateSpace(name: "scroll")
         .sheet(item: $ingestionToEdit) { ingestion in
-            let isHidden = Binding(
-                get: { hiddenIngestions.contains(ingestion.id) },
-                set: { newIsHidden in
-                    if newIsHidden {
-                        hiddenIngestions.append(ingestion.id)
-                    } else {
-                        hiddenIngestions.removeAll { $0 == ingestion.id }
-                    }
-                }
-            )
             EditIngestionScreen(
                 ingestion: ingestion,
-                isHidden: isHidden
+                isHidden: $hiddenIngestions.contains(ingestion.id)
             )
         }
         .onChange(of: searchText) { newValue in
