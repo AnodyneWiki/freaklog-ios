@@ -7,8 +7,6 @@ struct CustomUnitDosePicker: View {
     @Binding var isEstimate: Bool
     @Binding var estimatedDoseStandardDeviation: Double?
 
-    @FocusState private var isEstimatedDeviationFocused: Bool
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             CustomUnitDoseRow(customUnit: customUnit.minInfo, roaDose: customUnit.roaDose)
@@ -22,30 +20,12 @@ struct CustomUnitDosePicker: View {
                 Text((dose ?? 0).justUnit(pluralizableUnit: customUnit.pluralizableUnit))
             }
             .font(.title)
-            Toggle("Estimate", isOn: $isEstimate)
-                .tint(.accentColor)
-                .onChange(of: isEstimate, perform: { newIsEstimate in
-                    if newIsEstimate {
-                        isEstimatedDeviationFocused = true
-                    }
-                })
-            if isEstimate {
-                HStack {
-                    Image(systemName: "plusminus")
-                    TextField(
-                        "Estimated standard deviation",
-                        value: $estimatedDoseStandardDeviation,
-                        format: .number
-                    )
-                    .keyboardType(.decimalPad)
-                    .focused($isEstimatedDeviationFocused)
-                    Spacer()
-                    Text(customUnit.unitUnwrapped)
-                }
-            }
-            if let dose, let estimatedDoseStandardDeviation {
-                StandardDeviationConfidenceIntervalExplanation(mean: dose, standardDeviation: estimatedDoseStandardDeviation, unit: customUnit.unitUnwrapped)
-            }
+            EstimateFields(
+                isEstimate: $isEstimate,
+                standardDeviation: $estimatedDoseStandardDeviation,
+                units: customUnit.unitUnwrapped,
+                mean: dose
+            )
         }
     }
 }

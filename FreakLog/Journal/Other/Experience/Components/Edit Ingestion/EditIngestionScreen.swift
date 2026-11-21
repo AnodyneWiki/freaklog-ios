@@ -209,21 +209,11 @@ struct EditIngestionContent: View {
                                 roaDose: roaDose,
                                 doseMaybe: $dose,
                                 selectedUnits: $units)
-                            Toggle("Estimate", isOn: $isEstimate)
-                                .tint(.accentColor)
-                            if isEstimate {
-                                HStack {
-                                    Image(systemName: "plusminus")
-                                    TextField(
-                                        "Estimated standard deviation",
-                                        value: $estimatedDoseStandardDeviation,
-                                        format: .number
-                                    )
-                                    .keyboardType(.decimalPad)
-                                    Spacer()
-                                    Text(units)
-                                }
-                            }
+                            EstimateFields(
+                                isEstimate: $isEstimate,
+                                standardDeviation: $estimatedDoseStandardDeviation,
+                                units: units
+                            )
                         }
                     }
                     if !otherUnits.isEmpty {

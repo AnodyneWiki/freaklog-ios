@@ -90,7 +90,6 @@ struct ChooseDoseScreen: View {
   private var customUnits: FetchRequest<CustomUnit>
 
   @FocusState private var isDoseFieldFocused: Bool
-  @FocusState private var isEstimatedDeviationFocused: Bool
   @State private var isAddCustomUnitSheetShown: Bool = false
 
   @State private var isDosageRemarkExpanded = false
@@ -126,30 +125,12 @@ struct ChooseDoseScreen: View {
           .onFirstAppear {
             isDoseFieldFocused = true
           }
-        Toggle("Estimate", isOn: $isEstimate)
-          .tint(.accentColor)
-          .onChange(of: isEstimate, perform: { newIsEstimate in
-            if newIsEstimate {
-              isEstimatedDeviationFocused = true
-            }
-          })
-        let units = selectedUnits.isEmpty ? roaDose?.units ?? defaultUnits : selectedUnits
-        if isEstimate {
-          HStack {
-            Image(systemName: "plusminus")
-            TextField(
-              "Estimated standard deviation",
-              value: $selectedDoseDeviation,
-              format: .number)
-              .keyboardType(.decimalPad)
-              .focused($isEstimatedDeviationFocused)
-            Spacer()
-            Text(units)
-          }
-        }
-        if let selectedPureDose, let selectedDoseDeviation {
-          StandardDeviationConfidenceIntervalExplanation(mean: selectedPureDose, standardDeviation: selectedDoseDeviation, unit: units)
-        }
+        EstimateFields(
+          isEstimate: $isEstimate,
+          standardDeviation: $selectedDoseDeviation,
+          units: selectedUnits.isEmpty ? roaDose?.units ?? defaultUnits : selectedUnits,
+          mean: selectedPureDose
+        )
       }
     } header: {
       Text("Pure \(administrationRoute.rawValue.capitalized) Dose")

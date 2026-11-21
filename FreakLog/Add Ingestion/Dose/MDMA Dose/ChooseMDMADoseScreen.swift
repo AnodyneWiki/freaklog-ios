@@ -41,7 +41,6 @@ struct ChooseMDMADoseScreen: View {
         }
     }
 
-    @FocusState private var isEstimatedDeviationFocused: Bool
     @State private var isAddCustomUnitSheetShown = false
 
     private var screen: some View {
@@ -67,27 +66,7 @@ struct ChooseMDMADoseScreen: View {
                         mdmaDoseInMg = getDouble(from: text)
                     }
                 }
-                Toggle("Estimate", isOn: $isEstimate)
-                    .tint(.accentColor)
-                    .onChange(of: isEstimate, perform: { newIsEstimate in
-                        if newIsEstimate {
-                            isEstimatedDeviationFocused = true
-                        }
-                    })
-                if isEstimate {
-                    HStack {
-                        Image(systemName: "plusminus")
-                        TextField(
-                            "Estimated standard deviation",
-                            value: $estimatedDoseStandardDeviation,
-                            format: .number
-                        )
-                        .keyboardType(.decimalPad)
-                        .focused($isEstimatedDeviationFocused)
-                        Spacer()
-                        Text(units)
-                    }
-                }
+                EstimateFields(isEstimate: $isEstimate, standardDeviation: $estimatedDoseStandardDeviation, units: units)
             }.listRowSeparator(.hidden)
             Section("Prefer to log pill?") {
                 Button("Add a custom unit") {

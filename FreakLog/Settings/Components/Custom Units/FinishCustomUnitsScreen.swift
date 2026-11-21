@@ -30,7 +30,6 @@ struct FinishCustomUnitsScreen: View {
         case unitPlural
         case dose
         case note
-        case estimatedDeviation
     }
 
     let arguments: CustomUnitArguments
@@ -163,29 +162,12 @@ struct FinishCustomUnitsScreen: View {
                     Spacer()
                     Text(originalUnit)
                 }
-                Toggle("Estimate", isOn: $isEstimate.animation())
-                    .tint(.accentColor)
-                    .onChange(of: isEstimate, perform: { newIsEstimate in
-                        if newIsEstimate {
-                            focusedField = .estimatedDeviation
-                        }
-                    })
-                if isEstimate {
-                    HStack {
-                        Image(systemName: "plusminus")
-                        TextField(
-                            "Estimated standard deviation",
-                            value: $estimatedDoseStandardDeviation,
-                            format: .number)
-                        .keyboardType(.decimalPad)
-                        .focused($focusedField, equals: .estimatedDeviation)
-                        Spacer()
-                        Text(originalUnit)
-                    }
-                    if let dosePerUnit, let estimatedDoseStandardDeviation {
-                        StandardDeviationConfidenceIntervalExplanation(mean: dosePerUnit, standardDeviation: estimatedDoseStandardDeviation, unit: originalUnit)
-                    }
-                }
+                EstimateFields(
+                    isEstimate: $isEstimate,
+                    standardDeviation: $estimatedDoseStandardDeviation,
+                    units: originalUnit,
+                    mean: dosePerUnit
+                )
             }.listRowSeparator(.hidden)
             let isUnknownDosePerUnit = dosePerUnit == nil
             if let originalUnit = roaDose?.units, !unit.isEmpty {

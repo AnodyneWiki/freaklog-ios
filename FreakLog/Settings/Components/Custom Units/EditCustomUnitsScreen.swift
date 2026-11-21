@@ -141,24 +141,12 @@ struct EditCustomUnitsScreenContent: View {
                     doseMaybe: $dosePerUnit,
                     selectedUnits: $originalUnit
                 )
-                Toggle("Estimate", isOn: $isEstimate.animation())
-                    .tint(.accentColor)
-                if isEstimate {
-                    HStack {
-                        Image(systemName: "plusminus")
-                        TextField(
-                            "Estimated standard deviation",
-                            value: $estimatedDoseStandardDeviation,
-                            format: .number
-                        )
-                        .keyboardType(.decimalPad)
-                        Spacer()
-                        Text(originalUnit)
-                    }
-                    if let dosePerUnit, let estimatedDoseStandardDeviation {
-                        StandardDeviationConfidenceIntervalExplanation(mean: dosePerUnit, standardDeviation: estimatedDoseStandardDeviation, unit: originalUnit)
-                    }
-                }
+                EstimateFields(
+                    isEstimate: $isEstimate,
+                    standardDeviation: $estimatedDoseStandardDeviation,
+                    units: originalUnit,
+                    mean: dosePerUnit
+                )
             }.listRowSeparator(.hidden)
 
             let isUnknownDose = dosePerUnit == nil

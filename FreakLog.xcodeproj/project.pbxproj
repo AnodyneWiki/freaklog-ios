@@ -106,6 +106,7 @@
 		EA085E142961A200001638AC /* StrokeStyle-Timeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD920C294202680073303A /* StrokeStyle-Timeline.swift */; };
 		EA085E1B2961A212001638AC /* NoTimeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD921829422C580073303A /* NoTimeline.swift */; };
 		EA095A0F27D9DCAE007D44D6 /* UnitsPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A0E27D9DCAE007D44D6 /* UnitsPicker.swift */; };
+		4512902D47335263F8E9A88F /* EstimateFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FF92B1AD9D91EB07D00F99B /* EstimateFields.swift */; };
 		EA095A1427DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA095A1327DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift */; };
 		EA0CAAAF295473C900095A33 /* GraphicsContext-DrawDot.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */; };
 		EA116CD829FBA2E4007D8BF6 /* EditOverallRatingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA116CD729FBA2E4007D8BF6 /* EditOverallRatingScreen.swift */; };
@@ -499,6 +500,7 @@
 		EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineWidgetAttributes.swift; sourceTree = "<group>"; };
 		EA085E0029619E5B001638AC /* IngestionMinInfoForTimeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionMinInfoForTimeline.swift; sourceTree = "<group>"; };
 		EA095A0E27D9DCAE007D44D6 /* UnitsPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnitsPicker.swift; sourceTree = "<group>"; };
+		5FF92B1AD9D91EB07D00F99B /* EstimateFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EstimateFields.swift; sourceTree = "<group>"; };
 		EA095A1327DA2BBC007D44D6 /* UIApplication-CurrentWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIApplication-CurrentWindow.swift"; sourceTree = "<group>"; };
 		EA0CAAAE295473C900095A33 /* GraphicsContext-DrawDot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "GraphicsContext-DrawDot.swift"; sourceTree = "<group>"; };
 		EA116CD729FBA2E4007D8BF6 /* EditOverallRatingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditOverallRatingScreen.swift; sourceTree = "<group>"; };
@@ -959,6 +961,7 @@
 				EA60483E2A1BF2CB005C6A4B /* ChasingTheDragonSection.swift */,
 				EA302E4F2B385965007F113F /* custom */,
 				EA095A0E27D9DCAE007D44D6 /* UnitsPicker.swift */,
+				5FF92B1AD9D91EB07D00F99B /* EstimateFields.swift */,
 			);
 			path = Dose;
 			sourceTree = "<group>";
@@ -2239,6 +2242,7 @@
 				EA41C623295C2BE7000DA021 /* JournalFile.swift in Sources */,
 				EA6048272A1411C0005C6A4B /* Suggestion.swift in Sources */,
 				EA095A0F27D9DCAE007D44D6 /* UnitsPicker.swift in Sources */,
+				4512902D47335263F8E9A88F /* EstimateFields.swift in Sources */,
 				EACB0C222940888600C605E2 /* SearchSubstanceRow.swift in Sources */,
 				EA418A2F296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift in Sources */,
 				EA48F8B029EBEE4B007DA8C5 /* DangerTriangles.swift in Sources */,
