@@ -50,15 +50,7 @@ extension CustomUnit {
     }
 
     var pluralizableUnit: PluralizableUnit {
-        if let pluralUnitUnwrap = unitPlural {
-            return PluralizableUnit(singular: unitUnwrapped, plural: pluralUnitUnwrap)
-        } else {
-            if !unitUnwrapped.hasSuffix("s") && unitUnwrapped != "mg" && unitUnwrapped != "g" && unitUnwrapped != "ml" {
-                return PluralizableUnit(singular: unitUnwrapped, plural: unitUnwrapped + "s")
-            } else {
-                return PluralizableUnit(singular: unitUnwrapped, plural: unitUnwrapped)
-            }
-        }
+        PluralizableUnit(singular: unitUnwrapped, plural: unitPlural ?? PluralizableUnit.defaultPlural(of: unitUnwrapped))
     }
 
     var unitUnwrapped: String {
@@ -139,4 +131,10 @@ struct PluralizableUnit {
     let singular: String
     // e.g. pills
     let plural: String
+
+    // Adds an "s", except to words already ending in one and to mass and volume units
+    static func defaultPlural(of singular: String) -> String {
+        let isUnchanged = singular.hasSuffix("s") || ["mg", "g", "ml"].contains(singular.lowercased())
+        return isUnchanged ? singular : singular + "s"
+    }
 }

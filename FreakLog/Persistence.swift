@@ -201,6 +201,26 @@ struct PersistenceController {
         }
     }
 
+    // One-off data fixes, each run once and remembered under its key, in order
+    func runPendingMigrations() {
+        let defaults = UserDefaults.standard
+        let migrations: [(key: String, run: () -> Void)] = [
+            (Self.hasBeenMigrated2Key, {
+                self.migrateCompanionsAndExperienceSortDates()
+                defaults.set(defaults.bool(forKey: Self.isEyeOpenKey1), forKey: Self.isEyeOpenKey2)
+            }),
+            (Self.hasBeenMigrated3Key, migrateIngestionNamesAndUnits),
+            (Self.hasBeenMigrated4Key, migrateColors),
+            (Self.hasBeenMigrated5Key, migrateBenzydamineUnits),
+            (Self.hasBeenMigrated6Key, migrateCannabisAndMushroomUnits),
+            (Self.hasBeenMigrated7Key, migrateRemoveDuplicateCompanions),
+        ]
+        for migration in migrations where !defaults.bool(forKey: migration.key) {
+            migration.run()
+            defaults.set(true, forKey: migration.key)
+        }
+    }
+
     func migrateCompanionsAndExperienceSortDates() {
         viewContext.performAndWait {
             let ingestionFetchRequest = Ingestion.fetchRequest()

@@ -5,14 +5,7 @@ import CoreData
 
 struct ContentView: View {
     @AppStorage(PersistenceController.needsToSeeWelcomeKey) var needsToSeeWelcome: Bool = true
-    @AppStorage(PersistenceController.isEyeOpenKey1) var isEyeOpen1: Bool = false
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen2: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated2Key) var hasBeenMigrated2: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated3Key) var hasBeenMigrated3: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated4Key) var hasBeenMigrated4: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated5Key) var hasBeenMigrated5: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated6Key) var hasBeenMigrated6: Bool = false
-    @AppStorage(PersistenceController.hasBeenMigrated7Key) var hasBeenMigrated7: Bool = false
 
     var body: some View {
         ContentScreen(isEyeOpen: isEyeOpen2)
@@ -20,31 +13,7 @@ struct ContentView: View {
                 WelcomeScreen(isShowingWelcome: $needsToSeeWelcome)
             }
             .onAppear {
-                if !hasBeenMigrated2 {
-                    PersistenceController.shared.migrateCompanionsAndExperienceSortDates()
-                    hasBeenMigrated2 = true
-                    isEyeOpen2 = isEyeOpen1
-                }
-                if !hasBeenMigrated3 {
-                    PersistenceController.shared.migrateIngestionNamesAndUnits()
-                    hasBeenMigrated3 = true
-                }
-                if !hasBeenMigrated4 {
-                    PersistenceController.shared.migrateColors()
-                    hasBeenMigrated4 = true
-                }
-                if !hasBeenMigrated5 {
-                    PersistenceController.shared.migrateBenzydamineUnits()
-                    hasBeenMigrated5 = true
-                }
-                if !hasBeenMigrated6 {
-                    PersistenceController.shared.migrateCannabisAndMushroomUnits()
-                    hasBeenMigrated6 = true
-                }
-                if !hasBeenMigrated7 {
-                    PersistenceController.shared.migrateRemoveDuplicateCompanions()
-                    hasBeenMigrated7 = true
-                }
+                PersistenceController.shared.runPendingMigrations()
             }
     }
 }

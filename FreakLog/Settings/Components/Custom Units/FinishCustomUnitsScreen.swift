@@ -117,11 +117,7 @@ struct FinishCustomUnitsScreen: View {
                     Text("Unit singular:")
                 }
                 .onChange(of: unit, perform: { newValue in
-                    if !newValue.hasSuffix("s") && newValue != "mg" && newValue != "g" && newValue.lowercased() != "ml" {
-                        unitPlural = newValue + "s"
-                    } else {
-                        unitPlural = newValue
-                    }
+                    unitPlural = PluralizableUnit.defaultPlural(of: newValue)
                 })
                 LabeledContent {
                     TextField("Unit plural", text: $unitPlural, prompt: Text(prompt.unitPlural))
