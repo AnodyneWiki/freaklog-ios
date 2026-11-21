@@ -10,6 +10,10 @@ extension WebhookPreset {
         name ?? "Unnamed Webhook"
     }
 
+    var displayName: String {
+        nameUnwrapped.isEmpty ? "Unnamed" : nameUnwrapped
+    }
+
     var urlUnwrapped: String {
         url ?? ""
     }

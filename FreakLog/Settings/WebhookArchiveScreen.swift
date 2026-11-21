@@ -25,7 +25,7 @@ struct WebhookArchiveScreen: View {
                     ForEach(archivedPresets) { preset in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(preset.nameUnwrapped.isEmpty ? "Unnamed" : preset.nameUnwrapped)
+                                Text(preset.displayName)
                                     .font(.headline)
                                     .foregroundColor(.secondary)
                                 Text(preset.urlUnwrapped)
@@ -83,17 +83,8 @@ struct WebhookArchiveScreen: View {
     }
     
     private func deletePreset(_ preset: WebhookPreset, deleteMessages: Bool) {
-        if deleteMessages {
-            Task {
-                await WebhookManager.shared.deleteMessages(for: preset)
-                await MainActor.run {
-                    viewContext.delete(preset)
-                    PersistenceController.shared.saveViewContext()
-                }
-            }
-        } else {
-            viewContext.delete(preset)
-            PersistenceController.shared.saveViewContext()
+        Task {
+            await WebhookManager.shared.deletePreset(preset, deletingMessages: deleteMessages)
         }
     }
 }

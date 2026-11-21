@@ -26,7 +26,7 @@ struct WebhooksScreen: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text(preset.nameUnwrapped.isEmpty ? "Unnamed" : preset.nameUnwrapped)
+                                Text(preset.displayName)
                                     .font(.headline)
                             }
                             Spacer()

@@ -9,38 +9,6 @@ struct WebhookResult {
 struct WebhookService {
     static let defaultTemplate = "[{user}: ][{dose} {unit} ]{substance} via {route}[ ({site})][\n> {note}]"
 
-    static func sendWebhook(
-        url: String,
-        user: String,
-        substance: String,
-        dose: Double,
-        units: String,
-        isEstimate: Bool,
-        route: String,
-        site: String,
-        note: String,
-        template: String,
-        isHyperlinked: Bool,
-        substanceInfoUrl: String
-    ) async -> WebhookResult {
-        return await sendWebhookWithRetry(
-            url: url,
-            user: user,
-            substance: substance,
-            dose: dose,
-            units: units,
-            isEstimate: isEstimate,
-            route: route,
-            site: site,
-            note: note,
-            template: template,
-            isHyperlinked: isHyperlinked,
-            substanceInfoUrl: substanceInfoUrl,
-            isEdit: false,
-            messageId: nil
-        )
-    }
-
     static func deleteWebhookMessage(url: String, messageId: String) async -> Bool {
         guard let webhookUrl = URL(string: url) else { return false }
 
@@ -69,37 +37,33 @@ struct WebhookService {
         return false
     }
 
+    // Posts a new message, or edits the message with the given ID. The global username stands in for "you".
     static func sendWebhookWithRetry(
         url: String,
-        user: String,
-        substance: String,
-        dose: Double,
-        units: String,
-        isEstimate: Bool,
-        route: String,
-        site: String,
-        note: String,
-        template: String,
-        isHyperlinked: Bool,
-        substanceInfoUrl: String,
-        isEdit: Bool,
-        messageId: String?
+        data: WebhookManager.WebhookDataSnapshot,
+        settings: WebhookManager.WebhookSettingsSnapshot,
+        editing messageId: String? = nil
     ) async -> WebhookResult {
+        let isEdit = messageId != nil
+        let dose = data.dose
+        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
+        let user = data.user.isEmpty ? globalUsername : data.user
         let doseString: String
         let unitString: String
         if dose > 0 {
             let formattedDose = dose.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", dose) : String(dose)
-            doseString = isEstimate ? "~\(formattedDose)" : formattedDose
-            unitString = units
+            doseString = data.isEstimate ? "~\(formattedDose)" : formattedDose
+            unitString = data.units
         } else {
             doseString = ""
             unitString = ""
         }
 
+        let substance = data.substance
         var displaySubstance = substance
-        if isHyperlinked {
+        if settings.isHyperlinked {
             if let encodedSub = substance.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
-                displaySubstance = "[\(substance)](<\(substanceInfoUrl)\(encodedSub)>)"
+                displaySubstance = "[\(substance)](<\(settings.substanceInfoUrl)\(encodedSub)>)"
             }
         }
 
@@ -108,12 +72,12 @@ struct WebhookService {
             "substance": displaySubstance,
             "dose": doseString,
             "unit": unitString,
-            "route": route,
-            "site": site,
-            "note": note
+            "route": data.route,
+            "site": data.site,
+            "note": data.note
         ]
 
-        let content = processTemplate(template, values: values)
+        let content = processTemplate(settings.template, values: values)
         let payload: [String: Any] = ["content": content]
 
         let maxRetries = 3
@@ -227,12 +191,5 @@ struct WebhookService {
         }
 
         return processed
-    }
-}
-
-extension WebhookService {
-    static func deleteWebhookMessage(for preset: WebhookPreset, messageId: String) async -> Bool {
-        guard !messageId.isEmpty else { return false }
-        return await deleteWebhookMessage(url: preset.urlUnwrapped, messageId: messageId)
     }
 }

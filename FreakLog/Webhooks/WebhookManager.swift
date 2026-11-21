@@ -33,66 +33,31 @@ final class WebhookManager: Sendable {
 
     // MARK: - Sending Webhooks
 
-    func sendWebhooks(
-        ingestionObjectID: NSManagedObjectID,
-        presetObjectIDs: [NSManagedObjectID],
-        dataSnapshot: WebhookDataSnapshot
-    ) {
+    func sendWebhooks(for ingestion: Ingestion, presetObjectIDs: [NSManagedObjectID]) {
+        let ingestionObjectID = ingestion.objectID
+        let data = WebhookDataSnapshot(ingestion: ingestion)
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-            let settings = WebhookSettingsSnapshot.current
+            let urls = await Self.urls(of: presetObjectIDs, in: container)
+            await withTaskGroup(of: Void.self) { group in
+                for (presetObjectID, url) in urls {
+                    group.addTask {
+                        let result = await WebhookService.sendWebhookWithRetry(url: url, data: data, settings: .current)
+                        guard result.success, let messageId = result.messageId else { return }
+                        await container.performBackgroundTask { bgContext in
+                            guard
+                                let bgPreset = try? bgContext.existingObject(with: presetObjectID) as? WebhookPreset,
+                                let bgIngestion = try? bgContext.existingObject(with: ingestionObjectID) as? Ingestion
+                            else { return }
 
-            struct SendRequest: Sendable {
-                let presetObjectID: NSManagedObjectID
-                let url: String
-            }
-
-            let requests: [SendRequest] = await container.performBackgroundTask { bgContext in
-                presetObjectIDs.compactMap { presetID in
-                    guard let preset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return nil }
-                    let url = preset.urlUnwrapped
-                    guard !url.isEmpty else { return nil }
-                    return SendRequest(presetObjectID: presetID, url: url)
-                }
-            }
-
-            guard !requests.isEmpty else { return }
-
-            let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
-            let effectiveUser = dataSnapshot.user.isEmpty ? globalUsername : dataSnapshot.user
-
-            for request in requests {
-                let result = await WebhookService.sendWebhookWithRetry(
-                    url: request.url,
-                    user: effectiveUser,
-                    substance: dataSnapshot.substance,
-                    dose: dataSnapshot.dose,
-                    units: dataSnapshot.units,
-                    isEstimate: dataSnapshot.isEstimate,
-                    route: dataSnapshot.route,
-                    site: dataSnapshot.site,
-                    note: dataSnapshot.note,
-                    template: settings.template,
-                    isHyperlinked: settings.isHyperlinked,
-                    substanceInfoUrl: settings.substanceInfoUrl,
-                    isEdit: false,
-                    messageId: nil
-                )
-
-                if let messageId = result.messageId, result.success {
-                    await container.performBackgroundTask { bgContext in
-                        guard
-                            let bgPreset = try? bgContext.existingObject(with: request.presetObjectID) as? WebhookPreset,
-                            let bgIngestion = try? bgContext.existingObject(with: ingestionObjectID) as? Ingestion
-                        else { return }
-
-                        let message = WebhookMessage(context: bgContext)
-                        message.id = UUID()
-                        message.creationDate = Date()
-                        message.messageId = messageId
-                        message.ingestion = bgIngestion
-                        message.webhookPreset = bgPreset
-                        try? bgContext.save()
+                            let message = WebhookMessage(context: bgContext)
+                            message.id = UUID()
+                            message.creationDate = Date()
+                            message.messageId = messageId
+                            message.ingestion = bgIngestion
+                            message.webhookPreset = bgPreset
+                            try? bgContext.save()
+                        }
                     }
                 }
             }
@@ -101,80 +66,43 @@ final class WebhookManager: Sendable {
 
     // MARK: - Editing Webhooks
 
-    func editWebhookMessages(for ingestion: Ingestion) async {
-        let ingestionObjectID = ingestion.objectID
-        let context = PersistenceController.shared.viewContext
-
-        let effectiveUserName = ingestion.consumerNameUnwrapped.isEmpty ? "" : ingestion.consumerNameUnwrapped
-        let substanceName = ingestion.substanceNameUnwrapped
-        let dose = ingestion.doseUnwrapped ?? 0
-        let isEstimate = ingestion.isEstimate
-        let route = ingestion.administrationRouteUnwrapped.rawValue
-        let site = ingestion.administrationSiteUnwrapped
-        let note = ingestion.noteUnwrapped
-
-        let units: String
-        if let customUnit = ingestion.customUnit {
-            units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
-        } else {
-            units = ingestion.unitsUnwrapped
+    func editWebhookMessages(for ingestion: Ingestion) {
+        let data = WebhookDataSnapshot(ingestion: ingestion)
+        let messages = ingestion.webhookMessagesSorted.compactMap { message -> (preset: NSManagedObjectID, id: String)? in
+            guard let preset = message.webhookPreset, let messageId = message.messageId else { return nil }
+            return (preset.objectID, messageId)
         }
-
-        struct MessageInfo: Sendable {
-            let presetObjectID: NSManagedObjectID
-            let messageId: String
-        }
-
-        var messageInfos: [MessageInfo] = []
-
-        context.performAndWait {
-            if let ingestionInContext = context.object(with: ingestionObjectID) as? Ingestion {
-                let messages = ingestionInContext.webhookMessagesSorted
-                messageInfos = messages.compactMap { message in
-                    guard let preset = message.webhookPreset,
-                          let messageId = message.messageId else { return nil }
-                    return MessageInfo(presetObjectID: preset.objectID, messageId: messageId)
-                }
-            }
-        }
-
-        guard !messageInfos.isEmpty else { return }
+        guard !messages.isEmpty else { return }
 
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
-            let settings = WebhookSettingsSnapshot.current
-
-            let requests: [(url: String, messageId: String)] = await container.performBackgroundTask { bgContext in
-                messageInfos.compactMap { info in
-                    guard let preset = try? bgContext.existingObject(with: info.presetObjectID) as? WebhookPreset else {
-                        return nil
+            let urls = await Self.urls(of: messages.map(\.preset), in: container)
+            await withTaskGroup(of: Void.self) { group in
+                for message in messages {
+                    guard let url = urls.first(where: { $0.presetObjectID == message.preset })?.url else { continue }
+                    group.addTask {
+                        _ = await WebhookService.sendWebhookWithRetry(
+                            url: url,
+                            data: data,
+                            settings: .current,
+                            editing: message.id
+                        )
                     }
-                    let url = preset.urlUnwrapped
-                    guard !url.isEmpty else { return nil }
-                    return (url: url, messageId: info.messageId)
                 }
             }
+        }
+    }
 
-            let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
-            let effectiveUser = effectiveUserName.isEmpty ? globalUsername : effectiveUserName
-
-            for request in requests {
-                _ = await WebhookService.sendWebhookWithRetry(
-                    url: request.url,
-                    user: effectiveUser,
-                    substance: substanceName,
-                    dose: dose,
-                    units: units,
-                    isEstimate: isEstimate,
-                    route: route,
-                    site: site,
-                    note: note,
-                    template: settings.template,
-                    isHyperlinked: settings.isHyperlinked,
-                    substanceInfoUrl: settings.substanceInfoUrl,
-                    isEdit: true,
-                    messageId: request.messageId
-                )
+    // Presets that still exist and have a URL
+    private static func urls(
+        of presetObjectIDs: [NSManagedObjectID],
+        in container: NSPersistentContainer
+    ) async -> [(presetObjectID: NSManagedObjectID, url: String)] {
+        await container.performBackgroundTask { bgContext in
+            presetObjectIDs.compactMap { presetID in
+                guard let preset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return nil }
+                let url = preset.urlUnwrapped
+                return url.isEmpty ? nil : (presetID, url)
             }
         }
     }
@@ -242,10 +170,24 @@ final class WebhookManager: Sendable {
         await executeDeletions(targets, in: container)
     }
 
-    func deleteMessages(for preset: WebhookPreset) async {
-        let container = PersistenceController.shared.container
-        let targets = await buildPresetDeletionTargets(presetID: preset.objectID, in: container)
-        await executeDeletions(targets, in: container)
+    // Deletes one sent message remotely and, only if that worked, locally
+    @MainActor
+    func deleteMessage(_ message: WebhookMessage) async -> Bool {
+        guard let url = message.webhookPreset?.url, !url.isEmpty, let messageId = message.messageId else { return false }
+        guard await WebhookService.deleteWebhookMessage(url: url, messageId: messageId) else { return false }
+        message.managedObjectContext?.delete(message)
+        PersistenceController.shared.saveViewContext()
+        return true
+    }
+
+    @MainActor
+    func deletePreset(_ preset: WebhookPreset, deletingMessages: Bool) async {
+        if deletingMessages {
+            await deleteMessagesAndPreset(presetID: preset.objectID)
+        } else {
+            preset.managedObjectContext?.delete(preset)
+            PersistenceController.shared.saveViewContext()
+        }
     }
 
     func deleteAllPresetsAndMessages() async {
@@ -267,5 +209,22 @@ final class WebhookManager: Sendable {
         let container = PersistenceController.shared.container
         let targets = await buildPresetDeletionTargets(presetID: presetID, in: container)
         await executeDeletions(targets, in: container, also: presetID)
+    }
+}
+
+extension WebhookManager.WebhookDataSnapshot {
+    // The message for a saved ingestion, used both when sending and when editing it
+    init(ingestion: Ingestion) {
+        let dose = ingestion.doseUnwrapped ?? 0
+        self.init(
+            user: ingestion.isMine ? "" : ingestion.consumerNameUnwrapped,
+            substance: ingestion.substanceNameUnwrapped,
+            dose: dose,
+            units: ingestion.customUnit.map { dose.justUnit(pluralizableUnit: $0.pluralizableUnit) } ?? ingestion.unitsUnwrapped,
+            isEstimate: ingestion.isEstimate,
+            route: ingestion.administrationRouteUnwrapped.rawValue,
+            site: ingestion.administrationSiteUnwrapped.lowercased(),
+            note: ingestion.noteUnwrapped
+        )
     }
 }

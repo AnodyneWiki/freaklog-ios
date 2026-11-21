@@ -120,10 +120,7 @@ struct EditWebhookPresetScreen: View {
     }
 
     private func sendTestMessage() async {
-        let settings = WebhookManager.WebhookSettingsSnapshot.current
-
-        _ = await WebhookService.sendWebhook(
-            url: presetURL,
+        let data = WebhookManager.WebhookDataSnapshot(
             user: "Test User",
             substance: "Caffeine",
             dose: 100,
@@ -131,10 +128,8 @@ struct EditWebhookPresetScreen: View {
             isEstimate: false,
             route: "oral",
             site: "",
-            note: "This is a test note.",
-            template: settings.template,
-            isHyperlinked: settings.isHyperlinked,
-            substanceInfoUrl: settings.substanceInfoUrl
+            note: "This is a test note."
         )
+        _ = await WebhookService.sendWebhookWithRetry(url: presetURL, data: data, settings: .current)
     }
 }

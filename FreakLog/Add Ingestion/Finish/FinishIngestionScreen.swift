@@ -187,7 +187,7 @@ struct FinishIngestionScreen: View {
                     if isWebhookSectionExpanded {
                         ForEach(enabledWebhookPresets, id: \.objectID) { preset in
                             HStack {
-                                Text(preset.nameUnwrapped.isEmpty ? "Unnamed" : preset.nameUnwrapped)
+                                Text(preset.displayName)
                                 Spacer()
                                 if selectedWebhookPresetIDs.contains(preset.idUnwrapped) {
                                     Image(systemName: "checkmark")
@@ -348,36 +348,10 @@ struct FinishIngestionScreen: View {
             if isWebhookSectionExpanded,
                !selectedWebhookPresetIDs.isEmpty,
                let ingestion = createdIngestion {
-
-                let dose = arguments.dose ?? 0
-                let units: String
-                if let customUnit = arguments.customUnit {
-                    units = dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit)
-                } else {
-                    units = arguments.units ?? ""
-                }
-
-                let snapshot = WebhookManager.WebhookDataSnapshot(
-                    user: areYouConsumer ? "" : consumerName,
-                    substance: arguments.substanceName,
-                    dose: dose,
-                    units: units,
-                    isEstimate: arguments.isEstimate,
-                    route: arguments.administrationRoute.rawValue,
-                    site: siteString().lowercased(),
-                    note: enteredNote
-                )
-
                 let presetObjectIDs = enabledWebhookPresets
                     .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
                     .map { $0.objectID }
-                let ingestionObjectID = ingestion.objectID
-                
-                WebhookManager.shared.sendWebhooks(
-                    ingestionObjectID: ingestionObjectID,
-                    presetObjectIDs: presetObjectIDs,
-                    dataSnapshot: snapshot
-                )
+                WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
             }
         }
     }

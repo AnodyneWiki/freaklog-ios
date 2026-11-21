@@ -75,7 +75,7 @@ struct EditIngestionScreen: View {
             siteSelection: $siteSelection,
             save: save,
             delete: delete,
-            deleteWebhookMessage: deleteWebhookMessage,
+            deleteWebhookMessage: WebhookManager.shared.deleteMessage,
             isEyeOpen: isEyeOpen,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
@@ -180,9 +180,7 @@ struct EditIngestionScreen: View {
         }
         PersistenceController.shared.saveViewContext()
         ingestion.experience?.objectWillChange.send()
-        Task {
-            await WebhookManager.shared.editWebhookMessages(for: ingestion)
-        }
+        WebhookManager.shared.editWebhookMessages(for: ingestion)
         dismiss()
     }
 
@@ -192,22 +190,6 @@ struct EditIngestionScreen: View {
             dismiss()
         }
     }
-
-    private func deleteWebhookMessage(_ message: WebhookMessage) async -> Bool {
-        guard let preset = message.webhookPreset,
-              let messageId = message.messageId else {
-            return false
-        }
-
-        let success = await WebhookService.deleteWebhookMessage(for: preset, messageId: messageId)
-        if success {
-            let context = PersistenceController.shared.viewContext
-            context.delete(message)
-            PersistenceController.shared.saveViewContext()
-        }
-        return success
-    }
-
 }
 
 // MARK: - EditIngestionContent
