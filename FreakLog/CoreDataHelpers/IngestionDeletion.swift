@@ -13,13 +13,8 @@ enum IngestionDeletion {
         cleanUp()
     }
 
-    // The experience's ingestions are deleted along with it.
+    // The experience's ingestions are deleted along with it. Its live activity ends by itself.
     static func delete(experience: Experience) async {
-        if #available(iOS 16.2, *), experience.isCurrent {
-            await ActivityManager.shared.stopActivity(
-                experience.liveActivityState(areRedosesDrawnIndividually: false, areSubstanceHeightsIndependent: false)
-            )
-        }
         let cleanUp = await remoteCleanUp(for: experience.ingestionsSorted)
         PersistenceController.shared.viewContext.delete(experience)
         PersistenceController.shared.saveViewContext()

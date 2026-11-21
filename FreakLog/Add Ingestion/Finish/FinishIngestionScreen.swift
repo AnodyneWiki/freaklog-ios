@@ -35,8 +35,6 @@ struct FinishIngestionScreen: View {
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
     @State private var wantsToStartLiveActivity = true
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually = true
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
@@ -246,7 +244,7 @@ struct FinishIngestionScreen: View {
             let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
             let ingestion = createIngestionWithCompanion(with: experience, location: selectedLocationValue, and: context)
             try context.save()
-            updateLiveActivity(for: experience, isNewExperience: isNewExperience)
+            startLiveActivityIfWanted(for: experience, isNewExperience: isNewExperience)
 
             if isWebhookSectionExpanded, !selectedWebhookPresetIDs.isEmpty {
                 let presetObjectIDs = enabledWebhookPresets
@@ -257,16 +255,11 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    // A new experience starts an activity if wanted; adding to an existing one only updates a running activity
-    private func updateLiveActivity(for experience: Experience, isNewExperience: Bool) {
-        guard #available(iOS 16.2, *), experience.isCurrent else { return }
-        guard isNewExperience ? wantsToStartLiveActivity : ActivityManager.shared.isActivityActive else { return }
-        let state = experience.liveActivityState(
-            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-        )
+    // A running activity follows its experience by itself; a new experience starts one, if wanted
+    private func startLiveActivityIfWanted(for experience: Experience, isNewExperience: Bool) {
+        guard #available(iOS 16.2, *), isNewExperience, wantsToStartLiveActivity, experience.isCurrent else { return }
         Task {
-            await ActivityManager.shared.startOrUpdateActivity(state)
+            await ActivityManager.shared.show(experience)
         }
     }
 

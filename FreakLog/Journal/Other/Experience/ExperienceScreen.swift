@@ -37,36 +37,17 @@ struct ExperienceScreen: View {
         }
     }
 
-    func updateActivityIfActive() {
-        guard #available(iOS 16.2, *), LiveActivities.areAvailable, ActivityManager.shared.isActivityActive else { return }
-        if let lastTime = experience.myIngestionsSorted.last?.time, lastTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
-            startOrUpdateLiveActivity()
-        }
-    }
-
-    private var liveActivityState: TimelineWidgetAttributes.ContentState {
-        experience.liveActivityState(
-            hiddenIngestions: hiddenIngestions,
-            hiddenRatings: hiddenRatings,
-            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-        )
-    }
-
     @available(iOS 16.2, *)
-    func startOrUpdateLiveActivity() {
-        let state = liveActivityState
+    private func startLiveActivity() {
         Task {
-            await ActivityManager.shared.startOrUpdateActivity(state)
+            await ActivityManager.shared.show(experience, hiddenIngestions: hiddenIngestions, hiddenRatings: hiddenRatings)
         }
     }
 
-    @available(iOS 16.2, *)
-    func stopLiveActivity() {
-        let state = liveActivityState
-        Task {
-            await ActivityManager.shared.stopActivity(state)
-        }
+    // Hiding ingestions or ratings also hides them in the live activity
+    private func updateLiveActivityHiddenItems() {
+        guard #available(iOS 16.2, *) else { return }
+        ActivityManager.shared.setHidden(ingestions: hiddenIngestions, ratings: hiddenRatings, in: experience)
     }
 
     private func addIngestion() {
@@ -112,14 +93,7 @@ struct ExperienceScreen: View {
                         if #available(iOS 16.2, *) {
                             // The button itself follows whether the user allows live activities
                             if !ProcessInfo.processInfo.isiOSAppOnMac, isCurrent && timelineModel.isWorthDrawing {
-                                LiveActivityButton(
-                                    stopLiveActivity: {
-                                        stopLiveActivity()
-                                    },
-                                    startLiveActivity: {
-                                        startOrUpdateLiveActivity()
-                                    }
-                                )
+                                LiveActivityButton(experience: experience, startLiveActivity: startLiveActivity)
                             }
                         }
                     } header: {
@@ -246,9 +220,6 @@ struct ExperienceScreen: View {
             }
             .sheet(
                 item: $sheetToShow,
-                onDismiss: {
-                    updateActivityIfActive()
-                },
                 content: { sheet in
                     switch sheet {
                     case .addLocation:
@@ -284,9 +255,8 @@ struct ExperienceScreen: View {
                 )
             }
         }
-        // Hiding ingestions or ratings also hides them in the live activity
-        .onChange(of: hiddenIngestions) { _ in updateActivityIfActive() }
-        .onChange(of: hiddenRatings) { _ in updateActivityIfActive() }
+        .onChange(of: hiddenIngestions) { _ in updateLiveActivityHiddenItems() }
+        .onChange(of: hiddenRatings) { _ in updateLiveActivityHiddenItems() }
         .confirmationDialog(
             "Delete Experience?",
             isPresented: $isShowingDeleteConfirmation,

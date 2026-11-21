@@ -6,6 +6,10 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(_ app: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
         PersistenceController.shared.loadData(app)
+        if #available(iOS 16.2, *) {
+            // Picks up a running live activity so it follows journal changes from launch on
+            _ = ActivityManager.shared
+        }
         setupCloudKitBackgroundTaskHandling()
         return true
     }

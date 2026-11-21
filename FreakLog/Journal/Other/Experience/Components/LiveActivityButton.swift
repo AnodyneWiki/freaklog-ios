@@ -3,7 +3,7 @@ import SwiftUI
 
 @available(iOS 16.2, *)
 struct LiveActivityButton: View {
-    let stopLiveActivity: () -> Void
+    let experience: Experience
     let startLiveActivity: () -> Void
     @ObservedObject var activityManager = ActivityManager.shared
     @State private var areActivitiesEnabled = false
@@ -11,9 +11,10 @@ struct LiveActivityButton: View {
     var body: some View {
         Group {
             if !ProcessInfo.processInfo.isiOSAppOnMac && areActivitiesEnabled {
-                if activityManager.isActivityActive {
+                // An activity of another experience can be switched over to this one
+                if activityManager.isShowing(experience) {
                     Button {
-                        stopLiveActivity()
+                        Task { await activityManager.stop() }
                     } label: {
                         Label("Stop Live Activity", systemImage: "stop")
                     }
@@ -50,6 +51,6 @@ struct LiveActivityButton: View {
 @available(iOS 16.2, *)
 #Preview {
     List {
-        LiveActivityButton(stopLiveActivity: {}, startLiveActivity: {})
+        LiveActivityButton(experience: Experience(context: PersistenceController.preview.viewContext), startLiveActivity: {})
     }
 }

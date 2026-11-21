@@ -1,15 +1,8 @@
 import ActivityKit
+import Foundation
 
 struct TimelineWidgetAttributes: ActivityAttributes {
     struct ContentState: Codable, Hashable {
-        static func == (lhs: TimelineWidgetAttributes.ContentState, rhs: TimelineWidgetAttributes.ContentState) -> Bool {
-            lhs.substanceGroups == rhs.substanceGroups
-        }
-
-        func hash(into hasher: inout Hasher) {
-            hasher.combine(substanceGroups)
-        }
-
         // Dynamic stateful properties about your activity go here!
         var substanceGroups: [SubstanceIngestionGroup]
         var everythingForEachRating: [EverythingForOneRating]
@@ -20,6 +13,8 @@ struct TimelineWidgetAttributes: ActivityAttributes {
 
     // Fixed non-changing properties about your activity go here!
     var name: String
+    // The shown experience's object ID URI, so the app can keep the activity up to date after a relaunch
+    var experienceURI: URL?
 }
 
 extension TimelineWidgetAttributes.ContentState {

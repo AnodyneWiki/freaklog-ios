@@ -1,10 +1,6 @@
 import Foundation
 
-struct EverythingForOneRating: Codable, Equatable {
-    static func == (lhs: EverythingForOneRating, rhs: EverythingForOneRating) -> Bool {
-        lhs.time == rhs.time
-    }
-
+struct EverythingForOneRating: Codable, Hashable {
     let time: Date
     let option: ShulginRatingOption
 }
