@@ -12,6 +12,8 @@ struct JournalScreen: View {
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
     @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = false
     @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: JournalViewOption = .allIngestions
+    // The experience list builds a new fetch for each search, so it only follows the text once typing pauses
+    @State private var experienceSearchText = ""
 
     var body: some View {
         FabPosition(alignment: fabButtonPosition.alignment) {
@@ -26,7 +28,7 @@ struct JournalScreen: View {
             Group {
                 if selectedTab == .experiences {
                     ExperiencesList(
-                        searchText: searchText,
+                        searchText: experienceSearchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
                         timeDisplayStyle: timeDisplayStyle
                     )
@@ -38,6 +40,13 @@ struct JournalScreen: View {
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .task(id: searchText) {
+                if !searchText.isEmpty {
+                    try? await Task.sleep(nanoseconds: 300_000_000)
+                    guard !Task.isCancelled else { return }
+                }
+                experienceSearchText = searchText
+            }
             .modify {
                 let prompt = selectedTab == .experiences ? "Search experiences" : "Search"
                 if isSearchPresented {
