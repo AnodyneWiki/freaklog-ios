@@ -9,3 +9,13 @@ struct CustomSubstanceModel: Identifiable {
     let description: String
     let units: String
 }
+
+extension CustomSubstanceModel {
+    init(_ customSubstance: CustomSubstance) {
+        self.init(
+            name: customSubstance.nameUnwrapped,
+            description: customSubstance.explanationUnwrapped,
+            units: customSubstance.unitsUnwrapped
+        )
+    }
+}

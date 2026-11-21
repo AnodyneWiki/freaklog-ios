@@ -24,9 +24,10 @@ extension SettingsScreen {
                 do {
                     let container = PersistenceController.shared.container
                     
-                    // Decode off the main thread first
-                    let data = tryConvertFile(data)
-                    let file = try JSONDecoder().decode(JournalFile.self, from: data)
+                    // Decode off the main thread first; the view model, and so this task, is main-actor isolated
+                    let file = try await Task.detached(priority: .userInitiated) {
+                        try JSONDecoder().decode(JournalFile.self, from: Self.tryConvertFile(data))
+                    }.value
                     
                     await container.performBackgroundTask { context in
                         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
@@ -171,7 +172,7 @@ extension SettingsScreen {
         }
 
         // Converts v12 exports, if necessary.
-        private func tryConvertFile(_ data: Data) -> Data {
+        private nonisolated static func tryConvertFile(_ data: Data) -> Data {
             guard
                 var jsonObject = try? JSONSerialization.jsonObject(
                     with: data,

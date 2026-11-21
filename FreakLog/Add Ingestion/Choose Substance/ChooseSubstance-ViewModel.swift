@@ -17,18 +17,13 @@ extension ChooseSubstanceScreen {
         private let allPossibleSuggestions: [any SuggestionProtocol]
         private let fetchController: NSFetchedResultsController<CustomSubstance>?
 
-        private static func getSortedIngestions() -> [Ingestion] {
-            PersistenceController.shared.getRecentIngestions(limit: 1000)
-        }
-
-        private static func getCustomUnits() -> [CustomUnit] {
-            PersistenceController.shared.getActiveCustomUnits()
-        }
-
         override init() {
             isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)
-            let customUnits = Self.getCustomUnits()
-            allPossibleSuggestions = getSuggestions(sortedIngestions: Self.getSortedIngestions(), customUnits: customUnits)
+            let customUnits = PersistenceController.shared.getActiveCustomUnits()
+            allPossibleSuggestions = getSuggestions(
+                sortedIngestions: PersistenceController.shared.getRecentIngestions(limit: 1000),
+                customUnits: customUnits
+            )
             fetchController = NSFetchedResultsController(
                 fetchRequest: PersistenceController.customSubstancesRequest(),
                 managedObjectContext: PersistenceController.shared.viewContext,
@@ -37,13 +32,7 @@ extension ChooseSubstanceScreen {
             )
             try? fetchController?.performFetch()
             let customSubstances = fetchController?.fetchedObjects ?? []
-            customSubstanceModels = customSubstances.map { cust in
-                CustomSubstanceModel(
-                    name: cust.nameUnwrapped,
-                    description: cust.explanationUnwrapped,
-                    units: cust.unitsUnwrapped
-                )
-            }
+            customSubstanceModels = customSubstances.map(CustomSubstanceModel.init)
             super.init()
             fetchController?.delegate = self
             $searchText
@@ -105,13 +94,7 @@ extension ChooseSubstanceScreen {
         public nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
             Task { @MainActor in
                 guard let custs = controller.fetchedObjects as? [CustomSubstance] else { return }
-                self.customSubstanceModels = custs.map { cust in
-                    CustomSubstanceModel(
-                        name: cust.nameUnwrapped,
-                        description: cust.explanationUnwrapped,
-                        units: cust.unitsUnwrapped
-                    )
-                }
+                self.customSubstanceModels = custs.map(CustomSubstanceModel.init)
             }
         }
     }
