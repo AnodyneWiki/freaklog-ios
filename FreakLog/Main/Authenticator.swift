@@ -3,22 +3,19 @@ import SwiftUI
 
 @MainActor
 class Authenticator: ObservableObject {
-    static let hasToUnlockKey = "hasToUnlockApp"
-    static let lockTimeOptionKey = "lockTimeOption"
-    private static let lastDateKey = "lastDate"
     @Published var isLocked = true
     @Published var isFaceIDEnabled = true
     @Published var isStartingUp = true
 
     func onChange(of scenePhase: ScenePhase) {
-        let hasToUnlockApp = UserDefaults.standard.bool(forKey: Authenticator.hasToUnlockKey)
+        let hasToUnlockApp = UserDefaults.standard.bool(forKey: PersistenceController.hasToUnlockAppKey)
         if scenePhase == .active {
             isStartingUp = false
             let context = LAContext()
             var error: NSError?
-            let lockTimeOptionString = UserDefaults.standard.string(forKey: Authenticator.lockTimeOptionKey)
+            let lockTimeOptionString = UserDefaults.standard.string(forKey: PersistenceController.lockTimeOptionKey)
             let lockTimeOption = LockTimeOption(rawValue: lockTimeOptionString ?? "") ?? LockTimeOption.after5Minutes
-            let lastDate = (UserDefaults.standard.object(forKey: Authenticator.lastDateKey) as? Date) ?? Date().addingTimeInterval(-2 * 60 * 60)
+            let lastDate = (UserDefaults.standard.object(forKey: PersistenceController.lastUnlockDateKey) as? Date) ?? Date().addingTimeInterval(-2 * 60 * 60)
             let differenceNowToLastInSeconds = Date.now.timeIntervalSince1970 - lastDate.timeIntervalSince1970
             let isWithinToleratedTimeRange = differenceNowToLastInSeconds < lockTimeOption.timeInterval
             if context.canEvaluatePolicy(.deviceOwnerAuthentication, error: &error) {
@@ -36,7 +33,7 @@ class Authenticator: ObservableObject {
             }
         } else if (scenePhase == .background || scenePhase == .inactive) && hasToUnlockApp && !isLocked {
             isLocked = true
-            UserDefaults.standard.set(Date(), forKey: Authenticator.lastDateKey)
+            UserDefaults.standard.set(Date(), forKey: PersistenceController.lastUnlockDateKey)
         }
     }
 

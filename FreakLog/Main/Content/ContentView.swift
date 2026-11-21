@@ -96,19 +96,43 @@ struct ContentScreen: View {
         }
     }
 
-    @ViewBuilder
     func view(for tab: Tab) -> some View {
+        NavigationStack(path: $navigator[dynamicMember: Navigator.pathKeyPath(for: tab)]) {
+            rootScreen(for: tab)
+                .navigationDestination(for: GlobalNavigationDestination.self) { destination in
+                    getScreen(from: destination)
+                }
+        }
+        .tabItem {
+            Label(tab.title, systemImage: tab.icon)
+        }
+        .tag(tab)
+    }
+
+    @ViewBuilder
+    private func rootScreen(for tab: Tab) -> some View {
         switch tab {
         case .stats:
-            statsTab
+            StatsScreen()
         case .journal:
-            journalTab
+            JournalScreen(
+                searchText: $navigator.journalSearchText,
+                isSearchPresented: $navigator.isJournalSearchFocused,
+                isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled
+            )
         case .substances:
-            substancesTab
+            SearchScreen(
+                isSearchFocused: _isSearchFocused,
+                searchText: $navigator.substanceSearchText,
+                selectedCategories: $navigator.selectedCategories,
+                clearCategories: navigator.clearCategories)
+            .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused }
+            .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
+            .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
         case .safer:
-            saferTab
+            SaferScreen()
         case .settings:
-            settingsTab
+            SettingsScreen()
         }
     }
 
@@ -127,81 +151,6 @@ struct ContentScreen: View {
                 }
             }
         }
-    }
-
-    var statsTab: some View {
-        NavigationStack(path: $navigator.statsTabPath) {
-            StatsScreen()
-                .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                    getScreen(from: destination)
-                }
-        }
-        .tabItem {
-            Label("Stats", systemImage: "chart.bar")
-        }
-        .tag(Tab.stats)
-    }
-
-    var journalTab: some View {
-        NavigationStack(path: $navigator.journalTabPath) {
-            JournalScreen(
-                searchText: $navigator.journalSearchText,
-                isSearchPresented: $navigator.isJournalSearchFocused,
-                isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled
-            ).navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                getScreen(from: destination)
-            }
-        }
-        .tabItem {
-            Label("Journal", systemImage: "book")
-        }
-        .tag(Tab.journal)
-    }
-
-    var substancesTab: some View {
-        NavigationStack(path: $navigator.substancesTabPath) {
-            SearchScreen(
-                isSearchFocused: _isSearchFocused,
-                searchText: $navigator.substanceSearchText,
-                selectedCategories: $navigator.selectedCategories,
-                clearCategories: navigator.clearCategories)
-            .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused}
-            .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
-            .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
-            .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                getScreen(from: destination)
-            }
-        }
-        .tabItem {
-            Label("Substances", systemImage: "pills")
-        }
-        .tag(Tab.substances)
-    }
-    
-    var saferTab: some View {
-        NavigationStack(path: $navigator.saferTabPath) {
-            SaferScreen()
-                .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                    getScreen(from: destination)
-                }
-        }
-        .tabItem {
-            Label("Safer", systemImage: "cross.case")
-        }
-        .tag(Tab.safer)
-    }
-
-    var settingsTab: some View {
-        NavigationStack(path: $navigator.settingsTabPath) {
-            SettingsScreen()
-                .navigationDestination(for: GlobalNavigationDestination.self) { destination in
-                    getScreen(from: destination)
-                }
-        }
-        .tabItem {
-            Label("Settings", systemImage: "gearshape")
-        }
-        .tag(Tab.settings)
     }
 
 }

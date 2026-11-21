@@ -36,8 +36,8 @@ struct SettingsContent: View {
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
-    @AppStorage(Authenticator.hasToUnlockKey) var hasToUnlockApp: Bool = false
-    @AppStorage(Authenticator.lockTimeOptionKey) var lockTimeOption: LockTimeOption = .after5Minutes
+    @AppStorage(PersistenceController.hasToUnlockAppKey) var hasToUnlockApp: Bool = false
+    @AppStorage(PersistenceController.lockTimeOptionKey) var lockTimeOption: LockTimeOption = .after5Minutes
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
     // PersistenceController reads this with bool(forKey:), so unset means off
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false

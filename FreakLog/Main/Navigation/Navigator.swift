@@ -26,41 +26,34 @@ class Navigator: ObservableObject {
         selectedCategories.removeAll()
     }
 
+    static func pathKeyPath(for tab: Tab) -> ReferenceWritableKeyPath<Navigator, NavigationPath> {
+        switch tab {
+        case .stats: \.statsTabPath
+        case .journal: \.journalTabPath
+        case .substances: \.substancesTabPath
+        case .safer: \.saferTabPath
+        case .settings: \.settingsTabPath
+        }
+    }
+
+    // Tapping the selected tab again goes back one screen, or on the tab's root resets and focuses its search
     @MainActor
     var binding: Binding<Tab> {
         Binding {
             self.selectedTab
         } set: { newValue in
             if self.selectedTab == newValue {
-                switch newValue {
-                case .stats:
-                    if !self.statsTabPath.isEmpty {
-                        self.statsTabPath.removeLast()
-                    }
-                case .journal:
-                    if !self.journalTabPath.isEmpty {
-                        self.journalTabPath.removeLast()
-                    } else {
-                        self.journalSearchText = ""
-                        self.isFavoriteFilterEnabled = false
-                        self.isJournalSearchFocused = true
-                    }
-                case .substances:
-                    if !self.substancesTabPath.isEmpty {
-                        self.substancesTabPath.removeLast()
-                    } else {
-                        self.substanceSearchText = ""
-                        self.clearCategories()
-                        self.isSubstanceSearchFocused = true
-                    }
-                case .safer:
-                    if !self.saferTabPath.isEmpty {
-                        self.saferTabPath.removeLast()
-                    }
-                case .settings:
-                    if !self.settingsTabPath.isEmpty {
-                        self.settingsTabPath.removeLast()
-                    }
+                let path = Self.pathKeyPath(for: newValue)
+                if !self[keyPath: path].isEmpty {
+                    self[keyPath: path].removeLast()
+                } else if newValue == .journal {
+                    self.journalSearchText = ""
+                    self.isFavoriteFilterEnabled = false
+                    self.isJournalSearchFocused = true
+                } else if newValue == .substances {
+                    self.substanceSearchText = ""
+                    self.clearCategories()
+                    self.isSubstanceSearchFocused = true
                 }
             }
             self.selectedTab = newValue
@@ -68,18 +61,18 @@ class Navigator: ObservableObject {
     }
 
     func openLatestActiveExperience() {
-        selectedTab = .journal
-        if let latestActiveExperience = PersistenceController.shared.getLatestActiveExperience() {
-            journalTabPath.removeLast(journalTabPath.count)
-            journalTabPath.append(GlobalNavigationDestination.experience(experience: latestActiveExperience))
-        }
+        openInJournal(PersistenceController.shared.getLatestActiveExperience())
     }
 
     func openLatestExperience() {
+        openInJournal(PersistenceController.shared.getLatestExperience())
+    }
+
+    private func openInJournal(_ experience: Experience?) {
         selectedTab = .journal
-        if let latestExperience = PersistenceController.shared.getLatestExperience() {
+        if let experience {
             journalTabPath.removeLast(journalTabPath.count)
-            journalTabPath.append(GlobalNavigationDestination.experience(experience: latestExperience))
+            journalTabPath.append(GlobalNavigationDestination.experience(experience: experience))
         }
     }
 

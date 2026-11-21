@@ -4,8 +4,7 @@ import SwiftUI
 class TabManager: ObservableObject {
     static let shared = TabManager()
     
-    private let storageKey = "hiddenTabs"
-    private let fixedOrder: [Tab] = [.stats, .journal, .substances, .safer, .settings]
+    private let storageKey = PersistenceController.hiddenTabsKey
     
     @Published private(set) var hiddenTabs: Set<Tab> = [] {
         didSet {
@@ -18,11 +17,11 @@ class TabManager: ObservableObject {
     }
     
     var enabledTabs: [Tab] {
-        fixedOrder.filter { !hiddenTabs.contains($0) }
+        Tab.allCases.filter { !hiddenTabs.contains($0) }
     }
     
     var disabledTabs: [Tab] {
-        fixedOrder.filter { hiddenTabs.contains($0) }
+        Tab.allCases.filter { hiddenTabs.contains($0) }
     }
     
     func toggleVisibility(for tab: Tab) {
