@@ -9,17 +9,19 @@ struct DosageStatChart: View {
     let unit: String
     let isAverageShown: Bool
 
+    // Yearly averages count every year from the first one up to now, including years without doses
+    private var numberOfYears: Int {
+        let calendar = Calendar.current
+        let firstYear = calendar.component(.year, from: data.map(\.date).min() ?? .now)
+        let nowYear = calendar.component(.year, from: .now)
+        return max(1, nowYear - firstYear + 1)
+    }
+
     private var averageDosage: Double {
+        let sum = data.map(\.dosage).reduce(0, +)
         if resolution == .year {
-            let calendar = Calendar.current
-            let firstYearDate = data.sorted { $0.date < $1.date }.first?.date ?? .now
-            let firstYear = calendar.dateComponents([.year], from: firstYearDate).year ?? 0
-            let nowYear = calendar.dateComponents([.year], from: .now).year ?? 0
-            let numberOfYears = max(1, nowYear - firstYear + 1)
-            let sum = data.map(\.dosage).reduce(0, +)
             return sum / Double(numberOfYears)
         } else {
-            let sum = data.map(\.dosage).reduce(0, +)
             return data.isEmpty ? 0 : sum / Double(data.count)
         }
     }
@@ -29,13 +31,7 @@ struct DosageStatChart: View {
         case .day: return "per day"
         case .week: return "per week"
         case .month: return "per month"
-        case .year: 
-            let calendar = Calendar.current
-            let firstYearDate = data.sorted { $0.date < $1.date }.first?.date ?? .now
-            let firstYear = calendar.dateComponents([.year], from: firstYearDate).year ?? 0
-            let nowYear = calendar.dateComponents([.year], from: .now).year ?? 0
-            let numberOfYears = max(1, nowYear - firstYear + 1)
-            return "per year in last \(numberOfYears) years"
+        case .year: return "per year in last \(numberOfYears) years"
         }
     }
 
@@ -93,12 +89,7 @@ struct DosageStatChart: View {
     }
 
     private var calendarUnit: Calendar.Component {
-        switch resolution {
-        case .day: return .day
-        case .week: return .weekOfYear
-        case .month: return .month
-        case .year: return .year
-        }
+        resolution.component
     }
 
     @AxisContentBuilder

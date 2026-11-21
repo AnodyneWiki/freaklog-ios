@@ -23,13 +23,14 @@ struct DosageStatScreen: View {
                 unit = ""
             }
         }
-        unknownDoseEstimate = roaDose?.commonMin ?? 0
+        // Assigning the wrapped value in init is discarded, so set the initial State instead
+        _unknownDoseEstimate = State(initialValue: roaDose?.commonMin ?? 0)
         substanceColor = getColor(for: substanceName)
-        self.ingestions = FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest(for: substanceName))
+        _ingestions = FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest(for: substanceName))
     }
 
-    private var ingestions: FetchRequest<Ingestion>
-    @State private var unknownDoseEstimate = 0.0
+    @FetchRequest private var ingestions: FetchedResults<Ingestion>
+    @State private var unknownDoseEstimate: Double
     @State private var isAverageShown = false
 
     enum DosageResolution: String, CaseIterable {
@@ -37,13 +38,22 @@ struct DosageStatScreen: View {
         case week = "W"
         case month = "M"
         case year = "Y"
+
+        var component: Calendar.Component {
+            switch self {
+            case .day: .day
+            case .week: .weekOfYear
+            case .month: .month
+            case .year: .year
+            }
+        }
     }
 
     @State private var selectedResolution = DosageResolution.week
 
     var body: some View {
         List {
-            if doAllIngestionsHaveSameUnitEqualToSubstance {
+            if ingestions.allSatisfy({ $0.pureUnits == unit }) {
                 Section {
                     Picker("Resolution", selection: $selectedResolution) {
                         ForEach(DosageResolution.allCases, id: \.rawValue) { resolution in
@@ -52,7 +62,7 @@ struct DosageStatScreen: View {
                     }.pickerStyle(.segmented)
 
                     DosageStatChart(
-                        data: currentDosageData,
+                        data: dosages(per: selectedResolution.component),
                         resolution: selectedResolution,
                         substanceName: substanceName,
                         substanceColor: substanceColor,
@@ -65,7 +75,7 @@ struct DosageStatScreen: View {
                     Toggle("Show Average", isOn: $isAverageShown).tint(.accentColor)
                 }
 
-                if areThereUnknownDoses {
+                if ingestions.contains(where: { $0.doseUnwrapped == nil }) {
                     Section("Estimate unknown doses as") {
                         HStack  {
                             TextField(
@@ -84,52 +94,12 @@ struct DosageStatScreen: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle(substanceName)
-        .onAppear {
-            updateStats()
-        }
-        .onChange(of: ingestions.wrappedValue.count, perform: { _ in
-            updateStats()
-        })
-        .onChange(of: unknownDoseEstimate) { newValue in
-            updateStats()
-        }
     }
 
-    @State private var dosageStat: DosageStat?
-    @State private var areThereUnknownDoses = false
-    @State private var doAllIngestionsHaveSameUnitEqualToSubstance = true
-    private var currentDosageData: [DosagePoint] {
-        guard let stat = dosageStat else { return [] }
-        switch selectedResolution {
-        case .day: return stat.dayDosages
-        case .week: return stat.weekDosages
-        case .month: return stat.monthDosages
-        case .year: return stat.yearDosages
-        }
-    }
-
-    private func updateStats() {
-        doAllIngestionsHaveSameUnitEqualToSubstance = ingestions.wrappedValue.allSatisfy({ ing in
-            ing.pureUnits == unit
-        })
-        areThereUnknownDoses = ingestions.wrappedValue.contains(where: { ing in
-            ing.doseUnwrapped == nil
-        })
-        dosageStat = DosageStat(
-            dayDosages: calculateDosages(for: .day),
-            weekDosages: calculateDosages(for: .weekOfYear),
-            monthDosages: calculateDosages(for: .month),
-            yearDosages: calculateDosages(for: .year))
-    }
-
-    private func calculateDosages(for component: Calendar.Component) -> [DosagePoint] {
-        let ingestions = ingestions.wrappedValue
+    // Total dose per calendar period, with unknown doses counted as the estimate
+    private func dosages(per component: Calendar.Component) -> [DosagePoint] {
         let grouped = Dictionary(grouping: ingestions) { ing in
-            if component == .day {
-                return Calendar.current.startOfDay(for: ing.timeUnwrapped)
-            } else {
-                return Calendar.current.dateInterval(of: component, for: ing.timeUnwrapped)?.start ?? ing.timeUnwrapped
-            }
+            Calendar.current.dateInterval(of: component, for: ing.timeUnwrapped)?.start ?? ing.timeUnwrapped
         }
         return grouped.map { (date, ingestions) in
             let totalDose = ingestions.map { $0.pureSubstanceDose ?? unknownDoseEstimate }.reduce(0, +)
