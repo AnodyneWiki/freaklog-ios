@@ -90,9 +90,10 @@ enum InteractionChecker {
         return lists.first { matches(extendAndCleanInteractions(interactions: $0.1)) }?.0
     }
 
+    // Names like DOx, 2C-T-x, 25x-NBOMe or 5-MeO-xxT stand for a family: each x is one or more characters
     static func hasXAndMatches(wordWithX: String, matchWith unchangedWord: String) -> Bool {
         guard wordWithX.contains("x") else { return false }
-        let modifiedPattern = "^" + wordWithX.replacingOccurrences(of: "x", with: "[\\S]{2}") + "$"
+        let modifiedPattern = "^" + wordWithX.replacingOccurrences(of: "x", with: "[\\S]+") + "$"
         guard let regex = try? NSRegularExpression(pattern: modifiedPattern, options: .caseInsensitive) else { return false }
         let range = NSRange(location: 0, length: unchangedWord.utf16.count)
         return regex.firstMatch(in: unchangedWord, options: [], range: range) != nil

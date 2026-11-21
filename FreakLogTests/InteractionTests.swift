@@ -8,7 +8,10 @@ final class InteractionTests: XCTestCase {
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "MDMA", bName: "Alcohol"), .uncertain)
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "MDMA", bName: "Caffeine"), .uncertain)
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Nothing", bName: "MDMA"), nil)
-        XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Oxycodone", bName: "MDMA"), nil)
+        // Oxycodone lists stimulants as uncertain and MDMA is one
+        XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Oxycodone", bName: "MDMA"), .uncertain)
+        XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "MDMA", bName: "25I-NBOMe"), .unsafe)
+        XCTAssertTrue(InteractionChecker.hasXAndMatches(wordWithX: "5-MeO-xxT", matchWith: "5-MeO-DMT"))
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Amphetamine", bName: "Dextromethorphan"), .unsafe)
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Amphetamine", bName: "DOM"), .unsafe)
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "Heroin", bName: "Cocaine"), .dangerous)
