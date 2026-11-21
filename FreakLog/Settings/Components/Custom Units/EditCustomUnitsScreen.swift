@@ -149,19 +149,16 @@ struct EditCustomUnitsScreenContent: View {
                 )
             }.listRowSeparator(.hidden)
 
-            let isUnknownDose = dosePerUnit == nil
             if let originalUnit = roaDose?.units, !unit.isEmpty {
                 Section("Ingestion Preview") {
                     IngestionRowPreview(
                         substanceName: substanceName,
                         administrationRoute: administrationRoute,
-                        multiplier: 3,
                         isEstimate: isEstimate,
-                        isUnknownDosePerUnit: isUnknownDose,
                         unit: unit,
                         unitPlural: unitPlural,
-                        calculatedDose: calculatedDose,
-                        calculatedDoseStandardDeviation: calculatedDoseStandardDeviation,
+                        dosePerUnit: dosePerUnit,
+                        dosePerUnitStandardDeviation: estimatedDoseStandardDeviation,
                         originalUnit: originalUnit,
                         name: name)
                 }
@@ -203,17 +200,6 @@ struct EditCustomUnitsScreenContent: View {
         .navigationTitle("Edit Unit")
     }
 
-    private let multiplier: Double = 3
-
-    private var calculatedDose: Double? {
-        guard let dosePerUnit else { return nil }
-        return multiplier * dosePerUnit
-    }
-
-    private var calculatedDoseStandardDeviation: Double? {
-        guard let estimatedDoseStandardDeviation else { return nil }
-        return multiplier * estimatedDoseStandardDeviation
-    }
 }
 
 #Preview {

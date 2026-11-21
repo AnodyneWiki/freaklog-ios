@@ -165,23 +165,20 @@ struct FinishCustomUnitsScreen: View {
                     mean: dosePerUnit
                 )
             }.listRowSeparator(.hidden)
-            let isUnknownDosePerUnit = dosePerUnit == nil
             if let originalUnit = roaDose?.units, !unit.isEmpty {
                 Section("Ingestion Preview") {
                     IngestionRowPreview(
                         substanceName: substanceName,
                         administrationRoute: arguments.administrationRoute,
-                        multiplier: 3,
                         isEstimate: isEstimate,
-                        isUnknownDosePerUnit: isUnknownDosePerUnit,
                         unit: unit,
                         unitPlural: unitPlural,
-                        calculatedDose: calculatedDose,
-                        calculatedDoseStandardDeviation: calculatedDoseStandardDeviation,
+                        dosePerUnit: dosePerUnit,
+                        dosePerUnitStandardDeviation: estimatedDoseStandardDeviation,
                         originalUnit: originalUnit,
                         name: name)
                 }
-                if !isUnknownDosePerUnit {
+                if dosePerUnit != nil {
                     Section("Dose Picker Preview") {
                         VStack(alignment: .leading, spacing: 5) {
                             if !name.isEmpty {
@@ -228,8 +225,6 @@ struct FinishCustomUnitsScreen: View {
 
     @FocusState private var focusedField: Field?
 
-    private let multiplier: Double = 3
-
     private var roaDose: RoaDose? {
         switch arguments {
         case .substance(let substance, let administrationRoute):
@@ -247,15 +242,6 @@ struct FinishCustomUnitsScreen: View {
         }
     }
 
-    private var calculatedDose: Double? {
-        guard let dosePerUnit else { return nil }
-        return multiplier * dosePerUnit
-    }
-
-    private var calculatedDoseStandardDeviation: Double? {
-        guard let estimatedDoseStandardDeviation else { return nil }
-        return multiplier * estimatedDoseStandardDeviation
-    }
 
     private func onDoneTap() {
         let context = PersistenceController.shared.viewContext
@@ -278,46 +264,35 @@ struct FinishCustomUnitsScreen: View {
     }
 }
 
+// How an ingestion of a few of the new units will read
 struct IngestionRowPreview: View {
-
     let substanceName: String
     let administrationRoute: AdministrationRoute
-    let multiplier: Double
     let isEstimate: Bool
-    let isUnknownDosePerUnit: Bool
     let unit: String
     let unitPlural: String
-    let calculatedDose: Double?
-    let calculatedDoseStandardDeviation: Double?
+    let dosePerUnit: Double?
+    let dosePerUnitStandardDeviation: Double?
     let originalUnit: String
     let name: String
 
+    private let multiplier: Double = 3
 
     var body: some View {
         VStack(alignment: .leading) {
             Text("\(substanceName), \(name)").font(.headline)
-            let pluralizableUnit = PluralizableUnit(singular: unit, plural: unitPlural)
-            if isUnknownDosePerUnit {
-                Text("\(multiplier.with(pluralizableUnit: pluralizableUnit)) \(administrationRoute.rawValue)")
+            let units = multiplier.with(pluralizableUnit: PluralizableUnit(singular: unit, plural: unitPlural))
+            if let dosePerUnit {
+                // The number of units is exact, so the deviation scales with it
+                let dose = (multiplier * dosePerUnit).doseDescription(
+                    units: originalUnit,
+                    isEstimate: isEstimate,
+                    standardDeviation: dosePerUnitStandardDeviation.map { multiplier * $0 },
+                    rounded: true
+                )
+                Text(units) + Text(" = \(dose) \(administrationRoute.rawValue)").foregroundColor(.secondary)
             } else {
-                if isEstimate {
-                    if let calculatedDoseStandardDeviation {
-                        Text(multiplier.with(pluralizableUnit: pluralizableUnit)) +
-                        Text(
-                            " = \(calculatedDose?.asRoundedReadableString ?? "...")±\(calculatedDoseStandardDeviation.asRoundedReadableString) \(originalUnit) \(administrationRoute.rawValue)")
-                        .foregroundColor(.secondary)
-                    } else {
-                        Text(multiplier.with(pluralizableUnit: pluralizableUnit)) +
-                        Text(
-                            " = ~\(calculatedDose?.asRoundedReadableString ?? "...") \(originalUnit) \(administrationRoute.rawValue)")
-                        .foregroundColor(.secondary)
-                    }
-                } else {
-                    Text(multiplier.with(pluralizableUnit: pluralizableUnit)) +
-                    Text(
-                        " = \(calculatedDose?.asRoundedReadableString ?? "...") \(originalUnit) \(administrationRoute.rawValue)")
-                    .foregroundColor(.secondary)
-                }
+                Text("\(units) \(administrationRoute.rawValue)")
             }
         }
     }
