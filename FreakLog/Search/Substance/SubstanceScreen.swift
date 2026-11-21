@@ -84,6 +84,7 @@ struct SubstanceScreen: View {
           }
         }
       }
+      AnodyneSummarySection(substanceName: substance.name, otherNames: substance.commonNames)
     }
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {

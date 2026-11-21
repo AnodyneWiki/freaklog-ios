@@ -19,6 +19,12 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             List {
                 DosesSection(substance: substance)
             }.navigationTitle("\(substance.displayName) Dosage")
+        case let .anodyneSubstance(title):
+            AnodyneSubstanceScreen(title: title)
+        case let .anodyneSearch(query):
+            AnodyneSearchScreen(searchText: query)
+        case .anodyneSettings:
+            AnodyneSettingsScreen()
         case .timelineInfo:
             List {
                 TimelineExplanationTexts()

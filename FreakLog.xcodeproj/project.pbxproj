@@ -62,6 +62,7 @@
 		A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
 		A15CA2FF2EFB73E100D90023 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
 		A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
+		C1956B6251662DDF29B7C70C /* AnodyneSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */; };
 		B5672A334625484DBBE8AC3D /* LeaderboardPayloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76A692DCC474D7C81BB255B /* LeaderboardPayloads.swift */; };
 		CB11B0B7985B41CD973C133B /* LeaderboardSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76C3410801D4B9BA7EFF787 /* LeaderboardSyncManager.swift */; };
 		E7C29FF07CC94365960904B9 /* LeaderboardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A554F3D3C12E4021B1E4F7E1 /* LeaderboardClient.swift */; };
@@ -288,6 +289,9 @@
 		EAA9C37D2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */; };
 		EAA9C3812A5478F700869E5A /* AddToleranceIngestionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3802A5478F700869E5A /* AddToleranceIngestionScreen.swift */; };
 		EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C3822A5479AE00869E5A /* SearchLogic.swift */; };
+		298DBBCBA14095A97B3AD149 /* AnodyneSearchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F79DC89DD8367A341544652 /* AnodyneSearchScreen.swift */; };
+		FF02AA888BE250146C0BA0E0 /* AnodyneSubstanceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 295F4F8F90D982C03CA4E11C /* AnodyneSubstanceScreen.swift */; };
+		A40A074E2575BA7FC2322508 /* AnodyneSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */; };
 		3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */; };
 		C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */; };
 		EAA9C38C2A54825C00869E5A /* ChooseDateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */; };
@@ -484,6 +488,7 @@
 		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
 		A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViewOption.swift; sourceTree = "<group>"; };
 		A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSettingsScreen.swift; sourceTree = "<group>"; };
+		D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSettingsScreen.swift; sourceTree = "<group>"; };
 		A554F3D3C12E4021B1E4F7E1 /* LeaderboardClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardClient.swift; sourceTree = "<group>"; };
 		A80DA1B239DA4FD485E2B623 /* LeaderboardServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardServer.swift; sourceTree = "<group>"; };
 		B76A692DCC474D7C81BB255B /* LeaderboardPayloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardPayloads.swift; sourceTree = "<group>"; };
@@ -684,6 +689,9 @@
 		EAA9C37C2A51F85500869E5A /* ToleranceChartPreviewDataProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToleranceChartPreviewDataProvider.swift; sourceTree = "<group>"; };
 		EAA9C3802A5478F700869E5A /* AddToleranceIngestionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToleranceIngestionScreen.swift; sourceTree = "<group>"; };
 		EAA9C3822A5479AE00869E5A /* SearchLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchLogic.swift; sourceTree = "<group>"; };
+		1F79DC89DD8367A341544652 /* AnodyneSearchScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSearchScreen.swift; sourceTree = "<group>"; };
+		295F4F8F90D982C03CA4E11C /* AnodyneSubstanceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSubstanceScreen.swift; sourceTree = "<group>"; };
+		EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSections.swift; sourceTree = "<group>"; };
 		9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneClient.swift; sourceTree = "<group>"; };
 		95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSubstance.swift; sourceTree = "<group>"; };
 		EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseDateScreen.swift; sourceTree = "<group>"; };
@@ -1116,6 +1124,9 @@
 				EAB8EF4F2A489DDA00542253 /* SubstanceSearchBarWithFilter.swift */,
 				EACB0C212940888600C605E2 /* SearchSubstanceRow.swift */,
 				EAA9C3822A5479AE00869E5A /* SearchLogic.swift */,
+				1F79DC89DD8367A341544652 /* AnodyneSearchScreen.swift */,
+				295F4F8F90D982C03CA4E11C /* AnodyneSubstanceScreen.swift */,
+				EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */,
 				9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */,
 				95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */,
 			);
@@ -1540,6 +1551,7 @@
 			isa = PBXGroup;
 			children = (
 				A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */,
+				D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */,
 				EA460D202763790C002EF80B /* FAQ */,
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
@@ -2277,6 +2289,9 @@
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,
+				298DBBCBA14095A97B3AD149 /* AnodyneSearchScreen.swift in Sources */,
+				FF02AA888BE250146C0BA0E0 /* AnodyneSubstanceScreen.swift in Sources */,
+				A40A074E2575BA7FC2322508 /* AnodyneSections.swift in Sources */,
 				3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */,
 				C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */,
 				EAA9C3792A50A54E00869E5A /* ToleranceChartOverView.swift in Sources */,
@@ -2308,6 +2323,7 @@
 				EAC4BFFC2B890ADA00293B44 /* ChooseCustomUnitScreen.swift in Sources */,
 				EA1F77512D4CCB7700E7F483 /* FullRangeTimeline.swift in Sources */,
 				A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */,
+				C1956B6251662DDF29B7C70C /* AnodyneSettingsScreen.swift in Sources */,
 				EA968AFD2962C9B000779DD9 /* ActivityManager.swift in Sources */,
 				EAD1D0022B52709500EC0D70 /* CustomUnitsArchiveScreen.swift in Sources */,
 				EA41C6172956C683000DA021 /* InteractionChecker.swift in Sources */,

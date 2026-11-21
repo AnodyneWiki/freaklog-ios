@@ -92,6 +92,9 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.webhookSettings) {
                         Label("Webhooks", systemImage: "network")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.anodyneSettings) {
+                        Label("AnodyneWiki", systemImage: "books.vertical")
+                    }
                     NavigationLink(value: GlobalNavigationDestination.leaderboardServers) {
                         Label("Leaderboard", systemImage: "chart.bar.xaxis")
                     }

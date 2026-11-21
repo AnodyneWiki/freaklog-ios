@@ -8,6 +8,8 @@ enum GlobalNavigationDestination: Hashable {
     case webView(articleURL: URL)
     case webViewInteractions(substanceName: String, articleURL: URL)
     case timelineInfo
+    case anodyneSubstance(title: String)
+    case anodyneSearch(query: String)
 
     // journal tab mainly
     case calendar
@@ -51,4 +53,5 @@ enum GlobalNavigationDestination: Hashable {
     case webhookSettings
     case webhookArchive
     case journalSettings
+    case anodyneSettings
 }

@@ -129,6 +129,11 @@ struct SearchScreen: View {
                 .sheet(isPresented: $isShowingAddCustomSubstance) {
                     AddCustomSubstanceView(searchText: searchText, onAdded: { _ in})
                 }
+                NavigationLink(value: GlobalNavigationDestination.anodyneSearch(query: searchText)) {
+                    Label("Search AnodyneWiki", systemImage: "books.vertical")
+                        .labelStyle(.titleAndIcon)
+                        .font(.headline)
+                }
             }
             .listStyle(.plain)
             .scrollDismissesKeyboard(.interactively)

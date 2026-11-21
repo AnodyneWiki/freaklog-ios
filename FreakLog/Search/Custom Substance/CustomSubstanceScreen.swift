@@ -50,6 +50,8 @@ struct CustomSubstanceScreen: View {
           }
         }
       }
+      AnodyneSummarySection(substanceName: customSubstance.nameUnwrapped)
+        .id(customSubstance.nameUnwrapped)
     }
     .navigationTitle(customSubstance.nameUnwrapped)
     .toolbar {
