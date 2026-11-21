@@ -5,8 +5,13 @@ extension Experience: Comparable {
         lhs.sortDateUnwrapped > rhs.sortDateUnwrapped
     }
 
+    // Single passes instead of sorting, since these are read for every journal row on each render
+    private var ingestionsUnsorted: [Ingestion] {
+        ingestions?.allObjects as? [Ingestion] ?? []
+    }
+
     var sortDateUnwrapped: Date {
-        ingestionsSorted.first?.time ?? sortDate ?? creationDateUnwrapped
+        ingestionsUnsorted.compactMap(\.time).min() ?? sortDate ?? creationDateUnwrapped
     }
 
     var creationDateUnwrapped: Date {
@@ -14,7 +19,7 @@ extension Experience: Comparable {
     }
 
     var location: ExperienceLocation? {
-        ingestionsSorted.first?.location ?? legacyLocation
+        ingestionsUnsorted.min()?.location ?? legacyLocation
     }
 
     var titleUnwrapped: String {
@@ -84,7 +89,7 @@ extension Experience: Comparable {
     var isCurrent: Bool {
         let twelveHours: TimeInterval = 12 * 60 * 60
         let now = Date().timeIntervalSinceReferenceDate
-        if let lastIngestionTime = ingestionsSorted.last?.time,
+        if let lastIngestionTime = ingestionsUnsorted.compactMap(\.time).max(),
            now - lastIngestionTime.timeIntervalSinceReferenceDate < twelveHours {
             return true
         }

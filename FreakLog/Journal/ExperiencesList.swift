@@ -46,9 +46,12 @@ struct ExperiencesList: View {
                 experiencePredicate = orPredicates
             }
         }
-        _fetchedExperiences = FetchRequest<Experience>(
-            sortDescriptors: [NSSortDescriptor(keyPath: \Experience.sortDate, ascending: false)],
-            predicate: experiencePredicate)
+        let request = PersistenceController.experiencesRequest()
+        request.predicate = experiencePredicate
+        // Rows read each experience's ingestions and their colors
+        request.fetchBatchSize = 20
+        request.relationshipKeyPathsForPrefetching = ["ingestions", "ingestions.substanceCompanion"]
+        _fetchedExperiences = FetchRequest(fetchRequest: request)
     }
 
     @FetchRequest var fetchedExperiences: FetchedResults<Experience>
