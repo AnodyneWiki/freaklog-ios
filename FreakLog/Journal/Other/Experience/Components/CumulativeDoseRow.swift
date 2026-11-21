@@ -37,20 +37,15 @@ struct RouteItemView: View {
         HStack {
             let routeText = isEyeOpen ? routeItem.route.rawValue : ""
             if let doseUnwrapped = routeItem.dose {
-                Group {
-                    if routeItem.isEstimate {
-                        if let deviation = routeItem.estimatedDoseStandardDeviation, deviation > 0 {
-                            // 30±5 mg oral
-                            Text("\(doseUnwrapped.asRoundedReadableString)±\(deviation.asRoundedReadableString) \(routeItem.units) ") + Text(routeText).foregroundColor(.secondary)
-                        } else {
-                            // ~30 mg oral
-                            Text("~\(doseUnwrapped.asRoundedReadableString) \(routeItem.units) ") + Text(routeText).foregroundColor(.secondary)
-                        }
-                    } else {
-                        // 30 mg oral
-                        Text("\(doseUnwrapped.asRoundedReadableString) \(routeItem.units) ") + Text(routeText).foregroundColor(.secondary)
-                    }
-                }.multilineTextAlignment(.trailing)
+                // 30±5 mg oral
+                let dose = doseUnwrapped.doseDescription(
+                    units: routeItem.units,
+                    isEstimate: routeItem.isEstimate,
+                    standardDeviation: routeItem.estimatedDoseStandardDeviation,
+                    rounded: true
+                )
+                (Text("\(dose) ") + Text(routeText).foregroundColor(.secondary))
+                    .multilineTextAlignment(.trailing)
             } else {
                 Text("Unknown dose ")  + Text(routeText).foregroundColor(.secondary)
             }

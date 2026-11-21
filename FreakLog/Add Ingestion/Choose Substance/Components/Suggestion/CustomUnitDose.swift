@@ -45,34 +45,27 @@ struct CustomUnitDose: Equatable, Identifiable {
 
     // 20 mg
     var calculatedDoseDescription: String? {
-        if let calculatedDose {
-            if let calculatedStandardDeviation {
-                return "\(calculatedDose.asRoundedReadableString)±\(calculatedStandardDeviation.asRoundedReadableString) \(customUnit.originalUnitUnwrapped)"
-            } else {
-                let description = "\(calculatedDose.asRoundedReadableString) \(customUnit.originalUnitUnwrapped)"
-                if isEstimate || customUnit.isEstimate {
-                    return "~\(description)"
-                } else {
-                    return description
-                }
-            }
-        } else {
-            return nil
-        }
+        calculatedDose?.doseDescription(
+            units: customUnit.originalUnitUnwrapped,
+            isEstimate: isEstimate || customUnit.isEstimate || calculatedStandardDeviation != nil,
+            standardDeviation: calculatedStandardDeviation,
+            rounded: true
+        )
     }
 
     // 2 pills
     var doseDescription: String {
-        let description = dose.with(pluralizableUnit: customUnit.pluralizableUnit)
-        if isEstimate {
-            if let estimatedStandardDeviation {
-                return "\(dose.asRoundedReadableString)±\(estimatedStandardDeviation.asRoundedReadableString) \(dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit))"
-            } else {
-                return "~\(description)"
-            }
-        } else {
-            return description
-        }
+        Self.description(of: dose, isEstimate: isEstimate, standardDeviation: estimatedStandardDeviation, customUnit: customUnit)
+    }
+
+    // A number of custom units, e.g. "2 pills" or "~1 spoon"
+    static func description(of dose: Double, isEstimate: Bool, standardDeviation: Double?, customUnit: CustomUnit) -> String {
+        dose.doseDescription(
+            units: dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit),
+            isEstimate: isEstimate,
+            standardDeviation: standardDeviation,
+            rounded: true
+        )
     }
 
     static func ==(lhs: Self, rhs: Self) -> Bool {

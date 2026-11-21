@@ -74,19 +74,11 @@ extension CustomUnit {
     }
 
     var doseOfOneUnitDescription: String {
-        if let doseUnwrapped {
-            if isEstimate {
-                if let estimatedDoseStandardDeviationUnwrapped {
-                    return "\(doseUnwrapped.formatted())±\(estimatedDoseStandardDeviationUnwrapped.formatted()) \(originalUnitUnwrapped)"
-                } else {
-                    return "~\(doseUnwrapped.formatted()) \(originalUnitUnwrapped)"
-                }
-            } else {
-                return "\(doseUnwrapped.formatted()) \(originalUnitUnwrapped)"
-            }
-        } else {
-            return "Unknown dose"
-        }
+        doseUnwrapped?.doseDescription(
+            units: originalUnitUnwrapped,
+            isEstimate: isEstimate,
+            standardDeviation: estimatedDoseStandardDeviationUnwrapped
+        ) ?? "Unknown dose"
     }
 
     var color: SubstanceColor? {

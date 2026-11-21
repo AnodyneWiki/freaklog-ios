@@ -86,18 +86,12 @@ private struct IngestionRowContent<Content: View>: View {
                     }
                 } else { // not custom unit
                     if let doseUnwrapped = ingestion.doseUnwrapped {
-                        if ingestion.isEstimate {
-                            if let estimatedDoseStandardDeviation = ingestion.estimatedDoseStandardDeviationUnwrapped {
-                                // 20±5 mg insufflated
-                                Text("\(doseUnwrapped.formatted())±\(estimatedDoseStandardDeviation.formatted()) \(ingestion.unitsUnwrapped)") + routeTextWithSpace
-                            } else {
-                                // ~20 mg insufflated
-                                Text("~\(doseUnwrapped.formatted()) \(ingestion.unitsUnwrapped)") + routeTextWithSpace
-                            }
-                        } else {
-                            // 20 mg insufflated
-                            Text("\(doseUnwrapped.formatted()) \(ingestion.unitsUnwrapped)") + routeTextWithSpace
-                        }
+                        // 20±5 mg insufflated
+                        Text(doseUnwrapped.doseDescription(
+                            units: ingestion.unitsUnwrapped,
+                            isEstimate: ingestion.isEstimate,
+                            standardDeviation: ingestion.estimatedDoseStandardDeviationUnwrapped
+                        )) + routeTextWithSpace
                     } else {
                         // Insufflated
                         Text(routeText.localizedCapitalized).foregroundColor(.secondary)

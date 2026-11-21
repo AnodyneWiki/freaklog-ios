@@ -15,18 +15,6 @@ struct RegularDoseAndUnit: Equatable, Identifiable {
     let estimatedDoseStandardDeviation: Double?
 
     var doseDescription: String? {
-        if let dose {
-            if isEstimate {
-                if let estimatedDoseStandardDeviation {
-                    return "\(dose.formatted())±\(estimatedDoseStandardDeviation.formatted()) \(units)"
-                } else {
-                    return "~\(dose.formatted()) \(units)"
-                }
-            } else {
-                return "\(dose.formatted()) \(units)"
-            }
-        } else {
-            return nil
-        }
+        dose?.doseDescription(units: units, isEstimate: isEstimate, standardDeviation: estimatedDoseStandardDeviation)
     }
 }

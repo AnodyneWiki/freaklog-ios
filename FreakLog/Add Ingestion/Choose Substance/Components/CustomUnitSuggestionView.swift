@@ -67,18 +67,14 @@ private struct OneCustomUnitDoseSuggestionView: View {
 
     var doseDescription: String {
         if let dose = customUnitDoseSuggestions.dose {
-            let description = dose.with(pluralizableUnit: customUnit.pluralizableUnit)
-            if customUnitDoseSuggestions.isEstimate {
-                if let estimatedStandardDeviation = customUnitDoseSuggestions.estimatedStandardDeviation {
-                    return "\(dose.asRoundedReadableString)±\(estimatedStandardDeviation.asRoundedReadableString) \(dose.justUnit(pluralizableUnit: customUnit.pluralizableUnit))"
-                } else {
-                    return "~\(description)"
-                }
-            } else {
-                return description
-            }
+            CustomUnitDose.description(
+                of: dose,
+                isEstimate: customUnitDoseSuggestions.isEstimate,
+                standardDeviation: customUnitDoseSuggestions.estimatedStandardDeviation,
+                customUnit: customUnit
+            )
         } else {
-            return "Unknown"
+            "Unknown"
         }
     }
 }
