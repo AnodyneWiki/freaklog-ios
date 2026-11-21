@@ -45,7 +45,8 @@ struct JournalScreen: View {
                     )
                 } else {
                     AllIngestionsView(
-                        searchText: $searchText,
+                        searchText: searchText,
+                        isFavoriteFilterEnabled: isFavoriteFilterEnabled,
                         timeDisplayStyle: timeDisplayStyle
                     )
                 }
@@ -59,7 +60,7 @@ struct JournalScreen: View {
                 experienceSearchText = searchText
             }
             .modify {
-                let prompt = selectedTab == .experiences ? "Search experiences" : "Search"
+                let prompt = selectedTab == .experiences ? "Search experiences" : "Search ingestions"
                 if isSearchPresented {
                     if #available(iOS 17.0, *) {
                         $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .automatic, prompt: prompt)
@@ -72,7 +73,9 @@ struct JournalScreen: View {
             }
             .disableAutocorrection(true)
         }
+        // Both tabs share one inline bar, so switching doesn't resize it; the switcher takes the title's place
         .navigationTitle("Journal")
+        .navigationBarTitleDisplayMode(.inline)
         .onChange(of: defaultTab) { _ in
             switchedTab = nil
         }
@@ -89,18 +92,15 @@ struct JournalScreen: View {
                 }
             }
                 
+            // The same buttons in both tabs, so the switcher between them stays in place
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack {
-                    if selectedTab == .experiences {
-                        favoriteButton
+                HStack(spacing: 8) {
+                    Button {
+                        isSearchPresented = true
+                    } label: {
+                        Label("Search", systemImage: "magnifyingglass")
                     }
-                    if !isSearchPresented {
-                        Button {
-                            isSearchPresented = true
-                        } label: {
-                            Label("Search", systemImage: "magnifyingglass")
-                        }
-                    }
+                    favoriteButton
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {

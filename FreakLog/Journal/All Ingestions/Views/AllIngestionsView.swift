@@ -2,7 +2,8 @@ import SwiftUI
 
 struct AllIngestionsView: View {
     @StateObject private var viewModel = AllIngestionsViewModel()
-    @Binding var searchText: String
+    let searchText: String
+    let isFavoriteFilterEnabled: Bool
     var timeDisplayStyle: SaveableTimeDisplayStyle
     
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
@@ -44,6 +45,12 @@ struct AllIngestionsView: View {
                 .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
+        .overlay {
+            if viewModel.sections.isEmpty && viewModel.hasReachedEnd {
+                Text(emptyText)
+                    .foregroundColor(.secondary)
+            }
+        }
         .scrollIndicators(.hidden)
         .environment(\.defaultMinListHeaderHeight, 0)
         .scrollContentBackground(.hidden)
@@ -57,17 +64,31 @@ struct AllIngestionsView: View {
         .onChange(of: searchText) { newValue in
             viewModel.searchText = newValue
         }
+        .onChange(of: isFavoriteFilterEnabled) { newValue in
+            viewModel.isFavoriteFilterEnabled = newValue
+        }
         .onAppear {
             if viewModel.searchText != searchText {
                 viewModel.searchText = searchText
+            }
+            if viewModel.isFavoriteFilterEnabled != isFavoriteFilterEnabled {
+                viewModel.isFavoriteFilterEnabled = isFavoriteFilterEnabled
             }
             viewModel.updateTimelineIngestions()
         }
         .onChange(of: dynamicRange) { _ in
             viewModel.updateTimelineIngestions()
         }
-        .navigationTitle("")
-        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    // The same messages as the experience list
+    private var emptyText: String {
+        switch (searchText.isEmpty, isFavoriteFilterEnabled) {
+        case (false, true): "No favorites match the search"
+        case (false, false): "No ingestions match the search"
+        case (true, true): "No ingestions in favorite experiences"
+        case (true, false): "No ingestions yet"
+        }
     }
 
     // In the general list, auto means regular time for the timeline

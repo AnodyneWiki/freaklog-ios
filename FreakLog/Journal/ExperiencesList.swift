@@ -1,10 +1,12 @@
 import SwiftUI
 
 struct ExperiencesList: View {
+    let searchText: String
     let isFavoriteFilterEnabled: Bool
     let timeDisplayStyle: SaveableTimeDisplayStyle
 
     init(searchText: String, isFavoriteFilterEnabled: Bool, timeDisplayStyle: SaveableTimeDisplayStyle) {
+        self.searchText = searchText
         self.isFavoriteFilterEnabled = isFavoriteFilterEnabled
         self.timeDisplayStyle = timeDisplayStyle
         let predicateFavorite = NSPredicate(
@@ -64,8 +66,6 @@ struct ExperiencesList: View {
 
     @FetchRequest var fetchedExperiences: FetchedResults<Experience>
 
-    @Environment(\.isSearching) private var isSearching
-
     var body: some View {
         ZStack {
             List(fetchedExperiences) { experience in
@@ -73,17 +73,19 @@ struct ExperiencesList: View {
             }
             .listStyle(.plain)
             if fetchedExperiences.isEmpty {
-                if isSearching {
-                    Text("No experiences match the search")
-                        .foregroundColor(.secondary)
-                } else if isFavoriteFilterEnabled {
-                    Text("No favorites match the search")
-                        .foregroundColor(.secondary)
-                } else {
-                    Text("No ingestions yet")
-                        .foregroundColor(.secondary)
-                }
+                Text(emptyText)
+                    .foregroundColor(.secondary)
             }
+        }
+    }
+
+    // The same messages as the ingestion list
+    private var emptyText: String {
+        switch (searchText.isEmpty, isFavoriteFilterEnabled) {
+        case (false, true): "No favorites match the search"
+        case (false, false): "No experiences match the search"
+        case (true, true): "No favorite experiences yet"
+        case (true, false): "No ingestions yet"
         }
     }
 }

@@ -11,6 +11,8 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     @Published private(set) var timelineIngestions: [Ingestion] = []
     @Published private(set) var hasReachedEnd = false
     @Published var searchText: String = ""
+    // Only ingestions of experiences marked as favorite, like the favorite filter of the experience list
+    @Published var isFavoriteFilterEnabled = false
 
     // MARK: - Private Properties
     
@@ -110,6 +112,15 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
                 self?.resetAndFetch()
             }
             .store(in: &cancellables)
+        // Published values reach subscribers before they are stored, so the refetch waits a run loop turn
+        $isFavoriteFilterEnabled
+            .dropFirst()
+            .removeDuplicates()
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.resetAndFetch()
+            }
+            .store(in: &cancellables)
     }
 
     private func setupFetchedResultsController() {
@@ -138,8 +149,12 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
 
     private func createFetchRequest() -> NSFetchRequest<Ingestion> {
         let request = PersistenceController.ingestionsRequest()
+        var predicates: [NSPredicate] = []
+        if isFavoriteFilterEnabled {
+            predicates.append(NSPredicate(format: "experience.isFavorite == YES"))
+        }
         if !searchText.isEmpty {
-            request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            predicates.append(NSCompoundPredicate(orPredicateWithSubpredicates: [
                 NSPredicate(format: "substanceName CONTAINS[cd] %@", searchText),
                 NSPredicate(
                     format: "substanceName IN %@",
@@ -147,7 +162,10 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
                 ),
                 NSPredicate(format: "note CONTAINS[cd] %@", searchText),
                 NSPredicate(format: "consumerName CONTAINS[cd] %@", searchText),
-            ])
+            ]))
+        }
+        if !predicates.isEmpty {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
         }
         return request
     }
