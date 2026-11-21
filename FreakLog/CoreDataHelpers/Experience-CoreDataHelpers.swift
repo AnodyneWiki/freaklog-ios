@@ -120,6 +120,14 @@ extension Experience: Comparable {
         }.uniqued()
     }
 
+    // An ingestion added to an experience whose last ingestion is over 20 hours ago starts at that time instead of now
+    var startTimeForAddedIngestion: Date? {
+        guard let lastTime = ingestionsUnsorted.compactMap(\.time).max(), lastTime.distance(to: .now) > 20 * 60 * 60 else {
+            return nil
+        }
+        return lastTime
+    }
+
     var isCurrent: Bool {
         let twelveHours: TimeInterval = 12 * 60 * 60
         let now = Date().timeIntervalSinceReferenceDate

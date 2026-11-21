@@ -333,8 +333,7 @@ struct EditIngestionContent: View {
     }
 
     private func addIngestionAtSameTime() {
-        UserDefaults.standard.set(time.timeIntervalSince1970, forKey: PersistenceController.clonedIngestionTimeKey)
-        Navigator.shared.showAddIngestionFullScreenCover()
+        Navigator.shared.showAddIngestionFullScreenCover(startingAt: time)
     }
 }
 

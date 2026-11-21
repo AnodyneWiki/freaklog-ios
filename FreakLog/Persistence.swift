@@ -24,8 +24,6 @@ struct PersistenceController {
     static let areRedosesDrawnIndividuallyKey = "areRedosesDrawnIndividually"
     static let shouldAutomaticallyStartLiveActivityKey = "shouldAutomaticallyStartLiveActivity"
     static let independentSubstanceHeightKey = "independentSubstanceHeight"
-    static let lastIngestionTimeOfExperienceWhereAddIngestionTappedKey = "lastIngestionTimeOfExperienceWhereAddIngestionTapped"
-    static let clonedIngestionTimeKey = "clonedIngestionTimeKey"
     static let fabButtonPositionKey = "fabButtonPosition"
     static let isICloudSyncEnabledKey = "isICloudSyncEnabled"
     static let dynamicExperienceRangeHoursKey = "dynamicExperienceRangeHours"

@@ -11,6 +11,8 @@ class Navigator: ObservableObject {
     @Published var settingsTabPath = NavigationPath()
 
     @Published var isShowingAddIngestionSheet = false
+    // The time a new ingestion starts at, handed to the add ingestion screens; nil is now
+    @Published private(set) var addIngestionStartTime: Date?
 
     @Published var selectedTab: Tab = .journal
 
@@ -93,7 +95,19 @@ class Navigator: ObservableObject {
         showAddIngestionFullScreenCover()
     }
 
-    func showAddIngestionFullScreenCover() {
+    func showAddIngestionFullScreenCover(startingAt startTime: Date? = nil) {
+        addIngestionStartTime = startTime
         isShowingAddIngestionSheet.toggle()
+    }
+}
+
+private struct AddIngestionStartTimeKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+
+extension EnvironmentValues {
+    var addIngestionStartTime: Date? {
+        get { self[AddIngestionStartTimeKey.self] }
+        set { self[AddIngestionStartTimeKey.self] = newValue }
     }
 }

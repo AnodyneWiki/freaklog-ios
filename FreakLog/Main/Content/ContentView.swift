@@ -47,13 +47,12 @@ struct ContentScreen: View {
             }
         }
         .fullScreenCover(isPresented: $navigator.isShowingAddIngestionSheet, onDismiss: {
-            UserDefaults.standard.set(nil, forKey: PersistenceController.lastIngestionTimeOfExperienceWhereAddIngestionTappedKey)
-            UserDefaults.standard.set(nil, forKey: PersistenceController.clonedIngestionTimeKey)
             maybeRequestAppRating()
         }) {
             AuthenticatorWrapper(authenticator: authenticator) {
                 ChooseSubstanceScreen()
             }
+            .environment(\.addIngestionStartTime, navigator.addIngestionStartTime)
         }
     }
 

@@ -51,8 +51,8 @@ struct ExperienceScreen: View {
     }
 
     private func addIngestion() {
-        UserDefaults.standard.set(experience.ingestionsSorted.last?.time?.timeIntervalSince1970, forKey: PersistenceController.lastIngestionTimeOfExperienceWhereAddIngestionTappedKey)
-        Navigator.shared.showAddIngestionFullScreenCover() // can't use Navigator as environment object because for some reason this messes up the layout of this screen
+        // can't use Navigator as environment object because for some reason this messes up the layout of this screen
+        Navigator.shared.showAddIngestionFullScreenCover(startingAt: experience.startTimeForAddedIngestion)
     }
 
 
