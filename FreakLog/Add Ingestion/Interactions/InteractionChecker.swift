@@ -31,8 +31,27 @@ enum InteractionChecker {
         }
     }
 
+    // Results only depend on the bundled substance data and are symmetric, so they are cached per pair
     static func getInteractionTypeBetween(aName: String, bName: String) -> InteractionType? {
         guard aName != bName else { return nil }
+        let key = aName < bName ? "\(aName)\u{0}\(bName)" : "\(bName)\u{0}\(aName)"
+        cacheLock.lock()
+        if let cached = cache[key] {
+            cacheLock.unlock()
+            return cached
+        }
+        cacheLock.unlock()
+        let interactionType = computeInteractionTypeBetween(aName: aName, bName: bName)
+        cacheLock.lock()
+        cache[key] = .some(interactionType)
+        cacheLock.unlock()
+        return interactionType
+    }
+
+    private static let cacheLock = NSLock()
+    nonisolated(unsafe) private static var cache: [String: InteractionType?] = [:]
+
+    private static func computeInteractionTypeBetween(aName: String, bName: String) -> InteractionType? {
         let interactionFromAToB = getInteraction(fromName: aName, toName: bName)
         let interactionFromBToA = getInteraction(fromName: bName, toName: aName)
         if let interactionFromAToB, let interactionFromBToA {
