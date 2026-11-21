@@ -15,7 +15,8 @@ struct JournalFile: FileDocument, Codable {
         experiences: [Experience],
         customSubstances: [CustomSubstance],
         customUnits: [CustomUnit],
-        substanceOverrideRoas: [CustomRoa] = []
+        substanceOverrideRoas: [CustomRoa] = [],
+        substanceOverrides: [SubstanceOverride] = []
     ) {
         self.experiences = experiences.map(ExperienceCodable.init)
         // One color for each substance that was taken
@@ -26,7 +27,7 @@ struct JournalFile: FileDocument, Codable {
         }
         self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
         self.customUnits = customUnits.map(CustomUnitCodable.init)
-        substanceDataOverrides = SubstanceDataOverrideCodable.grouped(substanceOverrideRoas)
+        substanceDataOverrides = SubstanceDataOverrideCodable.grouped(substanceOverrideRoas, overrides: substanceOverrides)
     }
 
     // Inserts everything in the file. The caller clears the journal before and saves after.

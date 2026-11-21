@@ -52,7 +52,19 @@ final class JournalFileTests: XCTestCase {
 
         rating.time = nil
 
-        let file = JournalFile(experiences: [experience], customSubstances: [customSubstance], customUnits: [unit])
+        let override = SubstanceOverride(context: source)
+        override.substanceName = "Coffee"
+        override.categoryList = ["stimulant"]
+        let pwOverride = SubstanceOverride(context: source)
+        pwOverride.substanceName = "Ketamine"
+        pwOverride.displayName = "K"
+
+        let file = JournalFile(
+            experiences: [experience],
+            customSubstances: [customSubstance],
+            customUnits: [unit],
+            substanceOverrides: [override, pwOverride]
+        )
         let decoded = try JSONDecoder().decode(JournalFile.self, from: JSONEncoder().encode(file))
         let target = PersistenceController(inMemory: true).viewContext
         decoded.insert(into: target)
@@ -75,5 +87,9 @@ final class JournalFileTests: XCTestCase {
         let importedSubstance = try XCTUnwrap(target.fetch(CustomSubstance.fetchRequest()).first)
         XCTAssertEqual(importedSubstance.units, "cups")
         XCTAssertEqual(importedSubstance.explanation, "Bitter")
+        let importedOverrides = try target.fetch(SubstanceOverride.fetchRequest())
+        XCTAssertEqual(importedOverrides.first { $0.substanceName == "Coffee" }?.categoryList, ["stimulant"])
+        XCTAssertEqual(importedOverrides.first { $0.substanceName == "Ketamine" }?.displayName, "K")
+        XCTAssertNil(importedOverrides.first { $0.substanceName == "Ketamine" }?.categoryList)
     }
 }

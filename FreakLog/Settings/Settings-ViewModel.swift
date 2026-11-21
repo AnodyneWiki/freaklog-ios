@@ -14,7 +14,8 @@ extension SettingsScreen {
                 experiences: pc.getAllExperiences(),
                 customSubstances: pc.getAllCustomSubstances(),
                 customUnits: pc.getAllCustomUnits(),
-                substanceOverrideRoas: pc.getAllStandaloneCustomRoas())
+                substanceOverrideRoas: pc.getAllStandaloneCustomRoas(),
+                substanceOverrides: (try? pc.viewContext.fetch(PersistenceController.substanceOverridesRequest())) ?? [])
             isExporting = true
         }
 
