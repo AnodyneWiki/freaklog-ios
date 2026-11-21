@@ -13,6 +13,8 @@ struct EditCustomRoaView: View {
   @State private var durationUnit = DurationInputUnit.minutes
   @State private var existingRoa: CustomRoa?
   @State private var saveTask: Task<Void, Never>?
+  @State private var copySources: [CopySource] = []
+  @State private var pendingCopy: CopySource?
 
   init(substanceName: String, route: AdministrationRoute, customSubstance: CustomSubstance? = nil) {
     self.substanceName = substanceName
@@ -50,6 +52,9 @@ struct EditCustomRoaView: View {
           }
         }
       }
+      if !copySources.isEmpty {
+        copySection
+      }
       doseSection
       durationSection
       if existingRoa != nil {
@@ -66,6 +71,38 @@ struct EditCustomRoaView: View {
     .navigationTitle(route.rawValue.localizedCapitalized)
     .onAppear(perform: load)
     .onChange(of: values) { _ in saveDebounced() }
+    .confirmationDialog(
+      "Replace the data of this route?",
+      isPresented: Binding(get: { pendingCopy != nil }, set: { if !$0 { pendingCopy = nil } }),
+      titleVisibility: .visible,
+      presenting: pendingCopy
+    ) { source in
+      Button("Copy \(source.route.rawValue.localizedCapitalized) Data", role: .destructive) { copy(source) }
+    } message: { source in
+      Text("The dose and duration entered here are replaced with those of \(source.route.rawValue).")
+    }
+  }
+
+  // MARK: - Copy Section
+
+  private var copySection: some View {
+    Section {
+      Menu {
+        ForEach(copySources) { source in
+          Button(source.title) {
+            if values.isEmpty {
+              copy(source)
+            } else {
+              pendingCopy = source
+            }
+          }
+        }
+      } label: {
+        Label("Copy from Another Route", systemImage: "doc.on.doc")
+      }
+    } footer: {
+      Text("Start from the dose and duration of another route, then adjust them for this one.")
+    }
   }
 
   // MARK: - Dose Section
@@ -183,6 +220,22 @@ struct EditCustomRoaView: View {
     values = existingRoa?.values ?? baseline
     durationUnit = DurationInputUnit.suggested(for: values)
     fillText()
+    copySources = AdministrationRoute.allCases.filter { $0 != route }.compactMap { otherRoute in
+      let customValues = PersistenceController.shared.getCustomRoa(for: substanceName, route: otherRoute)?.values
+      let otherValues = customValues
+        ?? CustomRoaCodable.psychonautWikiValues(for: customSubstance == nil ? substanceName : nil, route: otherRoute)
+      guard !otherValues.isEmpty else { return nil }
+      return CopySource(route: otherRoute, values: otherValues, isCustom: customValues != nil)
+    }
+  }
+
+  // Takes over the other route's values as they are; saving happens as for any edit
+  private func copy(_ source: CopySource) {
+    var copied = source.values
+    copied.administrationRoute = route
+    values = copied
+    durationUnit = DurationInputUnit.suggested(for: values)
+    fillText()
   }
 
   // Rebuilds the typed text from `values`, e.g. after loading or switching the duration unit.
@@ -227,6 +280,19 @@ struct EditCustomRoaView: View {
     values.apply(to: target)
     try? context.save()
     existingRoa = target
+  }
+}
+
+// Another route's dose and duration, from the user's data or PsychonautWiki, to copy into the edited route
+private struct CopySource: Identifiable {
+  let route: AdministrationRoute
+  let values: CustomRoaCodable
+  let isCustom: Bool
+
+  var id: AdministrationRoute { route }
+
+  var title: String {
+    "\(route.rawValue.localizedCapitalized) (\(isCustom ? "your data" : "PsychonautWiki"))"
   }
 }
 
