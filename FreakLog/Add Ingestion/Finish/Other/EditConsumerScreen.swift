@@ -22,13 +22,9 @@ struct EditConsumerScreen: View {
         )
         .onAppear {
             let sortedIngestions = PersistenceController.shared.getRecentIngestions(limit: 300)
-            consumerNamesInOrder = sortedIngestions.compactMap { ing in
-                if let consumerName = ing.consumerName, !consumerName.trimmingCharacters(in: .whitespaces).isEmpty {
-                    return consumerName
-                } else {
-                    return nil
-                }
-            }.uniqued()
+            consumerNamesInOrder = sortedIngestions
+                .compactMap { Ingestion.storedConsumerName($0.consumerNameUnwrapped) }
+                .uniqued()
         }
     }
 }

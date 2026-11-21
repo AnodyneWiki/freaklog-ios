@@ -13,9 +13,6 @@ extension Ingestion: Comparable {
         note ?? ""
     }
 
-    var locationUnwrapped: ExperienceLocation? {
-        location
-    }
 
     var substanceNameUnwrapped: String {
         substanceName ?? "Unknown"
@@ -35,7 +32,27 @@ extension Ingestion: Comparable {
 
     // The user's own ingestion. Whitespace-only names also count as the user.
     var isMine: Bool {
-        consumerNameUnwrapped.trimmingCharacters(in: .whitespaces).isEmpty
+        Self.storedConsumerName(consumerNameUnwrapped) == nil
+    }
+
+    // What to store for an entered consumer name: nil when it means the user themselves.
+    static func storedConsumerName(_ name: String) -> String? {
+        name.trimmingCharacters(in: .whitespaces).isEmpty ? nil : name
+    }
+
+    // Inserts, updates or removes the ingestion's location to match the picked one.
+    func setLocation(_ newLocation: Location?) {
+        guard let context = managedObjectContext else { return }
+        if let newLocation {
+            if let location {
+                location.update(from: newLocation)
+            } else {
+                location = ExperienceLocation.make(from: newLocation, in: context)
+            }
+        } else if let location {
+            context.delete(location)
+            self.location = nil
+        }
     }
 
     var doseUnwrapped: Double? {

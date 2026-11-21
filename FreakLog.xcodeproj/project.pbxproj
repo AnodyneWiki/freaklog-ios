@@ -300,6 +300,7 @@
 		EAB794722D017E8600ED37C8 /* IngestionRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB794712D017E8600ED37C8 /* IngestionRange.swift */; };
 		EAB794732D017E8600ED37C8 /* IngestionRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB794712D017E8600ED37C8 /* IngestionRange.swift */; };
 		EAB794752D02DA9B00ED37C8 /* TimePointOrRangePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */; };
+		C7B4BB7711C6004014A6FE17 /* IngestionDetailRows.swift in Sources */ = {isa = PBXBuildFile; fileRef = A12FE4E9EC343986EE9056B2 /* IngestionDetailRows.swift */; };
 		EAB8EF502A489DDA00542253 /* SubstanceSearchBarWithFilter.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAB8EF4F2A489DDA00542253 /* SubstanceSearchBarWithFilter.swift */; };
 		EABD91FD294105830073303A /* TimelineModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FC294105830073303A /* TimelineModel.swift */; };
 		EABD92002941C3740073303A /* AxisDrawable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EABD91FF2941C3740073303A /* AxisDrawable.swift */; };
@@ -685,6 +686,7 @@
 		EAB7946E2D017B1200ED37C8 /* TimeRangeDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRangeDrawable.swift; sourceTree = "<group>"; };
 		EAB794712D017E8600ED37C8 /* IngestionRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionRange.swift; sourceTree = "<group>"; };
 		EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimePointOrRangePicker.swift; sourceTree = "<group>"; };
+		A12FE4E9EC343986EE9056B2 /* IngestionDetailRows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionDetailRows.swift; sourceTree = "<group>"; };
 		EAB8EF4F2A489DDA00542253 /* SubstanceSearchBarWithFilter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceSearchBarWithFilter.swift; sourceTree = "<group>"; };
 		EABD91FC294105830073303A /* TimelineModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineModel.swift; sourceTree = "<group>"; };
 		EABD91FF2941C3740073303A /* AxisDrawable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AxisDrawable.swift; sourceTree = "<group>"; };
@@ -966,6 +968,7 @@
 			children = (
 				EAE471A626CBA664009FB0EC /* FinishIngestionScreen.swift */,
 				EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */,
+				A12FE4E9EC343986EE9056B2 /* IngestionDetailRows.swift */,
 				EAC4BFFD2B890DF600293B44 /* OnFirstAppearModifier.swift */,
 				EA302E472B381C2F007F113F /* FinishIngestionScreenArguments.swift */,
 				EA418A2C296C00BF00DEA663 /* LocationManager.swift */,
@@ -2050,6 +2053,7 @@
 				A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */,
 				28EAF0C77695839A342FBFCE /* IngestionDeletion.swift in Sources */,
 				EAB794752D02DA9B00ED37C8 /* TimePointOrRangePicker.swift in Sources */,
+				C7B4BB7711C6004014A6FE17 /* IngestionDetailRows.swift in Sources */,
 				EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */,
 				EA302E512B385976007F113F /* CustomChooseDoseScreenArguments.swift in Sources */,
 				EABD921E294278240073303A /* CategorySection.swift in Sources */,

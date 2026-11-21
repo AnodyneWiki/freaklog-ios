@@ -45,7 +45,7 @@ private struct IngestionRowContent<Content: View>: View {
                 HStack {
                     timeText.font(.caption)
                     Spacer()
-                    if let location = ingestion.locationUnwrapped {
+                    if let location = ingestion.location {
                         Group {
                             Text(Image(systemName: "mappin")) + Text(" ") + Text(location.nameUnwrapped)
                         }

@@ -10,17 +10,13 @@ struct AddLocationScreen: View {
             onDone: onDone
         )
         .onAppear {
-            locationManager.selectedLocation = nil
-            locationManager.selectedLocationName = ""
+            locationManager.selectLocation(nil)
         }
     }
 
     private func onDone() {
         if let selectedLocation = locationManager.selectedLocation {
-            let newLocation = ExperienceLocation(context: PersistenceController.shared.viewContext)
-            newLocation.name = selectedLocation.name
-            newLocation.latitude = selectedLocation.latitude ?? 0
-            newLocation.longitude = selectedLocation.longitude ?? 0
+            let newLocation = ExperienceLocation.make(from: selectedLocation, in: PersistenceController.shared.viewContext)
             newLocation.legacyExperience = experience
             PersistenceController.shared.saveViewContext()
         }

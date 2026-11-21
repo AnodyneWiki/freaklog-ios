@@ -10,20 +10,13 @@ struct EditLocationScreen: View {
             onDone: onDone
         )
         .onAppear {
-            locationManager.selectedLocation = Location(
-                name: experienceLocation.nameUnwrapped,
-                longitude: experienceLocation.longitudeUnwrapped,
-                latitude: experienceLocation.latitudeUnwrapped
-            )
-            locationManager.selectedLocationName = experienceLocation.nameUnwrapped
+            locationManager.selectLocation(experienceLocation.asLocation)
         }
     }
 
     private func onDone() {
         if let selectedLocation = locationManager.selectedLocation {
-            experienceLocation.name = selectedLocation.name
-            experienceLocation.latitude = selectedLocation.latitude ?? 0
-            experienceLocation.longitude = selectedLocation.longitude ?? 0
+            experienceLocation.update(from: selectedLocation)
         } else {
             PersistenceController.shared.viewContext.delete(experienceLocation)
         }

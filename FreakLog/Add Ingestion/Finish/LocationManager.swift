@@ -17,9 +17,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         super.init()
         manager.delegate = self
         let sortedLocations = PersistenceController.shared.getRecentLocations(limit: 15)
-        experienceLocations = sortedLocations.map { loc in
-            Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
-        }.uniqued()
+        experienceLocations = sortedLocations.map(\.asLocation).uniqued()
         self.authorizationStatus = manager.authorizationStatus
     }
 
@@ -46,7 +44,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
                 )
                 self.currentLocation = location
                 if self.shouldUpdateSelectedLocation {
-                    self.selectLocation(location: location)
+                    self.selectLocation(location)
                     self.shouldUpdateSelectedLocation = false
                 }
             }
@@ -72,9 +70,9 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
         }
     }
 
-    func selectLocation(location: Location) {
+    func selectLocation(_ location: Location?) {
         selectedLocation = location
-        selectedLocationName = location.name
+        selectedLocationName = location?.name ?? ""
     }
 
     func searchLocations() {
@@ -110,7 +108,7 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 }
 
-struct Location: Identifiable, Equatable {
+struct Location: Identifiable, Equatable, LocationValue {
     var id: String {
         name
     }

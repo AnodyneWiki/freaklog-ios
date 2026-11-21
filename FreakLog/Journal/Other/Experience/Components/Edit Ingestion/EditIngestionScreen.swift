@@ -17,8 +17,6 @@ struct EditIngestionScreen: View {
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var siteSelection = AdministrationSiteSelection()
 
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
 
@@ -58,7 +56,6 @@ struct EditIngestionScreen: View {
     var body: some View {
         EditIngestionContent(
             ingestion: ingestion,
-            substanceName: ingestion.substanceNameUnwrapped,
             roaDose: roaDose,
             customUnit: $selectedCustomUnit,
             otherUnits: filteredCustomUnit,
@@ -76,16 +73,14 @@ struct EditIngestionScreen: View {
             save: save,
             delete: delete,
             deleteWebhookMessage: WebhookManager.shared.deleteMessage,
-            isEyeOpen: isEyeOpen,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
             wantsToForceNewExperience: $wantsToForceNewExperience,
             experiencesWithinLargerRange: experiencesWithinLargerRange,
             sheetToShow: $sheetToShow
         ).onFirstAppear {
-            if let loc = ingestion.location {
-                locationManager.selectedLocation = Location(name: loc.nameUnwrapped, longitude: loc.longitudeUnwrapped, latitude: loc.latitudeUnwrapped)
-                locationManager.selectedLocationName = loc.nameUnwrapped
+            if let location = ingestion.location {
+                locationManager.selectLocation(location.asLocation)
             }
             time = ingestion.timeUnwrapped
             if let eTime = ingestion.endTime {
@@ -140,41 +135,14 @@ struct EditIngestionScreen: View {
         ingestion.isEstimate = isEstimate
         ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
         ingestion.note = note
-        if consumerName.trimmingCharacters(in: .whitespaces).isEmpty {
-            ingestion.consumerName = nil
-        } else {
-            ingestion.consumerName = consumerName
-        }
+        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
         let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
         ingestion.administrationSite = site.isEmpty ? nil : site
 
-        if let selectedLocation = locationManager.selectedLocation {
-            if let existingLocation = ingestion.location {
-                existingLocation.name = selectedLocation.name
-                existingLocation.latitude = selectedLocation.latitude ?? 0
-                existingLocation.longitude = selectedLocation.longitude ?? 0
-            } else {
-                let newLocation = ExperienceLocation(context: PersistenceController.shared.viewContext)
-                newLocation.name = selectedLocation.name
-                newLocation.latitude = selectedLocation.latitude ?? 0
-                newLocation.longitude = selectedLocation.longitude ?? 0
-                ingestion.location = newLocation
-            }
-        } else {
-            if let existingLocation = ingestion.location {
-                PersistenceController.shared.viewContext.delete(existingLocation)
-                ingestion.location = nil
-            }
-        }
+        ingestion.setLocation(locationManager.selectedLocation)
 
         if wantsToForceNewExperience || selectedExperience == nil {
-            let context = PersistenceController.shared.viewContext
-            let newExperience = Experience(context: context)
-            newExperience.creationDate = Date()
-            newExperience.sortDate = time
-            newExperience.title = time.asDateString
-            newExperience.text = ""
-            ingestion.experience = newExperience
+            ingestion.experience = Experience.create(at: time, in: PersistenceController.shared.viewContext)
         } else {
             ingestion.experience = selectedExperience
         }
@@ -196,7 +164,6 @@ struct EditIngestionScreen: View {
 
 struct EditIngestionContent: View {
     @ObservedObject var ingestion: Ingestion
-    let substanceName: String
     let roaDose: RoaDose?
     @Binding var customUnit: CustomUnit?
     let otherUnits: [CustomUnit]
@@ -214,7 +181,6 @@ struct EditIngestionContent: View {
     let save: () -> Void
     let delete: () -> Void
     let deleteWebhookMessage: (WebhookMessage) async -> Bool
-    let isEyeOpen: Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
     @Binding var wantsToForceNewExperience: Bool
@@ -306,44 +272,14 @@ struct EditIngestionContent: View {
                         selectedTime: $time,
                         selectedEndTime: $endTime
                     )
-                    if experiencesWithinLargerRange.count > 0 {
-                        NavigationLink {
-                            ExperiencePickerScreen(
-                                selectedExperience: $selectedExperience,
-                                wantsToForceNewExperience: $wantsToForceNewExperience,
-                                experiences: experiencesWithinLargerRange)
-                        } label: {
-                            HStack {
-                                Text("Experience")
-                                Spacer()
-                                if let exp = selectedExperience {
-                                    Text(exp.titleUnwrapped)
-                                } else {
-                                    Text("New Experience")
-                                }
-                            }
-                        }
-                    }
-                    HStack {
-                        Text("Consumer")
-                        Spacer()
-                        Button {
-                            sheetToShow = .editConsumer
-                        } label: {
-                            let displayedName = areYouConsumer ? "You" : consumerName
-                            Label(displayedName, systemImage: "person")
-                        }
-                    }
+                    ExperiencePickerRow(
+                        selectedExperience: $selectedExperience,
+                        wantsToForceNewExperience: $wantsToForceNewExperience,
+                        experiences: experiencesWithinLargerRange
+                    )
+                    ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
                     AdministrationSitePicker(route: route, selection: $siteSelection)
-                    Button {
-                        sheetToShow = .editLocation
-                    } label: {
-                        if let locationName = locationManager.selectedLocation?.name {
-                            Label(locationName, systemImage: "mappin")
-                        } else {
-                            Label("Add Location", systemImage: "plus")
-                        }
-                    }
+                    LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
                 }.listRowSeparator(.hidden)
                 Section {
                     Toggle("Hide in timeline", isOn: $isHidden).tint(.accentColor)
@@ -406,16 +342,11 @@ struct EditIngestionContent: View {
         UserDefaults.standard.set(time.timeIntervalSince1970, forKey: PersistenceController.clonedIngestionTimeKey)
         Navigator.shared.showAddIngestionFullScreenCover()
     }
-
-    private var areYouConsumer: Bool {
-        consumerName.trimmingCharacters(in: .whitespaces).isEmpty
-    }
 }
 
 #Preview("Edit regular ingestion") {
     EditIngestionContent(
         ingestion: Ingestion.knownDosePreviewSample,
-        substanceName: "MDMA",
         roaDose: SubstanceRepo.shared.getSubstance(name: "MDMA")!.getDose(for: .oral)!,
         customUnit: .constant(nil),
         otherUnits: [
@@ -435,7 +366,6 @@ struct EditIngestionContent: View {
         save: { },
         delete: { },
         deleteWebhookMessage: { _ in return true },
-        isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
         wantsToForceNewExperience: .constant(false),
@@ -447,7 +377,6 @@ struct EditIngestionContent: View {
 #Preview("Edit custom unit ingestion") {
     EditIngestionContent(
         ingestion: Ingestion.customUnitPreviewSample,
-        substanceName: "Ketamine",
         roaDose: SubstanceRepo.shared.getSubstance(name: "Ketamine")!.getDose(for: .oral)!,
         customUnit: .constant(CustomUnit.previewSample),
         otherUnits: [],
@@ -465,7 +394,6 @@ struct EditIngestionContent: View {
         save: { },
         delete: { },
         deleteWebhookMessage: { _ in return true },
-        isEyeOpen: true,
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
         wantsToForceNewExperience: .constant(false),

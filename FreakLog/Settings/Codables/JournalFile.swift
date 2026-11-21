@@ -37,11 +37,7 @@ struct JournalFile: FileDocument, Codable {
                         consumerName: ingestion.consumerName,
                         customUnitId: ingestion.customUnit?.idForAndroid,
                         administrationSite: ingestion.administrationSite,
-                        location: ingestion.location != nil ? LocationCodable(
-                            name: ingestion.locationUnwrapped?.nameUnwrapped ?? "Unknown",
-                            latitude: ingestion.locationUnwrapped?.latitudeUnwrapped,
-                            longitude: ingestion.locationUnwrapped?.longitudeUnwrapped
-                        ) : nil
+                        location: ingestion.location.map(LocationCodable.init)
                     )
                 )
                 let doesCompanionAlreadyExist = companionsToStore.contains { com in

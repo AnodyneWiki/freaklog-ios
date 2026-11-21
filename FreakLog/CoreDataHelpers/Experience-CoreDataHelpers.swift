@@ -1,6 +1,17 @@
+import CoreData
 import SwiftUI
 
 extension Experience: Comparable {
+    // A new experience starting at the given time, titled with its date unless a title is entered
+    static func create(at time: Date, title: String = "", in context: NSManagedObjectContext) -> Experience {
+        let experience = Experience(context: context)
+        experience.creationDate = Date()
+        experience.sortDate = time
+        experience.title = title.trimmingCharacters(in: .whitespaces).isEmpty ? time.asDateString : title
+        experience.text = ""
+        return experience
+    }
+
     public static func < (lhs: Experience, rhs: Experience) -> Bool {
         lhs.sortDateUnwrapped > rhs.sortDateUnwrapped
     }

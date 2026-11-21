@@ -30,15 +30,7 @@ struct ExperienceCodable: Codable {
         self.ingestions = ingestions
         self.ratings = ratings
         self.timedNotes = timedNotes
-        if let experienceLocation {
-            location = LocationCodable(
-                name: experienceLocation.nameUnwrapped,
-                latitude: experienceLocation.latitudeUnwrapped,
-                longitude: experienceLocation.longitudeUnwrapped
-            )
-        } else {
-            location = nil
-        }
+        location = experienceLocation.map(LocationCodable.init)
     }
 
     enum CodingKeys: String, CodingKey {

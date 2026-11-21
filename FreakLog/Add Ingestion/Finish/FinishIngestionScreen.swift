@@ -46,10 +46,6 @@ struct FinishIngestionScreen: View {
     @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
 
-    var areYouConsumer: Bool {
-        consumerName.isEmpty || consumerName.trimmingCharacters(in: .whitespaces).isEmpty
-    }
-
     var body: some View {
         screen.toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -65,23 +61,16 @@ struct FinishIngestionScreen: View {
 
     var doneButton: some View {
         DoneButton {
-            Task { @MainActor in
-                do {
-                    try addIngestionWithExperience()
-                    Task { await LeaderboardSyncManager.shared.syncAll() }
-                    Task { @MainActor in
-                        toastViewModel.showSuccessToast()
-                        generateSuccessHaptic()
-                        dismiss()
-                    }
-                } catch {
-                    Task { @MainActor in
-                        toastViewModel.showErrorToast(message: "Failed Ingestion")
-                        generateFailedHaptic()
-                        dismiss()
-                    }
-                }
+            do {
+                try addIngestionWithExperience()
+                Task { await LeaderboardSyncManager.shared.syncAll() }
+                toastViewModel.showSuccessToast()
+                generateSuccessHaptic()
+            } catch {
+                toastViewModel.showErrorToast(message: "Failed Ingestion")
+                generateFailedHaptic()
             }
+            dismiss()
         }
     }
 
@@ -93,44 +82,14 @@ struct FinishIngestionScreen: View {
                     selectedTime: $selectedTime,
                     selectedEndTime: $selectedEndTime
                 )
-                if experiencesWithinLargerRange.count > 0 {
-                    NavigationLink {
-                        ExperiencePickerScreen(
-                            selectedExperience: $selectedExperience,
-                            wantsToForceNewExperience: $wantsToForceNewExperience,
-                            experiences: experiencesWithinLargerRange)
-                    } label: {
-                        HStack {
-                            Text("Experience")
-                            Spacer()
-                            if let exp = selectedExperience {
-                                Text(exp.titleUnwrapped)
-                            } else {
-                                Text("New Experience")
-                            }
-                        }
-                    }
-                }
-                HStack {
-                    Text("Consumer")
-                    Spacer()
-                    Button {
-                        sheetToShow = .editConsumer
-                    } label: {
-                        let displayedName = areYouConsumer ? "You" : consumerName
-                        Label(displayedName, systemImage: "person")
-                    }
-                }
+                ExperiencePickerRow(
+                    selectedExperience: $selectedExperience,
+                    wantsToForceNewExperience: $wantsToForceNewExperience,
+                    experiences: experiencesWithinLargerRange
+                )
+                ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
                 AdministrationSitePicker(route: arguments.administrationRoute, selection: $siteSelection)
-                Button {
-                    sheetToShow = .editLocation
-                } label: {
-                    if let locationName = locationManager.selectedLocation?.name {
-                        Label(locationName, systemImage: "mappin")
-                    } else {
-                        Label("Add Location", systemImage: "plus")
-                    }
-                }
+                LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
             }
             .listRowSeparator(.hidden)
             .onChange(of: selectedTime) { _ in
@@ -152,14 +111,8 @@ struct FinishIngestionScreen: View {
                         }
                     }
                     if #available(iOS 16.2, *) {
-                        let isTimeRecentOrFuture = Date().timeIntervalSinceReferenceDate - selectedTime
-                            .timeIntervalSinceReferenceDate < 12 * 60 * 60
-                        if
-                            !ProcessInfo.processInfo.isiOSAppOnMac,
-                            ActivityManager.shared.authorizationInfo.areActivitiesEnabled,
-                            !ActivityManager.shared.isActivityActive,
-                            isTimeRecentOrFuture
-                        {
+                        let isTimeRecentOrFuture = selectedTime > Date().addingTimeInterval(-12 * 60 * 60)
+                        if LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive, isTimeRecentOrFuture {
                             Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity).tint(.accentColor)
                         }
                     }
@@ -252,8 +205,7 @@ struct FinishIngestionScreen: View {
             }
 
             selectExperienceBasedOnCurrentTime()
-            locationManager.selectedLocation = locationManager.currentLocation
-            locationManager.selectedLocationName = locationManager.currentLocation?.name ?? ""
+            locationManager.selectLocation(locationManager.currentLocation)
             initializeColorCompanionAndNote()
         }
     }
@@ -291,68 +243,34 @@ struct FinishIngestionScreen: View {
 
     func addIngestionWithExperience() throws {
         let context = PersistenceController.shared.viewContext
-        var createdIngestion: Ingestion?
-        var isActivityActive = false
-        if #available(iOS 16.2, *) {
-            isActivityActive = ActivityManager.shared.isActivityActive
-        }
         let selectedLocationValue = locationManager.selectedLocation
+        let isNewExperience = selectedExperience == nil
 
         try context.performAndWait {
-            if let existingExperience = selectedExperience {
-                createdIngestion = createIngestionWithCompanion(
-                    with: existingExperience,
-                    location: selectedLocationValue,
-                    and: context)
-                if #available(iOS 16.2, *) {
-                    if existingExperience.isCurrent, isActivityActive {
-                        Task {
-                            await ActivityManager.shared.startOrUpdateActivity(
-                                existingExperience.liveActivityState(
-                                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                                )
-                            )
-                        }
-                    }
-                }
-            } else {
-                let newExperience = Experience(context: context)
-                newExperience.creationDate = Date()
-                newExperience.sortDate = selectedTime
-                var title = selectedTime.asDateString
-                if !enteredTitle.trimmingCharacters(in: .whitespaces).isEmpty {
-                    title = enteredTitle
-                }
-                newExperience.title = title
-                newExperience.text = ""
-                createdIngestion = createIngestionWithCompanion(
-                    with: newExperience,
-                    location: selectedLocationValue,
-                    and: context)
-                if #available(iOS 16.2, *) {
-                    if newExperience.isCurrent, self.wantsToStartLiveActivity {
-                        Task {
-                            await ActivityManager.shared.startOrUpdateActivity(
-                                newExperience.liveActivityState(
-                                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-                                )
-                            )
-                        }
-                    }
-                }
-            }
+            let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
+            let ingestion = createIngestionWithCompanion(with: experience, location: selectedLocationValue, and: context)
             try context.save()
+            updateLiveActivity(for: experience, isNewExperience: isNewExperience)
 
-            if isWebhookSectionExpanded,
-               !selectedWebhookPresetIDs.isEmpty,
-               let ingestion = createdIngestion {
+            if isWebhookSectionExpanded, !selectedWebhookPresetIDs.isEmpty {
                 let presetObjectIDs = enabledWebhookPresets
                     .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
                     .map { $0.objectID }
                 WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
             }
+        }
+    }
+
+    // A new experience starts an activity if wanted; adding to an existing one only updates a running activity
+    private func updateLiveActivity(for experience: Experience, isNewExperience: Bool) {
+        guard #available(iOS 16.2, *), experience.isCurrent else { return }
+        guard isNewExperience ? wantsToStartLiveActivity : ActivityManager.shared.isActivityActive else { return }
+        let state = experience.liveActivityState(
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
+        Task {
+            await ActivityManager.shared.startOrUpdateActivity(state)
         }
     }
 
@@ -392,20 +310,12 @@ struct FinishIngestionScreen: View {
         ingestion.administrationRoute = arguments.administrationRoute.rawValue
         ingestion.substanceName = arguments.substanceName
         ingestion.color = selectedColor.rawValue
-        if !areYouConsumer {
-            ingestion.consumerName = consumerName
-        }
+        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
         let site = siteString()
         ingestion.administrationSite = site.isEmpty ? nil : site
         ingestion.webhookMessageId = nil
         ingestion.experience = experience
-        if let location {
-            let newLocation = ExperienceLocation(context: context)
-            newLocation.name = location.name
-            newLocation.latitude = location.latitude ?? 0
-            newLocation.longitude = location.longitude ?? 0
-            ingestion.location = newLocation
-        }
+        ingestion.setLocation(location)
         let companion = createOrUpdateCompanion(with: context)
         ingestion.substanceCompanion = companion
         return ingestion
