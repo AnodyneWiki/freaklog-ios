@@ -64,6 +64,14 @@ struct PersistenceController {
         let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
         container = NSPersistentCloudKitContainer(name: "Main")
         roaCache = ResolvedRoaCache(context: container.viewContext)
+        NotificationCenter.default.addObserver(
+            forName: .NSManagedObjectContextWillSave,
+            object: container.viewContext,
+            queue: nil
+        ) { notification in
+            guard let context = notification.object as? NSManagedObjectContext else { return }
+            Experience.updateSortDates(beforeSaving: context)
+        }
 
         if !inMemory {
             container.persistentStoreDescriptions.forEach { description in

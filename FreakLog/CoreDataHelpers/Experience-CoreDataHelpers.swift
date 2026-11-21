@@ -21,6 +21,33 @@ extension Experience: Comparable {
         ingestions?.allObjects as? [Ingestion] ?? []
     }
 
+    // The journal is sorted and searched by the stored sortDate, so it follows the first ingestion's time whenever
+    // a save moves, adds or removes ingestions. Experiences without ingestions keep theirs.
+    static func updateSortDates(beforeSaving context: NSManagedObjectContext) {
+        var experiences = Set<Experience>()
+        for case let ingestion as Ingestion in context.insertedObjects.union(context.updatedObjects) {
+            let changedKeys = ingestion.changedValues().keys
+            guard ingestion.isInserted || changedKeys.contains("time") || changedKeys.contains("experience") else { continue }
+            if let experience = ingestion.experience {
+                experiences.insert(experience)
+            }
+            if let previousExperience = ingestion.committedValues(forKeys: ["experience"])["experience"] as? Experience {
+                experiences.insert(previousExperience)
+            }
+        }
+        for case let ingestion as Ingestion in context.deletedObjects {
+            if let experience = ingestion.committedValues(forKeys: ["experience"])["experience"] as? Experience {
+                experiences.insert(experience)
+            }
+        }
+        for experience in experiences where !experience.isDeleted {
+            let firstTime = experience.ingestionsUnsorted.filter { !$0.isDeleted }.compactMap(\.time).min()
+            if let firstTime, experience.sortDate != firstTime {
+                experience.sortDate = firstTime
+            }
+        }
+    }
+
     var sortDateUnwrapped: Date {
         ingestionsUnsorted.compactMap(\.time).min() ?? sortDate ?? creationDateUnwrapped
     }
