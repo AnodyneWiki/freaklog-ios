@@ -18,7 +18,7 @@ struct SearchSubstanceRow: View {
                     horizontalSpacing: 3,
                     verticalSpacing: 3
                 ) {
-                    ForEach(substance.categories, id: \.self) { category in
+                    ForEach(PersistenceController.shared.categories(for: substance.name), id: \.self) { category in
                         Chip(name: category)
                     }
                 }

@@ -5,13 +5,19 @@ struct SubstanceScreen: View {
 
   @State private var isShowingCustomizeSheet = false
   @FetchRequest private var customRoas: FetchedResults<CustomRoa>
+  // Redraws the screen when the user's name or categories for the substance change
+  @FetchRequest private var overrides: FetchedResults<SubstanceOverride>
 
   init(substance: Substance) {
     self.substance = substance
     _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
+    let overridesRequest = PersistenceController.substanceOverridesRequest()
+    overridesRequest.predicate = NSPredicate(format: "substanceName == %@", substance.name)
+    _overrides = FetchRequest(fetchRequest: overridesRequest)
   }
 
   var body: some View {
+    let categories = PersistenceController.shared.categories(for: substance.name)
     List {
       if !substance.isApproved {
         Section {
@@ -24,15 +30,15 @@ struct SubstanceScreen: View {
             Section("Summary") {
               VStack {
                 Text(summary)
-                if !substance.categories.isEmpty {
-                  CategorySection(substance: substance)
+                if !categories.isEmpty {
+                  CategorySection(categoryNames: categories)
                 }
               }
             }
           } else {
-            if !substance.categories.isEmpty {
+            if !categories.isEmpty {
               Section("Categories") {
-                CategorySection(substance: substance)
+                CategorySection(categoryNames: categories)
               }
             }
           }
@@ -107,6 +113,11 @@ struct SubstanceCustomizeSheet: View {
   var body: some View {
     NavigationStack {
       List {
+        Section {
+          NavigationLink("Categories") {
+            EditCategoriesScreen(substanceName: substance.name)
+          }
+        }
         Section {
           CustomRoaRouteList(substanceName: substance.name)
         } header: {

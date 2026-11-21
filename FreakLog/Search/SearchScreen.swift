@@ -1,4 +1,5 @@
 import SwiftUI
+import WrappingHStack
 import AppIntents
 
 struct SearchScreen: View {
@@ -14,6 +15,10 @@ struct SearchScreen: View {
 
     @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
     private var customSubstances: FetchedResults<CustomSubstance>
+
+    // Redraws the results when the user's categories change
+    @FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest())
+    private var overrides: FetchedResults<SubstanceOverride>
 
     // Only the most recent ingestions are used to rank substances
     @FetchRequest(fetchRequest: PersistenceController.recentIngestionsRequest(limit: 500))
@@ -35,13 +40,11 @@ struct SearchScreen: View {
         }
     }
     
+    // "custom" matches every custom substance, other categories those the user gave them
     var customFilteredWithCategories: [CustomSubstance] {
-        if selectedCategories.isEmpty {
-            return Array(customSubstances)
-        } else if selectedCategories.contains(SearchScreen.custom) {
-            return Array(customSubstances)
-        } else {
-            return []
+        customSubstances.filter { customSubstance in
+            let categories = PersistenceController.shared.categories(for: customSubstance.nameUnwrapped)
+            return selectedCategories.allSatisfy { $0 == SearchScreen.custom || categories.contains($0) }
         }
     }
     
@@ -61,7 +64,7 @@ struct SearchScreen: View {
     var substancesFilteredAndSorted: [Substance] {
         let substancesFilteredWithCategoriesOnly = SubstanceRepo.shared.substances.filter { sub in
             selectedCategories.allSatisfy { selected in
-                sub.categories.contains(selected)
+                PersistenceController.shared.categories(for: sub.name).contains(selected)
             }
         }
         let substanceNamesInOrder = ingestions.map { ing in
@@ -104,7 +107,13 @@ struct SearchScreen: View {
                         VStack(alignment: .leading) {
                             Text(cust.nameUnwrapped).font(.headline)
                             Spacer().frame(height: 5)
-                            Chip(name: "custom")
+                            WrappingHStack(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 3) {
+                                Chip(name: "custom")
+                                let categories = PersistenceController.shared.categories(for: cust.nameUnwrapped)
+                                ForEach(categories, id: \.self) { category in
+                                    Chip(name: category)
+                                }
+                            }
                         }
                     }
                 }

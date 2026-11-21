@@ -2,8 +2,7 @@ import SwiftUI
 import WrappingHStack
 
 struct CategorySection: View {
-    let substance: Substance
-    @State private var categories: [Category] = []
+    let categoryNames: [String]
 
     @State private var isAlertShown = false
     @State private var title = ""
@@ -15,6 +14,12 @@ struct CategorySection: View {
         self.title = title
         self.message = message
         self.articleURL = articleURL
+    }
+
+    private var categories: [Category] {
+        categoryNames.compactMap { name in
+            SubstanceRepo.shared.categories.first { $0.name == name }
+        }
     }
 
     var body: some View {
@@ -41,16 +46,9 @@ struct CategorySection: View {
         }, message: {
             Text(message)
         })
-        .onAppear {
-            categories = substance.categories.compactMap { name in
-                SubstanceRepo.shared.categories.first(where: { cat in
-                    cat.name == name
-                })
-            }
-        }
     }
 }
 
 #Preview {
-    CategorySection(substance: SubstanceRepo.shared.getSubstance(name: "MDMA")!)
+    CategorySection(categoryNames: SubstanceRepo.shared.getSubstance(name: "MDMA")!.categories)
 }

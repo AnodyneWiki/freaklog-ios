@@ -20,6 +20,11 @@ struct EditCustomSubstanceView: View {
         TextField("Units", text: $units)
       }
       Section {
+        NavigationLink("Categories") {
+          EditCategoriesScreen(substanceName: customSubstance.nameUnwrapped)
+        }
+      }
+      Section {
         CustomRoaRouteList(substanceName: customSubstance.nameUnwrapped, customSubstance: customSubstance)
       } header: {
         Text("Routes (Dose & Duration)")

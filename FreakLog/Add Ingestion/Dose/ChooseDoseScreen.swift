@@ -193,7 +193,7 @@ struct ChooseDoseScreen: View {
               "The nicotine inhaled by the average smoker per cigarette is indicated on the package. The nicotine content of the cigarette itself is much higher as on average only about 10% of the cigarette's nicotine is inhaled.\nMore nicotine is inhaled when taking larger and more frequent puffs or by blocking the cigarette filter ventilation holes.\nNicotine yields from electronic cigarettes are also highly correlated with the device type and brand, liquid nicotine concentration, and PG/VG ratio, and to a lower significance with electrical power. Nicotine yields from 15 puffs may vary 50-fold.")
           }
         }
-        if administrationRoute == .smoked, substance?.categories.contains("opioid") == true {
+        if administrationRoute == .smoked, PersistenceController.shared.categories(for: substanceName).contains("opioid") {
           ChasingTheDragonSection()
         }
         if Self.isOralMDMA(arguments) {

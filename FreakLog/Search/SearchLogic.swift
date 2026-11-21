@@ -5,7 +5,8 @@ enum SearchLogic {
     static func getFilteredSubstancesSorted(substances: [Substance], searchText: String, namesToSortBy: [String]) -> [Substance] {
         let rankByName = Dictionary(namesToSortBy.enumerated().map { ($1, $0) }, uniquingKeysWith: min)
         return getFilteredSubstances(substances: substances, searchText: searchText).stablySorted { substance in
-            [rankByName[substance.name] ?? Int.max, substance.categories.contains("common") ? 0 : 1]
+            let isCommon = PersistenceController.shared.categories(for: substance.name).contains("common")
+            return [rankByName[substance.name] ?? Int.max, isCommon ? 0 : 1]
         }
     }
 

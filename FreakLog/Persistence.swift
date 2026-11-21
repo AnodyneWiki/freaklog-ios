@@ -7,6 +7,7 @@ struct PersistenceController {
 
     let container: NSPersistentCloudKitContainer
     let roaCache: ResolvedRoaCache
+    let overrideCache: SubstanceOverrideCache
 
     private var isInitialized = false
 
@@ -63,6 +64,7 @@ struct PersistenceController {
         let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
         container = NSPersistentCloudKitContainer(name: "Main")
         roaCache = ResolvedRoaCache(context: container.viewContext)
+        overrideCache = SubstanceOverrideCache(context: container.viewContext)
         NotificationCenter.default.addObserver(
             forName: .NSManagedObjectContextWillSave,
             object: container.viewContext,
@@ -190,7 +192,10 @@ struct PersistenceController {
     func deleteEverything(blockContext: NSManagedObjectContext? = nil) throws {
         let context = blockContext ?? viewContext
         // Entities not reached via cascade delete rules are listed explicitly
-        let entityNames = ["Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa"]
+        let entityNames = [
+            "Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa",
+            "SubstanceOverride",
+        ]
         for entityName in entityNames {
             let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
             request.includesPropertyValues = false
@@ -675,7 +680,7 @@ struct PersistenceController {
     }
 
     func renameSubstance(from oldName: String, to newName: String) {
-        for entityName in ["Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa"] {
+        for entityName in ["Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa", "SubstanceOverride"] {
             let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
             r.predicate = NSPredicate(format: "substanceName == %@", oldName)
             ((try? viewContext.fetch(r)) ?? []).forEach { $0.setValue(newName, forKey: "substanceName") }

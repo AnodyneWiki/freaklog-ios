@@ -31,7 +31,7 @@ enum InteractionChecker {
         }
     }
 
-    // Results only depend on the bundled substance data and are symmetric, so they are cached per pair
+    // Results only depend on the substance data and the user's categories and are symmetric, so they are cached per pair
     static func getInteractionTypeBetween(aName: String, bName: String) -> InteractionType? {
         guard aName != bName else { return nil }
         let key = aName < bName ? "\(aName)\u{0}\(bName)" : "\(bName)\u{0}\(aName)"
@@ -46,6 +46,13 @@ enum InteractionChecker {
         cache[key] = .some(interactionType)
         cacheLock.unlock()
         return interactionType
+    }
+
+    // The user's categories take part in matching, so changing them drops the cached results
+    static func clearCache() {
+        cacheLock.lock()
+        cache.removeAll()
+        cacheLock.unlock()
     }
 
     private static let cacheLock = NSLock()
@@ -72,7 +79,7 @@ enum InteractionChecker {
         }) {
             return wildCard
         }
-        guard let categories = SubstanceRepo.shared.getSubstance(name: toName)?.categories else { return nil }
+        let categories = PersistenceController.shared.categories(for: toName)
         return firstMatch(in: interactions, where: { names in
             categories.contains { categoryName in
                 names.contains { $0.caseInsensitiveContains(categoryName) }

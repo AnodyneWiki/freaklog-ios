@@ -75,7 +75,8 @@ struct DosesSection: View {
         MDMAOptimalDoseSection()
         MDMAPillsSection()
       }
-      if substance.roas.contains(where: { $0.name == .smoked }), substance.categories.contains("opioid") {
+      let isOpioid = PersistenceController.shared.categories(for: substance.name).contains("opioid")
+      if substance.roas.contains(where: { $0.name == .smoked }), isOpioid {
         ChasingTheDragonSection()
       }
     }

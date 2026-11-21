@@ -58,6 +58,7 @@
 		A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */; };
 		28EAF0C77695839A342FBFCE /* IngestionDeletion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */; };
 		AE66BCF433CE76CD7CC46381 /* IngestionSaving.swift in Sources */ = {isa = PBXBuildFile; fileRef = D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */; };
+		79556B7DE84A780DFD2CED73 /* SubstanceOverride-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AC6EFC2F08C5ABD3A4478DA /* SubstanceOverride-CoreDataHelpers.swift */; };
 		A15CA2FD2EFB6F0100D90023 /* DynamicRangeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */; };
 		A15CA2FF2EFB73E100D90023 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
 		A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
@@ -264,6 +265,7 @@
 		EA7F230F2B8E095700EA6734 /* RelativeTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA7F230E2B8E095700EA6734 /* RelativeTimeText.swift */; };
 		EA81E0CA29508C7E00475DE3 /* CumulativeDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */; };
 		EA8447E427CD14AD00B10DD3 /* SubstanceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E327CD14AD00B10DD3 /* SubstanceScreen.swift */; };
+		578FE13573F17DCF56A5A472 /* EditCategoriesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B03982F5F9BD1F82500E3CD /* EditCategoriesScreen.swift */; };
 		EA8447E727CD175000B10DD3 /* RoaDoseRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E627CD175000B10DD3 /* RoaDoseRow.swift */; };
 		EA8447E927CD22D300B10DD3 /* Text-LinearGradient.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447E827CD22D300B10DD3 /* Text-LinearGradient.swift */; };
 		EA8447EB27CD276300B10DD3 /* OneRoaDurationRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA8447EA27CD276300B10DD3 /* OneRoaDurationRow.swift */; };
@@ -460,6 +462,7 @@
 		A159D9242FDAC71900E19083 /* CustomRoaCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomRoaCodable.swift; sourceTree = "<group>"; };
 		A159D9252FDAC71900E19083 /* SubstanceDataOverrideCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceDataOverrideCodable.swift; sourceTree = "<group>"; };
 		A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
+		2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 9.xcdatamodel"; sourceTree = "<group>"; };
 		A159D9292FDAC85200E19083 /* EditCustomRoaView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCustomRoaView.swift; sourceTree = "<group>"; };
 		700D06F7AD1FB1974D30C477 /* CustomRoaViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomRoaViews.swift; sourceTree = "<group>"; };
 		A15CA2A92EFAFED200D90023 /* IngestionSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSection.swift; sourceTree = "<group>"; };
@@ -473,6 +476,7 @@
 		A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceLogic.swift; sourceTree = "<group>"; };
 		7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionDeletion.swift; sourceTree = "<group>"; };
 		D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionSaving.swift; sourceTree = "<group>"; };
+		1AC6EFC2F08C5ABD3A4478DA /* SubstanceOverride-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceOverride-CoreDataHelpers.swift; sourceTree = "<group>"; };
 		A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DynamicRangeOption.swift; sourceTree = "<group>"; };
 		A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViewOption.swift; sourceTree = "<group>"; };
 		A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSettingsScreen.swift; sourceTree = "<group>"; };
@@ -652,6 +656,7 @@
 		EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CumulativeDoseRow.swift; sourceTree = "<group>"; };
 		EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 1.xcdatamodel"; sourceTree = "<group>"; };
 		EA8447E327CD14AD00B10DD3 /* SubstanceScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceScreen.swift; sourceTree = "<group>"; };
+		2B03982F5F9BD1F82500E3CD /* EditCategoriesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditCategoriesScreen.swift; sourceTree = "<group>"; };
 		EA8447E627CD175000B10DD3 /* RoaDoseRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoaDoseRow.swift; sourceTree = "<group>"; };
 		EA8447E827CD22D300B10DD3 /* Text-LinearGradient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Text-LinearGradient.swift"; sourceTree = "<group>"; };
 		EA8447EA27CD276300B10DD3 /* OneRoaDurationRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OneRoaDurationRow.swift; sourceTree = "<group>"; };
@@ -1301,6 +1306,7 @@
 				EA014F9627E5DC6500077FB2 /* Web */,
 				EABD921A294276AA0073303A /* Section Screens */,
 				EA8447E327CD14AD00B10DD3 /* SubstanceScreen.swift */,
+				2B03982F5F9BD1F82500E3CD /* EditCategoriesScreen.swift */,
 			);
 			path = Substance;
 			sourceTree = "<group>";
@@ -1659,6 +1665,7 @@
 				A15CA2FA2EFB68A200D90023 /* ExperienceLogic.swift */,
 				7AECE2852CC3CC9FED9ACD4D /* IngestionDeletion.swift */,
 				D20101C627B98DF2B56C7EA4 /* IngestionSaving.swift */,
+				1AC6EFC2F08C5ABD3A4478DA /* SubstanceOverride-CoreDataHelpers.swift */,
 				0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */,
 				0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */,
 				0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */,
@@ -2044,6 +2051,7 @@
 				A15CA2FB2EFB68A200D90023 /* ExperienceLogic.swift in Sources */,
 				28EAF0C77695839A342FBFCE /* IngestionDeletion.swift in Sources */,
 				AE66BCF433CE76CD7CC46381 /* IngestionSaving.swift in Sources */,
+				79556B7DE84A780DFD2CED73 /* SubstanceOverride-CoreDataHelpers.swift in Sources */,
 				EAB794752D02DA9B00ED37C8 /* TimePointOrRangePicker.swift in Sources */,
 				C7B4BB7711C6004014A6FE17 /* IngestionDetailRows.swift in Sources */,
 				EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */,
@@ -2169,6 +2177,7 @@
 				A15CA2B52EFAFED200D90023 /* ChameleonHeader.swift in Sources */,
 				EA7F230F2B8E095700EA6734 /* RelativeTimeText.swift in Sources */,
 				EA8447E427CD14AD00B10DD3 /* SubstanceScreen.swift in Sources */,
+				578FE13573F17DCF56A5A472 /* EditCategoriesScreen.swift in Sources */,
 				EA6048292A1411CF005C6A4B /* RegularDoseAndUnit.swift in Sources */,
 				EA418A0229673FFF00DEA663 /* MDMAPillsSection.swift in Sources */,
 				0D235F322EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift in Sources */,
@@ -2718,6 +2727,7 @@
 		EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */,
 				A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */,
 				EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */,
 				EAA2C9B82B288CD50045C8DF /* PW Version 6.xcdatamodel */,
@@ -2728,7 +2738,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */;
+			currentVersion = 2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

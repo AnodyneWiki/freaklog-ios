@@ -3,16 +3,25 @@ import SwiftUI
 struct CustomSubstanceScreen: View {
   @ObservedObject var customSubstance: CustomSubstance
   @State private var isEditSheetShown = false
+  // Redraws the screen when the categories change
+  @FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest())
+  private var overrides: FetchedResults<SubstanceOverride>
 
   private var roasWithData: [CustomRoa] {
     customSubstance.customRoasSorted.filter(\.hasData)
   }
 
   var body: some View {
+    let categories = PersistenceController.shared.categories(for: customSubstance.nameUnwrapped)
     List {
       if !customSubstance.explanationUnwrapped.isEmpty {
         Section("About") {
           Text(customSubstance.explanationUnwrapped)
+        }
+      }
+      if !categories.isEmpty {
+        Section("Categories") {
+          CategorySection(categoryNames: categories)
         }
       }
       if !customSubstance.unitsUnwrapped.isEmpty {
