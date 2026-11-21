@@ -10,8 +10,6 @@ struct AddTimedNoteScreen: View {
     @State private var isPartOfTimeline = false
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @FocusState private var isTextFieldFocused: Bool
-    @State private var alreadyUsedColors: [SubstanceColor] = []
-    @State private var otherColors: [SubstanceColor] = []
 
     var body: some View {
         NavigationStack {
@@ -21,8 +19,7 @@ struct AddTimedNoteScreen: View {
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
-                alreadyUsedColors: alreadyUsedColors,
-                otherColors: otherColors
+                usedColors: experience.timedNotesForTimeline.map(\.color)
             )
             .navigationTitle("Add Timed Note")
             .toolbar {
@@ -39,9 +36,7 @@ struct AddTimedNoteScreen: View {
         .onAppear {
             isTextFieldFocused = true
             isPartOfTimeline = experience.isCurrent
-            alreadyUsedColors = Array(Set(experience.timedNotesForTimeline.map { $0.color })).sorted()
-            otherColors = Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors)).sorted()
-            if let otherColor = otherColors.randomElement() {
+            if let otherColor = SubstanceColor.unused(avoiding: experience.timedNotesForTimeline.map(\.color)).randomElement() {
                 color = otherColor
             }
         }

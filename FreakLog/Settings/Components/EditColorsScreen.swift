@@ -4,16 +4,6 @@ struct EditColorsScreen: View {
     @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
     var substanceCompanions: FetchedResults<SubstanceCompanion>
 
-    var alreadyUsedColors: [SubstanceColor] {
-        Array(Set(substanceCompanions.map { comp in
-            comp.color
-        })).sorted()
-    }
-
-    var otherColors: [SubstanceColor] {
-        Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors)).sorted()
-    }
-
     @State private var companionToEdit: SubstanceCompanion?
 
     var body: some View {
@@ -37,10 +27,12 @@ struct EditColorsScreen: View {
         }
         .sheet(item: $companionToEdit, content: { companion in
             NavigationStack {
-                CompanionColorPickerScreen(
-                    companion: companion,
-                    alreadyUsedColors: alreadyUsedColors,
-                    otherColors: otherColors
+                ColorPickerScreen(
+                    selectedColor: Binding(get: { companion.color }, set: { color in
+                        companion.colorAsText = color.rawValue
+                        PersistenceController.shared.saveViewContext()
+                    }),
+                    usedColors: substanceCompanions.map(\.color)
                 )
             }
         })
@@ -51,51 +43,6 @@ struct EditColorsScreen: View {
                     PersistenceController.shared.viewContext.delete(substanceCompanion)
                 }
                 PersistenceController.shared.saveViewContext()
-            }
-        }
-    }
-}
-
-struct CompanionColorPickerScreen: View {
-    let companion: SubstanceCompanion
-    let alreadyUsedColors: [SubstanceColor]
-    let otherColors: [SubstanceColor]
-    @Environment(\.dismiss) var dismiss
-
-    var body: some View {
-        List {
-            if !otherColors.isEmpty {
-                Section("Unused Colors") {
-                    ForEach(otherColors) { color in
-                        button(for: color)
-                    }
-                }
-            }
-            if !alreadyUsedColors.isEmpty {
-                Section("Used Colors") {
-                    ForEach(alreadyUsedColors) { color in
-                        button(for: color)
-                    }
-                }
-            }
-        }
-        .navigationTitle("Choose Color")
-    }
-
-    private func button(for color: SubstanceColor) -> some View {
-        Button {
-            companion.colorAsText = color.rawValue
-            PersistenceController.shared.saveViewContext()
-            dismiss()
-        } label: {
-            if companion.color == color {
-                HStack {
-                    Label(color.name, systemImage: "circle.fill").foregroundColor(color.swiftUIColor)
-                    Spacer()
-                    Image(systemName: "checkmark")
-                }
-            } else {
-                Label(color.name, systemImage: "circle.fill").foregroundColor(color.swiftUIColor)
             }
         }
     }

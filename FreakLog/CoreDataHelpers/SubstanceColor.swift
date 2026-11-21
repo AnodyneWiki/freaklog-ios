@@ -3,7 +3,7 @@ import SwiftUI
 // swiftlint:disable type_body_length file_length
 enum SubstanceColor: String, CaseIterable, Identifiable, Codable, Comparable {
     static func < (lhs: SubstanceColor, rhs: SubstanceColor) -> Bool {
-        lhs.sortValue < rhs.sortValue
+        lhs.sortIndex < rhs.sortIndex
     }
 
     case blue = "BLUE"
@@ -364,326 +364,36 @@ enum SubstanceColor: String, CaseIterable, Identifiable, Codable, Comparable {
         }
     }
 
+    // Shown for a substance that has no color assigned
+    static let fallback = SubstanceColor.purple
+
+    // Colors not in `used`, in sort order
+    static func unused(avoiding used: some Sequence<SubstanceColor>) -> [SubstanceColor] {
+        let used = Set(used)
+        return allCases.filter { !used.contains($0) }
+    }
+
+    // A color for something new: the first unused one, preferred colors first
+    static func suggested(avoiding used: some Sequence<SubstanceColor>) -> SubstanceColor {
+        unused(avoiding: used).first ?? allCases.randomElement() ?? .blue
+    }
+
+    // "FIRE_ENGINE_RED" → "fire engine red"
     var name: String {
-        switch self {
-        case .blue:
-            return "blue"
-        case .brown:
-            return "brown"
-        case .cyan:
-            return "cyan"
-        case .green:
-            return "green"
-        case .indigo:
-            return "indigo"
-        case .mint:
-            return "mint"
-        case .orange:
-            return "orange"
-        case .pink:
-            return "pink"
-        case .purple:
-            return "purple"
-        case .red:
-            return "red"
-        case .teal:
-            return "teal"
-        case .yellow:
-            return "yellow"
-        case .fireEngineRed:
-            return "fire engine red"
-        case .coral:
-            return "coral"
-        case .tomato:
-            return "tomato"
-        case .cinnabar:
-            return "cinnabar"
-        case .rust:
-            return "rust"
-        case .orangeRed:
-            return "orange red"
-        case .auburn:
-            return "auburn"
-        case .saddleBrown:
-            return "saddle brown"
-        case .darkOrange:
-            return "dark orange"
-        case .darkGold:
-            return "dark gold"
-        case .khaki:
-            return "khaki"
-        case .bronze:
-            return "bronze"
-        case .gold:
-            return "gold"
-        case .olive:
-            return "olive"
-        case .oliveDrab:
-            return "olive drab"
-        case .darkOliveGreen:
-            return "dark olive green"
-        case .mossGreen:
-            return "moss green"
-        case .limeGreen:
-            return "lime green"
-        case .lime:
-            return "lime"
-        case .forestGreen:
-            return "forest green"
-        case .seaGreen:
-            return "sea green"
-        case .jungleGreen:
-            return "jungle green"
-        case .lightSeaGreen:
-            return "light sea green"
-        case .darkTurquoise:
-            return "dark turquoise"
-        case .dodgerBlue:
-            return "dodger blue"
-        case .royalBlue:
-            return "royal blue"
-        case .deepLavender:
-            return "deep lavender"
-        case .blueViolet:
-            return "blue violet"
-        case .darkViolet:
-            return "dark violet"
-        case .heliotrope:
-            return "heliotrope"
-        case .byzantium:
-            return "byzantium"
-        case .magenta:
-            return "magenta"
-        case .darkMagenta:
-            return "dark magenta"
-        case .fuchsia:
-            return "fuchsia"
-        case .deepPink:
-            return "deep pink"
-        case .grayishMagenta:
-            return "grayish magenta"
-        case .hotPink:
-            return "hot pink"
-        case .jazzberryJam:
-            return "jazzberry jam"
-        case .maroon:
-            return "maroon"
-        }
+        rawValue.lowercased().replacingOccurrences(of: "_", with: " ")
     }
 
+    // The basic system colors, declared first, are suggested before the others
     var isPreferred: Bool {
-        switch self {
-        case .blue:
-            return true
-        case .brown:
-            return true
-        case .cyan:
-            return true
-        case .green:
-            return true
-        case .indigo:
-            return true
-        case .mint:
-            return true
-        case .orange:
-            return true
-        case .pink:
-            return true
-        case .purple:
-            return true
-        case .red:
-            return true
-        case .teal:
-            return true
-        case .yellow:
-            return true
-        case .fireEngineRed:
-            return false
-        case .coral:
-            return false
-        case .tomato:
-            return false
-        case .cinnabar:
-            return false
-        case .rust:
-            return false
-        case .orangeRed:
-            return false
-        case .auburn:
-            return false
-        case .saddleBrown:
-            return false
-        case .darkOrange:
-            return false
-        case .darkGold:
-            return false
-        case .khaki:
-            return false
-        case .bronze:
-            return false
-        case .gold:
-            return false
-        case .olive:
-            return false
-        case .oliveDrab:
-            return false
-        case .darkOliveGreen:
-            return false
-        case .mossGreen:
-            return false
-        case .limeGreen:
-            return false
-        case .lime:
-            return false
-        case .forestGreen:
-            return false
-        case .seaGreen:
-            return false
-        case .jungleGreen:
-            return false
-        case .lightSeaGreen:
-            return false
-        case .darkTurquoise:
-            return false
-        case .dodgerBlue:
-            return false
-        case .royalBlue:
-            return false
-        case .deepLavender:
-            return false
-        case .blueViolet:
-            return false
-        case .darkViolet:
-            return false
-        case .heliotrope:
-            return false
-        case .byzantium:
-            return false
-        case .magenta:
-            return false
-        case .darkMagenta:
-            return false
-        case .fuchsia:
-            return false
-        case .deepPink:
-            return false
-        case .grayishMagenta:
-            return false
-        case .hotPink:
-            return false
-        case .jazzberryJam:
-            return false
-        case .maroon:
-            return false
-        }
+        sortIndex < 12
     }
 
-    var sortValue: Int {
-        switch self {
-        case .blue:
-            return 0
-        case .brown:
-            return 1
-        case .cyan:
-            return 2
-        case .green:
-            return 3
-        case .indigo:
-            return 4
-        case .mint:
-            return 5
-        case .orange:
-            return 6
-        case .pink:
-            return 7
-        case .purple:
-            return 8
-        case .red:
-            return 9
-        case .teal:
-            return 10
-        case .yellow:
-            return 11
-        case .fireEngineRed:
-            return 22
-        case .coral:
-            return 13
-        case .tomato:
-            return 14
-        case .cinnabar:
-            return 15
-        case .rust:
-            return 16
-        case .orangeRed:
-            return 17
-        case .auburn:
-            return 18
-        case .saddleBrown:
-            return 19
-        case .darkOrange:
-            return 20
-        case .darkGold:
-            return 21
-        case .khaki:
-            return 22
-        case .bronze:
-            return 23
-        case .gold:
-            return 24
-        case .olive:
-            return 25
-        case .oliveDrab:
-            return 26
-        case .darkOliveGreen:
-            return 27
-        case .mossGreen:
-            return 28
-        case .limeGreen:
-            return 29
-        case .lime:
-            return 30
-        case .forestGreen:
-            return 31
-        case .seaGreen:
-            return 32
-        case .jungleGreen:
-            return 33
-        case .lightSeaGreen:
-            return 34
-        case .darkTurquoise:
-            return 35
-        case .dodgerBlue:
-            return 36
-        case .royalBlue:
-            return 37
-        case .deepLavender:
-            return 38
-        case .blueViolet:
-            return 39
-        case .darkViolet:
-            return 40
-        case .heliotrope:
-            return 41
-        case .byzantium:
-            return 42
-        case .magenta:
-            return 43
-        case .darkMagenta:
-            return 44
-        case .fuchsia:
-            return 45
-        case .deepPink:
-            return 46
-        case .grayishMagenta:
-            return 47
-        case .hotPink:
-            return 48
-        case .jazzberryJam:
-            return 49
-        case .maroon:
-            return 50
-        }
+    // Colors sort in declaration order
+    private var sortIndex: Int {
+        Self.sortIndices[self] ?? 0
     }
+
+    private static let sortIndices = Dictionary(uniqueKeysWithValues: allCases.enumerated().map { ($1, $0) })
 }
 
 // swiftlint:enable type_body_length file_length

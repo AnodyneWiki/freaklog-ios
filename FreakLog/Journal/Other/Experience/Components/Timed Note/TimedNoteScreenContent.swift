@@ -6,8 +6,7 @@ struct TimedNoteScreenContent: View {
     @Binding var color: SubstanceColor
     @Binding var isPartOfTimeline: Bool
     let isTextFieldFocused: FocusState<Bool>.Binding
-    let alreadyUsedColors: [SubstanceColor]
-    let otherColors: [SubstanceColor]
+    let usedColors: [SubstanceColor]
 
     var body: some View {
         Form {
@@ -31,8 +30,7 @@ struct TimedNoteScreenContent: View {
                 NavigationLink {
                     ColorPickerScreen(
                         selectedColor: $color,
-                        alreadyUsedColors: alreadyUsedColors,
-                        otherColors: otherColors
+                        usedColors: usedColors
                     )
                 } label: {
                     HStack {

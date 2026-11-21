@@ -125,7 +125,7 @@ extension Ingestion: Comparable {
     }
 
     var substanceColor: SubstanceColor {
-        substanceCompanion?.color ?? .red
+        substanceCompanion?.color ?? .fallback
     }
 
     var webhookMessagesSorted: [WebhookMessage] {

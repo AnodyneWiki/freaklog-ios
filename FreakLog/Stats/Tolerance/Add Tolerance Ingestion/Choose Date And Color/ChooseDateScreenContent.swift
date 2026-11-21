@@ -7,8 +7,7 @@ struct ChooseDateScreenContent: View {
     let isShowingColorPicker: Bool
     let substanceName: String
     @Binding var selectedColor: SubstanceColor
-    let alreadyUsedColors: [SubstanceColor]
-    let otherColors: [SubstanceColor]
+    let usedColors: [SubstanceColor]
 
     var body: some View {
         screen.toolbar {
@@ -32,8 +31,7 @@ struct ChooseDateScreenContent: View {
                     NavigationLink {
                         ColorPickerScreen(
                             selectedColor: $selectedColor,
-                            alreadyUsedColors: alreadyUsedColors,
-                            otherColors: otherColors
+                            usedColors: usedColors
                         )
                     } label: {
                         HStack {
@@ -51,8 +49,6 @@ struct ChooseDateScreenContent: View {
 
 #Preview {
     NavigationStack {
-        let alreadyUsedColors = [SubstanceColor.green, .pink]
-        let otherColors = Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors))
         ChooseDateScreenContent(
             date: .constant(Date.now),
             finish: {},
@@ -60,8 +56,7 @@ struct ChooseDateScreenContent: View {
             isShowingColorPicker: true,
             substanceName: "MDMA",
             selectedColor: .constant(.blue),
-            alreadyUsedColors: alreadyUsedColors,
-            otherColors: otherColors
+            usedColors: [.green, .pink]
         )
     }
 }

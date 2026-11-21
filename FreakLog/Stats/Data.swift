@@ -28,7 +28,7 @@ struct SubstanceData: Hashable, Sendable {
     }
 
     func color(for substanceName: String) -> Color {
-        colors[substanceName] ?? SubstanceColor.purple.swiftUIColor
+        colors[substanceName] ?? SubstanceColor.fallback.swiftUIColor
     }
 }
 
@@ -138,7 +138,7 @@ struct ExperienceData: Hashable, Sendable {
     let colors: [String: Color]
 
     func color(for substanceName: String) -> Color {
-        colors[substanceName] ?? SubstanceColor.purple.swiftUIColor
+        colors[substanceName] ?? SubstanceColor.fallback.swiftUIColor
     }
 
     func counts(in timeRange: TimeRange) -> [SubstancePeriodCount] {

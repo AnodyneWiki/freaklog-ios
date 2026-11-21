@@ -2,11 +2,13 @@ import SwiftUI
 
 struct ColorPickerScreen: View {
     @Binding var selectedColor: SubstanceColor
-    let alreadyUsedColors: [SubstanceColor]
-    let otherColors: [SubstanceColor]
+    // Colors already taken by other substances or notes, listed after the unused ones
+    let usedColors: [SubstanceColor]
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
+        let alreadyUsedColors = Set(usedColors).sorted()
+        let otherColors = SubstanceColor.unused(avoiding: usedColors)
         List {
             if !otherColors.isEmpty {
                 Section("Unused Colors") {
@@ -45,11 +47,6 @@ struct ColorPickerScreen: View {
 
 #Preview {
     NavigationStack {
-        let alreadyUsed = [SubstanceColor.blue, .red, .orange]
-        ColorPickerScreen(
-            selectedColor: .constant(.purple),
-            alreadyUsedColors: alreadyUsed,
-            otherColors: Array(Set(SubstanceColor.allCases).subtracting(alreadyUsed))
-        )
+        ColorPickerScreen(selectedColor: .constant(.purple), usedColors: [.blue, .red, .orange])
     }
 }

@@ -107,7 +107,7 @@ struct ExperienceLogic {
         let namesOfSubstancesInChart = toleranceWindows.map(\.substanceName).uniqued()
         let colors = Dictionary(substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color) }, uniquingKeysWith: { first, _ in first })
         let substancesInChart = SubstanceRepo.shared.getSubstances(names: namesOfSubstancesInChart).map { sub in
-            sub.toSubstanceWithToleranceAndColor(substanceColor: colors[sub.name] ?? .red)
+            sub.toSubstanceWithToleranceAndColor(substanceColor: colors[sub.name] ?? .fallback)
         }
         let namesWithoutWindows = Set(substanceDays.map(\.substanceName)).subtracting(namesOfSubstancesInChart)
         return ChartData(

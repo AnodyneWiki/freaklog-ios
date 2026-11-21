@@ -28,8 +28,7 @@ struct FinishIngestionScreen: View {
     @State private var enteredTitle = ""
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
-    @State private var alreadyUsedColors = [SubstanceColor]()
-    @State private var otherColors = [SubstanceColor]()
+    @State private var usedColors = [SubstanceColor]()
     @State private var foundCompanion: SubstanceCompanion?
 
     @State private var experiencesWithinLargerRange: [Experience] = []
@@ -122,8 +121,7 @@ struct FinishIngestionScreen: View {
                 NavigationLink {
                     ColorPickerScreen(
                         selectedColor: $selectedColor,
-                        alreadyUsedColors: alreadyUsedColors,
-                        otherColors: otherColors)
+                        usedColors: usedColors)
                 } label: {
                     HStack {
                         Text("\(arguments.substanceName) Color")
@@ -223,8 +221,7 @@ struct FinishIngestionScreen: View {
 
     func initializeColorCompanionAndNote() {
         let companions = PersistenceController.shared.getSubstanceCompanions()
-        alreadyUsedColors = Array(Set(companions.map { $0.color })).sorted()
-        otherColors = Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors)).sorted()
+        usedColors = companions.map(\.color)
         let companionMatch = companions.first { comp in
             comp.substanceNameUnwrapped == arguments.substanceName
         }
@@ -232,8 +229,7 @@ struct FinishIngestionScreen: View {
             foundCompanion = companionMatchUnwrap
             selectedColor = companionMatchUnwrap.color
         } else {
-            selectedColor = otherColors.filter { $0.isPreferred }.first ?? otherColors.first ?? SubstanceColor.allCases
-                .randomElement() ?? SubstanceColor.blue
+            selectedColor = SubstanceColor.suggested(avoiding: usedColors)
         }
     }
 

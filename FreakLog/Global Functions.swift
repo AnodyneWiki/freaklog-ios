@@ -16,7 +16,7 @@ func getCurrentAppVersion() -> String {
 // swiftlint:enable force_cast
 
 func getColor(for substanceName: String) -> SubstanceColor {
-    PersistenceController.shared.getSubstanceCompanion(for: substanceName)?.color ?? SubstanceColor.purple
+    PersistenceController.shared.getSubstanceCompanion(for: substanceName)?.color ?? SubstanceColor.fallback
 }
 
 func getDateFromMillis(millis: UInt64) -> Date {

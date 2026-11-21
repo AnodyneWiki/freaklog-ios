@@ -16,12 +16,8 @@ struct ChooseDateScreen: View {
         }
     }
 
-    private var alreadyUsedColors: [SubstanceColor] {
-        Array(Set(substanceCompanions.map { $0.color })).sorted()
-    }
-
-    private var otherColors: [SubstanceColor] {
-        Array(Set(SubstanceColor.allCases).subtracting(alreadyUsedColors)).sorted()
+    private var usedColors: [SubstanceColor] {
+        substanceCompanions.map(\.color)
     }
 
     var body: some View {
@@ -37,10 +33,9 @@ struct ChooseDateScreen: View {
             isShowingColorPicker: !doesSubstanceAlreadyHaveColor,
             substanceName: substanceName,
             selectedColor: $selectedColor,
-            alreadyUsedColors: alreadyUsedColors,
-            otherColors: otherColors
+            usedColors: usedColors
         ).onAppear {
-            selectedColor = otherColors.first ?? SubstanceColor.allCases.randomElement() ?? SubstanceColor.blue
+            selectedColor = SubstanceColor.suggested(avoiding: usedColors)
         }
     }
 
