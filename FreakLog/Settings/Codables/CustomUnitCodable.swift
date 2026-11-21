@@ -67,8 +67,7 @@ struct CustomUnitCodable: Codable {
         id = try values.decode(Int32.self, forKey: .id)
         substanceName = try values.decode(String.self, forKey: .substanceName)
         name = try values.decode(String.self, forKey: .name)
-        let creationMillis = try values.decode(UInt64.self, forKey: .creationDate)
-        creationDate = getDateFromMillis(millis: creationMillis)
+        creationDate = try values.decodeMillis(forKey: .creationDate)
         let routeString = try values.decode(String.self, forKey: .administrationRoute)
         if let route = AdministrationRoute(rawValue: routeString.lowercased()) {
             administrationRoute = route
@@ -90,7 +89,7 @@ struct CustomUnitCodable: Codable {
         try container.encode(id, forKey: .id)
         try container.encode(substanceName, forKey: .substanceName)
         try container.encode(name, forKey: .name)
-        try container.encode(UInt64(creationDate.timeIntervalSince1970) * 1000, forKey: .creationDate)
+        try container.encodeMillis(creationDate, forKey: .creationDate)
         try container.encode(administrationRoute.rawValue.uppercased(), forKey: .administrationRoute)
         try container.encode(dose, forKey: .dose)
         try container.encode(estimatedDoseStandardDeviation, forKey: .estimatedDoseStandardDeviation)

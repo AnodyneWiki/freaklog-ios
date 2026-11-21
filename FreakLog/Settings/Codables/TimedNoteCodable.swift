@@ -26,10 +26,8 @@ struct TimedNoteCodable: Codable {
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        let creationDateMillis = try values.decode(UInt64.self, forKey: .creationDate)
-        creationDate = getDateFromMillis(millis: creationDateMillis)
-        let timeMillis = try values.decode(UInt64.self, forKey: .time)
-        time = getDateFromMillis(millis: timeMillis)
+        creationDate = try values.decodeMillis(forKey: .creationDate)
+        time = try values.decodeMillis(forKey: .time)
         note = try values.decode(String.self, forKey: .note)
         color = try values.decode(SubstanceColor.self, forKey: .color)
         isPartOfTimeline = try values.decode(Bool.self, forKey: .isPartOfTimeline)
@@ -37,8 +35,8 @@ struct TimedNoteCodable: Codable {
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(UInt64(creationDate.timeIntervalSince1970) * 1000, forKey: .creationDate)
-        try container.encode(UInt64(time.timeIntervalSince1970) * 1000, forKey: .time)
+        try container.encodeMillis(creationDate, forKey: .creationDate)
+        try container.encodeMillis(time, forKey: .time)
         try container.encode(note, forKey: .note)
         try container.encode(color.rawValue.uppercased(), forKey: .color)
         try container.encode(isPartOfTimeline, forKey: .isPartOfTimeline)

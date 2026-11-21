@@ -195,6 +195,7 @@
 		EA48F86B29DC287E007DA8C5 /* EverythingForOneRating.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F86929DC26A6007DA8C5 /* EverythingForOneRating.swift */; };
 		EA48F88829DD4FD6007DA8C5 /* ExperienceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88729DD4FD6007DA8C5 /* ExperienceCodable.swift */; };
 		EA48F88A29DD501F007DA8C5 /* LocationCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88929DD501F007DA8C5 /* LocationCodable.swift */; };
+		C98221D9A01D6DA5A71A3633 /* MillisecondDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65493815E65ABAE6D019AFAF /* MillisecondDates.swift */; };
 		EA48F88C29DD503D007DA8C5 /* IngestionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88B29DD503D007DA8C5 /* IngestionCodable.swift */; };
 		EA48F88E29DD5053007DA8C5 /* CompanionCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88D29DD5053007DA8C5 /* CompanionCodable.swift */; };
 		EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */; };
@@ -583,6 +584,7 @@
 		EA48F86929DC26A6007DA8C5 /* EverythingForOneRating.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EverythingForOneRating.swift; sourceTree = "<group>"; };
 		EA48F88729DD4FD6007DA8C5 /* ExperienceCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceCodable.swift; sourceTree = "<group>"; };
 		EA48F88929DD501F007DA8C5 /* LocationCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationCodable.swift; sourceTree = "<group>"; };
+		65493815E65ABAE6D019AFAF /* MillisecondDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MillisecondDates.swift; sourceTree = "<group>"; };
 		EA48F88B29DD503D007DA8C5 /* IngestionCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionCodable.swift; sourceTree = "<group>"; };
 		EA48F88D29DD5053007DA8C5 /* CompanionCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompanionCodable.swift; sourceTree = "<group>"; };
 		EA48F88F29DD5076007DA8C5 /* CustomSubstanceCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomSubstanceCodable.swift; sourceTree = "<group>"; };
@@ -1145,6 +1147,7 @@
 				EA41C622295C2BE7000DA021 /* JournalFile.swift */,
 				EA48F88729DD4FD6007DA8C5 /* ExperienceCodable.swift */,
 				EA48F88929DD501F007DA8C5 /* LocationCodable.swift */,
+				65493815E65ABAE6D019AFAF /* MillisecondDates.swift */,
 				EA323B332B6E187600DC1316 /* CustomUnitCodable.swift */,
 				EA48F88B29DD503D007DA8C5 /* IngestionCodable.swift */,
 				EA48F88D29DD5053007DA8C5 /* CompanionCodable.swift */,
@@ -2050,6 +2053,7 @@
 				EAE4710726CBA57F009FB0EC /* FreakLog.swift in Sources */,
 				EA41C61D295AF236000DA021 /* InteractionsGroup.swift in Sources */,
 				EA48F88A29DD501F007DA8C5 /* LocationCodable.swift in Sources */,
+				C98221D9A01D6DA5A71A3633 /* MillisecondDates.swift in Sources */,
 				EAA9C36E2A50679100869E5A /* ToleranceType.swift in Sources */,
 				EA48F89A29E70F17007DA8C5 /* String-CaseInsensitiveContains.swift in Sources */,
 				EA418A002967397D00DEA663 /* MDMAMaxDoseCalculator.swift in Sources */,

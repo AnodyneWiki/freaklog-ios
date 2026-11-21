@@ -69,18 +69,9 @@ struct IngestionCodable: Codable {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         substanceName = try values.decode(String.self, forKey: .substanceName)
-        let timeMillis = try values.decode(UInt64.self, forKey: .time)
-        time = getDateFromMillis(millis: timeMillis)
-        if let endTimeMillis = try values.decodeIfPresent(UInt64.self, forKey: .endTime) {
-            endTime = getDateFromMillis(millis: endTimeMillis)
-        } else {
-            endTime = nil
-        }
-        if let creationMillis = try values.decodeIfPresent(UInt64.self, forKey: .creationDate) {
-            creationDate = getDateFromMillis(millis: creationMillis)
-        } else {
-            creationDate = nil
-        }
+        time = try values.decodeMillis(forKey: .time)
+        endTime = try values.decodeMillisIfPresent(forKey: .endTime)
+        creationDate = try values.decodeMillisIfPresent(forKey: .creationDate)
         let routeString = try values.decode(String.self, forKey: .administrationRoute)
         if let route = AdministrationRoute(rawValue: routeString.lowercased()) {
             administrationRoute = route
@@ -101,19 +92,9 @@ struct IngestionCodable: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(substanceName, forKey: .substanceName)
-        try container.encode(UInt64(time.timeIntervalSince1970) * 1000, forKey: .time)
-        if let endTime {
-            try container.encode(UInt64(endTime.timeIntervalSince1970) * 1000, forKey: .endTime)
-        } else {
-            let endTimeMillis: UInt64? = nil
-            try container.encode(endTimeMillis, forKey: .endTime)
-        }
-        if let creationDate {
-            try container.encode(UInt64(creationDate.timeIntervalSince1970) * 1000, forKey: .creationDate)
-        } else {
-            let creationMillis: UInt64? = nil
-            try container.encode(creationMillis, forKey: .creationDate)
-        }
+        try container.encodeMillis(time, forKey: .time)
+        try container.encodeMillis(endTime, forKey: .endTime)
+        try container.encodeMillis(creationDate, forKey: .creationDate)
         try container.encode(administrationRoute.rawValue.uppercased(), forKey: .administrationRoute)
         try container.encode(dose, forKey: .dose)
         try container.encode(estimatedDoseStandardDeviation, forKey: .estimatedDoseStandardDeviation)

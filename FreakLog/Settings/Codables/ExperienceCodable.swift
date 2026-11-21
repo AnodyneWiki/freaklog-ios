@@ -50,16 +50,11 @@ struct ExperienceCodable: Codable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         title = try values.decode(String.self, forKey: .title)
         text = try values.decode(String.self, forKey: .text)
-        let creationDateMillis = try values.decode(UInt64.self, forKey: .creationDate)
-        creationDate = getDateFromMillis(millis: creationDateMillis)
+        creationDate = try values.decodeMillis(forKey: .creationDate)
         isFavorite = try (values.decodeIfPresent(Bool.self, forKey: .isFavorite)) ?? false
         let ingestionCodables = try values.decodeIfPresent([IngestionCodable].self, forKey: .ingestions) ?? []
         ingestions = ingestionCodables
-        if let sortDateMillis = try values.decodeIfPresent(UInt64.self, forKey: .sortDate) {
-            sortDate = getDateFromMillis(millis: sortDateMillis)
-        } else {
-            sortDate = ingestionCodables.map { $0.time }.min()
-        }
+        sortDate = try values.decodeMillisIfPresent(forKey: .sortDate) ?? ingestionCodables.map(\.time).min()
         ratings = try (values.decodeIfPresent([RatingCodable].self, forKey: .ratings)) ?? []
         timedNotes = try (values.decodeIfPresent([TimedNoteCodable].self, forKey: .timedNotes)) ?? []
         location = try values.decodeIfPresent(LocationCodable.self, forKey: .location)
@@ -69,13 +64,8 @@ struct ExperienceCodable: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(title, forKey: .title)
         try container.encode(text, forKey: .text)
-        try container.encode(UInt64(creationDate.timeIntervalSince1970) * 1000, forKey: .creationDate)
-        if let sortDate {
-            try container.encode(UInt64(sortDate.timeIntervalSince1970) * 1000, forKey: .sortDate)
-        } else {
-            let sortMillis: UInt64? = nil
-            try container.encode(sortMillis, forKey: .sortDate)
-        }
+        try container.encodeMillis(creationDate, forKey: .creationDate)
+        try container.encodeMillis(sortDate, forKey: .sortDate)
         try container.encode(isFavorite, forKey: .isFavorite)
         try container.encode(ratings, forKey: .ratings)
         try container.encode(timedNotes, forKey: .timedNotes)

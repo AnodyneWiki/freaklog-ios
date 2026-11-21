@@ -19,11 +19,6 @@ func getColor(for substanceName: String) -> SubstanceColor {
     PersistenceController.shared.getSubstanceCompanion(for: substanceName)?.color ?? SubstanceColor.fallback
 }
 
-func getDateFromMillis(millis: UInt64) -> Date {
-    let secondsSince1970: TimeInterval = Double(millis) / 1000
-    return Date(timeIntervalSince1970: secondsSince1970)
-}
-
 func getDate(year: Int, month: Int, day: Int) -> Date? {
     let calendar = Calendar.current
     var dateComponents = DateComponents()
