@@ -1,6 +1,14 @@
 import ActivityKit
 import Foundation
 
+enum LiveActivities {
+    // Live activities need iOS 16.2, don't run on Mac and can be turned off by the user.
+    @MainActor static var areAvailable: Bool {
+        guard #available(iOS 16.2, *) else { return false }
+        return ActivityManager.shared.areActivitiesAvailable
+    }
+}
+
 @available(iOS 16.2, *)
 @MainActor
 class ActivityManager: ObservableObject {
@@ -10,10 +18,11 @@ class ActivityManager: ObservableObject {
     private var activityStateTask: Task<Void, Never>?
 
     private var areActivitiesSupported: Bool {
-        if ProcessInfo.processInfo.isiOSAppOnMac {
-            return false
-        }
-        return true
+        !ProcessInfo.processInfo.isiOSAppOnMac
+    }
+
+    var areActivitiesAvailable: Bool {
+        areActivitiesSupported && authorizationInfo.areActivitiesEnabled
     }
 
     init() {
@@ -33,7 +42,7 @@ class ActivityManager: ObservableObject {
     }
 
     func startOrUpdateActivity(_ state: TimelineWidgetAttributes.ContentState) async {
-        guard areActivitiesSupported, authorizationInfo.areActivitiesEnabled else { return }
+        guard areActivitiesAvailable else { return }
         if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first, firstActivity.activityState == .active {
             await firstActivity.update(ActivityContent(state: state, staleDate: nil))
         } else {
@@ -61,7 +70,7 @@ class ActivityManager: ObservableObject {
     }
 
     func stopActivity(_ state: TimelineWidgetAttributes.ContentState) async {
-        guard areActivitiesSupported, authorizationInfo.areActivitiesEnabled else { return }
+        guard areActivitiesAvailable else { return }
         let finalContent = ActivityContent(state: state, staleDate: nil)
         for activity in Activity<TimelineWidgetAttributes>.activities {
             await activity.end(finalContent, dismissalPolicy: .immediate)

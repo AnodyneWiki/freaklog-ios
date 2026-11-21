@@ -3,46 +3,13 @@ import SwiftUI
 import AppIntents
 
 struct SettingsScreen: View {
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
-    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
-    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
-    @AppStorage(Authenticator.hasToUnlockKey) var hasToUnlockApp: Bool = false
-    @AppStorage(Authenticator.lockTimeOptionKey) var lockTimeOptionString: String = LockTimeOption.after5Minutes.rawValue
-    @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
-    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
-    @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
-    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = true
     @StateObject private var viewModel = ViewModel()
     @EnvironmentObject var authenticator: Authenticator
     @EnvironmentObject private var toastViewModel: ToastViewModel
 
-    private var lockTimeOption: LockTimeOption {
-        LockTimeOption(rawValue: lockTimeOptionString) ?? LockTimeOption.after5Minutes
-    }
-
-    private func setLockTimeOption(option: LockTimeOption) {
-        lockTimeOptionString = option.rawValue
-    }
-
     var body: some View {
-        let timeOptionBinding = Binding {
-            lockTimeOption
-        } set: { newValue in
-            setLockTimeOption(option: newValue)
-        }
-        
         SettingsContent(
-            isEyeOpen: $isEyeOpen,
-            isHidingDosageDots: $isHidingDosageDots,
-            isHidingToleranceChartInExperience: $isHidingToleranceChartInExperience,
-            isHidingSubstanceInfoInExperience: $isHidingSubstanceInfoInExperience,
-            areRedosesDrawnIndividually: $areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: $areSubstanceHeightsIndependent,
-            shouldAutomaticallyStartLiveActivity: $shouldAutomaticallyStartLiveActivity,
-            isICloudSyncEnabled: $isICloudSyncEnabled,
             isFaceIDAvailable: authenticator.isFaceIDEnabled,
-            hasToUnlockApp: $hasToUnlockApp,
             isExporting: $viewModel.isExporting,
             journalFile: viewModel.journalFile,
             exportData: {
@@ -56,8 +23,7 @@ struct SettingsScreen: View {
                     viewModel.deleteEverything()
                     await WebhookManager.shared.deleteAllPresetsAndMessages()
                 }
-            },
-            lockTimeOption: timeOptionBinding
+            }
         )
         .onAppear {
             viewModel.toastViewModel = toastViewModel
@@ -66,16 +32,16 @@ struct SettingsScreen: View {
 }
 
 struct SettingsContent: View {
-    @Binding var isEyeOpen: Bool
-    @Binding var isHidingDosageDots: Bool
-    @Binding var isHidingToleranceChartInExperience: Bool
-    @Binding var isHidingSubstanceInfoInExperience: Bool
-    @Binding var areRedosesDrawnIndividually: Bool
-    @Binding var areSubstanceHeightsIndependent: Bool
-    @Binding var shouldAutomaticallyStartLiveActivity: Bool
-    @Binding var isICloudSyncEnabled: Bool
+    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
+    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
+    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
+    @AppStorage(Authenticator.hasToUnlockKey) var hasToUnlockApp: Bool = false
+    @AppStorage(Authenticator.lockTimeOptionKey) var lockTimeOption: LockTimeOption = .after5Minutes
+    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
+    // PersistenceController reads this with bool(forKey:), so unset means off
+    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
-    @Binding var hasToUnlockApp: Bool
     @State var isImporting = false
     @Binding var isExporting: Bool
     let journalFile: JournalFile
@@ -83,7 +49,6 @@ struct SettingsContent: View {
     let exportData: () -> Void
     let importData: (Data) -> Void
     let deleteEverything: () -> Void
-    @Binding var lockTimeOption: LockTimeOption
 
     @State private var isShowingDeleteConfirmation = false
     @State private var isShowingImportAlert = false
@@ -134,15 +99,11 @@ struct SettingsContent: View {
                         Label("Customize Tabs", systemImage: "rectangle.stack")
                     }
                     Group {
-                        Toggle("Hide dosage dots", isOn: $isHidingDosageDots)
-                        Toggle("Hide tolerance chart", isOn: $isHidingToleranceChartInExperience)
-                        Toggle("Hide substance info", isOn: $isHidingSubstanceInfoInExperience)
-                        Toggle("Draw redoses individually", isOn: $areRedosesDrawnIndividually)
-                        Toggle("Independent substance heights", isOn: $areSubstanceHeightsIndependent)
-                        if #available(iOS 16.2, *) {
-                            if !ProcessInfo.processInfo.isiOSAppOnMac, ActivityManager.shared.authorizationInfo.areActivitiesEnabled {
-                                Toggle("Automatic live activities", isOn: $shouldAutomaticallyStartLiveActivity)
-                            }
+                        Toggle("Dosage dots", isOn: $isHidingDosageDots.inverted)
+                        Toggle("Tolerance chart", isOn: $isHidingToleranceChartInExperience.inverted)
+                        Toggle("Substance info", isOn: $isHidingSubstanceInfoInExperience.inverted)
+                        if LiveActivities.areAvailable {
+                            Toggle("Automatic live activities", isOn: $shouldAutomaticallyStartLiveActivity)
                         }
                     }.tint(.accentColor)
                 }
@@ -282,23 +243,13 @@ struct SettingsContent: View {
 
 #Preview {
     SettingsContent(
-        isEyeOpen: .constant(true),
-        isHidingDosageDots: .constant(false),
-        isHidingToleranceChartInExperience: .constant(false),
-        isHidingSubstanceInfoInExperience: .constant(false),
-        areRedosesDrawnIndividually: .constant(false),
-        areSubstanceHeightsIndependent: .constant(false),
-        shouldAutomaticallyStartLiveActivity: .constant(false),
-        isICloudSyncEnabled: .constant(true),
         isFaceIDAvailable: true,
-        hasToUnlockApp: .constant(false),
         isImporting: false,
         isExporting: .constant(false),
         journalFile: JournalFile(experiences: [], customSubstances: [], customUnits: []),
         exportData: {},
         importData: { _ in },
-        deleteEverything: {},
-        lockTimeOption: .constant(.after5Minutes)
+        deleteEverything: {}
     )
     .accentColor(Color.blue)
 }

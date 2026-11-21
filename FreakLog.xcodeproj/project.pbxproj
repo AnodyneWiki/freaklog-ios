@@ -352,6 +352,7 @@
 		EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */; };
 		EAE471DE26CBA664009FB0EC /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
 		EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
+		B036711FE910690B423658E0 /* Binding-Inverted.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482A8D26F5057F423238EFB4 /* Binding-Inverted.swift */; };
 		EAE471E926CBA664009FB0EC /* Experience-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */; };
 		EAE4720026CBA664009FB0EC /* Date-String.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4717D26CBA664009FB0EC /* Date-String.swift */; };
 		EAE4720326CBA664009FB0EC /* Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4718026CBA664009FB0EC /* Persistence.swift */; };
@@ -739,6 +740,7 @@
 		EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Goya.xcdatamodel; sourceTree = "<group>"; };
 		EAE4715926CBA664009FB0EC /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Sequence-Uniqued.swift"; sourceTree = "<group>"; };
+		482A8D26F5057F423238EFB4 /* Binding-Inverted.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Binding-Inverted.swift"; sourceTree = "<group>"; };
 		EAE4716526CBA664009FB0EC /* Experience-CoreDataHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Experience-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		EAE4716726CBA664009FB0EC /* Ingestion-CoreDataHelpers.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Ingestion-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		EAE4717D26CBA664009FB0EC /* Date-String.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Date-String.swift"; sourceTree = "<group>"; };
@@ -1650,6 +1652,7 @@
 			isa = PBXGroup;
 			children = (
 				EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */,
+				482A8D26F5057F423238EFB4 /* Binding-Inverted.swift */,
 				EA60482D2A162225005C6A4B /* String-CleanSearch.swift */,
 				EAB165B127E49ACC003DF79D /* Notification-EyeName.swift */,
 				EAE4717D26CBA664009FB0EC /* Date-String.swift */,
@@ -2047,6 +2050,7 @@
 				EAA9C3902A548B9600869E5A /* SubstanceAndDay.swift in Sources */,
 				EA2D19692B11E85300B270A2 /* ChooseOtherRouteScreen.swift in Sources */,
 				EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */,
+				B036711FE910690B423658E0 /* Binding-Inverted.swift in Sources */,
 				EAC4BFFE2B890DF600293B44 /* OnFirstAppearModifier.swift in Sources */,
 				EA47E65927CA136C00F6E10F /* RoaRange.swift in Sources */,
 				EA4B8A072A969301009918DE /* WeightedLine.swift in Sources */,
