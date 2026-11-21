@@ -21,6 +21,10 @@ struct ToleranceWindow: Identifiable {
         }
     }
 
+    var displayName: String {
+        PersistenceController.shared.displayName(for: substanceName)
+    }
+
     func contains(date: Date) -> Bool {
         start <= date && end >= date
     }

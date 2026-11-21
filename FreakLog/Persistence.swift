@@ -458,6 +458,7 @@ struct PersistenceController {
             let searchPredicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
                 NSPredicate(format: "name CONTAINS[c] %@", filter),
                 NSPredicate(format: "substanceName CONTAINS[c] %@", filter),
+                NSPredicate(format: "substanceName IN %@", shared.substanceNames(withDisplayNameContaining: filter)),
                 NSPredicate(format: "unit CONTAINS[c] %@", filter),
                 NSPredicate(format: "note CONTAINS[c] %@", filter),
                 NSPredicate(format: "administrationRoute CONTAINS[c] %@", filter),

@@ -247,7 +247,7 @@ struct IngestionRowPreview: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text("\(substanceName), \(name)").font(.headline)
+            Text("\(PersistenceController.shared.displayName(for: substanceName)), \(name)").font(.headline)
             let units = multiplier.with(pluralizableUnit: PluralizableUnit(singular: unit, plural: unitPlural))
             if let dosePerUnit {
                 // The number of units is exact, so the deviation scales with it

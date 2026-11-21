@@ -32,9 +32,9 @@ private struct IngestionRowContent<Content: View>: View {
 
     private var title: String {
         if let customUnit = ingestion.customUnit {
-            "\(ingestion.substanceNameUnwrapped), \(customUnit.nameUnwrapped)"
+            "\(ingestion.substanceDisplayName), \(customUnit.nameUnwrapped)"
         } else {
-            ingestion.substanceNameUnwrapped
+            ingestion.substanceDisplayName
         }
     }
 

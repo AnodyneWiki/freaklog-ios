@@ -42,7 +42,7 @@ struct ToleranceChart: View {
                 BarMark(
                     xStart: .value("Start Time", window.start),
                     xEnd: .value("End Time", window.end),
-                    y: .value("Substance", window.substanceName)
+                    y: .value("Substance", window.displayName)
                 )
                 .foregroundStyle(window.barColor)
             }

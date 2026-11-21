@@ -93,7 +93,7 @@ private struct SubstanceRowLabel: View {
 
     var body: some View {
         VStack(alignment: .leading) {
-            Text(substance.name).font(.headline)
+            Text(substance.displayName).font(.headline)
             let commonNames = substance.commonNames.joined(separator: ", ")
             if !commonNames.isEmpty {
                 Text(commonNames).font(.subheadline).foregroundColor(.secondary)

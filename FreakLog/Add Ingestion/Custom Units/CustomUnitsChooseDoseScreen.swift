@@ -104,7 +104,7 @@ struct CustomUnitsChooseDoseScreen: View {
                             })
                     }
                 })
-        .navigationBarTitle("\(customUnit.substanceNameUnwrapped) Dose")
+        .navigationBarTitle("\(customUnit.substanceDisplayName) Dose")
     }
 
     // A new unit made from here is for the same substance and route

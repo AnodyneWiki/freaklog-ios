@@ -8,10 +8,30 @@ struct EditCustomSubstanceView: View {
   @State private var name = ""
   @State private var description = ""
 
+  private var trimmedName: String {
+    name.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  // Renaming onto another substance's name would merge their ingestions and data
+  private var isNameTaken: Bool {
+    guard trimmedName != customSubstance.nameUnwrapped else { return false }
+    return SubstanceRepo.shared.getSubstance(name: trimmedName) != nil
+      || PersistenceController.shared.getCustomSubstance(name: trimmedName) != nil
+  }
+
   var body: some View {
     List {
-      Section("Name") {
+      Section {
         TextField("Name", text: $name)
+      } header: {
+        Text("Name")
+      } footer: {
+        if isNameTaken {
+          Text("Another substance is already called \(trimmedName). The name is kept as \(customSubstance.nameUnwrapped).")
+            .foregroundColor(.red)
+        } else {
+          Text("Renaming also renames your ingestions, units and data of this substance.")
+        }
       }
       Section("Description") {
         TextField("Description", text: $description)
@@ -52,8 +72,7 @@ struct EditCustomSubstanceView: View {
     .onDisappear {
       guard !units.isEmpty else { return }
       let oldName = customSubstance.nameUnwrapped
-      let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-      let newName = trimmed.isEmpty ? oldName : trimmed
+      let newName = trimmedName.isEmpty || isNameTaken ? oldName : trimmedName
       customSubstance.name = newName
       customSubstance.units = units
       customSubstance.explanation = description

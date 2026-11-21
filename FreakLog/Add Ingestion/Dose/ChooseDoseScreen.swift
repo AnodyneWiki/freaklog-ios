@@ -234,7 +234,7 @@ struct ChooseDoseScreen: View {
       }
     })
     .scrollDismissesKeyboard(.interactively)
-    .navigationBarTitle("\(substanceName) Dose")
+    .navigationBarTitle("\(arguments.substance.displayName) Dose")
   }
 }
 

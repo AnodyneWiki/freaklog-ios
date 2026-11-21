@@ -59,11 +59,10 @@ struct WebhookService {
             unitString = ""
         }
 
-        let substance = data.substance
-        var displaySubstance = substance
+        var displaySubstance = data.substanceDisplayName
         if settings.isHyperlinked {
-            if let encodedSub = substance.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
-                displaySubstance = "[\(substance)](<\(settings.substanceInfoUrl)\(encodedSub)>)"
+            if let encodedSub = data.substance.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) {
+                displaySubstance = "[\(data.substanceDisplayName)](<\(settings.substanceInfoUrl)\(encodedSub)>)"
             }
         }
 

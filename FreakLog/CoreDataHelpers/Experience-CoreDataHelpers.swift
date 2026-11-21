@@ -114,9 +114,10 @@ extension Experience: Comparable {
         ingestionsSorted.map(\.substanceColor.swiftUIColor)
     }
 
+    // As shown, so with the user's display names
     var distinctUsedSubstanceNames: [String] {
         ingestionsSorted.map { ing in
-            ing.substanceNameUnwrapped
+            ing.substanceDisplayName
         }.uniqued()
     }
 

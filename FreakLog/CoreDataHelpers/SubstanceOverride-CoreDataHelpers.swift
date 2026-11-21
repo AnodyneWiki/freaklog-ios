@@ -15,10 +15,33 @@ extension SubstanceOverride {
   }
 }
 
+extension Substance {
+  var displayName: String {
+    PersistenceController.shared.displayName(for: name)
+  }
+}
+
+extension Ingestion {
+  var substanceDisplayName: String {
+    PersistenceController.shared.displayName(for: substanceNameUnwrapped)
+  }
+}
+
+extension CustomUnit {
+  var substanceDisplayName: String {
+    PersistenceController.shared.displayName(for: substanceNameUnwrapped)
+  }
+}
+
 extension PersistenceController {
   // What to show for a stored substance name
   func displayName(for substanceName: String) -> String {
     overrideCache.entry(for: substanceName)?.displayName ?? substanceName
+  }
+
+  // Stored names whose display name contains the text, for searches that query stored names
+  func substanceNames(withDisplayNameContaining text: String) -> [String] {
+    overrideCache.storedNames { $0.localizedStandardContains(text) }
   }
 
   // The user's categories if they set any, else PsychonautWiki's
@@ -92,6 +115,17 @@ final class SubstanceOverrideCache: @unchecked Sendable {
       entries = load()
     }
     return entries?[substanceName]
+  }
+
+  func storedNames(whereDisplayName isMatch: (String) -> Bool) -> [String] {
+    lock.lock()
+    defer { lock.unlock() }
+    if entries == nil {
+      entries = load()
+    }
+    return entries?.compactMap { name, entry in
+      entry.displayName.map(isMatch) == true ? name : nil
+    } ?? []
   }
 
   private func invalidate() {

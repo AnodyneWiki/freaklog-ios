@@ -14,12 +14,12 @@ struct AddToleranceIngestionScreen: View {
                                          cancel: { dismiss() },
                                          finish: finish)
                     } label: {
-                        Text(substance.name)
+                        Text(substance.displayName)
                             .font(.headline)
                     }
                 } else {
                     HStack(alignment: .firstTextBaseline) {
-                        Text(substance.name)
+                        Text(substance.displayName)
                             .font(.headline)
                         Spacer()
                         Text("No tolerance info")

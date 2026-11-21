@@ -52,7 +52,7 @@ struct ChooseRouteScreen: View {
             }
         }
         .padding(.horizontal)
-        .navigationBarTitle("\(substance.name) Routes")
+        .navigationBarTitle("\(substance.displayName) Routes")
     }
 
     @ViewBuilder

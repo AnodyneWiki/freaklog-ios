@@ -41,9 +41,12 @@ struct StatsScreen: View {
     }
 
     private func calculateStats() {
-        // Chart color lookups happen per mark, so resolve colors once instead of fetching per call
+        // Chart color lookups happen per mark, so resolve colors once instead of fetching per call.
+        // Charts plot and label the names as shown, so colors are keyed by display name.
         let colors = Dictionary(
-            substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
+            substanceCompanions.map {
+                (PersistenceController.shared.displayName(for: $0.substanceNameUnwrapped), $0.color.swiftUIColor)
+            },
             uniquingKeysWith: { first, _ in first }
         )
         let ingestionEntries = ingestions.map { ingestion in
@@ -102,7 +105,7 @@ struct StatsScreen: View {
         )
     }
 
-    // Sums entry weights per substance and calendar period
+    // Sums entry weights per substance and calendar period. These counts are only shown, so they use display names.
     private static func counts(
         of entries: [WeightedSubstanceDate],
         in timeRange: TimeRange,
@@ -111,11 +114,11 @@ struct StatsScreen: View {
         let calendar = Calendar.current
         return Dictionary(grouping: entries.filter { isIncluded($0.date) }) { entry in
             let period = calendar.dateComponents(timeRange.periodComponents, from: entry.date)
-            return PeriodKey(substanceName: entry.substanceName, period: period)
-        }.compactMap { _, group in
+            return PeriodKey(substanceName: PersistenceController.shared.displayName(for: entry.substanceName), period: period)
+        }.compactMap { key, group in
             guard let first = group.first else { return nil }
             let count = group.map(\.weight).reduce(0, +)
-            return SubstancePeriodCount(date: first.date, substanceName: first.substanceName, experienceCount: count)
+            return SubstancePeriodCount(date: first.date, substanceName: key.substanceName, experienceCount: count)
         }
     }
 

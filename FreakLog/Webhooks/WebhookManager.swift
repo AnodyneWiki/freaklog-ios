@@ -9,6 +9,8 @@ final class WebhookManager: Sendable {
     struct WebhookDataSnapshot: Sendable {
         let user: String
         let substance: String
+        // Shown in the message; `substance` is the stored name, used for the info link
+        let substanceDisplayName: String
         let dose: Double
         let units: String
         let isEstimate: Bool
@@ -233,6 +235,7 @@ extension WebhookManager.WebhookDataSnapshot {
         self.init(
             user: ingestion.isMine ? "" : ingestion.consumerNameUnwrapped,
             substance: ingestion.substanceNameUnwrapped,
+            substanceDisplayName: ingestion.substanceDisplayName,
             dose: dose,
             units: ingestion.customUnit.map { dose.justUnit(pluralizableUnit: $0.pluralizableUnit) } ?? ingestion.unitsUnwrapped,
             isEstimate: ingestion.isEstimate,

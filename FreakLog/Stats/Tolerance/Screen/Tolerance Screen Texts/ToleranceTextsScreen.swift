@@ -23,7 +23,7 @@ struct ToleranceTextsScreen: View {
                 } header: {
                     HStack {
                         Image(systemName: "circle.fill").foregroundColor(substance.color.swiftUIColor)
-                        Text(substance.substanceName)
+                        Text(PersistenceController.shared.displayName(for: substance.substanceName))
                     }
                 }
             }

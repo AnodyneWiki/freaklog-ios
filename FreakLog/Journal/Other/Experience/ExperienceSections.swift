@@ -84,7 +84,7 @@ struct SubstanceInfoSections<InfoFooter: View>: View {
             Section("Info") {
                 ForEach(substancesUsed) { substance in
                     NavigationLink(value: GlobalNavigationDestination.substance(substance: substance)) {
-                        Label(substance.name, systemImage: "info.circle")
+                        Label(substance.displayName, systemImage: "info.circle")
                     }
                 }
                 if substancesUsed.contains(where: { $0.isHallucinogen }) {

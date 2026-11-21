@@ -30,7 +30,7 @@ struct AcknowledgeSaferUseScreen: View {
                     Text(point)
                 }
             }
-        }.navigationTitle("Safer \(substance.name)")
+        }.navigationTitle("Safer \(substance.displayName)")
     }
 }
 

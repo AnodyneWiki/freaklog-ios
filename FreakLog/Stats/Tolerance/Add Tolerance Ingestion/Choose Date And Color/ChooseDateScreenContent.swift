@@ -35,7 +35,7 @@ struct ChooseDateScreenContent: View {
                         )
                     } label: {
                         HStack {
-                            Text("\(substanceName) Color")
+                            Text("\(PersistenceController.shared.displayName(for: substanceName)) Color")
                             Spacer()
                             Image(systemName: "circle.fill").foregroundColor(selectedColor.swiftUIColor)
                         }

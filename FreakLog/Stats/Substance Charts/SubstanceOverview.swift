@@ -8,9 +8,9 @@ struct SubstanceOverviewChart: View {
         Chart(substanceData.last12Months) { element in
             BarMark(
                 x: .value("Experiences", element.experienceCount),
-                y: .value("Substance", element.substanceName)
+                y: .value("Substance", element.displayName)
             )
-            .foregroundStyle(by: .value("Substance", element.substanceName))
+            .foregroundStyle(by: .value("Substance", element.displayName))
             .opacity(element.substanceName == substanceData.last12Months.first?.substanceName ? 1 : 0.5)
         }
         .chartForegroundStyleScale(mapping: substanceData.color(for:))
@@ -27,7 +27,7 @@ struct SubstanceOverview: View {
         VStack(alignment: .leading) {
             Text("Most Experiences Last 12 Months")
                 .foregroundStyle(.secondary)
-            if let mostUsedName = substanceData.last12Months.first?.substanceName {
+            if let mostUsedName = substanceData.last12Months.first?.displayName {
                 Text(mostUsedName)
                     .font(.title2.bold())
             } else {

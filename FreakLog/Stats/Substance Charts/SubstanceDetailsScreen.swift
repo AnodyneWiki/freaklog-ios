@@ -19,7 +19,7 @@ struct SubstanceDetailsScreen: View {
                         NavigationLink(value: GlobalNavigationDestination.dosageStat(substanceName: elem.substanceName)) {
                             VStack(alignment: .leading, spacing: 3) {
                                 HStack {
-                                    Text(elem.substanceName)
+                                    Text(elem.displayName)
                                         .font(.headline)
                                     Spacer()
                                     Text(elem.experienceCount.with(pluralizableUnit: PluralizableUnit(singular: "experience", plural: "experiences")))
@@ -29,7 +29,7 @@ struct SubstanceDetailsScreen: View {
                                 let widthRatio = Double(elem.experienceCount) / Double(maxCount)
                                 GeometryReader { geometry in
                                     Rectangle()
-                                        .fill(substanceData.color(for: elem.substanceName))
+                                        .fill(substanceData.color(for: elem.displayName))
                                         .cornerRadius(5, corners: [.topRight, .bottomRight])
                                         .frame(
                                             width: geometry.size.width * widthRatio

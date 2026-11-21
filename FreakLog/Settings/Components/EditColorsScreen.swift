@@ -17,7 +17,7 @@ struct EditColorsScreen: View {
                             companionToEdit = companion
                         }, label: {
                             CompanionRow(
-                                name: companion.substanceNameUnwrapped,
+                                name: PersistenceController.shared.displayName(for: companion.substanceNameUnwrapped),
                                 color: companion.color.swiftUIColor
                             ).foregroundColor(.primary)
                         })

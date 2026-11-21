@@ -10,7 +10,7 @@ struct PureSubstanceSuggestionView: View {
         VStack(alignment: .leading) {
             let routeText = isEyeOpen ? pureSubstanceSuggestions.route.rawValue.localizedCapitalized : ""
             Label(
-                "\(pureSubstanceSuggestions.substance.name) \(routeText)",
+                "\(pureSubstanceSuggestions.substance.displayName) \(routeText)",
                 systemImage: "circle.fill")
             .font(.headline)
             .foregroundColor(pureSubstanceSuggestions.substanceColor.swiftUIColor)

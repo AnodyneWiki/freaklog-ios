@@ -13,6 +13,10 @@ enum AddIngestionSubstance: Hashable {
         }
     }
 
+    var displayName: String {
+        PersistenceController.shared.displayName(for: name)
+    }
+
     var psychonautWikiSubstance: Substance? {
         if case .psychonautWiki(let substance) = self { substance } else { nil }
     }

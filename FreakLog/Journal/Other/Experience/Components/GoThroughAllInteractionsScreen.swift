@@ -6,7 +6,7 @@ struct GoThroughAllInteractionsScreen: View {
     var body: some View {
         List {
             ForEach(substancesToCheck) { substance in
-                Section(substance.name) {
+                Section(substance.displayName) {
                     if let interactions = substance.interactions {
                         InteractionsGroup(
                             interactions: interactions,

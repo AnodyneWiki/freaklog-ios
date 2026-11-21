@@ -31,8 +31,16 @@ struct ExperiencesList: View {
             #keyPath(Ingestion.substanceName),
             searchText as CVarArg
         )
+        let predicateDisplayName = NSPredicate(
+            format: "ANY %K.%K IN %@",
+            #keyPath(Experience.ingestions),
+            #keyPath(Ingestion.substanceName),
+            PersistenceController.shared.substanceNames(withDisplayNameContaining: searchText)
+        )
         var experiencePredicate: NSPredicate?
-        let orPredicates = NSCompoundPredicate(orPredicateWithSubpredicates: [predicateTitle, predicateSubstance, predicateNotes, predicateConsumer])
+        let orPredicates = NSCompoundPredicate(orPredicateWithSubpredicates: [
+            predicateTitle, predicateSubstance, predicateDisplayName, predicateNotes, predicateConsumer,
+        ])
         if isFavoriteFilterEnabled {
             if searchText.isEmpty {
                 experiencePredicate = predicateFavorite

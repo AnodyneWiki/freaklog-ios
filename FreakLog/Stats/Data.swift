@@ -11,6 +11,10 @@ struct SubstanceCount: Identifiable, Hashable {
 
     let substanceName: String
     let experienceCount: Int
+
+    var displayName: String {
+        PersistenceController.shared.displayName(for: substanceName)
+    }
 }
 
 struct SubstanceData: Hashable, Sendable {

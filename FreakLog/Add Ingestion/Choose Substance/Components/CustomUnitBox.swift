@@ -7,7 +7,7 @@ struct CustomUnitBox: View {
     var body: some View {
         NavigationLink(value: customUnit) {
             NavigatableListItemContent(
-                title: "\(customUnit.substanceNameUnwrapped), \(customUnit.nameUnwrapped)") {
+                title: "\(customUnit.substanceDisplayName), \(customUnit.nameUnwrapped)") {
                     Text("\(customUnit.doseOfOneUnitDescription) per \(customUnit.unitUnwrapped)")
                 }
         }

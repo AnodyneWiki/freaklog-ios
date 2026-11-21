@@ -20,7 +20,7 @@ struct ToleranceChartOverView: View {
                             BarMark(
                                 xStart: .value("Start Time", window.start),
                                 xEnd: .value("End Time", window.end),
-                                y: .value("Substance", window.substanceName)
+                                y: .value("Substance", window.displayName)
                             )
                             .foregroundStyle(window.barColor)
                         }
@@ -60,7 +60,7 @@ struct ToleranceChartOverView: View {
         toleranceWindows.filter { window in
             window.toleranceType == .full && window.contains(date: Date.now)
         }.map { window in
-            window.substanceName
+            window.displayName
         }.uniqued()
     }
 
@@ -68,7 +68,7 @@ struct ToleranceChartOverView: View {
         toleranceWindows.filter { window in
             window.toleranceType == .half && window.contains(date: Date.now)
         }.map { window in
-            window.substanceName
+            window.displayName
         }.uniqued()
     }
 }

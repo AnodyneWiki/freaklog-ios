@@ -40,7 +40,7 @@ struct AcknowledgeInteractionsContent: View {
                 Text("There are no documented interactions")
             }
         }
-        .navigationBarTitle(substance.name + " Interactions")
+        .navigationBarTitle(substance.displayName + " Interactions")
     }
 
     private var nextLink: some View {

@@ -141,6 +141,10 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         if !searchText.isEmpty {
             request.predicate = NSCompoundPredicate(orPredicateWithSubpredicates: [
                 NSPredicate(format: "substanceName CONTAINS[cd] %@", searchText),
+                NSPredicate(
+                    format: "substanceName IN %@",
+                    PersistenceController.shared.substanceNames(withDisplayNameContaining: searchText)
+                ),
                 NSPredicate(format: "note CONTAINS[cd] %@", searchText),
                 NSPredicate(format: "consumerName CONTAINS[cd] %@", searchText),
             ])

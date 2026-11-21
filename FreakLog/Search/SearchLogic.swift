@@ -20,9 +20,9 @@ enum SearchLogic {
             .stablySorted { [prefixNames.contains($0.name) ? 0 : 1] }
     }
 
-    // Substances whose name matches, or if there are none, those with a matching common name
+    // Substances whose name or the user's name for them matches, or if there are none, those with a matching common name
     private static func matches(in substances: [Substance], where isMatch: (String) -> Bool) -> [Substance] {
-        let mainMatches = substances.filter { isMatch($0.name) }
+        let mainMatches = substances.filter { isMatch($0.name) || isMatch($0.displayName) }
         guard mainMatches.isEmpty else { return mainMatches }
         return substances.filter { substance in
             (substance.commonNames + [substance.name]).contains(where: isMatch)

@@ -7,7 +7,7 @@ struct SearchSubstanceRow: View {
     var body: some View {
         NavigationLink(value: GlobalNavigationDestination.substance(substance: substance)) {
             VStack(alignment: .leading) {
-                Text(substance.name).font(.headline)
+                Text(substance.displayName).font(.headline)
                 let commonNames = substance.commonNames.joined(separator: ", ")
                 if !commonNames.isEmpty {
                     Text(commonNames).font(.subheadline).foregroundColor(.secondary)

@@ -122,7 +122,7 @@ struct FinishIngestionScreen: View {
                         usedColors: usedColors)
                 } label: {
                     HStack {
-                        Text("\(arguments.substanceName) Color")
+                        Text("\(PersistenceController.shared.displayName(for: arguments.substanceName)) Color")
                         Spacer()
                         Image(systemName: "circle.fill").foregroundColor(selectedColor.swiftUIColor)
                     }

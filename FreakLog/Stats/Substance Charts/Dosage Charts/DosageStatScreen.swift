@@ -88,12 +88,16 @@ struct DosageStatScreen: View {
                 }
             } else {
                 Section {
-                    Text("Not all your ingestions of \(substanceName) are using \(unit) as their pure unit. It's therefore not possible to sum those doses together to show a graph.")
+                    let name = PersistenceController.shared.displayName(for: substanceName)
+                    Text(
+                        "Not all your ingestions of \(name) are using \(unit) as their pure unit. "
+                            + "It's therefore not possible to sum those doses together to show a graph."
+                    )
                 }
             }
         }
         .scrollDismissesKeyboard(.interactively)
-        .navigationTitle(substanceName)
+        .navigationTitle(PersistenceController.shared.displayName(for: substanceName))
     }
 
     // Total dose per calendar period, with unknown doses counted as the estimate

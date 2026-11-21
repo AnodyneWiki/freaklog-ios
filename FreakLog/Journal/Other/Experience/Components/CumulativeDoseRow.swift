@@ -11,7 +11,7 @@ struct CumulativeDoseRow: View {
         HStack {
             ColorRectangle(color: substanceColor.swiftUIColor)
             VStack(alignment: .leading) {
-                Text(substanceName)
+                Text(PersistenceController.shared.displayName(for: substanceName))
                     .font(.headline)
                     .foregroundColor(.primary)
                 VStack {

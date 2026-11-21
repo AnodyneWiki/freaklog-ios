@@ -84,7 +84,7 @@ struct DosageStatChart: View {
                 .frame(height: 240)
             }
         } else {
-            Text("No \(substanceName) ingestions").foregroundStyle(.secondary)
+            Text("No \(PersistenceController.shared.displayName(for: substanceName)) ingestions").foregroundStyle(.secondary)
         }
     }
 

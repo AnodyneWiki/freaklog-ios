@@ -13,7 +13,7 @@ struct CustomUnitSuggestionView: View {
             let administrationRoute = customUnit.administrationRouteUnwrapped
             let routeText = isEyeOpen ? administrationRoute.rawValue.localizedCapitalized : ""
             Label(
-                "\(substanceName) \(routeText), \(customUnit.nameUnwrapped)",
+                "\(customUnit.substanceDisplayName) \(routeText), \(customUnit.nameUnwrapped)",
                 systemImage: "circle.fill")
             .font(.headline)
             .foregroundColor(customUnitSuggestions.substanceColor.swiftUIColor)

@@ -100,7 +100,7 @@ struct SubstanceScreen: View {
     .sheet(isPresented: $isShowingCustomizeSheet) {
       SubstanceCustomizeSheet(substance: substance)
     }
-    .navigationTitle(substance.name)
+    .navigationTitle(substance.displayName)
   }
 }
 
@@ -109,10 +109,23 @@ struct SubstanceScreen: View {
 struct SubstanceCustomizeSheet: View {
   let substance: Substance
   @Environment(\.dismiss) private var dismiss
+  @State private var displayName = ""
 
   var body: some View {
     NavigationStack {
       List {
+        Section {
+          TextField(substance.name, text: $displayName)
+            .autocorrectionDisabled()
+            .onSubmit(saveDisplayName)
+        } header: {
+          Text("Name")
+        } footer: {
+          Text(
+            "Shown instead of \(substance.name) in your journal, stats, search and webhooks. "
+              + "Your data stays linked to \(substance.name), so its dose, duration and interaction info keep working."
+          )
+        }
         Section {
           NavigationLink("Categories") {
             EditCategoriesScreen(substanceName: substance.name)
@@ -129,13 +142,27 @@ struct SubstanceCustomizeSheet: View {
           )
         }
       }
-      .navigationTitle(substance.name)
+      .navigationTitle(substance.displayName)
       .toolbar {
         ToolbarItem(placement: .cancellationAction) {
           Button("Done") { dismiss() }
         }
       }
+      .onAppear {
+        displayName = PersistenceController.shared.getSubstanceOverride(for: substance.name)?.trimmedDisplayName ?? ""
+      }
+      .onDisappear(perform: saveDisplayName)
     }
+  }
+
+  private func saveDisplayName() {
+    let override = PersistenceController.shared.getSubstanceOverride(for: substance.name)
+    guard displayName != override?.trimmedDisplayName ?? "" else { return }
+    PersistenceController.shared.setSubstanceOverride(
+      for: substance.name,
+      displayName: displayName,
+      categories: override?.categoryList
+    )
   }
 }
 

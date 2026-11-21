@@ -33,7 +33,7 @@ struct SubstanceBox: View {
     }
 
     private var content: some View {
-        NavigatableListItemContent(title: substance.name) {
+        NavigatableListItemContent(title: substance.displayName) {
             if !substance.commonNames.isEmpty {
                 Text(substance.commonNames, format: .list(type: .or))
             }

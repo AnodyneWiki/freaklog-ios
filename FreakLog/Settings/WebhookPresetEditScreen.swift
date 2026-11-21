@@ -123,6 +123,7 @@ struct EditWebhookPresetScreen: View {
         let data = WebhookManager.WebhookDataSnapshot(
             user: "Test User",
             substance: "Caffeine",
+            substanceDisplayName: "Caffeine",
             dose: 100,
             units: "mg",
             isEstimate: false,

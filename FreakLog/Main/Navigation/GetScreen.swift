@@ -14,11 +14,11 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             WebViewScreen(articleURL: articleURL)
         case let .webViewInteractions(substanceName, interactionURL):
             WebViewScreen(articleURL: interactionURL)
-                .navigationTitle("\(substanceName) Interactions")
+                .navigationTitle("\(PersistenceController.shared.displayName(for: substanceName)) Interactions")
         case let .dose(substance):
             List {
                 DosesSection(substance: substance)
-            }.navigationTitle("\(substance.name) Dosage")
+            }.navigationTitle("\(substance.displayName) Dosage")
         case .timelineInfo:
             List {
                 TimelineExplanationTexts()
