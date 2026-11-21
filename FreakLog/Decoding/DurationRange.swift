@@ -10,12 +10,6 @@ struct DurationRange: Codable, Equatable {
         case seconds, minutes, hours, days
     }
 
-    var isFullyDefined: Bool {
-        guard let minUnwrap = min else { return false }
-        guard let maxUnwrap = max else { return false }
-        return minUnwrap <= maxUnwrap
-    }
-
     var minSec: Double? {
         convertToSec(value: min)
     }

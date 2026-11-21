@@ -14,7 +14,6 @@ struct PersistenceController {
     static let isEyeOpenKey1 = "isEyeOpen"
     static let isEyeOpenKey2 = "isEyeOpen2"
     static let timeDisplayStyleKey = "timeDisplayStyle"
-    static let timeDisplayStyleDurationSectionKey = "timeDisplayStyleDurationSection"
     static let isHidingDosageDotsKey = "isHidingDosageDots"
     static let isHidingToleranceChartInExperienceKey = "isHidingToleranceChartInExperience"
     static let isHidingSubstanceInfoInExperienceKey = "isHidingSubstanceInfoInExperience"

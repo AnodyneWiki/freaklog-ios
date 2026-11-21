@@ -26,21 +26,6 @@ struct DurationSection: View {
     @State private var timelineModel: TimelineModel?
     @State private var hiddenRoutes: [AdministrationRoute] = []
 
-    @AppStorage(PersistenceController.timeDisplayStyleDurationSectionKey) private var timeDisplayStyleDurationSectionText: String = SaveableTimeDisplayStyle.auto.rawValue
-
-    private var saveableTimeDisplayStyle: SaveableTimeDisplayStyle {
-        SaveableTimeDisplayStyle(rawValue: timeDisplayStyleDurationSectionText) ?? .auto
-    }
-
-    var timeDisplayStyle: TimeDisplayStyle {
-        switch saveableTimeDisplayStyle {
-        case .regular:
-            return .regular
-        case .relativeToNow, .auto, .relativeToStart, .between:
-            return .relativeToNow
-        }
-    }
-
     var body: some View {
         Group {
             if let timelineModel { // have the if let here instead of in the section because the height of the item in the section is fixed when its first rendered
@@ -59,7 +44,7 @@ struct DurationSection: View {
                         }
                         EffectTimeline(
                             timelineModel: timelineModel,
-                            timeDisplayStyle: timeDisplayStyle
+                            timeDisplayStyle: .relativeToNow
                         )
                         Text(TimelineDisclaimers.heavyDose).font(.footnote)
                     }

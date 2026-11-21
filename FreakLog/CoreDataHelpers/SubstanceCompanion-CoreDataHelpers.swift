@@ -16,18 +16,4 @@ extension SubstanceCompanion {
     var ingestionsUnwrapped: [Ingestion] {
         ingestions?.allObjects as? [Ingestion] ?? []
     }
-
-    static var fakeMDMA: SubstanceCompanion {
-        let companion = SubstanceCompanion(context: PersistenceController.preview.viewContext)
-        companion.substanceName = "MDMA"
-        companion.colorAsText = SubstanceColor.pink.rawValue
-        return companion
-    }
-
-    static var fakeLSD: SubstanceCompanion {
-        let companion = SubstanceCompanion(context: PersistenceController.preview.viewContext)
-        companion.substanceName = "LSD"
-        companion.colorAsText = SubstanceColor.blue.rawValue
-        return companion
-    }
 }
