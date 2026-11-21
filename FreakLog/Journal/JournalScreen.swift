@@ -11,9 +11,20 @@ struct JournalScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
     @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = false
-    @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: JournalViewOption = .allIngestions
+    @AppStorage(PersistenceController.defaultJournalViewKey) private var defaultTab: JournalViewOption = .allIngestions
+    // The tab switched to in the journal, nil while on the default. It doesn't change the default tab setting.
+    @State private var switchedTab: JournalViewOption?
     // The experience list builds a new fetch for each search, so it only follows the text once typing pauses
     @State private var experienceSearchText = ""
+
+    // Without the switcher there is no way to change tabs, so the default tab is shown
+    private var selectedTab: JournalViewOption {
+        isHidingJournalTabSwitcher ? defaultTab : switchedTab ?? defaultTab
+    }
+
+    private var selectedTabBinding: Binding<JournalViewOption> {
+        Binding(get: { selectedTab }, set: { switchedTab = $0 })
+    }
 
     var body: some View {
         FabPosition(alignment: fabButtonPosition.alignment) {
@@ -62,10 +73,13 @@ struct JournalScreen: View {
             .disableAutocorrection(true)
         }
         .navigationTitle("Journal")
+        .onChange(of: defaultTab) { _ in
+            switchedTab = nil
+        }
         .toolbar {
             if !isHidingJournalTabSwitcher {
                 ToolbarItem(placement: .principal) {
-                    Picker("View", selection: $selectedTab) {
+                    Picker("View", selection: selectedTabBinding) {
                         ForEach(JournalViewOption.allCases) { option in
                             Text(option.text).tag(option)
                         }
