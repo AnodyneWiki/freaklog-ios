@@ -7,24 +7,14 @@ struct JournalScreen: View {
     @Binding var isFavoriteFilterEnabled: Bool
 
 
-    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
-
-    private var timeDisplayStyle: SaveableTimeDisplayStyle {
-        SaveableTimeDisplayStyle(rawValue: timeDisplayStyleText) ?? .auto
-    }
-
+    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
-
-    var fabAlignment: Alignment {
-        (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
-    }
-
+    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
     @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = false
-    @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: Int = JournalViewOption.allIngestions.rawValue
+    @AppStorage(PersistenceController.defaultJournalViewKey) var selectedTab: JournalViewOption = .allIngestions
 
     var body: some View {
-        FabPosition(alignment: fabAlignment) {
+        FabPosition(alignment: fabButtonPosition.alignment) {
             if !isSearchPresented {
                 Button {
                     Navigator.shared.showAddIngestionFullScreenCover()
@@ -34,7 +24,7 @@ struct JournalScreen: View {
             }
         } screen: {
             Group {
-                if selectedTab == JournalViewOption.experiences.rawValue {
+                if selectedTab == .experiences {
                     ExperiencesList(
                         searchText: searchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
@@ -49,7 +39,7 @@ struct JournalScreen: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .modify {
-                let prompt = selectedTab == JournalViewOption.experiences.rawValue ? "Search experiences" : "Search"
+                let prompt = selectedTab == .experiences ? "Search experiences" : "Search"
                 if isSearchPresented {
                     if #available(iOS 17.0, *) {
                         $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .automatic, prompt: prompt)
@@ -68,7 +58,7 @@ struct JournalScreen: View {
                 ToolbarItem(placement: .principal) {
                     Picker("View", selection: $selectedTab) {
                         ForEach(JournalViewOption.allCases) { option in
-                            Text(option.text).tag(option.rawValue)
+                            Text(option.text).tag(option)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -78,7 +68,7 @@ struct JournalScreen: View {
                 
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack {
-                    if selectedTab == JournalViewOption.experiences.rawValue {
+                    if selectedTab == .experiences {
                         favoriteButton
                     }
                     if !isSearchPresented {
@@ -103,7 +93,7 @@ struct JournalScreen: View {
         Menu {
             ForEach([SaveableTimeDisplayStyle.auto, .regular, .relativeToNow]) { style in
                 Button {
-                    timeDisplayStyleText = style.rawValue
+                    timeDisplayStyle = style
                 } label: {
                     if timeDisplayStyle == style {
                         Label(style.text, systemImage: "checkmark")

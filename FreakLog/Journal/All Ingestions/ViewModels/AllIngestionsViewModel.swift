@@ -66,8 +66,7 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     /// Returns ingestions for the configured dynamic range relative to the given ingestion.
     func getIngestionsForDynamicExperience(for ingestion: Ingestion) -> [Ingestion] {
         let anchorTime = ingestion.timeUnwrapped
-        let hours = UserDefaults.standard.integer(forKey: PersistenceController.dynamicExperienceRangeHoursKey)
-        let rangeHours = hours > 0 ? hours : 24
+        let rangeHours = DynamicRangeOption.current.rawValue
         // Extend the start date by 24 hours (or another buffer) to catch ingestions started before the window
         // but whose effects might bleed into it.
         let bufferHours: Double = 24

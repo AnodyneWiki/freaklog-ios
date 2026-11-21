@@ -5,21 +5,7 @@ import AppIntents
 struct ExperienceScreen: View {
     @ObservedObject var experience: Experience
 
-    @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyleText: String = SaveableTimeDisplayStyle.auto.rawValue
-
-    private var saveableTimeDisplayStyle: Binding<SaveableTimeDisplayStyle> {
-        Binding(
-            get: {
-                SaveableTimeDisplayStyle(rawValue: timeDisplayStyleText) ?? .regular
-            },
-            set: { newValue in timeDisplayStyleText = newValue.rawValue }
-        )
-    }
-
-    var timeDisplayStyle: TimeDisplayStyle {
-        saveableTimeDisplayStyle.wrappedValue.resolved(isCurrent: experience.isCurrent)
-    }
-
+    @AppStorage(PersistenceController.timeDisplayStyleKey) private var saveableTimeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @State private var isShowingDeleteConfirmation = false
     @State private var sheetToShow: SheetOption?
     @State private var hiddenIngestions: [ObjectIdentifier] = []
@@ -31,11 +17,7 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage(PersistenceController.isOpenLastExperienceSiriTipVisibleKey) private var isSiriTipVisible = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPositionString: String = FabButtonPosition.center.rawValue
-
-    var fabAlignment: Alignment {
-        (FabButtonPosition(rawValue: fabButtonPositionString) ?? .center).alignment
-    }
+    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
@@ -120,10 +102,10 @@ struct ExperienceScreen: View {
 
     var body: some View {
         let isCurrent = experience.isCurrent
-        let timeDisplayStyle = saveableTimeDisplayStyle.wrappedValue.resolved(isCurrent: isCurrent)
+        let timeDisplayStyle = saveableTimeDisplayStyle.resolved(isCurrent: isCurrent)
         let myIngestions = experience.myIngestionsSorted
         let firstIngestionTime = experience.ingestionsSorted.first?.time
-        FabPosition(alignment: fabAlignment) {
+        FabPosition(alignment: fabButtonPosition.alignment) {
             let threeHours: TimeInterval = 3*60*60
             if isCurrent || experience.creationDateUnwrapped.distance(to: .now) < threeHours {
                 Button(action: addIngestion) {
@@ -343,7 +325,7 @@ struct ExperienceScreen: View {
             ToolbarItemGroup(placement: .navigationBarTrailing) {
                 ExperienceToolbarContent(
                     experience: experience,
-                    saveableTimeDisplayStyle: saveableTimeDisplayStyle,
+                    saveableTimeDisplayStyle: $saveableTimeDisplayStyle,
                     sheetToShow: $sheetToShow,
                     isShowingDeleteConfirmation: $isShowingDeleteConfirmation,
                     addIngestion: addIngestion

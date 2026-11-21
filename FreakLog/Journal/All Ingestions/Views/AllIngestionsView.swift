@@ -9,7 +9,8 @@ struct AllIngestionsView: View {
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) private var areRedosesDrawnIndividually = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) private var areSubstanceHeightsIndependent = true
-    @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey) private var dynamicExperienceRangeHours: Int = 24
+    @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey)
+    private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var ingestionToEdit: Ingestion?
     @State private var hiddenIngestions: [ObjectIdentifier] = []
@@ -24,13 +25,10 @@ struct AllIngestionsView: View {
                 Section(header: ChameleonHeader(
                     title: section.id,
                     date: section.date,
-                    dynamicExperienceDestination: {
-                        let dynamicIngestions = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)
-                        if !dynamicIngestions.isEmpty {
-                            return GlobalNavigationDestination.dynamicExperience(ingestions: dynamicIngestions)
-                        }
-                        return nil
-                    }()
+                    onOverview: {
+                        let ingestions = viewModel.getIngestionsForDynamicExperienceLastIngestion(for: section.date)
+                        openDynamicExperience(ingestions: ingestions)
+                    }
                 )
                     .listRowInsets(EdgeInsets())
                     .listRowSeparator(.hidden)
@@ -75,35 +73,30 @@ struct AllIngestionsView: View {
             }
             viewModel.updateTimelineIngestions()
         }
-        .onChange(of: dynamicExperienceRangeHours) { _ in
+        .onChange(of: dynamicRange) { _ in
             viewModel.updateTimelineIngestions()
         }
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
     }
 
+    // In the general list, auto means regular time for the timeline
     private var viewTimeDisplayStyle: TimeDisplayStyle {
-        switch timeDisplayStyle {
-        case .regular: return .regular
-        case .relativeToNow: return .relativeToNow
-        case .relativeToStart: return .relativeToStart
-        case .between: return .between
-        case .auto: return .regular // In general list, auto usually means regular
-        }
+        timeDisplayStyle.resolved(isCurrent: false)
     }
 
     private var timelineModel: TimelineModel {
-        let anchorTime = viewModel.timelineIngestions.map(\.timeUnwrapped).max() ?? Date()
-        let rangeSeconds = TimeInterval(dynamicExperienceRangeHours * 60 * 60)
-        let startTime = anchorTime.addingTimeInterval(-rangeSeconds)
-        let visibleRange = startTime...anchorTime
-
-        return ExperienceLogic.timelineModel(
+        ExperienceLogic.dynamicTimelineModel(
             from: viewModel.timelineIngestions,
+            range: dynamicRange,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-            visibleTimeRange: visibleRange
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
         )
+    }
+
+    private func openDynamicExperience(ingestions: [Ingestion]) {
+        guard !ingestions.isEmpty else { return }
+        Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: ingestions))
     }
 }
 
@@ -113,9 +106,10 @@ private extension AllIngestionsView {
 
     @ViewBuilder
     var timelineSection: some View {
+        let timelineModel = timelineModel
         if timelineModel.isWorthDrawing {
             Button {
-                 Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: viewModel.timelineIngestions))
+                openDynamicExperience(ingestions: viewModel.timelineIngestions)
             } label: {
                 VStack(spacing: 0) {
                     EffectTimeline(
@@ -145,23 +139,8 @@ private extension AllIngestionsView {
                         isEyeOpen: isEyeOpen,
                         isHidingDosageDots: isHidingDosageDots,
                         timeText: {
-                            let style: TimeDisplayStyle = {
-                                switch timeDisplayStyle {
-                                case .regular: return .regular
-                                case .relativeToNow: return .relativeToNow
-                                case .relativeToStart: return .relativeToStart
-                                case .between: return .between
-                                case .auto:
-                                    // Auto logic: relative if recent (within dynamic range), otherwise regular
-                                    let window = TimeInterval(dynamicExperienceRangeHours) * 60 * 60
-                                    if ingestion.timeUnwrapped > Date.now.addingTimeInterval(-window) {
-                                        return .relativeToNow
-                                    } else {
-                                        return .regular
-                                    }
-                                }
-                            }()
-                            
+                            let style = timeDisplayStyle.resolved(isCurrent: dynamicRange.containsRecent(ingestion.timeUnwrapped))
+
                             if style == .relativeToNow {
                                 if timeDisplayStyle == .auto {
                                     HStack(spacing: 0) {
@@ -185,10 +164,7 @@ private extension AllIngestionsView {
                 .buttonStyle(.plain)
                 .contextMenu {
                     Button {
-                        let relatedIngestions = viewModel.getIngestionsForDynamicExperience(for: ingestion)
-                        if !relatedIngestions.isEmpty {
-                            Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: relatedIngestions))
-                        }
+                        openDynamicExperience(ingestions: viewModel.getIngestionsForDynamicExperience(for: ingestion))
                     } label: {
                         Label("Overview", systemImage: "clock.arrow.circlepath")
                     }

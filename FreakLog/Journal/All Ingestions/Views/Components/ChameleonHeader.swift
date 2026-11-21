@@ -6,7 +6,8 @@ import SwiftUI
 struct ChameleonHeader: View {
     let title: String
     let date: Date
-    var dynamicExperienceDestination: GlobalNavigationDestination? = nil
+    // Shows an overview button; the destination is only looked up when tapped
+    var onOverview: (() -> Void)? = nil
     
     @State private var isPinnedInternal = false
 
@@ -25,8 +26,8 @@ struct ChameleonHeader: View {
                     
                     Spacer()
                     
-                    if let dynamicExperienceDestination = dynamicExperienceDestination {
-                        NavigationLink(value: dynamicExperienceDestination) {
+                    if let onOverview {
+                        Button(action: onOverview) {
                             Label("Overview", systemImage: "arrow.down.left.and.arrow.up.right.square")
                                 .labelStyle(.iconOnly)
                                 .foregroundColor(.blue)

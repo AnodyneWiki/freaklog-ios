@@ -10,7 +10,22 @@ enum DynamicRangeOption: Int, CaseIterable, Identifiable {
     case seventyTwoHours = 72
     case oneWeek = 168
 
+    // The range chosen in journal settings, read outside of views
+    static var current: DynamicRangeOption {
+        DynamicRangeOption(rawValue: UserDefaults.standard.integer(forKey: PersistenceController.dynamicExperienceRangeHoursKey))
+            ?? .twentyFourHours
+    }
+
     var id: Int { rawValue }
+
+    var duration: TimeInterval {
+        TimeInterval(rawValue) * 60 * 60
+    }
+
+    // Whether the date lies within this range before now
+    func containsRecent(_ date: Date) -> Bool {
+        date > Date.now.addingTimeInterval(-duration)
+    }
     
     var text: String {
         switch self {

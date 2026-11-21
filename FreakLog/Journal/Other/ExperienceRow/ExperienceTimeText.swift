@@ -5,30 +5,11 @@ struct ExperienceTimeText: View {
     let timeDisplayStyle: SaveableTimeDisplayStyle
     let isCurrent: Bool
 
-    @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey) private var dynamicExperienceRangeHours: Int = 24
+    @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey)
+    private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     var body: some View {
-        let style: TimeDisplayStyle = {
-            switch timeDisplayStyle {
-            case .regular: return .regular
-            case .relativeToNow: return .relativeToNow
-            case .relativeToStart: return .relativeToStart
-            case .between: return .between
-            case .auto:
-                if isCurrent {
-                    return .relativeToNow
-                } else {
-                    // Auto logic: relative if recent (within dynamic range), otherwise regular
-                    let window = TimeInterval(dynamicExperienceRangeHours) * 60 * 60
-                    if time > Date.now.addingTimeInterval(-window) {
-                        return .relativeToNow
-                    } else {
-                        return .regular
-                    }
-                }
-            }
-        }()
-
+        let style = timeDisplayStyle.resolved(isCurrent: isCurrent || dynamicRange.containsRecent(time))
         if isCurrent {
             if time < .now {
                 return Text("Active since ") + Text(time, style: .relative)

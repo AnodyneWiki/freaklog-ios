@@ -63,6 +63,22 @@ struct ExperienceLogic {
         )
     }
     
+    // Timeline showing the given range up to the latest of the ingestions
+    static func dynamicTimelineModel(
+        from ingestions: [Ingestion],
+        range: DynamicRangeOption,
+        areRedosesDrawnIndividually: Bool,
+        areSubstanceHeightsIndependent: Bool
+    ) -> TimelineModel {
+        let anchorTime = ingestions.map(\.timeUnwrapped).max() ?? Date()
+        return timelineModel(
+            from: ingestions,
+            areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            visibleTimeRange: anchorTime.addingTimeInterval(-range.duration) ... anchorTime
+        )
+    }
+
     struct ChartData {
         let toleranceWindows: [ToleranceWindow]
         let substancesInChart: [SubstanceWithToleranceAndColor]
