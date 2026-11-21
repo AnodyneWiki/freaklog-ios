@@ -57,6 +57,8 @@ FreakLog/
 | `ShulginRating` | +/++ rating on an experience |
 | `TimedNote` | Note with timestamp within an experience |
 | `Spray` | Nasal spray calculator state |
+| `CustomRoa` | Dose/duration per route: a custom substance's data or a PsychonautWiki override |
+| `SubstanceOverride` | A substance's display name and categories, keyed by its stored name (model v9) |
 
 CoreData helper extensions live in `CoreDataHelpers/`. Each entity has a corresponding `EntityName-CoreDataHelpers.swift` file with computed properties and convenience methods. `Unwrapped` suffix on a property means it falls back to a safe default instead of returning an optional.
 
@@ -82,6 +84,9 @@ Pure logic that doesn't need a SwiftUI context lives in `ExperienceLogic.swift` 
 
 ### "My" vs "other" ingestions
 `consumerName == nil`, empty or whitespace-only = the user themselves. Anything else = someone else. Use `Ingestion.isMine` (or `ExperienceLogic.myIngestions/otherIngestions`) rather than checking `consumerName` directly, and store entered names with `Ingestion.storedConsumerName(_:)` (nil for the user).
+
+### Substance names and categories
+A substance's stored name is its key everywhere (ingestions, companions, units, `CustomRoa`, PsychonautWiki lookups), so show names with `PersistenceController.shared.displayName(for:)` (or `Substance.displayName`, `Ingestion.substanceDisplayName`, `CustomUnit.substanceDisplayName`) and keep using the stored name for lookups and navigation. PsychonautWiki substances can only get a display name; custom substances rename for real through `renameSubstance(from:to:)`, which also moves their `SubstanceOverride`. Read categories with `PersistenceController.shared.categories(for:)` (the user's, else PsychonautWiki's), never `substance.categories`. Both are cached; changing an override also clears `InteractionChecker`'s cache. Searches over stored names add `substanceNames(withDisplayNameContaining:)`.
 
 ### Substance color
 Each substance name maps to a `SubstanceColor` via the `SubstanceCompanion` entity. To look up a color by substance name, call the global `getColor(for: substanceName)`. Returns `SubstanceColor.fallback` (purple) if no companion exists. Use `ColorPickerScreen(selectedColor:usedColors:)` to pick a color and `SubstanceColor.suggested(avoiding:)` for a new substance's default.
