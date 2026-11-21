@@ -46,7 +46,6 @@ struct StatsScreen: View {
             substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
             uniquingKeysWith: { first, _ in first }
         )
-        let colorMapping: @Sendable (String) -> Color = { colors[$0] ?? SubstanceColor.purple.swiftUIColor }
         let ingestionEntries = ingestions.map { ingestion in
             WeightedSubstanceDate(substanceName: ingestion.substanceNameUnwrapped, date: ingestion.timeUnwrapped, weight: 1)
         }
@@ -56,13 +55,13 @@ struct StatsScreen: View {
             let names = experience.myIngestionsSorted.map(\.substanceNameUnwrapped).uniqued()
             return names.map { WeightedSubstanceDate(substanceName: $0, date: date, weight: 1 / Double(names.count)) }
         }
-        ingestionData = Self.experienceData(from: ingestionEntries, colorMapping: colorMapping)
-        experienceData = Self.experienceData(from: experienceEntries, colorMapping: colorMapping)
+        ingestionData = Self.experienceData(from: ingestionEntries, colors: colors)
+        experienceData = Self.experienceData(from: experienceEntries, colors: colors)
         substanceData = SubstanceData(
             last30Days: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast30Days),
             last12Months: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast12Months),
             years: Self.substanceCounts(of: experienceEntries, where: { _ in true }),
-            colorMapping: colorMapping
+            colors: colors
         )
         let ingestionsLast90Days = ingestions.prefix { ing in
             Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: Date()) <= 90
@@ -94,35 +93,29 @@ struct StatsScreen: View {
         Calendar.current.numberOfMonthsBetween(date, and: Date()) <= 12
     }
 
-    private static func experienceData(
-        from entries: [WeightedSubstanceDate],
-        colorMapping: @escaping @Sendable (String) -> Color
-    ) -> ExperienceData {
+    private static func experienceData(from entries: [WeightedSubstanceDate], colors: [String: Color]) -> ExperienceData {
         ExperienceData(
-            last30Days: counts(of: entries, per: [.year, .month, .day], where: isWithinLast30Days).map {
-                SubstanceExperienceCountForDay(day: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
-            },
-            last12Months: counts(of: entries, per: [.year, .month], where: isWithinLast12Months).map {
-                SubstanceExperienceCountForMonth(month: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
-            },
-            years: counts(of: entries, per: [.year], where: { _ in true }).map {
-                SubstanceExperienceCountForYear(year: $0.date, substanceName: $0.substanceName, experienceCount: $0.count)
-            },
-            colorMapping: colorMapping
+            last30Days: counts(of: entries, in: .last30Days, where: isWithinLast30Days),
+            last12Months: counts(of: entries, in: .last12Months, where: isWithinLast12Months),
+            years: counts(of: entries, in: .years, where: { _ in true }),
+            colors: colors
         )
     }
 
     // Sums entry weights per substance and calendar period
     private static func counts(
         of entries: [WeightedSubstanceDate],
-        per periodComponents: Set<Calendar.Component>,
+        in timeRange: TimeRange,
         where isIncluded: (Date) -> Bool
-    ) -> [(substanceName: String, date: Date, count: Double)] {
-        Dictionary(grouping: entries.filter { isIncluded($0.date) }) { entry in
-            PeriodKey(substanceName: entry.substanceName, period: Calendar.current.dateComponents(periodComponents, from: entry.date))
+    ) -> [SubstancePeriodCount] {
+        let calendar = Calendar.current
+        return Dictionary(grouping: entries.filter { isIncluded($0.date) }) { entry in
+            let period = calendar.dateComponents(timeRange.periodComponents, from: entry.date)
+            return PeriodKey(substanceName: entry.substanceName, period: period)
         }.compactMap { _, group in
             guard let first = group.first else { return nil }
-            return (first.substanceName, first.date, group.map(\.weight).reduce(0, +))
+            let count = group.map(\.weight).reduce(0, +)
+            return SubstancePeriodCount(date: first.date, substanceName: first.substanceName, experienceCount: count)
         }
     }
 

@@ -167,9 +167,7 @@
 		EA41C62B295EB79A000DA021 /* ExperienceOverview.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C62A295EB79A000DA021 /* ExperienceOverview.swift */; };
 		EA41C62D295EB7C2000DA021 /* ExperienceDetailsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C62C295EB7C2000DA021 /* ExperienceDetailsScreen.swift */; };
 		EA41C62F295EB86C000DA021 /* TimeRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C62E295EB86C000DA021 /* TimeRange.swift */; };
-		EA41C632295F8921000DA021 /* DailyExperienceChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C631295F8921000DA021 /* DailyExperienceChart.swift */; };
-		EA41C634295F895C000DA021 /* MonthlyExperienceChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C633295F895C000DA021 /* MonthlyExperienceChart.swift */; };
-		EA41C636295F89BA000DA021 /* YearlyExperienceChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C635295F89BA000DA021 /* YearlyExperienceChart.swift */; };
+		EA41C634295F895C000DA021 /* ExperienceChart.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA41C633295F895C000DA021 /* ExperienceChart.swift */; };
 		EA460D1F2762CA8B002EF80B /* FAQView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA460D1E2762CA8B002EF80B /* FAQView.swift */; };
 		EA460D2427637964002EF80B /* QuestionAndAnswer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA460D2327637964002EF80B /* QuestionAndAnswer.swift */; };
 		EA4793582B48122C00685EAA /* CustomUnitDosePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4793572B48122C00685EAA /* CustomUnitDosePicker.swift */; };
@@ -558,9 +556,7 @@
 		EA41C62A295EB79A000DA021 /* ExperienceOverview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceOverview.swift; sourceTree = "<group>"; };
 		EA41C62C295EB7C2000DA021 /* ExperienceDetailsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceDetailsScreen.swift; sourceTree = "<group>"; };
 		EA41C62E295EB86C000DA021 /* TimeRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeRange.swift; sourceTree = "<group>"; };
-		EA41C631295F8921000DA021 /* DailyExperienceChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyExperienceChart.swift; sourceTree = "<group>"; };
-		EA41C633295F895C000DA021 /* MonthlyExperienceChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MonthlyExperienceChart.swift; sourceTree = "<group>"; };
-		EA41C635295F89BA000DA021 /* YearlyExperienceChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YearlyExperienceChart.swift; sourceTree = "<group>"; };
+		EA41C633295F895C000DA021 /* ExperienceChart.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceChart.swift; sourceTree = "<group>"; };
 		EA460D1E2762CA8B002EF80B /* FAQView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FAQView.swift; sourceTree = "<group>"; };
 		EA460D2327637964002EF80B /* QuestionAndAnswer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuestionAndAnswer.swift; sourceTree = "<group>"; };
 		EA4793572B48122C00685EAA /* CustomUnitDosePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomUnitDosePicker.swift; sourceTree = "<group>"; };
@@ -1095,9 +1091,7 @@
 			children = (
 				EA41C62A295EB79A000DA021 /* ExperienceOverview.swift */,
 				EA41C62C295EB7C2000DA021 /* ExperienceDetailsScreen.swift */,
-				EA41C631295F8921000DA021 /* DailyExperienceChart.swift */,
-				EA41C633295F895C000DA021 /* MonthlyExperienceChart.swift */,
-				EA41C635295F89BA000DA021 /* YearlyExperienceChart.swift */,
+				EA41C633295F895C000DA021 /* ExperienceChart.swift */,
 			);
 			path = "Experience Charts";
 			sourceTree = "<group>";
@@ -2044,9 +2038,8 @@
 				EACF439B2BA24026008D1897 /* DosageStatScreen.swift in Sources */,
 				EA085DE429616E45001638AC /* TimelineWidgetAttributes.swift in Sources */,
 				EAC39DC2297881E90012823D /* EditColorsScreen.swift in Sources */,
-				EA41C634295F895C000DA021 /* MonthlyExperienceChart.swift in Sources */,
+				EA41C634295F895C000DA021 /* ExperienceChart.swift in Sources */,
 				EAC23794276750C500109622 /* Global Functions.swift in Sources */,
-				EA41C632295F8921000DA021 /* DailyExperienceChart.swift in Sources */,
 				EAA9C3902A548B9600869E5A /* SubstanceAndDay.swift in Sources */,
 				EA2D19692B11E85300B270A2 /* ChooseOtherRouteScreen.swift in Sources */,
 				EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */,
@@ -2135,7 +2128,6 @@
 				EA014F9E27E5F5F200077FB2 /* RowLabelView.swift in Sources */,
 				EAE4720026CBA664009FB0EC /* Date-String.swift in Sources */,
 				EAE4720B26CBA664009FB0EC /* ExperienceScreen.swift in Sources */,
-				EA41C636295F89BA000DA021 /* YearlyExperienceChart.swift in Sources */,
 				EA302E482B381C2F007F113F /* FinishIngestionScreenArguments.swift in Sources */,
 				EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */,
 				EA4189FD2966DA4500DEA663 /* MDMAOptimalDoseSection.swift in Sources */,

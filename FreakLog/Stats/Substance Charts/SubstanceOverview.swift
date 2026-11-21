@@ -13,7 +13,7 @@ struct SubstanceOverviewChart: View {
             .foregroundStyle(by: .value("Substance", element.substanceName))
             .opacity(element.substanceName == substanceData.last12Months.first?.substanceName ? 1 : 0.5)
         }
-        .chartForegroundStyleScale(mapping: substanceData.colorMapping)
+        .chartForegroundStyleScale(mapping: substanceData.color(for:))
         .chartLegend(.hidden)
         .chartXAxis(.hidden)
         .chartYAxis(.hidden)

@@ -6,8 +6,7 @@ struct ExperienceDetailsScreen: View {
   let ingestionData: ExperienceData
   @State private var timeRange: TimeRange = .last12Months
   @State private var showIngestions = false
-  @State private var isShowingMonthlyAverageLine: Bool = false
-  @State private var isShowingYearlyAverageLine: Bool = false
+  @State private var isShowingAverageLine: Bool = false
   @State private var highlightedSubstanceNames: [String] = []
 
   private var activeData: ExperienceData {
@@ -29,42 +28,21 @@ struct ExperienceDetailsScreen: View {
         .padding(.bottom, 4)
         TimeRangePicker(value: $timeRange)
           .padding(.bottom)
-        let chartHeight: CGFloat = 240
-        switch timeRange {
-        case .last30Days:
-          DailyExperienceChart(
-            experienceData: activeData,
-            colorMapping: getColor,
-            unitLabel: unitLabel,
-            chartHeight: chartHeight
-          )
-        case .last12Months:
-          MonthlyExperienceChart(
-            experienceData: activeData,
-            isShowingMonthlyAverageLine: isShowingMonthlyAverageLine,
-            colorMapping: getColor,
-            unitLabel: unitLabel,
-            chartHeight: chartHeight
-          )
-        case .years:
-          YearlyExperienceChart(
-            experienceData: activeData,
-            isShowingYearlyAverageLine: isShowingYearlyAverageLine,
-            colorMapping: getColor,
-            unitLabel: unitLabel,
-            chartHeight: chartHeight
-          )
-        }
+        ExperienceChart(
+          experienceData: activeData,
+          timeRange: timeRange,
+          isShowingAverageLine: isShowingAverageLine && timeRange != .last30Days,
+          colorMapping: getColor,
+          unitLabel: unitLabel
+        )
+        .id(timeRange)
       }
       .listRowSeparator(.hidden)
       .chartLegend(.hidden)
-      if timeRange == .last12Months {
+      if timeRange != .last30Days {
         Section("Options") {
-          Toggle("Show Monthly Average", isOn: $isShowingMonthlyAverageLine).tint(.accentColor)
-        }
-      } else if timeRange == .years {
-        Section("Options") {
-          Toggle("Show Yearly Average", isOn: $isShowingYearlyAverageLine).tint(.accentColor)
+          Toggle(timeRange == .years ? "Show Yearly Average" : "Show Monthly Average", isOn: $isShowingAverageLine)
+            .tint(.accentColor)
         }
       }
       let substanceCounts = activeData.getSubstanceExperienceCounts(in: timeRange)
@@ -115,11 +93,8 @@ struct ExperienceDetailsScreen: View {
   }
 
   private func getColor(name: String) -> Color {
-    if highlightedSubstanceNames.isEmpty {
-      return activeData.colorMapping(name)
-    }
-    if highlightedSubstanceNames.contains(name) {
-      return activeData.colorMapping(name)
+    if highlightedSubstanceNames.isEmpty || highlightedSubstanceNames.contains(name) {
+      return activeData.color(for: name)
     } else {
       return Color.gray.opacity(0.3)
     }

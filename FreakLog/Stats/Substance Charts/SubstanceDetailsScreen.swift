@@ -6,14 +6,7 @@ struct SubstanceDetailsScreen: View {
     @State private var timeRange: TimeRange = .last12Months
 
     var data: [SubstanceCount] {
-        switch timeRange {
-        case .last30Days:
-            return substanceData.last30Days
-        case .last12Months:
-            return substanceData.last12Months
-        case .years:
-            return substanceData.years
-        }
+        substanceData.counts(in: timeRange)
     }
 
     var body: some View {
@@ -36,7 +29,7 @@ struct SubstanceDetailsScreen: View {
                                 let widthRatio = Double(elem.experienceCount) / Double(maxCount)
                                 GeometryReader { geometry in
                                     Rectangle()
-                                        .fill(substanceData.colorMapping(elem.substanceName))
+                                        .fill(substanceData.color(for: elem.substanceName))
                                         .cornerRadius(5, corners: [.topRight, .bottomRight])
                                         .frame(
                                             width: geometry.size.width * widthRatio
