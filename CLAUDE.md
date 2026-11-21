@@ -16,7 +16,7 @@ Psychoactive substance ingestion journal. Users log ingestions, track effects ov
 |--------|---------|
 | `FreakLog` | Main app |
 | `TimelineWidget` | Live Activity widget (iOS 16.2+) |
-| `FreakLogTests` | Unit tests (decoding, interaction logic) |
+| `FreakLogTests` | Unit tests (decoding, interaction logic, export/import round trip) |
 
 ## Directory layout
 
@@ -93,13 +93,18 @@ All fetch requests are built by the static factories on `PersistenceController` 
 Always look up dose/duration with `PersistenceController.shared.resolvedRoa(for:route:)` (or `resolvedDose`/`resolvedDuration`). It merges PsychonautWiki data with the user's `CustomRoa` overrides and custom substance data, and is backed by an in-memory cache, so it is cheap to call from views. `CustomRoa` rows are keyed by `substanceName` + route; `CustomRoaCodable` is the value form used for editing and export/import. A duration phase with a single value is a fixed time. The editor starts from `CustomRoaCodable.psychonautWikiValues(for:route:)` and only saves an override when the values differ from it.
 
 ### Deleting ingestions
-Delete ingestions, experiences and custom units through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)` / `delete(customUnit:)`. It deletes locally right away, then removes sent webhook messages and notifies leaderboard servers in the background; it also ends the live activity of a deleted current experience. For bulk deletes elsewhere, collect `remoteCleanUp(for:)` before deleting and call it afterwards.
+Delete ingestions, experiences and custom units through `IngestionDeletion.delete(ingestions:)` / `delete(experience:)` / `delete(customUnit:)`. It deletes locally right away, then removes sent webhook messages and notifies leaderboard servers in the background. For bulk deletes elsewhere, collect `remoteCleanUp(for:)` before deleting and call it afterwards.
+
+### Saving ingestions
+Save added and edited ingestions with `IngestionSaving.save(_:sendingWebhooksTo:)`. It saves the view context, sends a new ingestion to the chosen webhook presets or updates the sent messages of an edited one, and syncs leaderboards. An experience's `sortDate` is kept on its first ingestion's time by the view context right before every save, so screens never set it themselves (only `Experience.create` gives the initial one).
 
 ### Adding and editing ingestions
 The add (`FinishIngestionScreen`) and edit (`EditIngestionScreen`) forms share `ExperiencePickerRow`, `ConsumerRow`, `LocationButton` and `EstimateFields` (the estimate toggle with ± deviation field). Create experiences with `Experience.create(at:title:in:)` and set locations with `Ingestion.setLocation(_:)`; `ExperienceLocation.make(from:in:)` / `update(from:)` convert anything that is a `LocationValue` (`Location`, `LocationCodable`). Time labels for ingestions, notes and ratings under each `TimeDisplayStyle` come from `EventTimeText`.
 
+PsychonautWiki and custom substances go through the same add screens: `AddIngestionSubstance` names either one, and `ChooseRouteScreenArguments`, `SubstanceAndRoute` (also used to make custom units) and `ChooseOtherRouteScreenArguments` carry it. Open the add ingestion cover with `Navigator.shared.showAddIngestionFullScreenCover(startingAt:)`; the start time reaches `FinishIngestionScreen` as the `addIngestionStartTime` environment value.
+
 ### Live activities
-Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user) rather than repeating the checks.
+Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user) rather than repeating the checks. Start or switch the activity with `ActivityManager.shared.show(_:hiddenIngestions:hiddenRatings:)` and end it with `stop()`. Once shown, it follows its experience by itself: changes to the view context or the timeline settings redraw it and deleting the experience ends it, so never push a new state after saving.
 
 ### Administration site strings
 `AdministrationSiteSelection` holds the route-specific site (nostril, vein, muscle, subcutaneous site). `siteString(for:)` converts it into the string stored on `Ingestion.administrationSite` and `init(route:storedSite:)` parses it back. Use `AdministrationSitePicker` for the picker.
@@ -108,7 +113,10 @@ Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user)
 All webhook HTTP calls go through `WebhookManager.shared`. It handles send, edit, and delete (for ingestion deletion and preset deletion). Message content is built from the saved ingestion by `WebhookDataSnapshot(ingestion:)`, so send and edit always agree. Deletion helpers (`executeDeletions`, `buildPresetDeletionTargets`) are private; call the public `deleteWebhookMessages(for:)`, `deleteMessage(_:)` or `deletePreset(_:deletingMessages:)`.
 
 ### Timeline drawing
-The timeline is drawn with SwiftUI Canvas in `Timeline/`. `TimelineModel` is the pure-data input. `getSubstanceIngestionGroups()` (`Timeline/Preparation/SubstanceIngestionGroup.swift`, app only) builds the `SubstanceIngestionGroup` payload with resolved durations and dose weights already filled in, so the timeline and the live activity widget never look up substance data themselves. Build live activity state with `Experience.liveActivityState(...)`.
+The timeline is drawn with SwiftUI Canvas in `Timeline/`. `TimelineModel` is the pure-data input. `getSubstanceIngestionGroups()` (`Timeline/Preparation/SubstanceIngestionGroup.swift`, app only) builds the `SubstanceIngestionGroup` payload with resolved durations and dose weights already filled in, so the timeline and the live activity widget never look up substance data themselves. `ActivityManager` builds the live activity state with `Experience.liveActivityState(...)`.
+
+### Export and import
+Each codable in `Settings/Codables/` maps its entity both ways: `init(_:)` for export and `insert(into:)` for import. `JournalFile.init(experiences:...)` builds an export and `JournalFile.insert(into:)` imports one, linking companions, custom units and experiences. Add a new field to both sides of its codable.
 
 ## UserDefaults keys
 All keys are static constants on `PersistenceController`. Never hard-code key strings — add them there. Store enum settings as typed `@AppStorage` values (e.g. `SaveableTimeDisplayStyle`) instead of raw strings. One-off data migrations go in the list in `PersistenceController.runPendingMigrations()`.
@@ -125,7 +133,7 @@ All keys are static constants on `PersistenceController`. Never hard-code key st
 
 ## Known issues / intentional workarounds
 - `@preconcurrency import CoreData` and `@preconcurrency import CoreLocation` appear on some files — this suppresses Swift concurrency warnings while full Sendable conformance is pending. Do not remove without fixing the underlying concurrency issues.
-- `swiftlint:disable` blocks in `Settings-ViewModel.swift` (import function) and a few other files are justified by the genuinely complex/long functions — do not split them artificially just to remove the disable.
+- `swiftlint:disable` blocks in `Settings-ViewModel.swift` (old export conversion in `tryConvertFile`) and a few other files are justified by the genuinely complex/long functions — do not split them artificially just to remove the disable.
 
 ## What not to do
 - Do not add new global `print()` statements for non-error paths. Errors that reach `catch` blocks may log via `print` but routine flow should not.
