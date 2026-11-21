@@ -228,6 +228,7 @@
 		EA4B8A252A9CFD34009918DE /* ConsumerWithIngestions.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A242A9CFD34009918DE /* ConsumerWithIngestions.swift */; };
 		EA4B8A272A9DCE63009918DE /* EditConsumerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A262A9DCE63009918DE /* EditConsumerScreen.swift */; };
 		EA4B8A292AA12630009918DE /* TimelineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A282AA12630009918DE /* TimelineSection.swift */; };
+		8E800FDA18791553DD1D74D4 /* EventTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */; };
 		EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */; };
 		EA4B8A2F2AA6E231009918DE /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
 		EA4B8A312AA6FF02009918DE /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
@@ -613,6 +614,7 @@
 		EA4B8A242A9CFD34009918DE /* ConsumerWithIngestions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConsumerWithIngestions.swift; sourceTree = "<group>"; };
 		EA4B8A262A9DCE63009918DE /* EditConsumerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditConsumerScreen.swift; sourceTree = "<group>"; };
 		EA4B8A282AA12630009918DE /* TimelineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSection.swift; sourceTree = "<group>"; };
+		E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeText.swift; sourceTree = "<group>"; };
 		EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceToolbarContent.swift; sourceTree = "<group>"; };
 		EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedNoteCodable.swift; sourceTree = "<group>"; };
 		EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockTimeOption.swift; sourceTree = "<group>"; };
@@ -1769,6 +1771,7 @@
 				EA41C618295AE60C000DA021 /* InteractionPairRow.swift */,
 				EA48F8BA29EE99C4007DA8C5 /* TimelineScreen.swift */,
 				EA4B8A282AA12630009918DE /* TimelineSection.swift */,
+				E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */,
 				EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */,
 				EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */,
 				EA48F8A329E991C6007DA8C5 /* DateDifference.swift */,
@@ -2233,6 +2236,7 @@
 				EA4B8A152A9B22EA009918DE /* AddTimedNoteScreen.swift in Sources */,
 				EA1DE5A22949D10100FEE975 /* ChooseSubstance-ViewModel.swift in Sources */,
 				EA4B8A292AA12630009918DE /* TimelineSection.swift in Sources */,
+				8E800FDA18791553DD1D74D4 /* EventTimeText.swift in Sources */,
 				EAC368702B6FC7C100056C56 /* CalendarColorRectangle.swift in Sources */,
 				EA302E542B385AB4007F113F /* CustomSubstanceChooseRouteScreenArguments.swift in Sources */,
 				EAA9C38C2A54825C00869E5A /* ChooseDateScreen.swift in Sources */,

@@ -184,28 +184,16 @@ struct ExperienceScreen: View {
                     Section("Timed Notes") {
                         ForEach(Array(timedNotesSorted.enumerated()), id: \.element) { index, timedNote in
                             let previousNote = timedNotesSorted[safe: index - 1]
-                            let isFirstNote = index == 0
                             Button(action: {
                                 sheetToShow = .editTimedNote(timedNote: timedNote)
                             }, label: {
-                                let time = timedNote.timeUnwrapped
                                 TimedNoteRow(timedNote: timedNote) {
-                                    if timeDisplayStyle == .relativeToNow {
-                                        RelativeTimeText(date: timedNote.timeUnwrapped)
-                                    } else if let firstIngestionTime, timeDisplayStyle == .relativeToStart {
-                                        let dateComponents = DateDifference.between(firstIngestionTime, and: time)
-                                        Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after start")
-                                    } else if let firstIngestionTime, timeDisplayStyle == .between {
-                                        if isFirstNote {
-                                            let dateComponents = DateDifference.between(firstIngestionTime, and: time)
-                                            Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after first ingestion")
-                                        } else if let previousNote {
-                                            let dateComponents = DateDifference.between(previousNote.timeUnwrapped, and: time)
-                                            Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after last")
-                                        }
-                                    } else {
-                                        Text(time, format: Date.FormatStyle().hour().minute().weekday(.abbreviated))
-                                    }
+                                    EventTimeText(
+                                        time: timedNote.timeUnwrapped,
+                                        style: timeDisplayStyle,
+                                        firstIngestionTime: firstIngestionTime,
+                                        previousTime: previousNote?.timeUnwrapped
+                                    )
                                 }.foregroundColor(.primary) // to override the button styles
                             })
                         }

@@ -23,7 +23,6 @@ struct ShulginRatingSection: View {
             let ratingsSorted = experience.ratingsWithTimeSorted
             ForEach(Array(ratingsSorted.enumerated()), id: \.element) { index, rating in
                 let previousRating = ratingsSorted[safe: index - 1]
-                let isFirstRating = index == 0
                 Button(action: {
                     sheetToShow = .editRegular(rating: rating)
                 }, label: {
@@ -33,22 +32,12 @@ struct ShulginRatingSection: View {
                             Label("Hidden", systemImage: "eye.slash.fill").labelStyle(.iconOnly)
                         }
                         RatingRow(rating: rating) {
-                            if timeDisplayStyle == .relativeToNow {
-                                RelativeTimeText(date: rating.timeUnwrapped)
-                            } else if let firstIngestionTime, timeDisplayStyle == .relativeToStart {
-                                let dateComponents = DateDifference.between(firstIngestionTime, and: rating.timeUnwrapped)
-                                Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after start")
-                            } else if let firstIngestionTime, timeDisplayStyle == .between {
-                                if isFirstRating {
-                                    let dateComponents = DateDifference.between(firstIngestionTime, and: rating.timeUnwrapped)
-                                    Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after first ingestion")
-                                } else if let previousRating {
-                                    let dateComponents = DateDifference.between(previousRating.timeUnwrapped, and: rating.timeUnwrapped)
-                                    Text(DateDifference.formattedWithMax2Units(dateComponents)) + Text(" after last")
-                                }
-                            } else {
-                                Text(rating.timeUnwrapped, format: Date.FormatStyle().hour().minute().weekday(.abbreviated))
-                            }
+                            EventTimeText(
+                                time: rating.timeUnwrapped,
+                                style: timeDisplayStyle,
+                                firstIngestionTime: firstIngestionTime,
+                                previousTime: previousRating?.timeUnwrapped
+                            )
                         }
                     }.foregroundColor(.primary)
                 })
