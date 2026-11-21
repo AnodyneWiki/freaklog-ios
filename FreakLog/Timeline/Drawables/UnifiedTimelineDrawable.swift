@@ -39,27 +39,91 @@ struct UnifiedTimelineDrawable: TimelineDrawable {
         onsetDelayInHours * 60 * 60
     }
     
+    // MARK: - Shape
+
+    // Which part of the curve is known depends on which phases the substance has data for.
+    // Times are in seconds from the end of the onset delay.
+    private enum Shape {
+        // Onset, comeup, peak and offset: drawn solid, total is ignored
+        case full(onsetEnd: Double, comeupEnd: Double, peakEnd: Double, offsetEnd: Double)
+        // Solid up to the end of the peak, then a dotted descent until the total ends
+        case peakThenTotal(onsetEnd: Double, comeupEnd: Double, peakEnd: Double, totalEnd: Double)
+        // Solid up to the end of the comeup, then a dotted curve down until the total ends
+        case comeupThenTotal(onsetEnd: Double, comeupEnd: Double, totalEnd: Double)
+        // Solid onset, then a dotted hump until the total ends
+        case onsetThenTotal(onsetEnd: Double, totalEnd: Double)
+        // Dotted hump over the total duration
+        case totalOnly(totalEnd: Double)
+        // No total and no offset: draw what is known and stop
+        case partial(onsetEnd: Double?, comeupEnd: Double?, peakEnd: Double?)
+    }
+
+    private var shape: Shape {
+        let onsetDuration = onset?.interpolateLinearly(at: onsetWeight)
+        let comeupDuration = comeup?.interpolateLinearly(at: comeupWeight)
+        let peakDuration = peak?.interpolateLinearly(at: peakWeight)
+        let offsetDuration = offset?.interpolateLinearly(at: offsetWeight)
+        let totalDuration = total?.interpolateLinearly(at: totalWeight)
+
+        // Inconsistent data can make the known phases outlast the total; then descend
+        // for as long as the comeup took (or the onset if there is no comeup).
+        func totalEnd(after knownEnd: Double, descent: Double) -> Double {
+            guard let totalDuration, totalDuration > knownEnd else { return knownEnd + descent }
+            return totalDuration
+        }
+
+        guard let onsetDuration else {
+            if let totalDuration {
+                return .totalOnly(totalEnd: totalDuration)
+            }
+            return .partial(onsetEnd: nil, comeupEnd: nil, peakEnd: nil)
+        }
+        guard let comeupDuration else {
+            if totalDuration != nil {
+                return .onsetThenTotal(
+                    onsetEnd: onsetDuration,
+                    totalEnd: totalEnd(after: onsetDuration, descent: max(onsetDuration, 60 * 60))
+                )
+            }
+            return .partial(onsetEnd: onsetDuration, comeupEnd: nil, peakEnd: nil)
+        }
+        let comeupEnd = onsetDuration + comeupDuration
+        guard let peakDuration else {
+            if totalDuration != nil {
+                return .comeupThenTotal(
+                    onsetEnd: onsetDuration,
+                    comeupEnd: comeupEnd,
+                    totalEnd: totalEnd(after: comeupEnd, descent: comeupDuration)
+                )
+            }
+            return .partial(onsetEnd: onsetDuration, comeupEnd: comeupEnd, peakEnd: nil)
+        }
+        let peakEnd = comeupEnd + peakDuration
+        if let offsetDuration {
+            return .full(onsetEnd: onsetDuration, comeupEnd: comeupEnd, peakEnd: peakEnd, offsetEnd: peakEnd + offsetDuration)
+        }
+        if totalDuration != nil {
+            return .peakThenTotal(
+                onsetEnd: onsetDuration,
+                comeupEnd: comeupEnd,
+                peakEnd: peakEnd,
+                totalEnd: totalEnd(after: peakEnd, descent: comeupDuration)
+            )
+        }
+        return .partial(onsetEnd: onsetDuration, comeupEnd: comeupEnd, peakEnd: peakEnd)
+    }
+
     // MARK: - Width Calculation
     var endOfLineRelativeToStartInSeconds: TimeInterval {
-        var duration: TimeInterval = onsetDelayInSeconds
-        
-        // Accumulate known phases
-        if let onset { duration += onset.interpolateLinearly(at: onsetWeight) }
-        if let comeup { duration += comeup.interpolateLinearly(at: comeupWeight) }
-        if let peak { duration += peak.interpolateLinearly(at: peakWeight) }
-        if let offset { duration += offset.interpolateLinearly(at: offsetWeight) }
-        
-        // If total is present and exceeds the sum of parts, use it
-        if let total {
-            let totalDur = total.interpolateLinearly(at: totalWeight)
-            if totalDur > (duration - onsetDelayInSeconds) {
-                duration = onsetDelayInSeconds + totalDur
-            }
+        let end: Double = switch shape {
+        case let .full(_, _, _, offsetEnd): offsetEnd
+        case let .peakThenTotal(_, _, _, totalEnd), let .comeupThenTotal(_, _, totalEnd),
+             let .onsetThenTotal(_, totalEnd), let .totalOnly(totalEnd): totalEnd
+        case let .partial(onsetEnd, comeupEnd, peakEnd): peakEnd ?? comeupEnd ?? onsetEnd ?? 0
         }
-        
-        return ingestionTimeRelativeToStartInSeconds + duration
+        return ingestionTimeRelativeToStartInSeconds + onsetDelayInSeconds + end
     }
-    
+
     // MARK: - Init
     init(
         onset: FullDurationRange? = nil,
@@ -108,138 +172,95 @@ struct UnifiedTimelineDrawable: TimelineDrawable {
         let paddingTop = halfLineWidth
         let paddingBottom = halfLineWidth
         let heightBetween = height - paddingTop - paddingBottom
-        
         let startX = ingestionTimeRelativeToStartInSeconds * pixelsPerSec
         let bottomY = height - paddingBottom
-        
-        // Calculate Top Y
-        var topY = paddingTop
-        if normalizedHeight < 1 {
-            // Lower height means "higher" y value (since y=0 is top)
-            // heightBetween is the available vertical space.
-            // (1 - normalizedHeight) * heightBetween gives the empty space from top.
-            topY = ((1 - normalizedHeight) * heightBetween) + paddingTop
+        // Lower height means a larger y value, since y = 0 is the top
+        let topY = normalizedHeight < 1 ? ((1 - normalizedHeight) * heightBetween) + paddingTop : paddingTop
+        let lineStartX = startX + onsetDelayInSeconds * pixelsPerSec
+        func x(_ seconds: Double) -> Double {
+            lineStartX + seconds * pixelsPerSec
         }
-        
-        // --- 1. Draw Dot at Start ---
-        context.drawDot(x: startX, bottomY: bottomY, color: color)
-        
-        // --- 2. Calculate Segments ---
-        var currentX = startX
-        var currentY = bottomY
-        
-        var solidPath = Path()
-        solidPath.move(to: CGPoint(x: currentX, y: currentY))
-        
-        // Onset
-        if let onset {
-            let duration = onset.interpolateLinearly(at: onsetWeight)
-            let endX = currentX + (duration * pixelsPerSec)
-            // Onset is usually drawn flat at bottom
-            solidPath.addLine(to: CGPoint(x: endX, y: bottomY))
-            currentX = endX
-            currentY = bottomY
+
+        // `outline` collects every segment for the fill; solid and dotted segments are stroked separately
+        var outline = Path()
+        var solid = Path()
+        var dotted = Path()
+        outline.move(to: CGPoint(x: startX, y: bottomY))
+        solid.move(to: CGPoint(x: startX, y: bottomY))
+
+        func solidLine(to x: Double, _ y: Double) {
+            solid.addLine(to: CGPoint(x: x, y: y))
+            outline.addLine(to: CGPoint(x: x, y: y))
         }
-        
-        // Comeup
-        if let comeup {
-            let duration = comeup.interpolateLinearly(at: comeupWeight)
-            let endX = currentX + (duration * pixelsPerSec)
-            // Comeup goes from bottom to top
-            solidPath.addLine(to: CGPoint(x: endX, y: topY))
-            currentX = endX
-            currentY = topY
+        func dottedLine(to x: Double, _ y: Double) {
+            if dotted.isEmpty, let current = outline.currentPoint { dotted.move(to: current) }
+            dotted.addLine(to: CGPoint(x: x, y: y))
+            outline.addLine(to: CGPoint(x: x, y: y))
         }
-        
-        // Peak
-        if let peak {
-            let duration = peak.interpolateLinearly(at: peakWeight)
-            let endX = currentX + (duration * pixelsPerSec)
-            // Peak stays at top
-            solidPath.addLine(to: CGPoint(x: endX, y: topY))
-            currentX = endX
-            currentY = topY
+        func dottedCurveDown(from fromX: Double, to toX: Double) {
+            if dotted.isEmpty, let current = outline.currentPoint { dotted.move(to: current) }
+            dotted.startSmoothLineTo(smoothnessBetween0And1: percentSmoothness, startX: fromX, startY: topY, endX: toX, endY: bottomY)
+            outline.startSmoothLineTo(smoothnessBetween0And1: percentSmoothness, startX: fromX, startY: topY, endX: toX, endY: bottomY)
         }
-        
-        // Offset
-        if let offset {
-            let duration = offset.interpolateLinearly(at: offsetWeight)
-            let endX = currentX + (duration * pixelsPerSec)
-            // Offset goes from top to bottom
-            solidPath.addLine(to: CGPoint(x: endX, y: bottomY))
-            currentX = endX
-            currentY = bottomY
+        func dottedHump(from fromX: Double, to toX: Double) {
+            let midX = fromX + (toX - fromX) / 2
+            if dotted.isEmpty, let current = outline.currentPoint { dotted.move(to: current) }
+            dotted.endSmoothLineTo(smoothnessBetween0And1: percentSmoothness, startX: fromX, endX: midX, endY: topY)
+            outline.endSmoothLineTo(smoothnessBetween0And1: percentSmoothness, startX: fromX, endX: midX, endY: topY)
+            dottedCurveDown(from: midX, to: toX)
         }
-        
-        // Draw the Solid Part
-        context.stroke(solidPath, with: .color(color), style: StrokeStyle.getNormal(lineWidth: lineWidth))
-        
-        // --- 3. Draw Total / Dotted Part if needed ---
-        var dottedPath = Path()
-        dottedPath.move(to: CGPoint(x: currentX, y: currentY))
-        
-        if let total {
-            // Calculate total end X
-            let totalEndDuration = total.interpolateLinearly(at: totalWeight)
-            let totalEndX = startX + (onsetDelayInSeconds * pixelsPerSec) + (totalEndDuration * pixelsPerSec)
-            
-            if totalEndX > currentX {
-                // We have remaining duration to fill with a dotted line
-                if currentY < bottomY - 0.1 { // We are at TOP
-                    // Curve down to bottom
-                    dottedPath.startSmoothLineTo(
-                        smoothnessBetween0And1: percentSmoothness,
-                        startX: currentX,
-                        startY: currentY,
-                        endX: totalEndX,
-                        endY: bottomY
-                    )
-                } else { // We are at BOTTOM
-                    // Curve Up then Down
-                    // Calculate a peak point for the "hump"
-                    let remainingWidth = totalEndX - currentX
-                    let midX = currentX + (remainingWidth / 2)
-                    
-                    // Up curve
-                    dottedPath.endSmoothLineTo(
-                        smoothnessBetween0And1: percentSmoothness,
-                        startX: currentX,
-                        endX: midX,
-                        endY: topY // Go up to max height
-                    )
-                    // Down curve
-                    dottedPath.startSmoothLineTo(
-                        smoothnessBetween0And1: percentSmoothness,
-                        startX: midX,
-                        startY: topY,
-                        endX: totalEndX,
-                        endY: bottomY
-                    )
-                }
-                
-                context.stroke(
-                    dottedPath,
-                    with: .color(color),
-                    style: StrokeStyle.getDotted(lineWidth: lineWidth)
-                )
-                
-                // Add dotted path to solid path for filling
-                solidPath.addPath(dottedPath)
-                currentX = totalEndX
-                currentY = bottomY
+
+        solidLine(to: lineStartX, bottomY)
+        var endX = lineStartX
+        switch shape {
+        case let .full(onsetEnd, comeupEnd, peakEnd, offsetEnd):
+            solidLine(to: x(onsetEnd), bottomY)
+            solidLine(to: x(comeupEnd), topY)
+            solidLine(to: x(peakEnd), topY)
+            solidLine(to: x(offsetEnd), bottomY)
+            endX = x(offsetEnd)
+        case let .peakThenTotal(onsetEnd, comeupEnd, peakEnd, totalEnd):
+            solidLine(to: x(onsetEnd), bottomY)
+            solidLine(to: x(comeupEnd), topY)
+            solidLine(to: x(peakEnd), topY)
+            dottedLine(to: x(totalEnd), bottomY)
+            endX = x(totalEnd)
+        case let .comeupThenTotal(onsetEnd, comeupEnd, totalEnd):
+            solidLine(to: x(onsetEnd), bottomY)
+            solidLine(to: x(comeupEnd), topY)
+            dottedCurveDown(from: x(comeupEnd), to: x(totalEnd))
+            endX = x(totalEnd)
+        case let .onsetThenTotal(onsetEnd, totalEnd):
+            solidLine(to: x(onsetEnd), bottomY)
+            dottedHump(from: x(onsetEnd), to: x(totalEnd))
+            endX = x(totalEnd)
+        case let .totalOnly(totalEnd):
+            dottedHump(from: lineStartX, to: x(totalEnd))
+            endX = x(totalEnd)
+        case let .partial(onsetEnd, comeupEnd, peakEnd):
+            if let onsetEnd {
+                solidLine(to: x(onsetEnd), bottomY)
+                endX = x(onsetEnd)
+            }
+            if let comeupEnd {
+                solidLine(to: x(comeupEnd), topY)
+                endX = x(comeupEnd)
+            }
+            if let peakEnd {
+                solidLine(to: x(peakEnd), topY)
+                endX = x(peakEnd)
             }
         }
-        
-        // --- 4. Close and Fill ---
-        // Ensure we end at bottom for filling
-        if abs(currentY - bottomY) > 0.1 {
-            solidPath.addLine(to: CGPoint(x: currentX, y: height)) // Should be bottomY usually, but bottomY is height - padding
+
+        context.stroke(solid, with: .color(color), style: StrokeStyle.getNormal(lineWidth: lineWidth))
+        if !dotted.isEmpty {
+            context.stroke(dotted, with: .color(color), style: StrokeStyle.getDotted(lineWidth: lineWidth))
         }
-        
-        solidPath.addLine(to: CGPoint(x: currentX, y: height))
-        solidPath.addLine(to: CGPoint(x: startX, y: height))
-        solidPath.closeSubpath()
-        context.fill(solidPath, with: .color(color.opacity(shapeOpacity)))
+        outline.addLine(to: CGPoint(x: endX, y: height))
+        outline.addLine(to: CGPoint(x: startX, y: height))
+        outline.closeSubpath()
+        context.fill(outline, with: .color(color.opacity(shapeOpacity)))
+        context.drawDot(x: startX, bottomY: bottomY, color: color)
     }
 }
 
