@@ -30,10 +30,7 @@ extension RouteMinInfo {
             route: route,
             ingestions: ingestions.map { $0.withHorizontalWeight(for: resolved.dose) },
             roaDuration: resolved.duration,
-            commonDose: resolved.dose.flatMap { dose in
-                guard let commonMin = dose.commonMin, let strongMin = dose.strongMin else { return nil }
-                return (commonMin + strongMin) / 2
-            }
+            commonDose: resolved.dose?.averageCommonDose
         )
     }
 }

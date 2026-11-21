@@ -1,86 +1,40 @@
 import Foundation
 
 enum SearchLogic {
+    // Recently used substances first (in the order of `namesToSortBy`), then common ones, then the rest
     static func getFilteredSubstancesSorted(substances: [Substance], searchText: String, namesToSortBy: [String]) -> [Substance] {
-        let filteredSubstances = getFilteredSubstances(substances: substances, searchText: searchText)
-        return filteredSubstances.sorted { sub1, sub2 in
-            let indexOf1 = namesToSortBy.firstIndex(of: sub1.name)
-            let indexOf2 = namesToSortBy.firstIndex(of: sub2.name)
-            // true means sub1 first, false means sub2 first
-            if let indexOf1 {
-                if let indexOf2 {
-                    return indexOf1 < indexOf2
-                } else {
-                    return true
-                }
-            } else {
-                if indexOf2 != nil {
-                    return false
-                } else {
-                    if sub1.categories.contains("common") {
-                        return true
-                    } else if sub2.categories.contains("common") {
-                        return false
-                    } else {
-                        return true
-                    }
-                }
-            }
+        let rankByName = Dictionary(namesToSortBy.enumerated().map { ($1, $0) }, uniquingKeysWith: min)
+        return getFilteredSubstances(substances: substances, searchText: searchText).stablySorted { substance in
+            [rankByName[substance.name] ?? Int.max, substance.categories.contains("common") ? 0 : 1]
         }
     }
 
+    // Prefix matches, or for longer searches with few prefix matches, all matches with the prefix ones first
     private static func getFilteredSubstances(substances: [Substance], searchText: String) -> [Substance] {
         let cleanedSearchText = searchText.cleanSearch
-        let prefixResult = getSortedPrefixResults(substances: substances, lowerCaseSearchText: cleanedSearchText)
-        if searchText.count < 3 {
-            return prefixResult
-        } else {
-            if prefixResult.count < 3 {
-                let containsResult = getSortedContainsResults(substances: substances, cleanSearch: cleanedSearchText)
-                return containsResult.sorted { sub1, sub2 in
-                    if prefixResult.contains(sub2) {
-                        return true
-                    } else if prefixResult.contains(sub1) {
-                        return false
-                    } else {
-                        return true
-                    }
-                }
-            } else {
-                return prefixResult
-            }
-        }
+        let prefixResult = matches(in: substances) { $0.lowercased().hasPrefix(cleanedSearchText) }
+        guard searchText.count >= 3, prefixResult.count < 3 else { return prefixResult }
+        let prefixNames = Set(prefixResult.map(\.name))
+        return matches(in: substances) { $0.cleanSearch.contains(cleanedSearchText) }
+            .stablySorted { [prefixNames.contains($0.name) ? 0 : 1] }
     }
 
-    private static func getSortedPrefixResults(substances: [Substance], lowerCaseSearchText: String) -> [Substance] {
-        let mainPrefixMatches = substances.filter { sub in
-            sub.name.lowercased().hasPrefix(lowerCaseSearchText)
-        }
-        if mainPrefixMatches.isEmpty {
-            return substances.filter { sub in
-                let names = sub.commonNames + [sub.name]
-                return names.contains { name in
-                    name.lowercased().hasPrefix(lowerCaseSearchText)
-                }
-            }
-        } else {
-            return mainPrefixMatches
+    // Substances whose name matches, or if there are none, those with a matching common name
+    private static func matches(in substances: [Substance], where isMatch: (String) -> Bool) -> [Substance] {
+        let mainMatches = substances.filter { isMatch($0.name) }
+        guard mainMatches.isEmpty else { return mainMatches }
+        return substances.filter { substance in
+            (substance.commonNames + [substance.name]).contains(where: isMatch)
         }
     }
+}
 
-    private static func getSortedContainsResults(substances: [Substance], cleanSearch: String) -> [Substance] {
-        let mainPrefixMatches = substances.filter { sub in
-            sub.name.cleanSearch.contains(cleanSearch)
-        }
-        if mainPrefixMatches.isEmpty {
-            return substances.filter { sub in
-                let names = sub.commonNames + [sub.name]
-                return names.contains { name in
-                    name.cleanSearch.contains(cleanSearch)
-                }
-            }
-        } else {
-            return mainPrefixMatches
-        }
+private extension Array {
+    // Sorts by the keys, compared in order, keeping the original order for equal keys
+    func stablySorted(by keys: (Element) -> [Int]) -> [Element] {
+        enumerated()
+            .map { (keys: keys($0.element) + [$0.offset], element: $0.element) }
+            .sorted { $0.keys.lexicographicallyPrecedes($1.keys) }
+            .map(\.element)
     }
 }

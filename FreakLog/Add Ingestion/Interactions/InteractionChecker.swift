@@ -51,106 +51,43 @@ enum InteractionChecker {
     private static let cacheLock = NSLock()
     nonisolated(unsafe) private static var cache: [String: InteractionType?] = [:]
 
+    // The more dangerous of the two directions, preferring a to b on a tie
     private static func computeInteractionTypeBetween(aName: String, bName: String) -> InteractionType? {
-        let interactionFromAToB = getInteraction(fromName: aName, toName: bName)
-        let interactionFromBToA = getInteraction(fromName: bName, toName: aName)
-        if let interactionFromAToB, let interactionFromBToA {
-            let isAtoB = interactionFromAToB.dangerCount >= interactionFromBToA.dangerCount
-            let interactionType = isAtoB ? interactionFromAToB : interactionFromBToA
-            return interactionType
-        } else if let interactionFromAToB {
-            return interactionFromAToB
-        } else if let interactionFromBToA {
-            return interactionFromBToA
-        } else {
-            return nil
+        let interactions = [getInteraction(fromName: aName, toName: bName), getInteraction(fromName: bName, toName: aName)]
+        return interactions.compactMap { $0 }.reduce(nil) { best, next in
+            guard let best else { return next }
+            return best.dangerCount >= next.dangerCount ? best : next
         }
     }
 
+    // Direct name matches win over wildcard matches, which win over class matches
     private static func getInteraction(fromName: String, toName: String) -> InteractionType? {
         guard let substance = SubstanceRepo.shared.getSubstance(name: fromName) else { return nil }
         guard let interactions = substance.interactions else { return nil }
-        if let directInteraction = getDirectInteraction(interactions: interactions, substanceName: toName) {
-            return directInteraction
+        if let direct = firstMatch(in: interactions, where: { $0.contains(toName) }) {
+            return direct
         }
-        if let wildCardInteraction = getWildCardInteraction(interactions: interactions, substanceName: toName) {
-            return wildCardInteraction
+        if let wildCard = firstMatch(in: interactions, where: { names in
+            names.contains { hasXAndMatches(wordWithX: $0, matchWith: toName) }
+        }) {
+            return wildCard
         }
-        if let toSubstance = SubstanceRepo.shared.getSubstance(name: toName) {
-            if let classInteraction = getClassInteraction(interactions: interactions, substance: toSubstance) {
-                return classInteraction
-            }
-        }
-        return nil
-    }
-
-    private static func getDirectInteraction(
-        interactions: Interactions,
-        substanceName: String
-    ) -> InteractionType? {
-        if isDirectMatch(interactions: interactions.dangerous, substanceName: substanceName) {
-            return .dangerous
-        } else if isDirectMatch(interactions: interactions.unsafe, substanceName: substanceName) {
-            return .unsafe
-        } else if isDirectMatch(interactions: interactions.uncertain, substanceName: substanceName) {
-            return .uncertain
-        } else {
-            return nil
-        }
-    }
-
-    private static func isDirectMatch(interactions: [String], substanceName: String) -> Bool {
-        let extendedInteractions = extendAndCleanInteractions(interactions: interactions)
-        return extendedInteractions.contains(substanceName)
-    }
-
-    private static func getClassInteraction(interactions: Interactions, substance: Substance) -> InteractionType? {
-        let categories = substance.categories
-        if isClassMatch(interactions: interactions.dangerous, categories: categories) {
-            return .dangerous
-        } else if isClassMatch(interactions: interactions.unsafe, categories: categories) {
-            return .unsafe
-        } else if isClassMatch(interactions: interactions.uncertain, categories: categories) {
-            return .uncertain
-        } else {
-            return nil
-        }
-    }
-
-    private static func isClassMatch(
-        interactions: [String],
-        categories: [String]
-    ) -> Bool {
-        let extendedInteractions = extendAndCleanInteractions(interactions: interactions)
-        let isSubstanceInDangerClass =
+        guard let categories = SubstanceRepo.shared.getSubstance(name: toName)?.categories else { return nil }
+        return firstMatch(in: interactions, where: { names in
             categories.contains { categoryName in
-                extendedInteractions.contains { interactionName in
-                    interactionName.caseInsensitiveContains(categoryName)
-                }
+                names.contains { $0.caseInsensitiveContains(categoryName) }
             }
-        return isSubstanceInDangerClass
+        })
     }
 
-    private static func getWildCardInteraction(interactions: Interactions, substanceName: String) -> InteractionType? {
-        if isWildCardMatchWithAnyInteraction(interactions: interactions.dangerous, substanceName: substanceName) {
-            return .dangerous
-        } else if isWildCardMatchWithAnyInteraction(interactions: interactions.unsafe, substanceName: substanceName) {
-            return .unsafe
-        } else if isWildCardMatchWithAnyInteraction(interactions: interactions.uncertain, substanceName: substanceName) {
-            return .uncertain
-        } else {
-            return nil
-        }
-    }
-
-    private static func isWildCardMatchWithAnyInteraction(
-        interactions: [String],
-        substanceName: String
-    ) -> Bool {
-        let extendedInteractions = extendAndCleanInteractions(interactions: interactions)
-        return extendedInteractions.contains { interaction in
-            hasXAndMatches(wordWithX: interaction, matchWith: substanceName)
-        }
+    // The most dangerous interaction list whose (extended) names match
+    private static func firstMatch(in interactions: Interactions, where matches: ([String]) -> Bool) -> InteractionType? {
+        let lists: [(InteractionType, [String])] = [
+            (.dangerous, interactions.dangerous),
+            (.unsafe, interactions.unsafe),
+            (.uncertain, interactions.uncertain),
+        ]
+        return lists.first { matches(extendAndCleanInteractions(interactions: $0.1)) }?.0
     }
 
     static func hasXAndMatches(wordWithX: String, matchWith unchangedWord: String) -> Bool {
