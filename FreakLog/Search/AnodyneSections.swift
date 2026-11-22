@@ -524,13 +524,90 @@ struct AnodyneDosingRow: View {
           .font(.footnote)
           .foregroundStyle(.secondary)
       }
-      if let roaDose = dosing.roaDose {
-        RoaDoseRow(roaDose: roaDose)
-      }
-      if let extreme = dosing.extreme {
-        RowLabelView(label: "Extreme", value: "\(extreme.lower.formatted()) \(extreme.unit)+")
-      }
+      AnodyneDoseLadder(dosing: dosing)
     }
+  }
+}
+
+// AnodyneWiki's five tiers in the style of PsychonautWiki's dose row (DoseClassificationRow): the doses where
+// tiers meet, each range named below a dash between them. Light has no lower bound, so it opens the row
+// as "≤ light", and heavy ends where extreme starts.
+struct AnodyneDoseLadder: View {
+  let dosing: AnodyneSubstance.Dosing
+
+  private enum Item: Hashable {
+    case dose(String, from: Color, to: Color)
+    case range(symbol: String, name: String, color: Color)
+  }
+
+  private var items: [Item] {
+    var items: [Item] = []
+    let tiers: [(name: String, color: Color, tier: AnodyneSubstance.Tier?)] = [
+      ("light", DoseRangeType.light.color, dosing.light),
+      ("common", DoseRangeType.common.color, dosing.common),
+      ("strong", DoseRangeType.strong.color, dosing.strong),
+      ("heavy", DoseRangeType.heavy.color, dosing.heavy),
+      ("extreme", .purple, dosing.extreme),
+    ]
+    var previousColor: Color?
+    for (name, color, tier) in tiers {
+      guard let tier else { continue }
+      if let previousColor {
+        items.append(.dose(tier.lower.formatted(), from: previousColor, to: color))
+        items.append(.range(symbol: "-", name: name, color: color))
+      } else {
+        // The first tier has no lower bound
+        items.append(.range(symbol: "≤", name: name, color: color))
+      }
+      previousColor = color
+    }
+    return items
+  }
+
+  private var doseFont: Font {
+    items.contains { item in
+      if case let .dose(text, _, _) = item { text.count >= 4 } else { false }
+    } ? .footnote : .body
+  }
+
+  var body: some View {
+    HStack(alignment: .top, spacing: 0) {
+      ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+        Spacer(minLength: 0)
+        switch item {
+        case let .dose(text, from, to):
+          Text(text)
+            .foregroundLinearGradient(colors: [from, to])
+            .font(doseFont)
+        case let .range(symbol, name, color):
+          VStack {
+            Text(symbol)
+              .font(doseFont)
+            Text(name)
+              .fontWidth(.condensed)
+              .lineLimit(1)
+              .font(.footnote)
+          }
+          .foregroundColor(color)
+        }
+        Spacer(minLength: 0)
+      }
+      Spacer(minLength: 0)
+      Text(dosing.unit ?? "")
+        .font(doseFont)
+      Spacer(minLength: 0)
+    }
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(accessibilityText)
+  }
+
+  private var accessibilityText: String {
+    let light = dosing.light.map { "Light up to \($0.upper.formatted()) \($0.unit)" }
+    let others = [("Common", dosing.common), ("Strong", dosing.strong), ("Heavy", dosing.heavy), ("Extreme", dosing.extreme)]
+      .compactMap { name, tier in
+        tier.map { "\(name) from \($0.lower.formatted()) \($0.unit)" }
+      }
+    return ([light].compactMap { $0 } + others).joined(separator: ", ")
   }
 }
 
