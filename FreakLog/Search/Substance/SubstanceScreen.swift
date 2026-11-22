@@ -25,6 +25,9 @@ struct SubstanceScreen: View {
       overviewSection(anodyne: anodyne)
       AnodyneLoadSection(model: anodyneModel)
       EffectsSection(summary: substance.effectsSummary, anodyne: anodyne)
+      if let anodyne {
+        AnodyneReportsSection(anodyne: anodyne, userNotes: anodyneModel.userNotes)
+      }
       Group {
         let hasDoses = substance.dosageRemark != nil || !substance.doseInfos.isEmpty
           || customRoas.contains(where: { $0.roaDose != nil }) || anodyne?.dosing.isEmpty == false
@@ -66,7 +69,6 @@ struct SubstanceScreen: View {
         AnodyneReagentsSection(anodyne: anodyne)
         AnodyneLegalStatusSection(anodyne: anodyne)
         AnodynePharmacologySection(anodyne: anodyne)
-        AnodyneReportsSection(anodyne: anodyne, userNotes: anodyneModel.userNotes)
       }
       SourcesSection(
         psychonautWikiURL: substance.url,

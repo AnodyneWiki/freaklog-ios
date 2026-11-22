@@ -327,6 +327,7 @@ struct AnodyneTopicSections: View {
     if isIncludingSharedTopics {
       EffectsSection(summary: nil, anodyne: anodyne)
     }
+    AnodyneReportsSection(anodyne: anodyne, userNotes: userNotes)
     AnodyneLoggedDosesSection(anodyne: anodyne)
     if isIncludingSharedTopics {
       AnodyneDurationSection(anodyne: anodyne)
@@ -337,7 +338,6 @@ struct AnodyneTopicSections: View {
     AnodyneReagentsSection(anodyne: anodyne)
     AnodyneLegalStatusSection(anodyne: anodyne)
     AnodynePharmacologySection(anodyne: anodyne)
-    AnodyneReportsSection(anodyne: anodyne, userNotes: userNotes)
   }
 }
 
