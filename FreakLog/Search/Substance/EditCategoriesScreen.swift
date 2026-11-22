@@ -63,10 +63,9 @@ struct EditCategoriesScreen: View {
     }
   }
 
-  // Keeps the order of the category list
+  // Appends new categories, so the original order with the drug class first survives
   private func toggle(_ name: String) {
-    let selected = selection.contains(name) ? selection.filter { $0 != name } : selection + [name]
-    selection = SubstanceRepo.shared.categories.map(\.name).filter(selected.contains)
+    selection = selection.contains(name) ? selection.filter { $0 != name } : selection + [name]
     save()
   }
 

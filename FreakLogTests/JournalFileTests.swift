@@ -92,4 +92,13 @@ final class JournalFileTests: XCTestCase {
         XCTAssertEqual(importedOverrides.first { $0.substanceName == "Ketamine" }?.displayName, "K")
         XCTAssertNil(importedOverrides.first { $0.substanceName == "Ketamine" }?.categoryList)
     }
+
+    func testPrimaryCategorySkipsTags() {
+        // Overrides saved before toggling kept the order had the category list's order, common first
+        XCTAssertEqual(PersistenceController.primaryCategory(of: ["common", "stimulant"]), "stimulant")
+        XCTAssertEqual(PersistenceController.primaryCategory(of: ["research-chemical", "tentative", "opioid"]), "opioid")
+        // Only tags: Cannabis keeps sending its first category
+        XCTAssertEqual(PersistenceController.primaryCategory(of: ["habit-forming", "common"]), "habit-forming")
+        XCTAssertNil(PersistenceController.primaryCategory(of: []))
+    }
 }

@@ -125,7 +125,7 @@ final class LeaderboardSyncManager: ObservableObject {
     let timeEpoch = Int64(ingestion.timeUnwrapped.timeIntervalSince1970)
     let endTimeEpoch = Int64((ingestion.endTime ?? ingestion.timeUnwrapped).timeIntervalSince1970)
     let creationEpoch = Int64((ingestion.creationDate ?? ingestion.timeUnwrapped).timeIntervalSince1970)
-    let category = PersistenceController.shared.categories(for: ingestion.substanceNameUnwrapped).first ?? ""
+    let category = PersistenceController.shared.primaryCategory(for: ingestion.substanceNameUnwrapped) ?? ""
     let ingestionPayload = LeaderboardIngestionPayload(
       Id: ingestionId,
       SubstanceName: ingestion.substanceNameUnwrapped,

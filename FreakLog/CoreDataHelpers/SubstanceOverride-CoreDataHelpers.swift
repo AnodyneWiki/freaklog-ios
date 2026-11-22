@@ -51,6 +51,19 @@ extension PersistenceController {
       ?? []
   }
 
+  // The substance's drug class for leaderboards, e.g. "stimulant" rather than "common"
+  func primaryCategory(for substanceName: String) -> String? {
+    Self.primaryCategory(of: categories(for: substanceName))
+  }
+
+  // Tags that say something about a substance but not what kind of drug it is
+  private static let categoryTags: Set<String> = ["common", "habit-forming", "research-chemical", "tentative"]
+
+  // The first category that is not a tag, else the first category
+  static func primaryCategory(of categories: [String]) -> String? {
+    categories.first { !categoryTags.contains($0) } ?? categories.first
+  }
+
   func getSubstanceOverride(for substanceName: String) -> SubstanceOverride? {
     let r = SubstanceOverride.fetchRequest()
     r.predicate = NSPredicate(format: "substanceName == %@", substanceName)
