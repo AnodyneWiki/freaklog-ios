@@ -120,7 +120,7 @@ actor AnodyneClient {
     let sorted = notes.sorted { $0.user.localizedCaseInsensitiveCompare($1.user) == .orderedAscending }
     let cached = CachedUserNotes(date: .now, notes: sorted)
     userNotes = cached
-    AnodyneTimingStore.shared.record(sorted)
+    AnodyneFallbackStore.shared.record(sorted)
     Self.writeToDisk(cached, file: Self.userNotesFile)
     return Self.notes(cached.notes, matching: names)
   }
@@ -142,7 +142,7 @@ actor AnodyneClient {
     lookups = [:]
     index = nil
     userNotes = nil
-    AnodyneTimingStore.shared.clear()
+    AnodyneFallbackStore.shared.clear()
     try? FileManager.default.removeItem(at: Self.directory)
   }
 
@@ -156,7 +156,7 @@ actor AnodyneClient {
     }
   }
 
-  // Every substance on disk with the name it was looked up by, however old, for AnodyneTimingStore.
+  // Every substance on disk with the name it was looked up by, however old, for AnodyneFallbackStore.
   // Files from before the current format are removed on the way.
   static func cachedSubstancesOnDisk() -> [(name: String, substance: AnodyneSubstance)] {
     let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
@@ -209,7 +209,7 @@ actor AnodyneClient {
     let cached = CachedLookup(date: .now, lookup: lookup)
     lookups[key] = cached
     if case let .found(substance) = lookup {
-      AnodyneTimingStore.shared.record(substance, lookedUpAs: name)
+      AnodyneFallbackStore.shared.record(substance, lookedUpAs: name)
     }
     Self.writeToDisk(cached, file: Self.lookupFile(for: key))
   }

@@ -1,14 +1,14 @@
 import Foundation
 
-// AnodyneWiki's timing data as durations the timeline can draw, used where PsychonautWiki and the user have
-// none. Its users note the onset, come-up and duration of the routes they took, which are combined per route
-// (earliest to latest); otherwise the substance's duration of action, e.g. "3 – 6 hours", is used as the
-// total for every route.
+// AnodyneWiki's doses and timings, used where PsychonautWiki and the user have none. Doses come from its dose
+// tiers per route. For timings, its users note the onset, come-up and duration of the routes they took, which
+// are combined per route (earliest to latest); otherwise the substance's duration of action, e.g.
+// "3 – 6 hours", is used as the total for every route.
 //
-// Only data AnodyneClient has already cached is used, so looking up a duration never goes online. That keeps
-// it cheap and synchronous for the duration resolver, which every timeline uses.
-final class AnodyneTimingStore: @unchecked Sendable {
-  static let shared = AnodyneTimingStore()
+// Only data AnodyneClient has already cached is used, so looking something up never goes online. That keeps
+// it cheap and synchronous for the dose and duration resolver, which every timeline and dose display uses.
+final class AnodyneFallbackStore: @unchecked Sendable {
+  static let shared = AnodyneFallbackStore()
 
   private let lock = NSLock()
   private var didLoadCache = false
@@ -17,13 +17,34 @@ final class AnodyneTimingStore: @unchecked Sendable {
   // By lowercased title
   private var totals: [String: RoaDuration] = [:]
   private var routeDurations: [String: [AdministrationRoute: RoaDuration]] = [:]
+  private var doses: [String: [AdministrationRoute: RoaDose]] = [:]
+
+  func dose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
+    lock.lock()
+    defer { lock.unlock() }
+    loadCacheIfNeeded()
+    return doses[title(for: substanceName)]?[route]
+  }
 
   func duration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded()
-    let title = titlesByName[substanceName.lowercased()] ?? substanceName.lowercased()
+    let title = title(for: substanceName)
     return routeDurations[title]?[route] ?? totals[title]
+  }
+
+  private func title(for substanceName: String) -> String {
+    titlesByName[substanceName.lowercased()] ?? substanceName.lowercased()
+  }
+
+  // The routes with AnodyneWiki dose tiers or users' timings
+  func routesWithData(for substanceName: String) -> [AdministrationRoute] {
+    lock.lock()
+    defer { lock.unlock() }
+    loadCacheIfNeeded()
+    let title = title(for: substanceName)
+    return AdministrationRoute.allCases.filter { doses[title]?[$0] != nil || routeDurations[title]?[$0] != nil }
   }
 
   // The routes users noted timings for; a duration of action applies to any route
@@ -31,7 +52,7 @@ final class AnodyneTimingStore: @unchecked Sendable {
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded()
-    let title = titlesByName[substanceName.lowercased()] ?? substanceName.lowercased()
+    let title = title(for: substanceName)
     return AdministrationRoute.allCases.filter { routeDurations[title]?[$0] != nil }
   }
 
@@ -53,6 +74,7 @@ final class AnodyneTimingStore: @unchecked Sendable {
     titlesByName = [:]
     totals = [:]
     routeDurations = [:]
+    doses = [:]
     didLoadCache = true
   }
 
@@ -64,6 +86,13 @@ final class AnodyneTimingStore: @unchecked Sendable {
     if let total = substance.durationOfAction.flatMap(AnodyneTiming.range(in:)) {
       totals[title] = RoaDuration(onset: nil, comeup: nil, peak: nil, offset: nil, total: total, afterglow: nil)
     }
+    // The first dose tiers of each route the app knows
+    var routeDoses: [AdministrationRoute: RoaDose] = [:]
+    for dosing in substance.dosing {
+      guard let route = dosing.route, routeDoses[route] == nil, let roaDose = dosing.roaDose else { continue }
+      routeDoses[route] = roaDose
+    }
+    doses[title] = routeDoses
   }
 
   private func recordUnlocked(_ notes: [AnodyneUserNote]) {

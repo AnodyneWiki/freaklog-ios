@@ -20,6 +20,7 @@ struct CustomRoaRouteList: View {
 
   var body: some View {
     let routesWithPsychonautWikiData = routesWithPsychonautWikiData
+    let anodyneRoutes = Set(AnodyneFallbackStore.shared.routesWithData(for: substanceName))
     ForEach(AdministrationRoute.allCases) { route in
       NavigationLink(destination: EditCustomRoaView(substanceName: substanceName, route: route, customSubstance: customSubstance)) {
         HStack {
@@ -30,6 +31,9 @@ struct CustomRoaRouteList: View {
               .foregroundColor(.accentColor)
           } else if routesWithPsychonautWikiData.contains(route) {
             Text("PsychonautWiki")
+              .foregroundStyle(.secondary)
+          } else if anodyneRoutes.contains(route) {
+            Text("AnodyneWiki")
               .foregroundStyle(.secondary)
           }
         }

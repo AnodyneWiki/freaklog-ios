@@ -99,7 +99,7 @@ struct SubstanceScreen: View {
 
   // AnodyneWiki's timings fill in routes without PsychonautWiki or custom durations
   private var hasAnodyneTimings: Bool {
-    let timings = AnodyneTimingStore.shared
+    let timings = AnodyneFallbackStore.shared
     return !timings.routesWithTimings(for: substance.name).isEmpty
       || substance.roas.contains { timings.duration(for: substance.name, route: $0.name) != nil }
   }

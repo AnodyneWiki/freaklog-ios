@@ -41,7 +41,7 @@ private struct CustomSubstanceList: View {
   private var routes: [AdministrationRoute] {
     let name = customSubstance.nameUnwrapped
     let customRoutes = Set(customSubstance.customRoasSorted.filter(\.hasData).map(\.administrationRouteUnwrapped))
-    let anodyneRoutes = Set(AnodyneTimingStore.shared.routesWithTimings(for: name))
+    let anodyneRoutes = Set(AnodyneFallbackStore.shared.routesWithData(for: name))
     return AdministrationRoute.allCases.filter { customRoutes.contains($0) || anodyneRoutes.contains($0) }
   }
 
@@ -71,7 +71,13 @@ private struct CustomSubstanceList: View {
           } header: {
             Text(route.rawValue.localizedCapitalized)
           } footer: {
-            if PersistenceController.shared.isDurationFromAnodyneWiki(for: name, route: route) {
+            let isDoseAnodyne = PersistenceController.shared.isDoseFromAnodyneWiki(for: name, route: route)
+            let isDurationAnodyne = PersistenceController.shared.isDurationFromAnodyneWiki(for: name, route: route)
+            if isDoseAnodyne && isDurationAnodyne {
+              Text("The dose and duration are AnodyneWiki's, from its logged doses and users' timings.")
+            } else if isDoseAnodyne {
+              Text("The dose is AnodyneWiki's, from its logged doses.")
+            } else if isDurationAnodyne {
               Text(AnodyneDurationSection.timingFootnote)
             }
           }

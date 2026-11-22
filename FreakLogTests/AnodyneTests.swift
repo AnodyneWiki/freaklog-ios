@@ -155,8 +155,8 @@ final class AnodyneTests: XCTestCase {
         XCTAssertNil(duration.peak)
     }
 
-    func testTimingStoreFindsSubstancesByTheirAppName() throws {
-        let store = AnodyneTimingStore()
+    func testFallbackStoreFindsSubstancesByTheirAppName() throws {
+        let store = AnodyneFallbackStore()
         store.clear()
         let mdma = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
         store.record(mdma, lookedUpAs: "MDMA")
@@ -165,6 +165,10 @@ final class AnodyneTests: XCTestCase {
         store.record(AnodyneUserNote.notes(fromUserJSON: try fixture("userEmily")))
         XCTAssertNotNil(store.duration(for: "mdma", route: .oral))
         XCTAssertNil(store.duration(for: "LSD", route: .oral))
+        // Doses come from the dose tiers per route
+        XCTAssertEqual(store.dose(for: "MDMA", route: .oral)?.commonMin, 74.6)
+        XCTAssertNil(store.dose(for: "MDMA", route: .intravenous))
+        XCTAssertEqual(store.routesWithData(for: "MDMA"), [.oral, .insufflated, .rectal])
     }
 
     func testReadsInstanceAddresses() {

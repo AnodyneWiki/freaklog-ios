@@ -19,7 +19,7 @@ struct DurationSection: View {
     private var durationInfos: [DurationInfo] {
         let pwRoutes = substance.roas.map(\.name)
         let customRoutes = customRoas.map(\.administrationRouteUnwrapped).filter { !pwRoutes.contains($0) }
-        let anodyneRoutes = AnodyneTimingStore.shared.routesWithTimings(for: substance.name)
+        let anodyneRoutes = AnodyneFallbackStore.shared.routesWithTimings(for: substance.name)
         return (pwRoutes + customRoutes + anodyneRoutes).uniqued().compactMap { route in
             PersistenceController.shared.resolvedDuration(for: substance.name, route: route).map {
                 DurationInfo(route: route, roaDuration: $0)

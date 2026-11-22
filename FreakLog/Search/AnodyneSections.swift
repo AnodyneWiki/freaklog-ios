@@ -166,7 +166,7 @@ struct AnodyneDurationSection: View {
     "The duration is AnodyneWiki's: what its users noted for this route, or the substance's duration of action."
 
   var body: some View {
-    let routes = isShowingRouteTimings ? AnodyneTimingStore.shared.routesWithTimings(for: anodyne.title) : []
+    let routes = isShowingRouteTimings ? AnodyneFallbackStore.shared.routesWithTimings(for: anodyne.title) : []
     if !routes.isEmpty || anodyne.durationOfAction != nil || anodyne.halfLife != nil {
       Section {
         ForEach(routes, id: \.self) { route in
@@ -177,7 +177,7 @@ struct AnodyneDurationSection: View {
               substanceName: anodyne.title,
               route: route,
               roaDose: nil,
-              roaDuration: AnodyneTimingStore.shared.duration(for: anodyne.title, route: route)
+              roaDuration: AnodyneFallbackStore.shared.duration(for: anodyne.title, route: route)
             )
           }
         }

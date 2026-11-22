@@ -28,12 +28,37 @@ struct EditCustomRoaView: View {
     CustomRoa.fallbackUnits(substanceName: substanceName, route: route, customSubstance: customSubstance)
   }
 
-  // What the form shows without custom data: the PsychonautWiki data, if any. Matching it means no override is needed.
+  // What the form shows without the user's data, which the app uses then too: PsychonautWiki's dose and
+  // duration (none for custom substances), with AnodyneWiki's filling in either when it was loaded before.
+  // Matching it means no override is needed.
   private var baseline: CustomRoaCodable {
-    CustomRoaCodable.psychonautWikiValues(for: customSubstance == nil ? substanceName : nil, route: route)
+    let (dose, duration, _) = baselineData
+    return CustomRoaCodable(administrationRoute: route, dose: dose, duration: duration)
   }
 
-  private var isShowingPsychonautWikiData: Bool {
+  private var baselineData: (dose: RoaDose?, duration: RoaDuration?, sources: [String]) {
+    let substance = customSubstance == nil ? SubstanceRepo.shared.getSubstance(name: substanceName) : nil
+    let anodyne = AnodyneFallbackStore.shared
+    let pwDose = substance?.getDose(for: route)
+    let pwDuration = substance?.getDuration(for: route)
+    let anodyneDose = pwDose == nil ? anodyne.dose(for: substanceName, route: route) : nil
+    let anodyneDuration = pwDuration == nil ? anodyne.duration(for: substanceName, route: route) : nil
+    var sources: [String] = []
+    if pwDose != nil || pwDuration != nil {
+      sources.append("PsychonautWiki")
+    }
+    if anodyneDose != nil || anodyneDuration != nil {
+      sources.append("AnodyneWiki")
+    }
+    return (pwDose ?? anodyneDose, pwDuration ?? anodyneDuration, sources)
+  }
+
+  // E.g. "PsychonautWiki" or "PsychonautWiki and AnodyneWiki"
+  private var baselineSourceName: String {
+    baselineData.sources.joined(separator: " and ")
+  }
+
+  private var isShowingDefaultData: Bool {
     existingRoa == nil && !baseline.isEmpty
   }
 
@@ -48,8 +73,8 @@ struct EditCustomRoaView: View {
         } header: {
           Text("Preview")
         } footer: {
-          if isShowingPsychonautWikiData {
-            Text("Showing the PsychonautWiki data. Any change is saved as your own data for this route.")
+          if isShowingDefaultData {
+            Text("Showing the \(baselineSourceName) data. Any change is saved as your own data for this route.")
           }
         }
       }
@@ -63,7 +88,7 @@ struct EditCustomRoaView: View {
           if baseline.isEmpty {
             Button("Clear All Custom Data", role: .destructive) { clear() }
           } else {
-            Button("Reset to PsychonautWiki Data", role: .destructive) { clear() }
+            Button("Reset to \(baselineSourceName) Data", role: .destructive) { clear() }
           }
         }
       }
