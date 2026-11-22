@@ -13,9 +13,7 @@ struct SubstanceScreen: View {
     self.substance = substance
     _anodyneModel = StateObject(wrappedValue: AnodyneLoadModel(name: substance.name, otherNames: substance.commonNames))
     _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
-    let overridesRequest = PersistenceController.substanceOverridesRequest()
-    overridesRequest.predicate = NSPredicate(format: "substanceName == %@", substance.name)
-    _overrides = FetchRequest(fetchRequest: overridesRequest)
+    _overrides = FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest(for: substance.name))
   }
 
   // Each topic shows PsychonautWiki's information, completed with AnodyneWiki's once it is loaded
@@ -178,19 +176,19 @@ struct SubstanceCustomizeSheet: View {
         }
       }
       .onAppear {
-        displayName = PersistenceController.shared.getSubstanceOverride(for: substance.name)?.trimmedDisplayName ?? ""
+        displayName = PersistenceController.shared.substanceOverride(for: substance.name)?.displayName ?? ""
       }
       .onDisappear(perform: saveDisplayName)
     }
   }
 
   private func saveDisplayName() {
-    let override = PersistenceController.shared.getSubstanceOverride(for: substance.name)
-    guard displayName != override?.trimmedDisplayName ?? "" else { return }
+    let override = PersistenceController.shared.substanceOverride(for: substance.name)
+    guard displayName != override?.displayName ?? "" else { return }
     PersistenceController.shared.setSubstanceOverride(
       for: substance.name,
       displayName: displayName,
-      categories: override?.categoryList
+      categories: override?.categories
     )
   }
 }

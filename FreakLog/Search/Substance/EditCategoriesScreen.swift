@@ -5,13 +5,16 @@ import SwiftUI
 struct EditCategoriesScreen: View {
   let substanceName: String
   @State private var selection: [String] = []
+  // Redraws the screen when the user's name or categories for the substance change
   @FetchRequest private var overrides: FetchedResults<SubstanceOverride>
 
   init(substanceName: String) {
     self.substanceName = substanceName
-    let request = PersistenceController.substanceOverridesRequest()
-    request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
-    _overrides = FetchRequest(fetchRequest: request)
+    _overrides = FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest(for: substanceName))
+  }
+
+  private var override: SubstanceOverrideCache.Entry? {
+    PersistenceController.shared.substanceOverride(for: substanceName)
   }
 
   private var psychonautWikiCategories: [String] {
@@ -48,7 +51,7 @@ struct EditCategoriesScreen: View {
             + "such as stimulants or opioids."
         )
       }
-      if overrides.first?.categoryList != nil, !psychonautWikiCategories.isEmpty {
+      if override?.categories != nil, !psychonautWikiCategories.isEmpty {
         Section {
           Button("Reset to PsychonautWiki Categories", role: .destructive) {
             selection = psychonautWikiCategories
@@ -73,7 +76,7 @@ struct EditCategoriesScreen: View {
     let isDefault = Set(selection) == Set(psychonautWikiCategories)
     PersistenceController.shared.setSubstanceOverride(
       for: substanceName,
-      displayName: overrides.first?.displayName,
+      displayName: override?.displayName,
       categories: isDefault ? nil : selection
     )
   }

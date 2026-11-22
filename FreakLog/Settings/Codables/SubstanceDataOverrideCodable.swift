@@ -26,17 +26,18 @@ struct SubstanceDataOverrideCodable: Codable {
 }
 
 extension SubstanceDataOverrideCodable {
-  // One entry per substance; the store keeps one roa row per substance and route and one override row
+  // One entry per substance; the store keeps one roa row per substance and route, and override rows that
+  // iCloud duplicated are merged so no device's values are lost
   static func grouped(_ roas: [CustomRoa], overrides: [SubstanceOverride]) -> [SubstanceDataOverrideCodable] {
     let roasByName = Dictionary(grouping: roas) { $0.substanceName ?? "" }
-    let overridesByName = Dictionary(overrides.map { ($0.substanceName ?? "", $0) }, uniquingKeysWith: { first, _ in first })
+    let overridesByName = Dictionary(overrides.map { ($0.substanceName ?? "", $0.entry) }) { $0.merged($1) }
     let names = Set(roasByName.keys).union(overridesByName.keys).filter { !$0.isEmpty }
     return names.sorted().map { name in
       SubstanceDataOverrideCodable(
         substanceName: name,
         roas: (roasByName[name] ?? []).map(CustomRoaCodable.init(roa:)),
-        displayName: overridesByName[name]?.trimmedDisplayName,
-        categories: overridesByName[name]?.categoryList
+        displayName: overridesByName[name]?.displayName,
+        categories: overridesByName[name]?.categories
       )
     }
   }

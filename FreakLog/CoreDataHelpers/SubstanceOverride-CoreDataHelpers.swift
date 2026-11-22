@@ -13,6 +13,10 @@ extension SubstanceOverride {
     let trimmed = displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     return trimmed.isEmpty ? nil : trimmed
   }
+
+  var entry: SubstanceOverrideCache.Entry {
+    SubstanceOverrideCache.Entry(displayName: trimmedDisplayName, categories: categoryList)
+  }
 }
 
 extension Substance {
@@ -64,11 +68,9 @@ extension PersistenceController {
     categories.first { !categoryTags.contains($0) } ?? categories.first
   }
 
-  func getSubstanceOverride(for substanceName: String) -> SubstanceOverride? {
-    let r = SubstanceOverride.fetchRequest()
-    r.predicate = NSPredicate(format: "substanceName == %@", substanceName)
-    r.fetchLimit = 1
-    return (try? viewContext.fetch(r))?.first
+  // The user's display name and categories for the substance, merged over all its rows
+  func substanceOverride(for substanceName: String) -> SubstanceOverrideCache.Entry? {
+    overrideCache.entry(for: substanceName)
   }
 
   static func substanceOverridesRequest() -> NSFetchRequest<SubstanceOverride> {
@@ -77,17 +79,25 @@ extension PersistenceController {
     return r
   }
 
-  // Stores the overrides, dropping a display name equal to the stored name and the row once nothing is left
+  // All rows of one substance; iCloud can bring one from each device
+  static func substanceOverridesRequest(for substanceName: String) -> NSFetchRequest<SubstanceOverride> {
+    let r = substanceOverridesRequest()
+    r.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+    return r
+  }
+
+  // Stores the overrides, dropping a display name equal to the stored name and the row once nothing is left.
+  // Duplicate rows from iCloud collapse into the first one.
   func setSubstanceOverride(for substanceName: String, displayName: String?, categories: [String]?) {
     let trimmedName = displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     let name = trimmedName.isEmpty || trimmedName == substanceName ? nil : trimmedName
-    let existing = getSubstanceOverride(for: substanceName)
-    if name == nil, categories == nil {
-      if let existing {
-        viewContext.delete(existing)
-      }
-    } else {
-      let override = existing ?? SubstanceOverride(context: viewContext)
+    let existing = (try? viewContext.fetch(Self.substanceOverridesRequest(for: substanceName))) ?? []
+    let isEmpty = name == nil && categories == nil
+    for row in existing.dropFirst(isEmpty ? 0 : 1) {
+      viewContext.delete(row)
+    }
+    if !isEmpty {
+      let override = existing.first ?? SubstanceOverride(context: viewContext)
       override.substanceName = substanceName
       override.displayName = name
       override.categoryList = categories
@@ -99,9 +109,20 @@ extension PersistenceController {
 // In-memory copy of all overrides, read from views and the interaction checker on every lookup.
 // Dropped whenever an override changes, together with the interaction checker's results.
 final class SubstanceOverrideCache: @unchecked Sendable {
-  struct Entry {
+  struct Entry: Equatable {
     let displayName: String?
     let categories: [String]?
+
+    // Combines two rows of one substance, e.g. made on two devices before iCloud synced them. Only the values
+    // decide, because object IDs differ between devices, so every device keeps the same one: the greatest
+    // display name, and the categories whose joined text is greatest (so a non-empty list beats an empty one).
+    func merged(_ other: Entry) -> Entry {
+      let categoryLists = [categories, other.categories].compactMap { $0 }
+      return Entry(
+        displayName: [displayName, other.displayName].compactMap { $0 }.max(),
+        categories: categoryLists.max { $0.joined(separator: ",") < $1.joined(separator: ",") }
+      )
+    }
   }
 
   private let context: NSManagedObjectContext
@@ -154,7 +175,8 @@ final class SubstanceOverrideCache: @unchecked Sendable {
       let overrides = (try? context.fetch(SubstanceOverride.fetchRequest())) ?? []
       for override in overrides {
         guard let name = override.substanceName else { continue }
-        result[name] = Entry(displayName: override.trimmedDisplayName, categories: override.categoryList)
+        let entry = override.entry
+        result[name] = result[name].map { $0.merged(entry) } ?? entry
       }
     }
     return result

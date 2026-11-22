@@ -101,4 +101,43 @@ final class JournalFileTests: XCTestCase {
         XCTAssertEqual(PersistenceController.primaryCategory(of: ["habit-forming", "common"]), "habit-forming")
         XCTAssertNil(PersistenceController.primaryCategory(of: []))
     }
+
+    func testMergedOverrideDependsOnlyOnValues() {
+        let named = SubstanceOverrideCache.Entry(displayName: "Coffee", categories: [])
+        let categorized = SubstanceOverrideCache.Entry(displayName: nil, categories: ["stimulant"])
+        let renamed = SubstanceOverrideCache.Entry(displayName: "Kaffee", categories: nil)
+        XCTAssertEqual(named.merged(categorized), SubstanceOverrideCache.Entry(displayName: "Coffee", categories: ["stimulant"]))
+        XCTAssertEqual(named.merged(categorized), categorized.merged(named))
+        XCTAssertEqual(named.merged(renamed), renamed.merged(named))
+        XCTAssertEqual(named.merged(renamed).displayName, "Kaffee")
+        // An empty list is still the user's choice over the default
+        XCTAssertEqual(renamed.merged(named).categories, [])
+    }
+
+    func testDuplicateOverridesCollapseOnSave() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let context = persistence.viewContext
+        // One row from each device, synced by iCloud
+        let first = SubstanceOverride(context: context)
+        first.substanceName = "Caffeine"
+        first.displayName = "Coffee"
+        let second = SubstanceOverride(context: context)
+        second.substanceName = "Caffeine"
+        second.categoryList = ["stimulant"]
+        try context.save()
+        let merged = try XCTUnwrap(persistence.substanceOverride(for: "Caffeine"))
+        XCTAssertEqual(merged, SubstanceOverrideCache.Entry(displayName: "Coffee", categories: ["stimulant"]))
+        let exported = SubstanceDataOverrideCodable.grouped([], overrides: [first, second])
+        XCTAssertEqual(exported.map(\.categories), [["stimulant"]])
+        XCTAssertEqual(exported.map(\.displayName), ["Coffee"])
+
+        persistence.setSubstanceOverride(for: "Caffeine", displayName: merged.displayName, categories: ["stimulant", "common"])
+        let rows = try context.fetch(PersistenceController.substanceOverridesRequest(for: "Caffeine"))
+        XCTAssertEqual(rows.count, 1)
+        XCTAssertEqual(rows.first?.displayName, "Coffee")
+        XCTAssertEqual(rows.first?.categoryList, ["stimulant", "common"])
+
+        persistence.setSubstanceOverride(for: "Caffeine", displayName: nil, categories: nil)
+        XCTAssertEqual(try context.count(for: PersistenceController.substanceOverridesRequest(for: "Caffeine")), 0)
+    }
 }
