@@ -61,7 +61,7 @@ extension PersistenceController {
   }
 
   // Tags that say something about a substance but not what kind of drug it is
-  private static let categoryTags: Set<String> = ["common", "habit-forming", "research-chemical", "tentative"]
+  private static let categoryTags: Set = ["common", "habit-forming", "research-chemical", "tentative"]
 
   // The first category that is not a tag, else the first category
   static func primaryCategory(of categories: [String]) -> String? {
