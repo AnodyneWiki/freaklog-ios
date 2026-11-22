@@ -258,3 +258,154 @@ extension String {
       .trimmingCharacters(in: .whitespacesAndNewlines)
   }
 }
+
+// MARK: - User notes
+
+// What one AnodyneWiki user wrote about a substance they tried, from their userpage
+struct AnodyneUserNote: Codable, Hashable, Identifiable {
+  struct Route: Codable, Hashable {
+    let name: String
+    let dosage: String?
+    let onset: String?
+    let comeup: String?
+    let duration: String?
+  }
+
+  // Effects the user noted for one route, dose or condition
+  struct EffectGroup: Codable, Hashable {
+    let heading: String
+    let effects: [String]
+  }
+
+  let user: String
+  let substanceName: String
+  var routes: [Route] = []
+  var classes: [String] = []
+  var forms: [String] = []
+  var sources: [String] = []
+  var indications: [String] = []
+  var effects: [String] = []
+  var effectGroups: [EffectGroup] = []
+  var afterEffects: [String] = []
+  var tolerance: [String] = []
+  var odor: [String] = []
+  var notes: [String] = []
+
+  var id: String { "\(user)/\(substanceName)" }
+
+  var userPageURL: URL {
+    let encoded = user.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? user
+    return URL(string: "\(AnodyneSubstance.baseURL.absoluteString)/user/\(encoded)") ?? AnodyneSubstance.baseURL
+  }
+
+  // E.g. "Oral 40–91 mg, Insufflated 22 mg"
+  var routesSummary: String {
+    routes.map { route in [route.name, route.dosage].compactMap { $0 }.joined(separator: " ") }
+      .joined(separator: ", ")
+  }
+
+  var hasDetails: Bool {
+    ![routes.isEmpty, classes.isEmpty, forms.isEmpty, sources.isEmpty, indications.isEmpty, effects.isEmpty,
+      effectGroups.isEmpty, afterEffects.isEmpty, tolerance.isEmpty, odor.isEmpty, notes.isEmpty].allSatisfy { $0 }
+  }
+
+  // The substances a userpage lists under TriedSubstances
+  static func notes(fromUserJSON json: [String: Any]) -> [AnodyneUserNote] {
+    guard let user = json["Title"] as? String else { return [] }
+    return (json["TriedSubstances"] as? [[String: Any]] ?? []).compactMap { entry in
+      guard let name = entry["Name"] as? String else { return nil }
+      func texts(_ keys: String...) -> [String] {
+        keys.flatMap { key -> [String] in
+          if let string = entry[key] as? String {
+            return [string]
+          }
+          return (entry[key] as? [Any] ?? []).compactMap { $0 as? String }
+        }
+        .map(\.anodyneUserMarkupCleaned)
+        .filter { !$0.isEmpty }
+      }
+      let note = AnodyneUserNote(
+        user: user,
+        substanceName: name,
+        routes: (entry["Routes"] as? [[String: Any]] ?? []).compactMap(Self.route),
+        classes: texts("Classes"),
+        forms: texts("Forms", "Salts"),
+        sources: texts("Sources", "Source"),
+        indications: texts("Indication"),
+        effects: texts("Effects", "Adverse"),
+        effectGroups: (entry["DEffects"] as? [[String: Any]] ?? []).compactMap(Self.effectGroup),
+        afterEffects: texts("After"),
+        tolerance: texts("Tolerance"),
+        odor: texts("Odor"),
+        notes: texts("Notes", "Note")
+      )
+      return note
+    }
+  }
+
+  private static func route(_ json: [String: Any]) -> Route? {
+    guard let name = json["Name"] as? String, !name.isEmpty else { return nil }
+    func text(_ key: String) -> String? {
+      guard let value = json[key] as? String, !value.isEmpty else { return nil }
+      return value.anodyneUserMarkupCleaned
+    }
+    return Route(
+      name: name.capitalized,
+      dosage: text("Dosage").map(Self.spacedDosage),
+      onset: text("Onset"),
+      comeup: text("Comeup"),
+      duration: text("Duration") ?? text("Active")
+    )
+  }
+
+  private static func effectGroup(_ json: [String: Any]) -> EffectGroup? {
+    let effects = (json["Effects"] as? [Any] ?? []).compactMap { ($0 as? String)?.anodyneUserMarkupCleaned }
+    guard !effects.isEmpty else { return nil }
+    let parts = ["Route", "Dosage"].compactMap { json[$0] as? String }.filter { !$0.isEmpty }
+    let condition = (json["Condition"] as? String)?.anodyneUserMarkupCleaned
+    let heading = parts.isEmpty ? condition ?? "Effects" : parts.joined(separator: " ") + (condition.map { " (\($0))" } ?? "")
+    return EffectGroup(heading: heading, effects: effects)
+  }
+
+  // "40-91mg" reads as "40–91 mg"
+  private static func spacedDosage(_ dosage: String) -> String {
+    dosage
+      .replacingOccurrences(of: "(\\d)-(\\d)", with: "$1–$2", options: .regularExpression)
+      .replacingOccurrences(of: "(\\d)([a-zµμ]+)$", with: "$1 $2", options: .regularExpression)
+  }
+}
+
+extension String {
+  // Userpages use AnodyneWiki's own markup, rendered by its frontend (anodyne-frontend, template "user"):
+  // {sev 'light'} and links such as {xeff 'teeth-grinding'} or {sub 'target' 'label'} show their text,
+  // {p}...{Ep} and similar are HTML tags, {gt}, {lt} and {apos} are characters and *text* is emphasis.
+  var anodyneUserMarkupCleaned: String {
+    var text = self
+    for tag in ["b", "p", "ul", "s", "i", "sub"] {
+      text = text.replacingOccurrences(of: "{\(tag)}", with: "").replacingOccurrences(of: "{E\(tag)}", with: " ")
+    }
+    text = text.replacingOccurrences(of: "{br}", with: " ")
+      .replacingOccurrences(of: "{apos}", with: "'")
+      .replacingOccurrences(of: "{rev}", with: "reverse")
+      .replacingOccurrences(of: "\\*([^*]+)\\*", with: "$1", options: .regularExpression)
+    // Two-value links show their label, one-value ones their value; effect names are written with hyphens
+    text = text.replacingOccurrences(of: "\\{\\w+\\s+'[^']*'\\s+'([^']*)'\\}", with: "$1", options: .regularExpression)
+    guard let regex = try? NSRegularExpression(pattern: "\\{(\\w+)\\s+'([^']*)'\\}") else { return text.anodyneCleaned }
+    // < and > come back after HTML tags are stripped, so they can't be taken for tags
+    var result = ""
+    var rest = text.startIndex
+    for match in regex.matches(in: text, range: NSRange(text.startIndex..., in: text)) {
+      guard let whole = Range(match.range, in: text),
+            let tag = Range(match.range(at: 1), in: text),
+            let value = Range(match.range(at: 2), in: text)
+      else { continue }
+      result += text[rest ..< whole.lowerBound]
+      result += text[tag] == "xeff" ? text[value].replacingOccurrences(of: "-", with: " ") : String(text[value])
+      rest = whole.upperBound
+    }
+    result += text[rest...]
+    return result.anodyneCleaned
+      .replacingOccurrences(of: "{gt}", with: ">")
+      .replacingOccurrences(of: "{lt}", with: "<")
+  }
+}

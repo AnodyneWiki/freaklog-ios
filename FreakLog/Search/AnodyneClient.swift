@@ -21,18 +21,26 @@ actor AnodyneClient {
     let entries: [AnodyneIndexEntry]
   }
 
+  private struct CachedUserNotes: Codable {
+    let date: Date
+    let notes: [AnodyneUserNote]
+  }
+
   private static let substanceLifetime: TimeInterval = 7 * 24 * 60 * 60
   private static let indexLifetime: TimeInterval = 24 * 60 * 60
+  private static let userNotesLifetime: TimeInterval = 24 * 60 * 60
 
   private var lookups: [String: CachedLookup] = [:]
   private var index: CachedIndex?
-  private let session: URLSession
+  private var userNotes: CachedUserNotes?
 
-  private init() {
+  private static let session: URLSession = {
     let configuration = URLSessionConfiguration.ephemeral
     configuration.timeoutIntervalForRequest = 30
-    session = URLSession(configuration: configuration)
-  }
+    return URLSession(configuration: configuration)
+  }()
+
+  private init() {}
 
   static var isAutomaticLoadingEnabled: Bool {
     UserDefaults.standard.bool(forKey: PersistenceController.isAnodyneAutoLoadEnabledKey)
@@ -77,7 +85,7 @@ actor AnodyneClient {
       self.index = index
       return index.entries
     }
-    let json = try await fetchJSON(path: "api/index/substance")
+    let json = try await Self.fetchJSON(path: "api/index/substance")
     let entries = (json["Entries"] as? [[String: Any]] ?? []).compactMap(AnodyneIndexEntry.init(apiJSON:))
     let index = CachedIndex(date: .now, entries: entries)
     self.index = index
@@ -85,9 +93,53 @@ actor AnodyneClient {
     return entries
   }
 
+  // Notes from AnodyneWiki's userpages about a substance known by any of the names, without going online
+  func cachedUserNotes(matching names: [String]) -> [AnodyneUserNote]? {
+    guard let notes = recentUserNotes() else { return nil }
+    return Self.notes(notes, matching: names)
+  }
+
+  // Userpages aren't about one substance, so loading them all doesn't tell AnodyneWiki which one is looked at
+  func userNotes(matching names: [String]) async throws -> [AnodyneUserNote] {
+    if let notes = recentUserNotes() {
+      return Self.notes(notes, matching: names)
+    }
+    let users = (try await Self.fetchJSON(path: "api/index/user")["Entries"] as? [[String: Any]] ?? [])
+      .compactMap { $0["Title"] as? String }
+    let notes = await withTaskGroup(of: [AnodyneUserNote].self) { group in
+      for user in users {
+        group.addTask {
+          let encoded = user.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? user
+          guard let json = try? await Self.fetchJSON(path: "api/user/\(encoded)") else { return [] }
+          return AnodyneUserNote.notes(fromUserJSON: json)
+        }
+      }
+      return await group.reduce(into: []) { $0 += $1 }
+    }
+    let sorted = notes.sorted { $0.user.localizedCaseInsensitiveCompare($1.user) == .orderedAscending }
+    let cached = CachedUserNotes(date: .now, notes: sorted)
+    userNotes = cached
+    Self.writeToDisk(cached, file: Self.userNotesFile)
+    return Self.notes(cached.notes, matching: names)
+  }
+
+  private func recentUserNotes() -> [AnodyneUserNote]? {
+    guard let cached = userNotes ?? Self.readFromDisk(CachedUserNotes.self, file: Self.userNotesFile),
+          cached.date.distance(to: .now) < Self.userNotesLifetime
+    else { return nil }
+    userNotes = cached
+    return cached.notes
+  }
+
+  private static func notes(_ notes: [AnodyneUserNote], matching names: [String]) -> [AnodyneUserNote] {
+    let names = Set(names.map { $0.lowercased() })
+    return notes.filter { names.contains($0.substanceName.lowercased()) && $0.hasDetails }
+  }
+
   func clearCache() {
     lookups = [:]
     index = nil
+    userNotes = nil
     try? FileManager.default.removeItem(at: Self.directory)
   }
 
@@ -105,11 +157,11 @@ actor AnodyneClient {
 
   private func fetchSubstance(titled title: String) async throws -> Lookup {
     let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title
-    let json = try await fetchJSON(path: "api/substance/\(encoded)")
+    let json = try await Self.fetchJSON(path: "api/substance/\(encoded)")
     return AnodyneSubstance(apiJSON: json).map(Lookup.found) ?? .notFound
   }
 
-  private func fetchJSON(path: String) async throws -> [String: Any] {
+  private static func fetchJSON(path: String) async throws -> [String: Any] {
     guard let url = URL(string: "\(AnodyneSubstance.baseURL.absoluteString)/\(path)") else {
       throw URLError(.badURL)
     }
@@ -141,6 +193,10 @@ actor AnodyneClient {
 
   private static var indexFile: URL {
     directory.appendingPathComponent("index.json")
+  }
+
+  private static var userNotesFile: URL {
+    directory.appendingPathComponent("user-notes.json")
   }
 
   private static func key(for name: String) -> String {

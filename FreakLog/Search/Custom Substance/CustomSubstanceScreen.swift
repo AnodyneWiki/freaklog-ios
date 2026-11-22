@@ -66,7 +66,7 @@ private struct CustomSubstanceList: View {
         }
       }
       if let anodyne = anodyneModel.substance {
-        AnodyneTopicSections(anodyne: anodyne)
+        AnodyneTopicSections(anodyne: anodyne, userNotes: anodyneModel.userNotes)
       }
       if anodyneModel.substance != nil || anodyneModel.phase == .notFound {
         SourcesSection(anodyne: anodyneModel.substance, isMissingOnAnodyne: anodyneModel.phase == .notFound)

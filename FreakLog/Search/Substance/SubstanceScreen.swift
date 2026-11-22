@@ -66,7 +66,7 @@ struct SubstanceScreen: View {
         AnodyneReagentsSection(anodyne: anodyne)
         AnodyneLegalStatusSection(anodyne: anodyne)
         AnodynePharmacologySection(anodyne: anodyne)
-        AnodyneReportsSection(anodyne: anodyne)
+        AnodyneReportsSection(anodyne: anodyne, userNotes: anodyneModel.userNotes)
       }
       SourcesSection(
         psychonautWikiURL: substance.url,

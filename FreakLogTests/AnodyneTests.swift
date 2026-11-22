@@ -65,6 +65,32 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(substance.aliases, ["1,3-DMAA"])
     }
 
+    func testReadsUserNotes() throws {
+        let notes = AnodyneUserNote.notes(fromUserJSON: try fixture("userNinerik"))
+        XCTAssertEqual(notes.map(\.substanceName), ["Caffeine", "Amphetamine"])
+        let caffeine = try XCTUnwrap(notes.first)
+        XCTAssertEqual(caffeine.user, "ninerik")
+        XCTAssertEqual(caffeine.routes.first?.name, "Oral")
+        XCTAssertEqual(caffeine.routes.first?.dosage, "35–680 mg")
+        XCTAssertEqual(caffeine.routesSummary, "Oral 35–680 mg")
+        XCTAssertEqual(caffeine.effects.first, "light stimulation")
+        XCTAssertTrue(caffeine.effects.contains("increased heart rate"))
+        XCTAssertTrue(caffeine.effects.contains("addiction (since the start of 2026)"))
+        XCTAssertTrue(caffeine.indications.contains("headache from Caffeine withdrawals"))
+        XCTAssertEqual(caffeine.notes, ["Awful awful awful stimulant"])
+        XCTAssertEqual(caffeine.userPageURL.absoluteString, "https://anodyne.wiki/user/ninerik")
+
+        let mdma = try XCTUnwrap(AnodyneUserNote.notes(fromUserJSON: try fixture("userEmily")).first)
+        XCTAssertEqual(mdma.routesSummary, "Oral 40–91 mg, Insufflated 22 mg")
+        XCTAssertTrue(mdma.hasDetails)
+    }
+
+    func testRendersUserMarkup() {
+        XCTAssertEqual("{sev 'strong'} {xeff 'appetite suppression'}".anodyneUserMarkupCleaned, "strong appetite suppression")
+        XCTAssertEqual("{sub '2C-B'} and {class 'stimulant' 'stimulants'}".anodyneUserMarkupCleaned, "2C-B and stimulants")
+        XCTAssertEqual("{p}Hello{Ep}{p}*there*{gt}{lt}{Ep}".anodyneUserMarkupCleaned, "Hello there><")
+    }
+
     func testUnknownSubstanceIsNotFound() throws {
         XCTAssertNil(AnodyneSubstance(apiJSON: try fixture("notFound")))
     }

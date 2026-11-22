@@ -14,6 +14,8 @@ final class AnodyneLoadModel: ObservableObject {
   }
 
   @Published private(set) var phase = Phase.idle
+  // What AnodyneWiki's users wrote about the substance on their userpages
+  @Published private(set) var userNotes: [AnodyneUserNote] = []
   let name: String
   let otherNames: [String]
 
@@ -30,6 +32,7 @@ final class AnodyneLoadModel: ObservableObject {
     guard phase == .idle else { return }
     if let cached = await AnodyneClient.shared.cachedLookup(for: name) {
       phase = Self.makePhase(for: cached)
+      await loadUserNotes()
     } else if loadingIfNotCached {
       await load()
     }
@@ -42,6 +45,14 @@ final class AnodyneLoadModel: ObservableObject {
     } catch {
       phase = .failed
     }
+    await loadUserNotes()
+  }
+
+  // Userpages name substances by their AnodyneWiki title, sometimes by an abbreviation
+  private func loadUserNotes() async {
+    guard let substance else { return }
+    let names = [substance.title, name] + substance.abbreviations
+    userNotes = (try? await AnodyneClient.shared.userNotes(matching: names)) ?? []
   }
 
   private static func makePhase(for lookup: AnodyneClient.Lookup) -> Phase {
@@ -168,11 +179,115 @@ struct AnodyneDurationRows: View {
   }
 }
 
+// Everything AnodyneWiki's users wrote about the substance, each opening their whole note
+struct AnodyneUserNotesScreen: View {
+  let notes: [AnodyneUserNote]
+
+  var body: some View {
+    List {
+      Section {
+        ForEach(notes) { note in
+          NavigationLink {
+            AnodyneUserNoteScreen(note: note)
+          } label: {
+            VStack(alignment: .leading, spacing: 3) {
+              Text(note.user)
+                .font(.headline)
+              if !note.routesSummary.isEmpty {
+                Text(note.routesSummary)
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+              }
+              if let text = note.notes.first ?? note.effects.first {
+                Text(text)
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+                  .lineLimit(2)
+              }
+            }
+            .padding(.vertical, 2)
+          }
+        }
+      } footer: {
+        Text("Personal experiences AnodyneWiki users shared on their userpages. They are not advice.")
+      }
+    }
+    .navigationTitle("User Notes")
+  }
+}
+
+// One user's whole note about a substance, laid out like their userpage
+struct AnodyneUserNoteScreen: View {
+  let note: AnodyneUserNote
+
+  var body: some View {
+    List {
+      if !note.routes.isEmpty {
+        Section("Routes") {
+          ForEach(note.routes, id: \.self) { route in
+            VStack(alignment: .leading, spacing: 3) {
+              LabeledContent(route.name, value: route.dosage ?? "")
+              let times = [("Onset", route.onset), ("Come-up", route.comeup), ("Duration", route.duration)]
+                .compactMap { label, value in value.map { "\(label) \($0)" } }
+              if !times.isEmpty {
+                Text(times.joined(separator: " · "))
+                  .font(.subheadline)
+                  .foregroundStyle(.secondary)
+              }
+            }
+          }
+        }
+      }
+      if !note.classes.isEmpty || !note.forms.isEmpty {
+        Section("Classes & Forms") {
+          if !note.classes.isEmpty {
+            ChipList(items: note.classes)
+          }
+          ForEach(note.forms, id: \.self) { form in
+            Text(form)
+          }
+        }
+      }
+      textsSection("Sources", note.sources)
+      textsSection("Indications", note.indications)
+      textsSection("Effects", note.effects)
+      ForEach(note.effectGroups, id: \.self) { group in
+        textsSection("Effects: \(group.heading)", group.effects)
+      }
+      textsSection("After Effects", note.afterEffects)
+      textsSection("Tolerance", note.tolerance)
+      textsSection("Odor", note.odor)
+      textsSection("Notes", note.notes)
+      Section {
+        NavigationLink(value: GlobalNavigationDestination.webView(articleURL: note.userPageURL)) {
+          Label("\(note.user)'s Userpage", systemImage: "person.crop.circle")
+        }
+      } footer: {
+        Text("About \(note.substanceName), from AnodyneWiki. A personal experience, not advice.")
+      }
+    }
+    .navigationTitle(note.user)
+  }
+
+  @ViewBuilder
+  private func textsSection(_ title: String, _ texts: [String]) -> some View {
+    if !texts.isEmpty {
+      Section(title) {
+        ForEach(Array(texts.enumerated()), id: \.offset) { _, text in
+          Text(text)
+            .textSelection(.enabled)
+        }
+      }
+    }
+  }
+}
+
 // MARK: - AnodyneWiki topics
 
 // Every AnodyneWiki topic that has no PsychonautWiki counterpart on the screen showing it
 struct AnodyneTopicSections: View {
   let anodyne: AnodyneSubstance
+  var userNotes: [AnodyneUserNote] = []
   // The PsychonautWiki screen shows these topics combined with its own
   var isIncludingSharedTopics = true
 
@@ -190,7 +305,7 @@ struct AnodyneTopicSections: View {
     AnodyneReagentsSection(anodyne: anodyne)
     AnodyneLegalStatusSection(anodyne: anodyne)
     AnodynePharmacologySection(anodyne: anodyne)
-    AnodyneReportsSection(anodyne: anodyne)
+    AnodyneReportsSection(anodyne: anodyne, userNotes: userNotes)
   }
 }
 
@@ -295,10 +410,19 @@ struct AnodynePharmacologySection: View {
 
 struct AnodyneReportsSection: View {
   let anodyne: AnodyneSubstance
+  var userNotes: [AnodyneUserNote] = []
 
+  // One row per source, so the page stays short however many reports there are
   var body: some View {
-    if !anodyne.erowidReports.isEmpty || !anodyne.redditReports.isEmpty {
+    if !userNotes.isEmpty || !anodyne.erowidReports.isEmpty || !anodyne.redditReports.isEmpty {
       Section("Experience Reports") {
+        if !userNotes.isEmpty {
+          NavigationLink {
+            AnodyneUserNotesScreen(notes: userNotes)
+          } label: {
+            LabeledContent("AnodyneWiki User Notes", value: userNotes.count.formatted())
+          }
+        }
         reportsLink("Erowid", reports: anodyne.erowidReports)
         reportsLink("Reddit", reports: anodyne.redditReports)
       }

@@ -42,7 +42,7 @@ struct AnodyneSubstanceScreen: View {
             }
           }
           overviewSection(substance)
-          AnodyneTopicSections(anodyne: substance)
+          AnodyneTopicSections(anodyne: substance, userNotes: model.userNotes)
           SourcesSection(anodyne: substance)
         }
         .sheet(isPresented: $isShowingAddSheet) {
