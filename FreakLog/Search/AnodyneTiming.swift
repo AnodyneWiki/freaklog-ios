@@ -132,6 +132,16 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     builtRouteDurations = nil
   }
 
+  // Reads the cache on disk in the background at launch, so the main thread doesn't wait for it. A lookup that
+  // comes first loads it itself (and one that comes during the preload waits for it), so it always sees the data.
+  // Files from before the current format are removed on the way.
+  func preload() {
+    AnodyneClient.removeOutdatedFilesOnDisk()
+    lock.lock()
+    defer { lock.unlock() }
+    loadCacheIfNeeded()
+  }
+
   // After a relaunch the cache on disk has what was loaded before
   private func loadCacheIfNeeded() {
     guard !didLoadCache else { return }

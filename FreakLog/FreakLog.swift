@@ -10,6 +10,13 @@ struct FreakLog: App {
     @StateObject private var authenticator = Authenticator()
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        // Reads AnodyneWiki's cached data before the first timeline or dose display asks for it
+        Task.detached(priority: .utility) {
+            AnodyneFallbackStore.shared.preload()
+        }
+    }
+
     var body: some Scene {
         WindowGroup {
             AuthenticatorWrapper(authenticator: authenticator) {

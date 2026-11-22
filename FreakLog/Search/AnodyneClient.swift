@@ -199,13 +199,10 @@ actor AnodyneClient {
   }
 
   // Every substance on disk with the name it was looked up by, however old, for AnodyneFallbackStore.
-  // Files from before the current format are removed on the way.
+  // Files from before the current format are skipped.
   static func cachedSubstancesOnDisk() -> [(name: String, substance: AnodyneSubstance)] {
     let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
     let prefix = lookupFile(for: "").deletingPathExtension().lastPathComponent
-    for file in files where file.lastPathComponent.hasPrefix("substance") && !file.lastPathComponent.hasPrefix(prefix) {
-      try? FileManager.default.removeItem(at: file)
-    }
     return files.compactMap { file in
       let fileName = file.deletingPathExtension().lastPathComponent
       guard fileName.hasPrefix(prefix),
@@ -213,6 +210,15 @@ actor AnodyneClient {
             case let .found(substance) = readFromDisk(CachedLookup.self, file: file)?.lookup
       else { return nil }
       return (name, substance)
+    }
+  }
+
+  // Substances cached before the current format, which are loaded again when needed
+  static func removeOutdatedFilesOnDisk() {
+    let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+    let prefix = lookupFile(for: "").deletingPathExtension().lastPathComponent
+    for file in files where file.lastPathComponent.hasPrefix("substance") && !file.lastPathComponent.hasPrefix(prefix) {
+      try? FileManager.default.removeItem(at: file)
     }
   }
 
