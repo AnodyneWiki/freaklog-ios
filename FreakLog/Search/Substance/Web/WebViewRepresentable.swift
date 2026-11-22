@@ -38,4 +38,13 @@ class WebViewCoordinator: NSObject, WKNavigationDelegate {
     func webView(_: WKWebView, didFinish _: WKNavigation!) {
         isLoading = false
     }
+
+    // Without these the spinner stayed on pages that failed to load
+    func webView(_: WKWebView, didFail _: WKNavigation!, withError _: Error) {
+        isLoading = false
+    }
+
+    func webView(_: WKWebView, didFailProvisionalNavigation _: WKNavigation!, withError _: Error) {
+        isLoading = false
+    }
 }

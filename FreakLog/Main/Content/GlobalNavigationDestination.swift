@@ -10,6 +10,9 @@ enum GlobalNavigationDestination: Hashable {
     case timelineInfo
     case anodyneSubstance(title: String)
     case anodyneSearch(query: String)
+    case anodyneUserNotes(notes: [AnodyneUserNote])
+    case anodyneUserNote(note: AnodyneUserNote)
+    case anodyneLinks(title: String, links: [AnodyneSubstance.Link])
 
     // journal tab mainly
     case calendar

@@ -25,6 +25,12 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             AnodyneSearchScreen(searchText: query)
         case .anodyneSettings:
             AnodyneSettingsScreen()
+        case let .anodyneUserNotes(notes):
+            AnodyneUserNotesScreen(notes: notes)
+        case let .anodyneUserNote(note):
+            AnodyneUserNoteScreen(note: note)
+        case let .anodyneLinks(title, links):
+            AnodyneLinksScreen(title: title, links: links)
         case .timelineInfo:
             List {
                 TimelineExplanationTexts()

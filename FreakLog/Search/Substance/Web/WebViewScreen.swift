@@ -22,6 +22,8 @@ struct WebViewScreen: View {
                 ProgressView()
             }
         }
+        .navigationTitle(articleURL.host() ?? "")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

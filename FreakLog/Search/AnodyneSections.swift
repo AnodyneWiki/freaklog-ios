@@ -190,9 +190,7 @@ struct AnodyneUserNotesScreen: View {
     List {
       Section {
         ForEach(notes) { note in
-          NavigationLink {
-            AnodyneUserNoteScreen(note: note)
-          } label: {
+          NavigationLink(value: GlobalNavigationDestination.anodyneUserNote(note: note)) {
             VStack(alignment: .leading, spacing: 3) {
               Text(note.user)
                 .font(.headline)
@@ -234,6 +232,19 @@ struct AnodyneChemistryRows: View {
     if let molarMass = anodyne.molarMass {
       LabeledContent("Molar Mass", value: molarMass)
     }
+  }
+}
+
+// Experience reports or references, each opening its page
+struct AnodyneLinksScreen: View {
+  let title: String
+  let links: [AnodyneSubstance.Link]
+
+  var body: some View {
+    List(links, id: \.url) { link in
+      NavigationLink(link.title, value: GlobalNavigationDestination.webView(articleURL: link.url))
+    }
+    .navigationTitle(title)
   }
 }
 
@@ -438,9 +449,7 @@ struct AnodyneReportsSection: View {
     if !userNotes.isEmpty || !anodyne.erowidReports.isEmpty || !anodyne.redditReports.isEmpty {
       Section("Experience Reports") {
         if !userNotes.isEmpty {
-          NavigationLink {
-            AnodyneUserNotesScreen(notes: userNotes)
-          } label: {
+          NavigationLink(value: GlobalNavigationDestination.anodyneUserNotes(notes: userNotes)) {
             LabeledContent("AnodyneWiki User Notes", value: userNotes.count.formatted())
           }
         }
@@ -453,12 +462,7 @@ struct AnodyneReportsSection: View {
   @ViewBuilder
   private func reportsLink(_ source: String, reports: [AnodyneSubstance.Link]) -> some View {
     if !reports.isEmpty {
-      NavigationLink {
-        List(reports, id: \.url) { report in
-          NavigationLink(report.title, value: GlobalNavigationDestination.webView(articleURL: report.url))
-        }
-        .navigationTitle("\(source) Reports")
-      } label: {
+      NavigationLink(value: GlobalNavigationDestination.anodyneLinks(title: "\(source) Reports", links: reports)) {
         LabeledContent(source, value: reports.count.formatted())
       }
     }
@@ -484,12 +488,7 @@ struct SourcesSection: View {
           Label("AnodyneWiki Page", systemImage: "books.vertical")
         }
         if !anodyne.references.isEmpty {
-          NavigationLink {
-            List(anodyne.references, id: \.url) { reference in
-              NavigationLink(reference.title, value: GlobalNavigationDestination.webView(articleURL: reference.url))
-            }
-            .navigationTitle("References")
-          } label: {
+          NavigationLink(value: GlobalNavigationDestination.anodyneLinks(title: "References", links: anodyne.references)) {
             LabeledContent("References", value: anodyne.references.count.formatted())
           }
         }
