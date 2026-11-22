@@ -124,9 +124,13 @@ struct CustomRoaCodable: Codable, Equatable {
   }
 
   // A single value is a fixed time rather than a half-open range, so the timeline can still draw the phase.
+  // Values are minutes; phases of two hours or more read better in hours ("4-6h" rather than "240-360m")
   private func range(of phase: DurationPhase) -> DurationRange? {
     let bounds = [self[phase.low], self[phase.high]].compactMap { $0 }
     guard let min = bounds.min(), let max = bounds.max() else { return nil }
+    if min >= 120 {
+      return DurationRange(min: min / 60, max: max / 60, units: .hours)
+    }
     return DurationRange(min: min, max: max, units: .minutes)
   }
 }
