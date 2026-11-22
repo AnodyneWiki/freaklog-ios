@@ -119,6 +119,7 @@ actor AnodyneClient {
     let sorted = notes.sorted { $0.user.localizedCaseInsensitiveCompare($1.user) == .orderedAscending }
     let cached = CachedUserNotes(date: .now, notes: sorted)
     userNotes = cached
+    AnodyneTimingStore.shared.record(sorted)
     Self.writeToDisk(cached, file: Self.userNotesFile)
     return Self.notes(cached.notes, matching: names)
   }
@@ -140,6 +141,7 @@ actor AnodyneClient {
     lookups = [:]
     index = nil
     userNotes = nil
+    AnodyneTimingStore.shared.clear()
     try? FileManager.default.removeItem(at: Self.directory)
   }
 
@@ -151,6 +153,24 @@ actor AnodyneClient {
     return files.reduce(0) { size, file in
       size + Int64((try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0)
     }
+  }
+
+  // Every substance on disk with the name it was looked up by, however old, for AnodyneTimingStore
+  static func cachedSubstancesOnDisk() -> [(name: String, substance: AnodyneSubstance)] {
+    let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+    let prefix = lookupFile(for: "").deletingPathExtension().lastPathComponent
+    return files.compactMap { file in
+      let fileName = file.deletingPathExtension().lastPathComponent
+      guard fileName.hasPrefix(prefix),
+            let name = String(fileName.dropFirst(prefix.count)).removingPercentEncoding,
+            case let .found(substance) = readFromDisk(CachedLookup.self, file: file)?.lookup
+      else { return nil }
+      return (name, substance)
+    }
+  }
+
+  static func cachedUserNotesOnDisk() -> [AnodyneUserNote] {
+    readFromDisk(CachedUserNotes.self, file: userNotesFile)?.notes ?? []
   }
 
   // MARK: - Network
@@ -183,6 +203,9 @@ actor AnodyneClient {
     let key = Self.key(for: name)
     let cached = CachedLookup(date: .now, lookup: lookup)
     lookups[key] = cached
+    if case let .found(substance) = lookup {
+      AnodyneTimingStore.shared.record(substance, lookedUpAs: name)
+    }
     Self.writeToDisk(cached, file: Self.lookupFile(for: key))
   }
 

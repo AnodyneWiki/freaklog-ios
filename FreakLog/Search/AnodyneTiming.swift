@@ -1,0 +1,141 @@
+import Foundation
+
+// AnodyneWiki's timing data as durations the timeline can draw, used where PsychonautWiki and the user have
+// none. Its users note the onset, come-up and duration of the routes they took, which are combined per route
+// (earliest to latest); otherwise the substance's duration of action, e.g. "3 – 6 hours", is used as the
+// total for every route.
+//
+// Only data AnodyneClient has already cached is used, so looking up a duration never goes online. That keeps
+// it cheap and synchronous for the duration resolver, which every timeline uses.
+final class AnodyneTimingStore: @unchecked Sendable {
+  static let shared = AnodyneTimingStore()
+
+  private let lock = NSLock()
+  private var didLoadCache = false
+  // Lowercased name or title -> lowercased AnodyneWiki title
+  private var titlesByName: [String: String] = [:]
+  // By lowercased title
+  private var totals: [String: RoaDuration] = [:]
+  private var routeDurations: [String: [AdministrationRoute: RoaDuration]] = [:]
+
+  func duration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
+    lock.lock()
+    defer { lock.unlock() }
+    loadCacheIfNeeded()
+    let title = titlesByName[substanceName.lowercased()] ?? substanceName.lowercased()
+    return routeDurations[title]?[route] ?? totals[title]
+  }
+
+  // The routes users noted timings for; a duration of action applies to any route
+  func routesWithTimings(for substanceName: String) -> [AdministrationRoute] {
+    lock.lock()
+    defer { lock.unlock() }
+    loadCacheIfNeeded()
+    let title = titlesByName[substanceName.lowercased()] ?? substanceName.lowercased()
+    return AdministrationRoute.allCases.filter { routeDurations[title]?[$0] != nil }
+  }
+
+  func record(_ substance: AnodyneSubstance, lookedUpAs name: String) {
+    lock.lock()
+    defer { lock.unlock() }
+    recordUnlocked(substance, lookedUpAs: name)
+  }
+
+  func record(_ notes: [AnodyneUserNote]) {
+    lock.lock()
+    defer { lock.unlock() }
+    recordUnlocked(notes)
+  }
+
+  func clear() {
+    lock.lock()
+    defer { lock.unlock() }
+    titlesByName = [:]
+    totals = [:]
+    routeDurations = [:]
+    didLoadCache = true
+  }
+
+  private func recordUnlocked(_ substance: AnodyneSubstance, lookedUpAs name: String) {
+    let title = substance.title.lowercased()
+    for alias in [name, substance.title] + substance.abbreviations {
+      titlesByName[alias.lowercased()] = title
+    }
+    if let total = substance.durationOfAction.flatMap(AnodyneTiming.range(in:)) {
+      totals[title] = RoaDuration(onset: nil, comeup: nil, peak: nil, offset: nil, total: total, afterglow: nil)
+    }
+  }
+
+  private func recordUnlocked(_ notes: [AnodyneUserNote]) {
+    var routes: [String: [AdministrationRoute: [AnodyneUserNote.Route]]] = [:]
+    for note in notes {
+      for route in note.routes {
+        guard let administrationRoute = AnodyneSubstance.route(forMethod: route.name) else { continue }
+        routes[note.substanceName.lowercased(), default: [:]][administrationRoute, default: []].append(route)
+      }
+    }
+    routeDurations = routes.mapValues { byRoute in
+      byRoute.compactMapValues(AnodyneTiming.combinedDuration)
+    }
+  }
+
+  // After a relaunch the cache on disk has what was loaded before
+  private func loadCacheIfNeeded() {
+    guard !didLoadCache else { return }
+    didLoadCache = true
+    for (name, substance) in AnodyneClient.cachedSubstancesOnDisk() {
+      recordUnlocked(substance, lookedUpAs: name)
+    }
+    recordUnlocked(AnodyneClient.cachedUserNotesOnDisk())
+  }
+}
+
+enum AnodyneTiming {
+  // The first time or time range in a text such as "3 – 6 hours", "~ 7-8 h", "10-15 seconds" or
+  // "Immediate release dosing: 3 – 6 hours Extended release dosing: 8 – 12 hours" (the first is used)
+  static func range(in text: String) -> DurationRange? {
+    let pattern = "(\\d+(?:[.,]\\d+)?)\\s*(?:(?:–|-|to)\\s*(\\d+(?:[.,]\\d+)?))?\\s*"
+      + "(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d)\\b"
+    guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+          let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+          let lowRange = Range(match.range(at: 1), in: text),
+          let unitRange = Range(match.range(at: 3), in: text),
+          let low = Double(text[lowRange].replacingOccurrences(of: ",", with: "."))
+    else { return nil }
+    let high = Range(match.range(at: 2), in: text)
+      .flatMap { Double(text[$0].replacingOccurrences(of: ",", with: ".")) } ?? low
+    let units: DurationRange.Units = switch text[unitRange].lowercased().first {
+    case "s": .seconds
+    case "m": .minutes
+    case "d": .days
+    default: .hours
+    }
+    return DurationRange(min: min(low, high), max: max(low, high), units: units)
+  }
+
+  // Several users' timings of one route, from the earliest to the latest any of them noted
+  static func combinedDuration(_ routes: [AnodyneUserNote.Route]) -> RoaDuration? {
+    func combined(_ value: (AnodyneUserNote.Route) -> String?) -> DurationRange? {
+      let ranges = routes.compactMap(value).compactMap(range(in:))
+      guard let low = ranges.compactMap(\.minSec).min(), let high = ranges.compactMap(\.maxSec).max() else {
+        return nil
+      }
+      return readableRange(fromSeconds: low, to: high)
+    }
+    let onset = combined(\.onset)
+    let comeup = combined(\.comeup)
+    let total = combined(\.duration)
+    guard onset != nil || comeup != nil || total != nil else { return nil }
+    return RoaDuration(onset: onset, comeup: comeup, peak: nil, offset: nil, total: total, afterglow: nil)
+  }
+
+  // In the largest unit both ends are at least 2 of, so the timeline's chips stay short
+  private static func readableRange(fromSeconds low: Double, to high: Double) -> DurationRange {
+    let units: [(DurationRange.Units, Double)] = [(.hours, 3600), (.minutes, 60), (.seconds, 1)]
+    let (unit, seconds) = units.first { low / $0.1 >= 2 || ($0.0 == .seconds) } ?? (.seconds, 1)
+    func rounded(_ value: Double) -> Double {
+      (value / seconds * 2).rounded() / 2
+    }
+    return DurationRange(min: rounded(low), max: rounded(high), units: unit)
+  }
+}

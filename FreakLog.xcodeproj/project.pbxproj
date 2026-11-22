@@ -294,6 +294,7 @@
 		A40A074E2575BA7FC2322508 /* AnodyneSections.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */; };
 		330838A970E4A44A379CEEEC /* MoleculeStructureView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1463A5210E7552B1D51DE912 /* MoleculeStructureView.swift */; };
 		3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */; };
+		989717D8259DAD0C2CE21C4E /* AnodyneTiming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69B35EA5E93ED2B0024E1B01 /* AnodyneTiming.swift */; };
 		C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */; };
 		EAA9C38C2A54825C00869E5A /* ChooseDateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */; };
 		EAA9C3902A548B9600869E5A /* SubstanceAndDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */; };
@@ -695,6 +696,7 @@
 		EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSections.swift; sourceTree = "<group>"; };
 		1463A5210E7552B1D51DE912 /* MoleculeStructureView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoleculeStructureView.swift; sourceTree = "<group>"; };
 		9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneClient.swift; sourceTree = "<group>"; };
+		69B35EA5E93ED2B0024E1B01 /* AnodyneTiming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneTiming.swift; sourceTree = "<group>"; };
 		95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSubstance.swift; sourceTree = "<group>"; };
 		EAA9C38B2A54825C00869E5A /* ChooseDateScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseDateScreen.swift; sourceTree = "<group>"; };
 		EAA9C38F2A548B9600869E5A /* SubstanceAndDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceAndDay.swift; sourceTree = "<group>"; };
@@ -1131,6 +1133,7 @@
 				EE41AFBB33CF75471D8C1460 /* AnodyneSections.swift */,
 				1463A5210E7552B1D51DE912 /* MoleculeStructureView.swift */,
 				9A23A7B68C7BB2197387E39D /* AnodyneClient.swift */,
+				69B35EA5E93ED2B0024E1B01 /* AnodyneTiming.swift */,
 				95F7AF224B08A6A976EC0356 /* AnodyneSubstance.swift */,
 			);
 			path = Search;
@@ -2297,6 +2300,7 @@
 				A40A074E2575BA7FC2322508 /* AnodyneSections.swift in Sources */,
 				330838A970E4A44A379CEEEC /* MoleculeStructureView.swift in Sources */,
 				3069DE53C8A13BB6293A1D8A /* AnodyneClient.swift in Sources */,
+				989717D8259DAD0C2CE21C4E /* AnodyneTiming.swift in Sources */,
 				C202E6EC00C457680D88E770 /* AnodyneSubstance.swift in Sources */,
 				EAA9C3792A50A54E00869E5A /* ToleranceChartOverView.swift in Sources */,
 				EA55CEBB2A3F292B00FE1A44 /* Dot.swift in Sources */,

@@ -31,7 +31,8 @@ struct SubstanceScreen: View {
         if hasDoses {
           DosesSection(substance: substance, anodyne: anodyne)
         }
-        if !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil }) {
+        if !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil })
+          || (anodyne != nil && hasAnodyneTimings) {
           DurationSection(substance: substance, anodyne: anodyne)
         } else if let anodyne {
           AnodyneDurationSection(anodyne: anodyne)
@@ -92,6 +93,13 @@ struct SubstanceScreen: View {
       SubstanceCustomizeSheet(substance: substance)
     }
     .navigationTitle(substance.displayName)
+  }
+
+  // AnodyneWiki's timings fill in routes without PsychonautWiki or custom durations
+  private var hasAnodyneTimings: Bool {
+    let timings = AnodyneTimingStore.shared
+    return !timings.routesWithTimings(for: substance.name).isEmpty
+      || substance.roas.contains { timings.duration(for: substance.name, route: $0.name) != nil }
   }
 
   private func overviewSection(anodyne: AnodyneSubstance?) -> some View {

@@ -130,6 +130,43 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(bounds.maxX, 29.503, accuracy: 0.001)
     }
 
+    func testReadsTimings() {
+        XCTAssertEqual(AnodyneTiming.range(in: "3 – 6 hours"), DurationRange(min: 3, max: 6, units: .hours))
+        XCTAssertEqual(
+            AnodyneTiming.range(in: "Immediate release dosing: 3 – 6 hours Extended release dosing: 8 – 12 hours"),
+            DurationRange(min: 3, max: 6, units: .hours)
+        )
+        XCTAssertEqual(AnodyneTiming.range(in: "~ 7-8 h"), DurationRange(min: 7, max: 8, units: .hours))
+        XCTAssertEqual(AnodyneTiming.range(in: "~2.5hours"), DurationRange(min: 2.5, max: 2.5, units: .hours))
+        XCTAssertEqual(AnodyneTiming.range(in: "10-15 seconds"), DurationRange(min: 10, max: 15, units: .seconds))
+        XCTAssertEqual(AnodyneTiming.range(in: "~20min"), DurationRange(min: 20, max: 20, units: .minutes))
+        XCTAssertNil(AnodyneTiming.range(in: "varies"))
+    }
+
+    func testCombinesUsersTimingsPerRoute() throws {
+        let routes = [
+            AnodyneUserNote.Route(name: "Oral", dosage: nil, onset: "20 min", comeup: "1.5-2 h", duration: "~ 7-8 h"),
+            AnodyneUserNote.Route(name: "Oral", dosage: nil, onset: "30 minutes", comeup: "~1.5 hours", duration: "~7 hours"),
+        ]
+        let duration = try XCTUnwrap(AnodyneTiming.combinedDuration(routes))
+        XCTAssertEqual(duration.onset, DurationRange(min: 20, max: 30, units: .minutes))
+        XCTAssertEqual(duration.comeup, DurationRange(min: 90, max: 120, units: .minutes))
+        XCTAssertEqual(duration.total, DurationRange(min: 7, max: 8, units: .hours))
+        XCTAssertNil(duration.peak)
+    }
+
+    func testTimingStoreFindsSubstancesByTheirAppName() throws {
+        let store = AnodyneTimingStore()
+        store.clear()
+        let mdma = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
+        store.record(mdma, lookedUpAs: "MDMA")
+        // The duration of action applies to every route
+        XCTAssertEqual(store.duration(for: "MDMA", route: .insufflated)?.total, DurationRange(min: 3, max: 6, units: .hours))
+        store.record(AnodyneUserNote.notes(fromUserJSON: try fixture("userEmily")))
+        XCTAssertNotNil(store.duration(for: "mdma", route: .oral))
+        XCTAssertNil(store.duration(for: "LSD", route: .oral))
+    }
+
     func testUnknownSubstanceIsNotFound() throws {
         XCTAssertNil(AnodyneSubstance(apiJSON: try fixture("notFound")))
     }

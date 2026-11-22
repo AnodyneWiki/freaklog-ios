@@ -665,13 +665,22 @@ struct PersistenceController {
 
     // Single entry point for dose/duration of any substance (PW or custom).
     // Custom data takes priority over PW data, per field.
+    // Durations fall back to AnodyneWiki's timings, when it was loaded for the substance before
     func resolvedRoa(for substanceName: String, route: AdministrationRoute) -> ResolvedRoa {
         let custom = roaCache.entry(for: substanceName, route: route)
         let pw = SubstanceRepo.shared.getSubstance(name: substanceName)
         return ResolvedRoa(
             dose: custom?.dose ?? pw?.getDose(for: route),
             duration: custom?.duration ?? pw?.getDuration(for: route)
+                ?? AnodyneTimingStore.shared.duration(for: substanceName, route: route)
         )
+    }
+
+    // Whether a route's duration is AnodyneWiki's, because the user and PsychonautWiki have none
+    func isDurationFromAnodyneWiki(for substanceName: String, route: AdministrationRoute) -> Bool {
+        roaCache.entry(for: substanceName, route: route)?.duration == nil
+            && SubstanceRepo.shared.getSubstance(name: substanceName)?.getDuration(for: route) == nil
+            && AnodyneTimingStore.shared.duration(for: substanceName, route: route) != nil
     }
 
     func resolvedDose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {

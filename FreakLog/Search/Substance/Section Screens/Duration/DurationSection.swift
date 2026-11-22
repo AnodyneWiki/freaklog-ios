@@ -14,11 +14,13 @@ struct DurationSection: View {
         _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
     }
 
-    // PW routes first, then routes that only have custom data, each with custom data taking priority.
+    // PW routes first, then routes that only have custom data or AnodyneWiki timings, each with custom data
+    // taking priority and AnodyneWiki's timings filling in where neither has any.
     private var durationInfos: [DurationInfo] {
         let pwRoutes = substance.roas.map(\.name)
         let customRoutes = customRoas.map(\.administrationRouteUnwrapped).filter { !pwRoutes.contains($0) }
-        return (pwRoutes + customRoutes).uniqued().compactMap { route in
+        let anodyneRoutes = AnodyneTimingStore.shared.routesWithTimings(for: substance.name)
+        return (pwRoutes + customRoutes + anodyneRoutes).uniqued().compactMap { route in
             PersistenceController.shared.resolvedDuration(for: substance.name, route: route).map {
                 DurationInfo(route: route, roaDuration: $0)
             }
@@ -92,7 +94,14 @@ struct DurationSection: View {
                 }
                 ColorRectangle(color: info.route.color.swiftUIColor)
                 VStack(alignment: .leading) {
-                    Text(info.route.rawValue.localizedCapitalized).font(.headline)
+                    HStack(alignment: .firstTextBaseline) {
+                        Text(info.route.rawValue.localizedCapitalized).font(.headline)
+                        if PersistenceController.shared.isDurationFromAnodyneWiki(for: substance.name, route: info.route) {
+                            Text("AnodyneWiki")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     OneRoaDurationRow(duration: info.roaDuration, color: info.route.color)
                 }
             }
