@@ -32,6 +32,13 @@ struct AnodyneSubstance: Codable, Hashable {
       [light, common, strong, heavy, extreme].compactMap { $0?.entries }.reduce(0, +)
     }
 
+    // In PsychonautWiki's form, so it is shown like its ranges: AnodyneWiki's light tier ends where common
+    // starts and has no lower bound, so there is no threshold
+    var roaDose: RoaDose? {
+      guard let unit, common != nil || strong != nil || heavy != nil else { return nil }
+      return RoaDose(units: unit, lightMin: nil, commonMin: common?.lower, strongMin: strong?.lower, heavyMin: heavy?.lower)
+    }
+
     // As editor values: where common, strong and heavy start. Light has no lower bound on AnodyneWiki.
     func doseValues(for route: AdministrationRoute) -> CustomRoaCodable {
       var values = CustomRoaCodable(administrationRoute: route, doseUnits: unit)

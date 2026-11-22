@@ -35,6 +35,13 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(values.strongDose, 100)
         XCTAssertEqual(values.heavyDose, 120)
         XCTAssertEqual(values.doseUnits, "mg")
+        // Shown in PsychonautWiki's form, without a threshold
+        let roaDose = try XCTUnwrap(mdma.dosing.first { $0.route == .oral }?.roaDose)
+        XCTAssertNil(roaDose.lightMin)
+        XCTAssertEqual(roaDose.commonMin, 74.6)
+        XCTAssertEqual(roaDose.strongMin, 100)
+        XCTAssertEqual(roaDose.heavyMin, 120)
+        XCTAssertEqual(roaDose.units, "mg")
     }
 
     func testCleansHtmlAndReadsVaryingFields() throws {

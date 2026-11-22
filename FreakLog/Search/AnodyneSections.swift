@@ -507,7 +507,7 @@ struct SourcesSection: View {
 
 // MARK: - Rows
 
-// The dose tiers of one route, from logged doses: the common range, expanding to every tier
+// The dose tiers of one route from logged doses, laid out like PsychonautWiki's ranges in the dose section
 struct AnodyneDosingRow: View {
   let dosing: AnodyneSubstance.Dosing
 
@@ -515,58 +515,22 @@ struct AnodyneDosingRow: View {
     "From AnodyneWiki, derived statistically from logged doses (DBI-IGS). These are averages, not recommendations."
 
   var body: some View {
-    DisclosureGroup {
-      tierRow("Light", color: DoseRangeType.light.color, text: dosing.light.map { "up to \(amount($0.upper, $0))" })
-      tierRow("Common", color: DoseRangeType.common.color, text: dosing.common.map(range))
-      tierRow("Strong", color: DoseRangeType.strong.color, text: dosing.strong.map(range))
-      tierRow("Heavy", color: DoseRangeType.heavy.color, text: dosing.heavy.map(range))
-      tierRow("Extreme", color: .purple, text: dosing.extreme.map { "\(amount($0.lower, $0)) and more" })
-    } label: {
-      HStack {
-        VStack(alignment: .leading, spacing: 2) {
-          Text(dosing.route?.rawValue.localizedCapitalized ?? dosing.method)
-          Text("^[\(dosing.totalEntries) log](inflect: true)")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
+    VStack(alignment: .leading, spacing: 8) {
+      HStack(alignment: .firstTextBaseline) {
+        Text(dosing.route?.rawValue.localizedCapitalized ?? dosing.method)
+          .font(.headline)
         Spacer()
-        if let common = dosing.common {
-          Text("Common \(range(common))")
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .monospacedDigit()
-        }
-      }
-    }
-  }
-
-  @ViewBuilder
-  private func tierRow(_ name: String, color: Color, text: String?) -> some View {
-    if let text {
-      HStack(spacing: 8) {
-        Circle()
-          .fill(color)
-          .frame(width: 8, height: 8)
-          .accessibilityHidden(true)
-        Text(name)
-        Spacer()
-        Text(text)
+        Text("^[\(dosing.totalEntries) log](inflect: true)")
+          .font(.footnote)
           .foregroundStyle(.secondary)
-          .monospacedDigit()
       }
-      .font(.subheadline)
-      .accessibilityElement(children: .combine)
+      if let roaDose = dosing.roaDose {
+        RoaDoseRow(roaDose: roaDose)
+      }
+      if let extreme = dosing.extreme {
+        RowLabelView(label: "Extreme", value: "\(extreme.lower.formatted()) \(extreme.unit)+")
+      }
     }
-  }
-
-  private func range(_ tier: AnodyneSubstance.Tier) -> String {
-    tier.lower == tier.upper
-      ? amount(tier.lower, tier)
-      : "\(tier.lower.formatted())–\(amount(tier.upper, tier))"
-  }
-
-  private func amount(_ value: Double, _ tier: AnodyneSubstance.Tier) -> String {
-    "\(value.formatted()) \(tier.unit)"
   }
 }
 
