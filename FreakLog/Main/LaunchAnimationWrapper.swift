@@ -7,8 +7,9 @@ struct LaunchAnimationWrapper<Content: View>: View {
     @State
     private var showContent: Bool = false
     
+    // The launch screen's eye blinks: it shows closed and fades back open before the content appears
     @State
-    private var width: CGFloat = 17.25
+    private var isEyeOpen: Bool = false
     
     public var body: some View {
         if (showContent) {
@@ -21,18 +22,19 @@ struct LaunchAnimationWrapper<Content: View>: View {
                     Image("Eye Closed")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                    Circle()
-                        .fill(.black)
-                        .frame(width: width)
-                        .onAppear {
-                            withAnimation(.timingCurve(0.1, 0.9, 0.2, 1, duration: 0.75)) {
-                                self.width = 48
-                            }
+                    Image("Eye Open")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .opacity(isEyeOpen ? 1 : 0)
+                }
+                .onAppear {
+                    withAnimation(.timingCurve(0.1, 0.9, 0.2, 1, duration: 0.75)) {
+                        isEyeOpen = true
+                    }
 
-                            withAnimation(.easeInOut.delay(0.375)) {
-                                showContent = true
-                            }
-                        }
+                    withAnimation(.easeInOut.delay(0.375)) {
+                        showContent = true
+                    }
                 }
                 .frame(width: 150, height: 150, alignment: .center)
             }
