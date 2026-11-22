@@ -34,6 +34,7 @@ struct PersistenceController {
     static let webhookIsHyperlinkedKey = "webhookIsHyperlinked"
     static let webhookSubstanceInfoUrlKey = "webhookSubstanceInfoUrl"
     static let isAnodyneAutoLoadEnabledKey = "isAnodyneAutoLoadEnabled"
+    static let doseSourceKey = "doseSource"
     static let defaultJournalViewKey = "defaultJournalView"
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
     static let leaderboardServersKey = "leaderboardServers"

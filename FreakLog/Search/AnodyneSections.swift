@@ -351,7 +351,7 @@ struct AnodyneLoggedDosesSection: View {
           AnodyneDosingRow(dosing: dosing)
         }
       } header: {
-        Text("Logged Doses")
+        Text("Dose")
       } footer: {
         Text(AnodyneDosingRow.disclaimer)
       }

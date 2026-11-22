@@ -1,13 +1,30 @@
 import SwiftUI
 
+// Where the dose section's ranges come from, when both sources have some
+enum DoseSource: String, CaseIterable {
+  case psychonautWiki, anodyneWiki
+
+  var title: String {
+    switch self {
+    case .psychonautWiki: "PsychonautWiki"
+    case .anodyneWiki: "AnodyneWiki"
+    }
+  }
+}
+
+// The dose ranges per route from PsychonautWiki (with the user's own overrides and custom units), or
+// AnodyneWiki's dose tiers from logged doses; a segmented control switches when both have some
 struct DosesSection: View {
-  init(substance: Substance) {
+  init(substance: Substance, anodyne: AnodyneSubstance? = nil) {
     self.substance = substance
+    self.anodyne = anodyne
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substance.name))
     customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
   }
 
   let substance: Substance
+  let anodyne: AnodyneSubstance?
+  @AppStorage(PersistenceController.doseSourceKey) private var preferredSource = DoseSource.psychonautWiki
   @State private var isDisclaimerShown = false
   private var customUnits: FetchRequest<CustomUnit>
   private var customRoas: FetchRequest<CustomRoa>
@@ -24,29 +41,39 @@ struct DosesSection: View {
     return routes
   }
 
+  private var hasPsychonautWikiDoses: Bool {
+    substance.dosageRemark != nil || !routesToShow.isEmpty
+  }
+
+  private var anodyneDosing: [AnodyneSubstance.Dosing] {
+    anodyne?.dosing ?? []
+  }
+
+  // The preferred source, unless only the other one has doses
+  private var source: DoseSource {
+    if anodyneDosing.isEmpty { return .psychonautWiki }
+    if !hasPsychonautWikiDoses { return .anodyneWiki }
+    return preferredSource
+  }
+
   var body: some View {
     Group {
       Section {
-        if let remark = substance.dosageRemark {
-          Text(remark)
-        }
-        ForEach(routesToShow, id: \.self) { route in
-          let roaDose = PersistenceController.shared.resolvedDose(for: substance.name, route: route)
-          if let roaDose {
-            VStack(alignment: .leading, spacing: 8) {
-              Text(route.rawValue.localizedCapitalized).font(.headline)
-              RoaDoseRow(roaDose: roaDose)
-              let customUnitsForRoa = customUnits.wrappedValue.filter { cu in
-                cu.administrationRouteUnwrapped == route && cu.doseUnwrapped != nil
-              }
-              ForEach(customUnitsForRoa) { customUnit in
-                Text(customUnit.nameUnwrapped).font(.headline)
-                CustomUnitDoseRow(customUnit: customUnit.minInfo, roaDose: roaDose)
-              }
-              if let bio = substance.doseInfos.first(where: { $0.route == route })?.bioavailability?.displayString {
-                RowLabelView(label: "Bioavailability", value: "\(bio)%")
-              }
+        if hasPsychonautWikiDoses, !anodyneDosing.isEmpty {
+          Picker("Source", selection: $preferredSource) {
+            ForEach(DoseSource.allCases, id: \.self) { source in
+              Text(source.title).tag(source)
             }
+          }
+          .pickerStyle(.segmented)
+          .listRowSeparator(.hidden)
+        }
+        switch source {
+        case .psychonautWiki:
+          psychonautWikiRows
+        case .anodyneWiki:
+          ForEach(anodyneDosing, id: \.method) { dosing in
+            AnodyneDosingRow(dosing: dosing)
           }
         }
       } header: {
@@ -56,6 +83,10 @@ struct DosesSection: View {
           Button("Disclaimer") {
             isDisclaimerShown = true
           }
+        }
+      } footer: {
+        if source == .anodyneWiki {
+          Text(AnodyneDosingRow.disclaimer)
         }
       }
       .alert(
@@ -78,6 +109,32 @@ struct DosesSection: View {
       let isOpioid = PersistenceController.shared.categories(for: substance.name).contains("opioid")
       if substance.roas.contains(where: { $0.name == .smoked }), isOpioid {
         ChasingTheDragonSection()
+      }
+    }
+  }
+
+  @ViewBuilder
+  private var psychonautWikiRows: some View {
+    if let remark = substance.dosageRemark {
+      Text(remark)
+    }
+    ForEach(routesToShow, id: \.self) { route in
+      let roaDose = PersistenceController.shared.resolvedDose(for: substance.name, route: route)
+      if let roaDose {
+        VStack(alignment: .leading, spacing: 8) {
+          Text(route.rawValue.localizedCapitalized).font(.headline)
+          RoaDoseRow(roaDose: roaDose)
+          let customUnitsForRoa = customUnits.wrappedValue.filter { cu in
+            cu.administrationRouteUnwrapped == route && cu.doseUnwrapped != nil
+          }
+          ForEach(customUnitsForRoa) { customUnit in
+            Text(customUnit.nameUnwrapped).font(.headline)
+            CustomUnitDoseRow(customUnit: customUnit.minInfo, roaDose: roaDose)
+          }
+          if let bio = substance.doseInfos.first(where: { $0.route == route })?.bioavailability?.displayString {
+            RowLabelView(label: "Bioavailability", value: "\(bio)%")
+          }
+        }
       }
     }
   }

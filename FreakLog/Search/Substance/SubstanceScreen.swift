@@ -26,11 +26,10 @@ struct SubstanceScreen: View {
       AnodyneLoadSection(model: anodyneModel)
       EffectsSection(summary: substance.effectsSummary, anodyne: anodyne)
       Group {
-        if substance.dosageRemark != nil || !substance.doseInfos.isEmpty || customRoas.contains(where: { $0.roaDose != nil }) {
-          DosesSection(substance: substance)
-        }
-        if let anodyne {
-          AnodyneLoggedDosesSection(anodyne: anodyne)
+        let hasDoses = substance.dosageRemark != nil || !substance.doseInfos.isEmpty
+          || customRoas.contains(where: { $0.roaDose != nil }) || anodyne?.dosing.isEmpty == false
+        if hasDoses {
+          DosesSection(substance: substance, anodyne: anodyne)
         }
         if !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil }) {
           DurationSection(substance: substance, anodyne: anodyne)
