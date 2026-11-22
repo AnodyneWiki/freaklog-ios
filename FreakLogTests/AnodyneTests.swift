@@ -171,6 +171,30 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(store.routesWithData(for: "MDMA"), [.oral, .insufflated, .rectal])
     }
 
+    func testFallbackStoreMergesTimingsNotedUnderAnyAlias() throws {
+        let store = AnodyneFallbackStore()
+        store.clear()
+        let mdma = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
+        XCTAssertEqual(mdma.title, "3,4-Methylenedioxymethamphetamine")
+        // One user names it by its abbreviation, the other by its title; recorded before the substance is known
+        store.record([
+            AnodyneUserNote(
+                user: "A",
+                substanceName: "MDMA",
+                routes: [AnodyneUserNote.Route(name: "Oral", dosage: nil, onset: "20 min", comeup: nil, duration: nil)]
+            ),
+            AnodyneUserNote(
+                user: "B",
+                substanceName: mdma.title,
+                routes: [AnodyneUserNote.Route(name: "Oral", dosage: nil, onset: "40 min", comeup: nil, duration: nil)]
+            ),
+        ])
+        store.record(mdma, lookedUpAs: "MDMA")
+        XCTAssertEqual(store.duration(for: "MDMA", route: .oral)?.onset, DurationRange(min: 20, max: 40, units: .minutes))
+        XCTAssertEqual(store.duration(for: mdma.title, route: .oral)?.onset, DurationRange(min: 20, max: 40, units: .minutes))
+        XCTAssertEqual(store.routesWithTimings(for: "MDMA"), [.oral])
+    }
+
     func testReadsInstanceAddresses() {
         XCTAssertEqual(AnodyneSubstance.instanceURL(from: "wiki.example.org")?.absoluteString, "https://wiki.example.org")
         XCTAssertEqual(

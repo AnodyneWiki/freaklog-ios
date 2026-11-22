@@ -16,8 +16,11 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   private var titlesByName: [String: String] = [:]
   // By lowercased title
   private var totals: [String: RoaDuration] = [:]
-  private var routeDurations: [String: [AdministrationRoute: RoaDuration]] = [:]
   private var doses: [String: [AdministrationRoute: RoaDose]] = [:]
+  // Users' timings by the lowercased name their note uses, which may be a title, abbreviation or other name
+  private var noteRoutes: [String: [AdministrationRoute: [AnodyneUserNote.Route]]] = [:]
+  // The timings combined by lowercased title, built from `noteRoutes` once they are asked for
+  private var builtRouteDurations: [String: [AdministrationRoute: RoaDuration]]?
 
   func dose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
     lock.lock()
@@ -31,7 +34,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     defer { lock.unlock() }
     loadCacheIfNeeded()
     let title = title(for: substanceName)
-    return routeDurations[title]?[route] ?? totals[title]
+    return routeDurations()[title]?[route] ?? totals[title]
   }
 
   private func title(for substanceName: String) -> String {
@@ -44,7 +47,8 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     defer { lock.unlock() }
     loadCacheIfNeeded()
     let title = title(for: substanceName)
-    return AdministrationRoute.allCases.filter { doses[title]?[$0] != nil || routeDurations[title]?[$0] != nil }
+    let durations = routeDurations()[title]
+    return AdministrationRoute.allCases.filter { doses[title]?[$0] != nil || durations?[$0] != nil }
   }
 
   // The routes users noted timings for; a duration of action applies to any route
@@ -53,7 +57,25 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     defer { lock.unlock() }
     loadCacheIfNeeded()
     let title = title(for: substanceName)
-    return AdministrationRoute.allCases.filter { routeDurations[title]?[$0] != nil }
+    let durations = routeDurations()[title]
+    return AdministrationRoute.allCases.filter { durations?[$0] != nil }
+  }
+
+  // Notes name a substance by whichever alias their user chose, so their routes are grouped by title first.
+  // Call with the lock held.
+  private func routeDurations() -> [String: [AdministrationRoute: RoaDuration]] {
+    if let builtRouteDurations {
+      return builtRouteDurations
+    }
+    var routesByTitle: [String: [AdministrationRoute: [AnodyneUserNote.Route]]] = [:]
+    for (name, byRoute) in noteRoutes {
+      routesByTitle[title(for: name), default: [:]].merge(byRoute, uniquingKeysWith: +)
+    }
+    let built = routesByTitle.mapValues { byRoute in
+      byRoute.compactMapValues(AnodyneTiming.combinedDuration)
+    }
+    builtRouteDurations = built
+    return built
   }
 
   func record(_ substance: AnodyneSubstance, lookedUpAs name: String) {
@@ -73,8 +95,9 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     defer { lock.unlock() }
     titlesByName = [:]
     totals = [:]
-    routeDurations = [:]
     doses = [:]
+    noteRoutes = [:]
+    builtRouteDurations = nil
     didLoadCache = true
   }
 
@@ -93,6 +116,8 @@ final class AnodyneFallbackStore: @unchecked Sendable {
       routeDoses[route] = roaDose
     }
     doses[title] = routeDoses
+    // New aliases can group notes differently
+    builtRouteDurations = nil
   }
 
   private func recordUnlocked(_ notes: [AnodyneUserNote]) {
@@ -103,9 +128,8 @@ final class AnodyneFallbackStore: @unchecked Sendable {
         routes[note.substanceName.lowercased(), default: [:]][administrationRoute, default: []].append(route)
       }
     }
-    routeDurations = routes.mapValues { byRoute in
-      byRoute.compactMapValues(AnodyneTiming.combinedDuration)
-    }
+    noteRoutes = routes
+    builtRouteDurations = nil
   }
 
   // After a relaunch the cache on disk has what was loaded before
