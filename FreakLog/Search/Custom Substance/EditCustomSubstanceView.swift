@@ -59,7 +59,12 @@ struct EditCustomSubstanceView: View {
     ) {
       Button("Delete Substance", role: .destructive) {
         dismiss()
+        let name = customSubstance.nameUnwrapped
         PersistenceController.shared.viewContext.delete(customSubstance)
+        // Its display name and categories go too, unless they belong to a PsychonautWiki substance of that name
+        if SubstanceRepo.shared.getSubstance(name: name) == nil {
+          PersistenceController.shared.setSubstanceOverride(for: name, displayName: nil, categories: nil)
+        }
         PersistenceController.shared.saveViewContext()
       }
       Button("Cancel", role: .cancel) {}
