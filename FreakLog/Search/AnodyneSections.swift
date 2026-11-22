@@ -32,7 +32,7 @@ final class AnodyneLoadModel: ObservableObject {
     guard phase == .idle else { return }
     if let cached = await AnodyneClient.shared.cachedLookup(for: name) {
       phase = Self.makePhase(for: cached)
-      await loadUserNotes()
+      await loadUserNotes(online: loadingIfNotCached)
     } else if loadingIfNotCached {
       await load()
     }
@@ -48,11 +48,16 @@ final class AnodyneLoadModel: ObservableObject {
     await loadUserNotes()
   }
 
-  // Userpages name substances by their AnodyneWiki title, sometimes by an abbreviation
-  private func loadUserNotes() async {
+  // Userpages name substances by their AnodyneWiki title, sometimes by an abbreviation. Offline, the
+  // notes saved last are shown, however old.
+  private func loadUserNotes(online: Bool = true) async {
     guard let substance else { return }
     let names = [substance.title, name] + substance.abbreviations
-    userNotes = (try? await AnodyneClient.shared.userNotes(matching: names)) ?? []
+    if online {
+      userNotes = (try? await AnodyneClient.shared.userNotes(matching: names)) ?? []
+    } else {
+      userNotes = await AnodyneClient.shared.cachedUserNotes(matching: names)
+    }
   }
 
   private static func makePhase(for lookup: AnodyneClient.Lookup) -> Phase {

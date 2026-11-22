@@ -94,10 +94,12 @@ actor AnodyneClient {
     return entries
   }
 
-  // Notes from AnodyneWiki's userpages about a substance known by any of the names, without going online
-  func cachedUserNotes(matching names: [String]) -> [AnodyneUserNote]? {
-    guard let notes = recentUserNotes() else { return nil }
-    return Self.notes(notes, matching: names)
+  // Notes from AnodyneWiki's userpages about a substance known by any of the names, without going online.
+  // These are the last saved notes however old, since screens offer no way to load them again.
+  func cachedUserNotes(matching names: [String]) -> [AnodyneUserNote] {
+    guard let cached = userNotes ?? Self.readFromDisk(CachedUserNotes.self, file: Self.userNotesFile) else { return [] }
+    userNotes = cached
+    return Self.notes(cached.notes, matching: names)
   }
 
   // Userpages aren't about one substance, so loading them all doesn't tell AnodyneWiki which one is looked at
