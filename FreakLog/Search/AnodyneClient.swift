@@ -30,6 +30,7 @@ actor AnodyneClient {
   private static let substanceLifetime: TimeInterval = 7 * 24 * 60 * 60
   private static let indexLifetime: TimeInterval = 24 * 60 * 60
   private static let userNotesLifetime: TimeInterval = 24 * 60 * 60
+  private static let maxConcurrentUserPages = 6
 
   private var lookups: [String: CachedLookup] = [:]
   private var index: CachedIndex?
@@ -102,29 +103,59 @@ actor AnodyneClient {
     return Self.notes(cached.notes, matching: names)
   }
 
-  // Userpages aren't about one substance, so loading them all doesn't tell AnodyneWiki which one is looked at
+  // Userpages aren't about one substance, so loading them all doesn't tell AnodyneWiki which one is looked at.
+  // A download where some userpages failed is never cached: those users' notes from before stand in for theirs.
   func userNotes(matching names: [String]) async throws -> [AnodyneUserNote] {
     if let notes = recentUserNotes() {
       return Self.notes(notes, matching: names)
     }
     let users = (try await Self.fetchJSON(path: "api/index/user")["Entries"] as? [[String: Any]] ?? [])
       .compactMap { $0["Title"] as? String }
-    let notes = await withTaskGroup(of: [AnodyneUserNote].self) { group in
-      for user in users {
-        group.addTask {
-          let encoded = user.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? user
-          guard let json = try? await Self.fetchJSON(path: "api/user/\(encoded)") else { return [] }
-          return AnodyneUserNote.notes(fromUserJSON: json)
+    var notes: [AnodyneUserNote] = []
+    var failedUsers = Set<String>()
+    await withTaskGroup(of: (user: String, notes: [AnodyneUserNote]?).self) { group in
+      func collect(_ result: (user: String, notes: [AnodyneUserNote]?)) {
+        if let fetched = result.notes {
+          notes += fetched
+        } else {
+          failedUsers.insert(result.user)
         }
       }
-      return await group.reduce(into: []) { $0 += $1 }
+      // A sliding window, so only a few userpages are requested at a time
+      for (offset, user) in users.enumerated() {
+        if offset >= Self.maxConcurrentUserPages, let result = await group.next() {
+          collect(result)
+        }
+        group.addTask { (user, await Self.fetchNotes(ofUser: user)) }
+      }
+      for await result in group {
+        collect(result)
+      }
     }
-    let sorted = notes.sorted { $0.user.localizedCaseInsensitiveCompare($1.user) == .orderedAscending }
+    if !failedUsers.isEmpty {
+      let previous = (userNotes ?? Self.readFromDisk(CachedUserNotes.self, file: Self.userNotesFile))?.notes ?? []
+      return Self.notes(Self.sorted(notes + previous.filter { failedUsers.contains($0.user) }), matching: names)
+    }
+    let sorted = Self.sorted(notes)
     let cached = CachedUserNotes(date: .now, notes: sorted)
     userNotes = cached
     AnodyneFallbackStore.shared.record(sorted)
     Self.writeToDisk(cached, file: Self.userNotesFile)
     return Self.notes(cached.notes, matching: names)
+  }
+
+  // A user's notes, nil when their userpage couldn't be loaded. A page titled differently than the index entry
+  // counts as failed too, because notes are told apart by the page's title.
+  private static func fetchNotes(ofUser user: String) async -> [AnodyneUserNote]? {
+    let encoded = user.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? user
+    guard let json = try? await fetchJSON(path: "api/user/\(encoded)"), json["Title"] as? String == user else {
+      return nil
+    }
+    return AnodyneUserNote.notes(fromUserJSON: json)
+  }
+
+  private static func sorted(_ notes: [AnodyneUserNote]) -> [AnodyneUserNote] {
+    notes.sorted { $0.user.localizedCaseInsensitiveCompare($1.user) == .orderedAscending }
   }
 
   private func recentUserNotes() -> [AnodyneUserNote]? {
