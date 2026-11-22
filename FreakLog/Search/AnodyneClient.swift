@@ -35,6 +35,8 @@ actor AnodyneClient {
   private var lookups: [String: CachedLookup] = [:]
   private var index: CachedIndex?
   private var userNotes: CachedUserNotes?
+  // Goes up with every clearCache(), so loads that were running then don't store their results afterwards
+  private var cacheGeneration = 0
 
   private static let session: URLSession = {
     let configuration = URLSessionConfiguration.ephemeral
@@ -65,6 +67,7 @@ actor AnodyneClient {
     if let cached = cachedLookup(for: name) {
       return cached
     }
+    let generation = cacheGeneration
     var lookup = try await fetchSubstance(titled: name)
     if lookup == .notFound {
       let names = [name] + otherNames
@@ -73,6 +76,7 @@ actor AnodyneClient {
         lookup = try await fetchSubstance(titled: entry.title)
       }
     }
+    guard generation == cacheGeneration else { return lookup }
     store(lookup, for: name)
     // Pages link to each other by title, so that finds it in the cache too
     if case let .found(substance) = lookup, Self.key(for: substance.title) != Self.key(for: name) {
@@ -87,8 +91,10 @@ actor AnodyneClient {
       self.index = index
       return index.entries
     }
+    let generation = cacheGeneration
     let json = try await Self.fetchJSON(path: "api/index/substance")
     let entries = (json["Entries"] as? [[String: Any]] ?? []).compactMap(AnodyneIndexEntry.init(apiJSON:))
+    guard generation == cacheGeneration else { return entries }
     let index = CachedIndex(date: .now, entries: entries)
     self.index = index
     Self.writeToDisk(index, file: Self.indexFile)
@@ -109,6 +115,7 @@ actor AnodyneClient {
     if let notes = recentUserNotes() {
       return Self.notes(notes, matching: names)
     }
+    let generation = cacheGeneration
     let users = (try await Self.fetchJSON(path: "api/index/user")["Entries"] as? [[String: Any]] ?? [])
       .compactMap { $0["Title"] as? String }
     var notes: [AnodyneUserNote] = []
@@ -137,6 +144,7 @@ actor AnodyneClient {
       return Self.notes(Self.sorted(notes + previous.filter { failedUsers.contains($0.user) }), matching: names)
     }
     let sorted = Self.sorted(notes)
+    guard generation == cacheGeneration else { return Self.notes(sorted, matching: names) }
     let cached = CachedUserNotes(date: .now, notes: sorted)
     userNotes = cached
     AnodyneFallbackStore.shared.record(sorted)
@@ -172,6 +180,7 @@ actor AnodyneClient {
   }
 
   func clearCache() {
+    cacheGeneration += 1
     lookups = [:]
     index = nil
     userNotes = nil
