@@ -3,11 +3,14 @@ import SwiftUI
 struct DurationSection: View {
 
     let substance: Substance
+    // AnodyneWiki's duration of action and half-life, shown below the routes
+    let anodyne: AnodyneSubstance?
 
     @FetchRequest private var customRoas: FetchedResults<CustomRoa>
 
-    init(substance: Substance) {
+    init(substance: Substance, anodyne: AnodyneSubstance? = nil) {
         self.substance = substance
+        self.anodyne = anodyne
         _customRoas = FetchRequest(fetchRequest: PersistenceController.customRoasRequest(for: substance.name))
     }
 
@@ -79,6 +82,7 @@ struct DurationSection: View {
 
     }
 
+    @ViewBuilder
     private var listItems: some View {
         ForEach(durationInfos, id: \.route) { info in
             let isRouteHidden = hiddenRoutes.contains(info.route)
@@ -103,6 +107,9 @@ struct DurationSection: View {
                     }
                 }
             }
+        }
+        if let anodyne {
+            AnodyneDurationRows(anodyne: anodyne)
         }
     }
 

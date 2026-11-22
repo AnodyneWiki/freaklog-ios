@@ -128,7 +128,8 @@ extension AnodyneSubstance {
     guard json["NotFound"] as? Bool != true, let title = json["Title"] as? String else { return nil }
     self.title = title.anodyneCleaned
     abbreviations = Self.strings(json["Abbreviation"])
-    aliases = Self.strings(json["Aliases"])
+    // Chemical index names such as "Benzeneethanamine, 4-fluoro-2,5-dimethoxy-" aren't names people use
+    aliases = Self.strings(json["Aliases"]).filter { !$0.contains(", ") }
     slang = Self.strings(json["Slang"]).map { $0.trimmingCharacters(in: .whitespaces) }
     classes = Self.strings(json["Classes"])
     dosing = (json["Dosing Info"] as? [[String: Any]] ?? []).compactMap(Self.dosing)
@@ -147,7 +148,10 @@ extension AnodyneSubstance {
       .sorted { $0.name < $1.name }
     scheduling = (json["Scheduling"] as? [[String: Any]] ?? []).compactMap { entry in
       guard let country = entry["gov"] as? String, let schedule = entry["schedule"] as? String else { return nil }
-      return Schedule(country: country, schedule: schedule.anodyneCleaned)
+      // Some carry wiki link markup, "target|label", of which only the label is shown
+      let label = (schedule.anodyneCleaned.components(separatedBy: "|").last ?? schedule)
+        .replacingOccurrences(of: ". substance", with: ".")
+      return Schedule(country: country, schedule: label.trimmingCharacters(in: .whitespaces))
     }
     reagents = (json["Reagents"] as? [[String: Any]] ?? []).compactMap { entry in
       guard let name = entry["Name"] as? String else { return nil }
@@ -240,9 +244,11 @@ struct AnodyneIndexEntry: Codable, Hashable, Identifiable {
 }
 
 extension String {
-  // AnodyneWiki texts carry some HTML: tags such as <sub> and entities such as &nbsp;
+  // AnodyneWiki texts carry some HTML, tags such as <sub> and entities such as &nbsp;, and some
+  // Wikipedia footnote templates such as {-{Efn|...|group=note}-}
   var anodyneCleaned: String {
-    var text = replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+    var text = replacingOccurrences(of: "\\{-?\\{[\\s\\S]*?\\}-?\\}", with: "", options: .regularExpression)
+      .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
     let entities = ["&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'", "&apos;": "'"]
     for (entity, character) in entities {
       text = text.replacingOccurrences(of: entity, with: character)

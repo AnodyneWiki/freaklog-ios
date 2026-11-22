@@ -48,6 +48,23 @@ final class AnodyneTests: XCTestCase {
         XCTAssertTrue(amphetamine.effectGroups.contains { $0.name == "Physical Effects" && $0.effects.contains("Stimulation") })
     }
 
+    func testRemovesWikiMarkup() throws {
+        let json: [String: Any] = [
+            "Title": "Methylhexanamine",
+            "Aliases": ["1,3-DMAA", "Benzeneethanamine, 4-fluoro-2,5-dimethoxy-"],
+            "Scheduling": [
+                [
+                    "gov": "United States",
+                    "schedule": "Unapproved drug; use is unlawful.{-{Efn|The N.D.A was withdrawn in 1983.|group=note}-} substance",
+                ],
+                ["gov": "US", "schedule": "List of Schedule II controlled substances (U.S.)|Schedule II substance"],
+            ],
+        ]
+        let substance = try XCTUnwrap(AnodyneSubstance(apiJSON: json))
+        XCTAssertEqual(substance.scheduling.map(\.schedule), ["Unapproved drug; use is unlawful.", "Schedule II substance"])
+        XCTAssertEqual(substance.aliases, ["1,3-DMAA"])
+    }
+
     func testUnknownSubstanceIsNotFound() throws {
         XCTAssertNil(AnodyneSubstance(apiJSON: try fixture("notFound")))
     }

@@ -1,11 +1,13 @@
 import SwiftUI
-import WrappingHStack
 
-// Everything the app takes from a substance's AnodyneWiki page. Substances that are neither in
-// PsychonautWiki nor custom yet can be added as a custom substance with AnodyneWiki's doses.
+// Everything the app takes from a substance's AnodyneWiki page, laid out like FreakLog's own substance
+// screens. Substances that are neither in PsychonautWiki nor custom yet can be added as custom substances.
 struct AnodyneSubstanceScreen: View {
   let title: String
   @StateObject private var model: AnodyneLoadModel
+  @State private var isShowingAddSheet = false
+  @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
+  private var customSubstances: FetchedResults<CustomSubstance>
 
   init(title: String) {
     self.title = title
@@ -21,17 +23,41 @@ struct AnodyneSubstanceScreen: View {
         Text("AnodyneWiki has no page for \(title).")
           .foregroundStyle(.secondary)
       case .failed:
-        Button("Couldn't load AnodyneWiki. Try Again") {
-          Task { await model.load() }
+        VStack(spacing: 12) {
+          Text("AnodyneWiki couldn't be loaded.")
+            .foregroundStyle(.secondary)
+          Button("Try Again") {
+            Task { await model.load() }
+          }
         }
       case let .found(substance):
-        AnodyneSubstanceContent(substance: substance)
+        List {
+          if let existingDestination = existingDestination(for: substance) {
+            Section {
+              NavigationLink(value: existingDestination) {
+                Label("Open in FreakLog", systemImage: "arrow.forward.circle")
+              }
+            } footer: {
+              Text("FreakLog already has this substance.")
+            }
+          }
+          overviewSection(substance)
+          AnodyneTopicSections(anodyne: substance)
+          SourcesSection(anodyne: substance)
+        }
+        .sheet(isPresented: $isShowingAddSheet) {
+          AddAnodyneSubstanceSheet(substance: substance)
+        }
       }
     }
-    .navigationTitle(title)
+    .navigationTitle(model.substance?.commonName ?? title)
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        NavigationLink("Page", value: GlobalNavigationDestination.webView(articleURL: AnodyneSubstance.pageURL(for: title)))
+      if let substance = model.substance, existingDestination(for: substance) == nil {
+        ToolbarItem(placement: .primaryAction) {
+          Button("Add") {
+            isShowingAddSheet = true
+          }
+        }
       }
     }
     .task {
@@ -39,18 +65,10 @@ struct AnodyneSubstanceScreen: View {
       await model.start(loadingIfNotCached: true)
     }
   }
-}
-
-private struct AnodyneSubstanceContent: View {
-  let substance: AnodyneSubstance
-  @State private var isShowingAddSheet = false
-  @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
-  private var customSubstances: FetchedResults<CustomSubstance>
 
   // The app's own substance of the same name, if there is one
-  private var existingDestination: GlobalNavigationDestination? {
-    let names = [substance.title] + substance.abbreviations
-    for name in names {
+  private func existingDestination(for substance: AnodyneSubstance) -> GlobalNavigationDestination? {
+    for name in [substance.title] + substance.abbreviations {
       if let pwSubstance = SubstanceRepo.shared.getSubstance(name: name) {
         return .substance(substance: pwSubstance)
       }
@@ -61,169 +79,23 @@ private struct AnodyneSubstanceContent: View {
     return nil
   }
 
-  var body: some View {
-    List {
-      Section {
-        if let existingDestination {
-          NavigationLink(value: existingDestination) {
-            Label("Open in FreakLog", systemImage: "arrow.right.circle")
-          }
-        } else {
-          Button {
-            isShowingAddSheet = true
-          } label: {
-            Label("Add as Custom Substance", systemImage: "plus.circle")
-          }
-        }
-      }
-      namesSection
-      if !substance.dosing.isEmpty {
-        Section {
-          ForEach(substance.dosing, id: \.method) { dosing in
-            AnodyneDosingRow(dosing: dosing, isShowingAllTiers: true)
-          }
-        } header: {
-          Text("Dosing")
-        } footer: {
-          Text(AnodyneDosingRow.disclaimer)
-        }
-      }
-      if substance.durationOfAction != nil || substance.halfLife != nil {
-        Section("Duration") {
-          if let duration = substance.durationOfAction {
-            LabeledText(label: "Duration of action", text: duration)
-          }
-          if let halfLife = substance.halfLife {
-            LabeledText(label: "Biological half-life", text: halfLife)
-          }
-        }
-      }
-      ForEach(substance.effectGroups, id: \.name) { group in
-        Section(group.name) {
-          WrappingHStack(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 3) {
-            ForEach(group.effects, id: \.self) { effect in
-              Chip(name: effect)
-            }
-          }
-        }
-      }
-      if !substance.reagents.isEmpty {
-        Section {
-          ForEach(substance.reagents, id: \.name) { reagent in
-            HStack {
-              Text(reagent.name)
-              Spacer()
-              ForEach(Array(reagent.colors.enumerated()), id: \.offset) { _, hex in
-                RoundedRectangle(cornerRadius: 3)
-                  .fill(Color(anodyneHex: hex))
-                  .frame(width: 14, height: 14)
-              }
-            }
-          }
-        } header: {
-          Text("Reagent Tests")
-        } footer: {
-          Text("Expected colors, changing over time from left to right.")
-        }
-      }
-      pharmacologySection
-      if !substance.scheduling.isEmpty {
-        Section("Legal Status") {
-          ForEach(substance.scheduling, id: \.self) { schedule in
-            HStack {
-              Text(schedule.country)
-              Spacer()
-              Text(schedule.schedule)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.trailing)
-            }
-          }
-        }
-      }
-      reportsSection(title: "Erowid Experience Reports", reports: substance.erowidReports)
-      reportsSection(title: "Reddit Experience Reports", reports: substance.redditReports)
-      linksSection
-    }
-    .sheet(isPresented: $isShowingAddSheet) {
-      AddAnodyneSubstanceSheet(substance: substance)
-    }
-  }
-
   @ViewBuilder
-  private var namesSection: some View {
-    let names = (substance.abbreviations + substance.slang + substance.aliases).uniqued()
-    if !names.isEmpty || !substance.classes.isEmpty {
-      Section("Names & Classes") {
+  private func overviewSection(_ substance: AnodyneSubstance) -> some View {
+    let names = (substance.abbreviations + substance.slang + substance.aliases)
+      .uniqued()
+      .filter { $0.caseInsensitiveCompare(substance.commonName) != .orderedSame }
+    if !substance.classes.isEmpty || !names.isEmpty || substance.title != substance.commonName {
+      Section("Overview") {
+        if substance.title != substance.commonName {
+          DetailRow(title: "Name", text: substance.title)
+        }
         if !substance.classes.isEmpty {
-          WrappingHStack(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 3) {
-            ForEach(substance.classes, id: \.self) { substanceClass in
-              Chip(name: substanceClass)
-            }
-          }
+          ChipList(items: substance.classes)
         }
         if !names.isEmpty {
-          Text(names.prefix(30).joined(separator: ", "))
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
+          DetailRow(title: "Also Known As", text: names.prefix(12).joined(separator: ", "))
         }
       }
-    }
-  }
-
-  @ViewBuilder
-  private var pharmacologySection: some View {
-    if substance.hasPharmacologyTexts {
-      Section("Pharmacology & Toxicity") {
-        pharmacologyText("Interactions", substance.interactions)
-        pharmacologyText("Reported fatal dose", substance.reportedFatalDose)
-        pharmacologyText("Health effects", substance.healthEffects)
-        pharmacologyText("Drug warnings", substance.drugWarnings)
-        pharmacologyText("Treatment of overdose", substance.treatment)
-        pharmacologyText("Mechanism of action", substance.mechanismOfAction)
-        pharmacologyText("Metabolism", substance.metabolism)
-      }
-    }
-  }
-
-  @ViewBuilder
-  private func pharmacologyText(_ title: String, _ text: String?) -> some View {
-    if let text {
-      DisclosureGroup(title) {
-        Text(text)
-          .font(.subheadline)
-      }
-    }
-  }
-
-  @ViewBuilder
-  private func reportsSection(title: String, reports: [AnodyneSubstance.Link]) -> some View {
-    if !reports.isEmpty {
-      Section {
-        ForEach(reports.prefix(15), id: \.url) { report in
-          NavigationLink(report.title, value: GlobalNavigationDestination.webView(articleURL: report.url))
-        }
-      } header: {
-        Text("\(title) (\(reports.count))")
-      } footer: {
-        if reports.count > 15 {
-          Text("All \(reports.count) are listed on the AnodyneWiki page.")
-        }
-      }
-    }
-  }
-
-  private var linksSection: some View {
-    Section {
-      NavigationLink(value: GlobalNavigationDestination.webView(articleURL: substance.pageURL)) {
-        Label("AnodyneWiki Page", systemImage: "books.vertical")
-      }
-      ForEach(substance.references, id: \.url) { reference in
-        NavigationLink(reference.title, value: GlobalNavigationDestination.webView(articleURL: reference.url))
-      }
-    } header: {
-      Text("Links")
-    } footer: {
-      Text("From anodyne.wiki, an aggregating wiki. Its content is in the public domain unless noted otherwise.")
     }
   }
 }
@@ -286,10 +158,13 @@ private struct AddAnodyneSubstanceSheet: View {
               .foregroundStyle(.secondary)
           }
           ForEach(dosingByRoute, id: \.route) { item in
-            AnodyneDosingRow(dosing: item.dosing, isShowingAllTiers: false)
+            LabeledContent(
+              item.route.rawValue.localizedCapitalized,
+              value: item.dosing.common.map { "common from \($0.lower.formatted()) \($0.unit)" } ?? "dose tiers"
+            )
           }
           if !categories.isEmpty {
-            LabeledText(label: "Categories", text: categories.joined(separator: ", "))
+            LabeledContent("Categories", value: categories.joined(separator: ", "))
           }
         } header: {
           Text("Taken from AnodyneWiki")
