@@ -58,4 +58,17 @@ final class CustomRoaTests: XCTestCase {
         edited.commonDose = 25
         XCTAssertTrue(edited.needsSavedRow(hasExistingRow: false, baseline: baseline, psychonautWiki: psychonautWiki))
     }
+
+    func testShowsHoursOnlyWhenTheyReadCleanly() {
+        func total(_ low: Double, _ high: Double) -> DurationRange? {
+            var values = CustomRoaCodable(administrationRoute: .oral)
+            values.totalLow = low
+            values.totalHigh = high
+            return values.roaDuration?.total
+        }
+        XCTAssertEqual(total(240, 360), DurationRange(min: 4, max: 6, units: .hours))
+        XCTAssertEqual(total(150, 210), DurationRange(min: 2.5, max: 3.5, units: .hours))
+        XCTAssertEqual(total(125, 200), DurationRange(min: 125, max: 200, units: .minutes))
+        XCTAssertEqual(total(90, 180), DurationRange(min: 90, max: 180, units: .minutes))
+    }
 }
