@@ -52,6 +52,14 @@ struct CustomRoaCodable: Codable, Equatable {
     )
   }
 
+  // Whether the editor keeps a CustomRoa row for these values. A row the user already has stays unless it
+  // matches the bundled PsychonautWiki data, since the AnodyneWiki part of the baseline is a cache that can be
+  // deleted. Without a row, one is only made once the values differ from what the form showed.
+  func needsSavedRow(hasExistingRow: Bool, baseline: CustomRoaCodable, psychonautWiki: CustomRoaCodable) -> Bool {
+    guard !isEmpty else { return false }
+    return hasExistingRow ? self != psychonautWiki : self != baseline
+  }
+
   // Overrides saved before the editor started from the PsychonautWiki data often have only some values.
   // Fills each empty phase and dose level from the baseline, only in the parts the override already sets,
   // and dose levels only when the units agree. A phase with one bound set stays a fixed time.

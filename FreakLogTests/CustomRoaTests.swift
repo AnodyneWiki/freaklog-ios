@@ -36,4 +36,26 @@ final class CustomRoaTests: XCTestCase {
         // No duration in the override: PsychonautWiki keeps providing it
         XCTAssertNil(filled.onsetLow)
     }
+
+    func testEmptyValuesNeedNoRow() {
+        let empty = CustomRoaCodable(administrationRoute: .oral)
+        XCTAssertFalse(empty.needsSavedRow(hasExistingRow: true, baseline: baseline, psychonautWiki: baseline))
+        XCTAssertFalse(empty.needsSavedRow(hasExistingRow: false, baseline: baseline, psychonautWiki: baseline))
+    }
+
+    func testExistingRowStaysUnlessItMatchesPsychonautWiki() {
+        let psychonautWiki = CustomRoaCodable(administrationRoute: .oral)
+        // The baseline here came from the AnodyneWiki cache: the user's row matching it must survive
+        XCTAssertTrue(baseline.needsSavedRow(hasExistingRow: true, baseline: baseline, psychonautWiki: psychonautWiki))
+        XCTAssertFalse(baseline.needsSavedRow(hasExistingRow: true, baseline: baseline, psychonautWiki: baseline))
+    }
+
+    func testNewRowOnlyWhenValuesDifferFromTheForm() {
+        let psychonautWiki = CustomRoaCodable(administrationRoute: .oral)
+        // Opening the editor fills the form with the baseline, which must not create a row
+        XCTAssertFalse(baseline.needsSavedRow(hasExistingRow: false, baseline: baseline, psychonautWiki: psychonautWiki))
+        var edited = baseline
+        edited.commonDose = 25
+        XCTAssertTrue(edited.needsSavedRow(hasExistingRow: false, baseline: baseline, psychonautWiki: psychonautWiki))
+    }
 }

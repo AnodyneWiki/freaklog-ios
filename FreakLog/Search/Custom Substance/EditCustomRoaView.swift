@@ -30,7 +30,7 @@ struct EditCustomRoaView: View {
 
   // What the form shows without the user's data, which the app uses then too: PsychonautWiki's dose and
   // duration (none for custom substances), with AnodyneWiki's filling in either when it was loaded before.
-  // Matching it means no override is needed.
+  // Matching it means no new override is needed.
   private var baseline: CustomRoaCodable {
     let (dose, duration, _) = baselineData
     return CustomRoaCodable(administrationRoute: route, dose: dose, duration: duration)
@@ -343,7 +343,12 @@ struct EditCustomRoaView: View {
   }
 
   private func save() {
-    guard !values.isEmpty, values != baseline else {
+    let psychonautWiki = CustomRoaCodable.psychonautWikiValues(
+      for: customSubstance == nil ? substanceName : nil,
+      route: route
+    )
+    guard values.needsSavedRow(hasExistingRow: existingRoa != nil, baseline: baseline, psychonautWiki: psychonautWiki)
+    else {
       deleteExisting()
       return
     }
