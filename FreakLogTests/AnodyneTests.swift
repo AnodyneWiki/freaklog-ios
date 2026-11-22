@@ -104,6 +104,17 @@ final class AnodyneTests: XCTestCase {
         XCTAssertFalse(drawing.shapes.contains { $0.path.boundingRect.width > 70 && $0.stroke == nil })
     }
 
+    // Progesterone's structure is base64 encoded and draws its bonds as <line> elements
+    @MainActor
+    func testReadsBase64StructuresWithLines() throws {
+        let substance = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("progesterone")))
+        let drawing = try XCTUnwrap(MoleculeDrawing.parse(try XCTUnwrap(substance.structureSVG)))
+        XCTAssertEqual(drawing.viewBox, CGRect(x: 0, y: 0, width: 125.909, height: 74.123))
+        // 42 bond lines, 9 wedge and label paths; the white background rectangle is left out
+        XCTAssertEqual(drawing.shapes.count, 51)
+        XCTAssertTrue(drawing.shapes.contains { $0.stroke == .rgb(1, 13.0 / 255, 13.0 / 255) })
+    }
+
     func testParsesRunTogetherPathNumbers() throws {
         let path = try XCTUnwrap(SVGPath.parse("m1.106 10.672.005 15.248M14.305 3.052l13.198-7.62h2v-1z"))
         let bounds = path.boundingRect

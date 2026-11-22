@@ -1,7 +1,8 @@
 import SwiftUI
 
 // A 2D structure drawing from AnodyneWiki, which generates them with the Chemistry Development Kit as SVG:
-// bonds are stroked paths, atom labels filled ones, on a white background. They are redrawn natively,
+// bonds are stroked paths or lines (depending on the CDK version), atom labels and wedges filled paths,
+// on a white background. They are redrawn natively,
 // with black bonds and labels in the text color so they read in dark mode too.
 struct MoleculeStructureView: View {
   let drawing: MoleculeDrawing
@@ -106,7 +107,7 @@ struct MoleculeDrawing {
   }
 }
 
-// Reads the SVG's paths with their inherited fill, stroke and stroke width
+// Reads the SVG's shapes with their inherited fill, stroke and stroke width
 private final class SVGParserDelegate: NSObject, XMLParserDelegate {
   private struct Style {
     var fill: MoleculeDrawing.Paint? = .foreground
@@ -142,12 +143,46 @@ private final class SVGParserDelegate: NSObject, XMLParserDelegate {
       if numbers.count == 4, numbers[2] > 0, numbers[3] > 0 {
         viewBox = CGRect(x: numbers[0], y: numbers[1], width: numbers[2], height: numbers[3])
       }
-    case "path":
-      if let data = attributes["d"], let path = SVGPath.parse(data), style.fill != nil || style.stroke != nil {
+    default:
+      if let path = Self.path(of: elementName, attributes), style.fill != nil || style.stroke != nil {
         shapes.append(.init(path: path, fill: style.fill, stroke: style.stroke, lineWidth: style.lineWidth))
       }
+    }
+  }
+
+  private static func path(of element: String, _ attributes: [String: String]) -> Path? {
+    func number(_ name: String) -> CGFloat? {
+      attributes[name].flatMap { Double($0) }.map { CGFloat($0) }
+    }
+    switch element {
+    case "path":
+      return attributes["d"].flatMap(SVGPath.parse)
+    case "line":
+      guard let x1 = number("x1"), let y1 = number("y1"), let x2 = number("x2"), let y2 = number("y2") else { return nil }
+      var path = Path()
+      path.move(to: CGPoint(x: x1, y: y1))
+      path.addLine(to: CGPoint(x: x2, y: y2))
+      return path
+    case "rect":
+      guard let width = number("width"), let height = number("height") else { return nil }
+      return Path(CGRect(x: number("x") ?? 0, y: number("y") ?? 0, width: width, height: height))
+    case "polyline", "polygon":
+      let values = (attributes["points"] ?? "").split(whereSeparator: { $0 == " " || $0 == "," }).compactMap { Double($0) }
+      let points = stride(from: 0, to: values.count - 1, by: 2).map { CGPoint(x: values[$0], y: values[$0 + 1]) }
+      guard points.count >= 2 else { return nil }
+      var path = Path()
+      path.addLines(points)
+      if element == "polygon" {
+        path.closeSubpath()
+      }
+      return path
+    case "circle", "ellipse":
+      guard let centerX = number("cx"), let centerY = number("cy"),
+            let radiusX = number("rx") ?? number("r"), let radiusY = number("ry") ?? number("r")
+      else { return nil }
+      return Path(ellipseIn: CGRect(x: centerX - radiusX, y: centerY - radiusY, width: 2 * radiusX, height: 2 * radiusY))
     default:
-      break
+      return nil
     }
   }
 

@@ -206,7 +206,7 @@ actor AnodyneClient {
   private static func lookupFile(for key: String) -> URL {
     let fileName = key.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? key
     // The number goes up when AnodyneSubstance gains fields, so older cached substances are loaded again
-    return directory.appendingPathComponent("substance2-\(fileName).json")
+    return directory.appendingPathComponent("substance3-\(fileName).json")
   }
 
   private static func readFromDisk<T: Decodable>(_ type: T.Type, file: URL) -> T? {

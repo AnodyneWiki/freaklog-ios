@@ -173,7 +173,7 @@ extension AnodyneSubstance {
       else { return nil }
       return Link(title: title.anodyneCleaned, url: url)
     }
-    structureSVG = (json["Structure"] as? String).flatMap { $0.hasPrefix("<svg") ? $0 : nil }
+    structureSVG = Self.structureSVG(json)
     formula = (json["MolecularFormula"] as? String).map(Self.subscripted).flatMap { Self.text($0) }
     molarMass = Self.text(json["MolecularWeight"])
     references = (json["References"] as? [[String: Any]] ?? []).compactMap { entry in
@@ -208,6 +208,15 @@ extension AnodyneSubstance {
       extreme: tier("Extreme")
     )
     return dosing.totalEntries > 0 ? dosing : nil
+  }
+
+  // Most substances have the SVG as text, some (e.g. progesterone) base64 encoded
+  private static func structureSVG(_ json: [String: Any]) -> String? {
+    let svg = json["Structure"] as? String
+      ?? (json["StructureBase64"] as? String)
+        .flatMap { Data(base64Encoded: $0, options: .ignoreUnknownCharacters) }
+        .flatMap { String(data: $0, encoding: .utf8) }
+    return svg?.contains("<svg") == true ? svg : nil
   }
 
   // "C<sub>11</sub>H<sub>15</sub>NO<sub>2</sub>" reads as "C₁₁H₁₅NO₂"
