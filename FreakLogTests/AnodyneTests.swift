@@ -91,6 +91,27 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual("{p}Hello{Ep}{p}*there*{gt}{lt}{Ep}".anodyneUserMarkupCleaned, "Hello there><")
     }
 
+    @MainActor
+    func testReadsStructureAndFormula() throws {
+        let substance = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("methylhexanamine")))
+        XCTAssertEqual(substance.formula, "C₇H₁₇N")
+        XCTAssertEqual(substance.molarMass, "115.22 g/mol")
+        let drawing = try XCTUnwrap(MoleculeDrawing.parse(try XCTUnwrap(substance.structureSVG)))
+        XCTAssertEqual(drawing.viewBox, CGRect(x: 0, y: 0, width: 76.411, height: 26.88))
+        // Bonds in the text color, the nitrogen label in its element color; the white background is left out
+        XCTAssertTrue(drawing.shapes.contains { $0.stroke == .foreground })
+        XCTAssertTrue(drawing.shapes.contains { $0.fill == .rgb(48.0 / 255, 80.0 / 255, 248.0 / 255) })
+        XCTAssertFalse(drawing.shapes.contains { $0.path.boundingRect.width > 70 && $0.stroke == nil })
+    }
+
+    func testParsesRunTogetherPathNumbers() throws {
+        let path = try XCTUnwrap(SVGPath.parse("m1.106 10.672.005 15.248M14.305 3.052l13.198-7.62h2v-1z"))
+        let bounds = path.boundingRect
+        XCTAssertEqual(bounds.minX, 1.106, accuracy: 0.001)
+        XCTAssertEqual(bounds.maxY, 25.92, accuracy: 0.001)
+        XCTAssertEqual(bounds.maxX, 29.503, accuracy: 0.001)
+    }
+
     func testUnknownSubstanceIsNotFound() throws {
         XCTAssertNil(AnodyneSubstance(apiJSON: try fixture("notFound")))
     }

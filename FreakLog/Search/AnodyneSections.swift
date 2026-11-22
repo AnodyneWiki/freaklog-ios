@@ -216,6 +216,24 @@ struct AnodyneUserNotesScreen: View {
   }
 }
 
+// The substance's 2D structure, molecular formula and molar mass
+struct AnodyneChemistryRows: View {
+  let anodyne: AnodyneSubstance
+  let substanceName: String
+
+  var body: some View {
+    if let svg = anodyne.structureSVG, let structure = MoleculeStructureView(svg: svg, substanceName: substanceName) {
+      structure
+    }
+    if let formula = anodyne.formula {
+      LabeledContent("Formula", value: formula)
+    }
+    if let molarMass = anodyne.molarMass {
+      LabeledContent("Molar Mass", value: molarMass)
+    }
+  }
+}
+
 // One user's whole note about a substance, laid out like their userpage
 struct AnodyneUserNoteScreen: View {
   let note: AnodyneUserNote

@@ -44,7 +44,8 @@ private struct CustomSubstanceList: View {
   var body: some View {
     let categories = PersistenceController.shared.categories(for: customSubstance.nameUnwrapped)
     List {
-      if !customSubstance.explanationUnwrapped.isEmpty || !categories.isEmpty || !customSubstance.unitsUnwrapped.isEmpty {
+      if !customSubstance.explanationUnwrapped.isEmpty || !categories.isEmpty || !customSubstance.unitsUnwrapped.isEmpty
+        || anodyneModel.substance != nil {
         overviewSection(categories: categories)
       }
       AnodyneLoadSection(model: anodyneModel)
@@ -87,6 +88,9 @@ private struct CustomSubstanceList: View {
       }
       if !customSubstance.unitsUnwrapped.isEmpty {
         LabeledContent("Default Units", value: customSubstance.unitsUnwrapped)
+      }
+      if let anodyne = anodyneModel.substance {
+        AnodyneChemistryRows(anodyne: anodyne, substanceName: customSubstance.nameUnwrapped)
       }
     } header: {
       Text("Overview")

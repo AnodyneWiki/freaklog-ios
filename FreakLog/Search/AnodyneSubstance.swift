@@ -83,6 +83,10 @@ struct AnodyneSubstance: Codable, Hashable {
   var erowidReports: [Link] = []
   var redditReports: [Link] = []
   var references: [Link] = []
+  // A 2D structure drawing as SVG, and the molecular formula and mass
+  var structureSVG: String?
+  var formula: String?
+  var molarMass: String?
 
   static let baseURL = URL(string: "https://anodyne.wiki")!
 
@@ -169,6 +173,9 @@ extension AnodyneSubstance {
       else { return nil }
       return Link(title: title.anodyneCleaned, url: url)
     }
+    structureSVG = (json["Structure"] as? String).flatMap { $0.hasPrefix("<svg") ? $0 : nil }
+    formula = (json["MolecularFormula"] as? String).map(Self.subscripted).flatMap { Self.text($0) }
+    molarMass = Self.text(json["MolecularWeight"])
     references = (json["References"] as? [[String: Any]] ?? []).compactMap { entry in
       guard let name = entry["Name"] as? String,
             let link = (entry["Urls"] as? [[String: Any]])?.first?["Link"] as? String,
@@ -201,6 +208,29 @@ extension AnodyneSubstance {
       extreme: tier("Extreme")
     )
     return dosing.totalEntries > 0 ? dosing : nil
+  }
+
+  // "C<sub>11</sub>H<sub>15</sub>NO<sub>2</sub>" reads as "C₁₁H₁₅NO₂"
+  private static func subscripted(_ formula: String) -> String {
+    let subscripts: [Character: Character] = [
+      "0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+    ]
+    var result = ""
+    var isInSubscript = false
+    var rest = Substring(formula)
+    while !rest.isEmpty {
+      if rest.hasPrefix("<sub>") {
+        isInSubscript = true
+        rest = rest.dropFirst(5)
+      } else if rest.hasPrefix("</sub>") {
+        isInSubscript = false
+        rest = rest.dropFirst(6)
+      } else {
+        let character = rest.removeFirst()
+        result.append(isInSubscript ? subscripts[character] ?? character : character)
+      }
+    }
+    return result
   }
 
   // A string, or a list of strings

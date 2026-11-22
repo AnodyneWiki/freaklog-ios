@@ -108,6 +108,9 @@ struct SubstanceScreen: View {
       if !categories.isEmpty {
         CategorySection(categoryNames: categories)
       }
+      if let anodyne {
+        AnodyneChemistryRows(anodyne: anodyne, substanceName: substance.displayName)
+      }
       if !otherNames.isEmpty {
         DetailRow(title: "Also Known As", text: otherNames.prefix(12).joined(separator: ", "))
       }

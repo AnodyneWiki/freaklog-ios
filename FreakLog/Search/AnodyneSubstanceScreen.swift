@@ -84,7 +84,8 @@ struct AnodyneSubstanceScreen: View {
     let names = (substance.abbreviations + substance.slang + substance.aliases)
       .uniqued()
       .filter { $0.caseInsensitiveCompare(substance.commonName) != .orderedSame }
-    if !substance.classes.isEmpty || !names.isEmpty || substance.title != substance.commonName {
+    let hasChemistry = substance.structureSVG != nil || substance.formula != nil || substance.molarMass != nil
+    if !substance.classes.isEmpty || !names.isEmpty || substance.title != substance.commonName || hasChemistry {
       Section("Overview") {
         if substance.title != substance.commonName {
           DetailRow(title: "Name", text: substance.title)
@@ -92,6 +93,7 @@ struct AnodyneSubstanceScreen: View {
         if !substance.classes.isEmpty {
           ChipList(items: substance.classes)
         }
+        AnodyneChemistryRows(anodyne: substance, substanceName: substance.commonName)
         if !names.isEmpty {
           DetailRow(title: "Also Known As", text: names.prefix(12).joined(separator: ", "))
         }
