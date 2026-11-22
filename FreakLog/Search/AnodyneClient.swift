@@ -1,8 +1,9 @@
 import Foundation
 
-// Loads substances from AnodyneWiki's public JSON API (https://anodyne.wiki/api). Results, including
-// substances it doesn't know, are kept on disk for a week, so a substance is only requested again after that.
-// Nothing is requested unless the user asks for it or turned on automatic loading.
+// Loads substances from AnodyneWiki's public JSON API (https://anodyne.wiki/api, or the instance set in
+// Settings). Results, including substances it doesn't know, are kept on disk for a week, so a substance is
+// only requested again after that. Nothing is requested unless the user asks for it or turned on automatic
+// loading.
 actor AnodyneClient {
   static let shared = AnodyneClient()
 

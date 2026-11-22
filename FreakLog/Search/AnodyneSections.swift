@@ -79,7 +79,7 @@ struct AnodyneLoadSection: View {
         }
       } footer: {
         Text(
-          "Adds logged doses, legal status, reagent tests, experience reports and more from anodyne.wiki. "
+          "Adds logged doses, legal status, reagent tests, experience reports and more from AnodyneWiki. "
             + "To load it on every substance page, turn on Load Automatically in Settings > AnodyneWiki."
         )
       }

@@ -95,7 +95,30 @@ struct AnodyneSubstance: Codable, Hashable {
   var formula: String?
   var molarMass: String?
 
-  static let baseURL = URL(string: "https://anodyne.wiki")!
+  static let defaultBaseURL = URL(string: "https://anodyne.wiki")!
+
+  // The AnodyneWiki instance to load from and link to, set in Settings > AnodyneWiki
+  static var baseURL: URL {
+    UserDefaults.standard.string(forKey: PersistenceController.anodyneInstanceURLKey)
+      .flatMap(instanceURL(from:)) ?? defaultBaseURL
+  }
+
+  // An instance's address as entered, e.g. "wiki.example.org" or "https://wiki.example.org/", or nil when it
+  // isn't a web address
+  static func instanceURL(from text: String) -> URL? {
+    var text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { return nil }
+    if !text.contains("://") {
+      text = "https://" + text
+    }
+    while text.hasSuffix("/") {
+      text.removeLast()
+    }
+    guard let url = URL(string: text), ["http", "https"].contains(url.scheme?.lowercased()),
+          let host = url.host(), !host.isEmpty, url.query == nil
+    else { return nil }
+    return url
+  }
 
   var pageURL: URL {
     Self.pageURL(for: title)

@@ -167,6 +167,18 @@ final class AnodyneTests: XCTestCase {
         XCTAssertNil(store.duration(for: "LSD", route: .oral))
     }
 
+    func testReadsInstanceAddresses() {
+        XCTAssertEqual(AnodyneSubstance.instanceURL(from: "wiki.example.org")?.absoluteString, "https://wiki.example.org")
+        XCTAssertEqual(
+            AnodyneSubstance.instanceURL(from: " http://192.168.1.5:8080/ ")?.absoluteString,
+            "http://192.168.1.5:8080"
+        )
+        XCTAssertEqual(AnodyneSubstance.instanceURL(from: "https://anodyne.wiki"), AnodyneSubstance.defaultBaseURL)
+        XCTAssertNil(AnodyneSubstance.instanceURL(from: "ftp://wiki.example.org"))
+        XCTAssertNil(AnodyneSubstance.instanceURL(from: "not a url"))
+        XCTAssertNil(AnodyneSubstance.instanceURL(from: ""))
+    }
+
     func testUnknownSubstanceIsNotFound() throws {
         XCTAssertNil(AnodyneSubstance(apiJSON: try fixture("notFound")))
     }
