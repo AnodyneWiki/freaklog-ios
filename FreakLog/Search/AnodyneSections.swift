@@ -67,6 +67,7 @@ final class AnodyneLoadModel: ObservableObject {
 // screen's topics, so this section disappears.
 struct AnodyneLoadSection: View {
   @ObservedObject var model: AnodyneLoadModel
+  @AppStorage(PersistenceController.isAnodyneAutoLoadEnabledKey) private var isAutoLoadEnabled = false
 
   var body: some View {
     switch model.phase {
@@ -77,8 +78,20 @@ struct AnodyneLoadSection: View {
         } label: {
           Label("More from AnodyneWiki", systemImage: "books.vertical")
         }
+        // The same setting as in Settings > AnodyneWiki; turning it on loads this substance right away
+        Toggle("Load Automatically", isOn: $isAutoLoadEnabled)
+          .tint(.accentColor)
+          .onChange(of: isAutoLoadEnabled) { isEnabled in
+            if isEnabled {
+              Task { await model.load() }
+            }
+          }
       } footer: {
-        Text("Adds logged doses, legal status, reagent tests, experience reports and more from anodyne.wiki.")
+        Text(
+          "Adds logged doses, legal status, reagent tests, experience reports and more from anodyne.wiki. "
+            + "Loading automatically does this for every substance page, which tells anodyne.wiki which "
+            + "substances you look at."
+        )
       }
     case .loading:
       Section {
