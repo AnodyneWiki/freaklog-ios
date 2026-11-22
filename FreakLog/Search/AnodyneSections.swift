@@ -156,14 +156,38 @@ struct InteractionsSection: View {
   }
 }
 
-// AnodyneWiki's duration texts, for substances without a PsychonautWiki timeline
+// AnodyneWiki's timings for substances without a PsychonautWiki timeline: a timeline for each route its users
+// noted timings for, and the duration of action and half-life
 struct AnodyneDurationSection: View {
   let anodyne: AnodyneSubstance
+  var isShowingRouteTimings = true
+
+  static let timingFootnote =
+    "The duration is AnodyneWiki's: what its users noted for this route, or the substance's duration of action."
 
   var body: some View {
-    if anodyne.durationOfAction != nil || anodyne.halfLife != nil {
-      Section("Duration") {
+    let routes = isShowingRouteTimings ? AnodyneTimingStore.shared.routesWithTimings(for: anodyne.title) : []
+    if !routes.isEmpty || anodyne.durationOfAction != nil || anodyne.halfLife != nil {
+      Section {
+        ForEach(routes, id: \.self) { route in
+          VStack(alignment: .leading, spacing: 8) {
+            Text(route.rawValue.localizedCapitalized)
+              .font(.headline)
+            RoaPreview(
+              substanceName: anodyne.title,
+              route: route,
+              roaDose: nil,
+              roaDuration: AnodyneTimingStore.shared.duration(for: anodyne.title, route: route)
+            )
+          }
+        }
         AnodyneDurationRows(anodyne: anodyne)
+      } header: {
+        Text("Duration")
+      } footer: {
+        if !routes.isEmpty {
+          Text("Route timings are what AnodyneWiki's users noted.")
+        }
       }
     }
   }
@@ -322,6 +346,8 @@ struct AnodyneTopicSections: View {
   var userNotes: [AnodyneUserNote] = []
   // The PsychonautWiki screen shows these topics combined with its own
   var isIncludingSharedTopics = true
+  // The custom substance screen shows them with the user's own routes
+  var isShowingRouteTimings = true
 
   var body: some View {
     if isIncludingSharedTopics {
@@ -330,7 +356,7 @@ struct AnodyneTopicSections: View {
     AnodyneReportsSection(anodyne: anodyne, userNotes: userNotes)
     AnodyneLoggedDosesSection(anodyne: anodyne)
     if isIncludingSharedTopics {
-      AnodyneDurationSection(anodyne: anodyne)
+      AnodyneDurationSection(anodyne: anodyne, isShowingRouteTimings: isShowingRouteTimings)
       InteractionsSection(substance: nil, anodyne: anodyne)
       ToxicitySection(substance: nil, anodyne: anodyne)
     }

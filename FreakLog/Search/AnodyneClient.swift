@@ -156,10 +156,14 @@ actor AnodyneClient {
     }
   }
 
-  // Every substance on disk with the name it was looked up by, however old, for AnodyneTimingStore
+  // Every substance on disk with the name it was looked up by, however old, for AnodyneTimingStore.
+  // Files from before the current format are removed on the way.
   static func cachedSubstancesOnDisk() -> [(name: String, substance: AnodyneSubstance)] {
     let files = (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
     let prefix = lookupFile(for: "").deletingPathExtension().lastPathComponent
+    for file in files where file.lastPathComponent.hasPrefix("substance") && !file.lastPathComponent.hasPrefix(prefix) {
+      try? FileManager.default.removeItem(at: file)
+    }
     return files.compactMap { file in
       let fileName = file.deletingPathExtension().lastPathComponent
       guard fileName.hasPrefix(prefix),

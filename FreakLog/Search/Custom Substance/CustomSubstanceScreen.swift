@@ -37,8 +37,12 @@ private struct CustomSubstanceList: View {
     _anodyneModel = StateObject(wrappedValue: AnodyneLoadModel(name: customSubstance.nameUnwrapped))
   }
 
-  private var roasWithData: [CustomRoa] {
-    customSubstance.customRoasSorted.filter(\.hasData)
+  // Routes with the user's data or AnodyneWiki timings, which fill in durations the user didn't enter
+  private var routes: [AdministrationRoute] {
+    let name = customSubstance.nameUnwrapped
+    let customRoutes = Set(customSubstance.customRoasSorted.filter(\.hasData).map(\.administrationRouteUnwrapped))
+    let anodyneRoutes = Set(AnodyneTimingStore.shared.routesWithTimings(for: name))
+    return AdministrationRoute.allCases.filter { customRoutes.contains($0) || anodyneRoutes.contains($0) }
   }
 
   var body: some View {
@@ -49,25 +53,33 @@ private struct CustomSubstanceList: View {
         overviewSection(categories: categories)
       }
       AnodyneLoadSection(model: anodyneModel)
-      if roasWithData.isEmpty {
+      if routes.isEmpty {
         Section("Dose & Duration") {
           Text("No dose or duration data added yet. Tap Edit to add data for each route.")
             .foregroundStyle(.secondary)
         }
       } else {
-        ForEach(roasWithData, id: \.objectID) { roa in
-          Section(roa.administrationRouteUnwrapped.rawValue.localizedCapitalized) {
+        let name = customSubstance.nameUnwrapped
+        ForEach(routes, id: \.self) { route in
+          Section {
             RoaPreview(
-              substanceName: customSubstance.nameUnwrapped,
-              route: roa.administrationRouteUnwrapped,
-              roaDose: roa.roaDose,
-              roaDuration: roa.roaDuration
+              substanceName: name,
+              route: route,
+              roaDose: PersistenceController.shared.resolvedDose(for: name, route: route),
+              roaDuration: PersistenceController.shared.resolvedDuration(for: name, route: route)
             )
+          } header: {
+            Text(route.rawValue.localizedCapitalized)
+          } footer: {
+            if PersistenceController.shared.isDurationFromAnodyneWiki(for: name, route: route) {
+              Text(AnodyneDurationSection.timingFootnote)
+            }
           }
         }
       }
       if let anodyne = anodyneModel.substance {
-        AnodyneTopicSections(anodyne: anodyne, userNotes: anodyneModel.userNotes)
+        // The routes above already show AnodyneWiki's timings
+        AnodyneTopicSections(anodyne: anodyne, userNotes: anodyneModel.userNotes, isShowingRouteTimings: false)
       }
       if anodyneModel.substance != nil || anodyneModel.phase == .notFound {
         SourcesSection(anodyne: anodyneModel.substance, isMissingOnAnodyne: anodyneModel.phase == .notFound)
