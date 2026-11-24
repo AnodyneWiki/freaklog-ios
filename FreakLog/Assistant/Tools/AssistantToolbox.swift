@@ -170,7 +170,8 @@ extension [String: JSONValue] {
 
   func integer(_ key: String, default defaultValue: Int, in range: ClosedRange<Int>) -> Int {
     let value: Int? = switch self[key] {
-    case .number(let number): number.isFinite ? Int(number) : nil
+    case .number(let number) where number.isFinite:
+      Int(exactly: Swift.min(Swift.max(number, Double(range.lowerBound)), Double(range.upperBound)).rounded(.towardZero))
     case .string(let string): Int(string.trimmingCharacters(in: .whitespaces))
     default: nil
     }

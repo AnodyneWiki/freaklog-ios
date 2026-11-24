@@ -52,6 +52,22 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(result["interactions"]?.array?.first?["risk"]?.string?.isEmpty, false)
   }
 
+  func testActiveIngestionsUseOnlyPersonalEntriesThatHaveStarted() async throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    for (name, consumer, offset) in [("Personal", nil, -60.0), ("Other", "Guest", -60.0), ("Future", nil, 3600.0)] {
+      let ingestion = Ingestion(context: context)
+      ingestion.substanceName = name
+      ingestion.consumerName = consumer
+      ingestion.time = Date.now.addingTimeInterval(offset)
+    }
+    try context.save()
+    let toolbox = AssistantToolbox(context: context, includesAnodyneWiki: false)
+    let result = await toolbox.run(AssistantToolCall(id: nil, name: "get_active_ingestions", arguments: [:]))
+    let entries = try XCTUnwrap(result["ingestions"]?.array)
+    XCTAssertEqual(entries.count, 1)
+    XCTAssertEqual(entries.first?["substance"], "Personal")
+  }
+
   func testSchemasListRequiredParameters() {
     let schema = AssistantToolbox.schema(of: [
       .init(name: "substance", description: "", kind: .string, isRequired: true),
@@ -62,7 +78,8 @@ final class AssistantToolTests: XCTestCase {
   }
 
   func testArgumentsAreClamped() {
-    let arguments: [String: JSONValue] = ["limit": "500", "days": .number(-3)]
+    let arguments: [String: JSONValue] = ["limit": "500", "days": .number(-3), "huge": .number(1e100)]
+    XCTAssertEqual(arguments.integer("huge", default: 10, in: 1 ... 50), 50)
     XCTAssertEqual(arguments.integer("limit", default: 10, in: 1 ... 50), 50)
     XCTAssertEqual(arguments.integer("days", default: 30, in: 1 ... 730), 1)
     XCTAssertEqual(arguments.integer("missing", default: 30, in: 1 ... 730), 30)

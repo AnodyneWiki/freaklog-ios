@@ -284,7 +284,7 @@ extension AssistantToolbox {
     // Substances in a category this one is cross-tolerant with
     let crossTolerances = Set((substance?.crossTolerances ?? []).map { $0.lowercased() })
     let crossTolerant = SubstanceRepo.shared.substances
-      .filter { $0.name != name && !crossTolerances.isDisjoint(with: $0.categories.map { $0.lowercased() }) }
+      .filter { $0.name != name && !crossTolerances.isDisjoint(with: PersistenceController.shared.categories(for: $0.name).map { $0.lowercased() }) }
       .map(\.name)
     let lastCrossTolerantUse = crossTolerant.isEmpty ? nil : try lastPersonalIngestion(of: crossTolerant)
     let mostRecent = [lastUse, lastCrossTolerantUse].compactMap { $0 }.max { $0.timeUnwrapped < $1.timeUnwrapped }
@@ -334,7 +334,7 @@ extension AssistantToolbox {
     let request = PersistenceController.personalIngestionsRequest()
     request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
       request.predicate ?? NSPredicate(value: true),
-      NSPredicate(format: "substanceName IN %@", substanceNames),
+      NSPredicate(format: "substanceName IN %@ AND time <= %@", substanceNames, Date.now as NSDate),
     ])
     request.fetchLimit = 1
     return try context.fetch(request).first
@@ -342,19 +342,23 @@ extension AssistantToolbox {
 
   private func activeIngestions(hoursBack: Int) throws -> JSONValue {
     let now = Date.now
-    let request = PersistenceController.ingestionsRequest(
-      since: now.addingTimeInterval(-Double(hoursBack) * 3600),
-      limit: limits.maxIngestions)
+    let request = PersistenceController.personalIngestionsRequest()
+    let start = now.addingTimeInterval(-Double(hoursBack) * 3600)
+    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+      request.predicate ?? NSPredicate(value: true),
+      NSPredicate(format: "time <= %@ AND (time >= %@ OR endTime >= %@)", now as NSDate, start as NSDate, start as NSDate),
+    ])
+    request.fetchLimit = limits.maxIngestions
     let ingestions = try context.fetch(request).reversed().map { ingestion -> JSONValue in
       var json = ingestionJSON(ingestion, includingExperience: true).object ?? [:]
       let duration = PersistenceController.shared.resolvedDuration(
         for: ingestion.substanceNameUnwrapped,
         route: ingestion.administrationRouteUnwrapped)
       let phases = [duration?.onset, duration?.comeup, duration?.peak, duration?.offset].compactMap { $0?.maxSec }
-      let seconds = duration?.total?.maxSec ?? (phases.isEmpty ? nil : phases.reduce(0, +))
+      let seconds = duration?.total?.maxSec ?? (phases.count == 4 ? phases.reduce(0, +) : nil)
       if let seconds, seconds.isFinite, seconds > 0 {
         // An infusion's effects last from its end
-        let end = (ingestion.endTime ?? ingestion.timeUnwrapped).addingTimeInterval(min(seconds, 30 * 24 * 3600))
+        let end = (ingestion.endTime ?? ingestion.timeUnwrapped).addingTimeInterval(seconds)
         json["expected_end"] = .string(AssistantFormat.date(end))
         json["status"] = .string(now < end ? "probably still active" : "probably worn off")
       } else {

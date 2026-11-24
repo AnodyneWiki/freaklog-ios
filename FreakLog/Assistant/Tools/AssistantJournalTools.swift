@@ -152,14 +152,17 @@ extension AssistantToolbox {
           // Every ingestion of the window is needed for counting; the cap only guards against runaway journals
           let request = PersistenceController.ingestionsRequest(
             since: Date.now.addingTimeInterval(-Double(days) * 24 * 60 * 60),
-            limit: 20000)
-          let ingestions = try context.fetch(request).filter(\.isMine)
+            personalOnly: true,
+            limit: 20001)
+          let fetched = try context.fetch(request)
+          let ingestions = fetched.prefix(20000)
           let groups = Dictionary(grouping: ingestions, by: \.substanceNameUnwrapped)
             .sorted { $0.value.count == $1.value.count ? $0.key < $1.key : $0.value.count > $1.value.count }
           let listed = groups.prefix(limits.maxListLength)
           return Self.success([
             "days_back": .number(Double(days)),
             "total_ingestions": .number(Double(ingestions.count)),
+            "older_ingestions_omitted": .bool(fetched.count > ingestions.count),
             "substances": .array(listed.map { name, ingestions in
               let times = ingestions.map(\.timeUnwrapped)
               let days = Set(times.map { Calendar.current.startOfDay(for: $0) })

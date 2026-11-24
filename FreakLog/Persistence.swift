@@ -464,9 +464,14 @@ struct PersistenceController {
 
     // Ingestions since the date, newest first; with a query only those of substances whose stored or display
     // name contains it
-    static func ingestionsRequest(since date: Date, substanceMatching query: String? = nil, limit: Int) -> NSFetchRequest<Ingestion> {
-        let r = ingestionsRequest()
-        var predicates = [NSPredicate(format: "time >= %@", date as NSDate)]
+    static func ingestionsRequest(
+        since date: Date, substanceMatching query: String? = nil, personalOnly: Bool = false, limit: Int
+    ) -> NSFetchRequest<Ingestion> {
+        let r = personalOnly ? personalIngestionsRequest() : ingestionsRequest()
+        var predicates = [NSPredicate(format: "time >= %@ AND time <= %@", date as NSDate, Date.now as NSDate)]
+        if let consumer = r.predicate {
+            predicates.append(consumer)
+        }
         if let query, !query.isEmpty {
             predicates.append(substancePredicate(matching: query, keyPath: "substanceName"))
         }
