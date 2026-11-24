@@ -7,15 +7,19 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
 		5A5426D157C4024BC7B7232F /* AssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */; };
 		4A327E2CAC9D22A54C24994E /* AssistantHTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C53CB17E45A11FF18786BAB /* AssistantHTTP.swift */; };
 		09DBDF7DC64DA147AB102EAA /* OpenAIChatClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667B8B60948F20D93CBD2BA7 /* OpenAIChatClient.swift */; };
 		E4916DC6341C994D2D53FFE5 /* AnthropicMessagesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965647C72042B932ED55CC25 /* AnthropicMessagesClient.swift */; };
 		9D59F53EC6DB99F7E0E9A8F3 /* GeminiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6103A70D47388DBD76B44E /* GeminiClient.swift */; };
+		49E077D023F35753D6D3E6AA /* AssistantConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAB6A95483189B3B9CA2D21 /* AssistantConversation.swift */; };
+		765887D3C8C16DC421A14315 /* OnDeviceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8FD57BB05C7BBF11460696 /* OnDeviceConversation.swift */; };
 		1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */; };
 		E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988EED94A98760900D8303B /* AssistantJournalTools.swift */; };
 		6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */; };
+		E6073134F884A8F724717D64 /* AssistantInstructions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */; };
 		22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */; };
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
@@ -477,15 +481,19 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
 		E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantModels.swift; sourceTree = "<group>"; };
 		2C53CB17E45A11FF18786BAB /* AssistantHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantHTTP.swift; sourceTree = "<group>"; };
 		667B8B60948F20D93CBD2BA7 /* OpenAIChatClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIChatClient.swift; sourceTree = "<group>"; };
 		965647C72042B932ED55CC25 /* AnthropicMessagesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicMessagesClient.swift; sourceTree = "<group>"; };
 		2C6103A70D47388DBD76B44E /* GeminiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiClient.swift; sourceTree = "<group>"; };
+		7EAB6A95483189B3B9CA2D21 /* AssistantConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversation.swift; sourceTree = "<group>"; };
+		0B8FD57BB05C7BBF11460696 /* OnDeviceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceConversation.swift; sourceTree = "<group>"; };
 		9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolbox.swift; sourceTree = "<group>"; };
 		9988EED94A98760900D8303B /* AssistantJournalTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantJournalTools.swift; sourceTree = "<group>"; };
 		EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantSubstanceTools.swift; sourceTree = "<group>"; };
+		60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantInstructions.swift; sourceTree = "<group>"; };
 		F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantProviderTests.swift; sourceTree = "<group>"; };
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
@@ -927,6 +935,15 @@
 			path = Providers;
 			sourceTree = "<group>";
 		};
+		35320E7319D7470BF1232616 /* Conversation */ = {
+			isa = PBXGroup;
+			children = (
+				7EAB6A95483189B3B9CA2D21 /* AssistantConversation.swift */,
+				0B8FD57BB05C7BBF11460696 /* OnDeviceConversation.swift */,
+			);
+			path = Conversation;
+			sourceTree = "<group>";
+		};
 		D24BD2D69755596EF3F7E11C /* Tools */ = {
 			isa = PBXGroup;
 			children = (
@@ -941,7 +958,9 @@
 			isa = PBXGroup;
 			children = (
 				7FEB368142E0DD2E75401B23 /* Providers */,
+				35320E7319D7470BF1232616 /* Conversation */,
 				D24BD2D69755596EF3F7E11C /* Tools */,
+				60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */,
 			);
 			path = Assistant;
 			sourceTree = "<group>";
@@ -1724,6 +1743,7 @@
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
+				082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */,
 				43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */,
 				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
 				0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */,
@@ -2230,6 +2250,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */,
+				5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */,
 				A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */,
 				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
@@ -2253,9 +2274,12 @@
 				09DBDF7DC64DA147AB102EAA /* OpenAIChatClient.swift in Sources */,
 				E4916DC6341C994D2D53FFE5 /* AnthropicMessagesClient.swift in Sources */,
 				9D59F53EC6DB99F7E0E9A8F3 /* GeminiClient.swift in Sources */,
+				49E077D023F35753D6D3E6AA /* AssistantConversation.swift in Sources */,
+				765887D3C8C16DC421A14315 /* OnDeviceConversation.swift in Sources */,
 				1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */,
 				E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */,
 				6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */,
+				E6073134F884A8F724717D64 /* AssistantInstructions.swift in Sources */,
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
 				60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */,
