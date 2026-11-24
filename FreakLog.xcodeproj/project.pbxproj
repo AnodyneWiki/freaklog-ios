@@ -11,6 +11,7 @@
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
 		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
 		2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */; };
+		60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B302BDA5F741381059AE6948 /* ExportedFile.swift */; };
 		BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C2A73124B37921B3E4BE39 /* FormulationTests.swift */; };
 		08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */; };
 		09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */; };
@@ -470,6 +471,7 @@
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
 		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
 		8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackup.swift; sourceTree = "<group>"; };
+		B302BDA5F741381059AE6948 /* ExportedFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportedFile.swift; sourceTree = "<group>"; };
 		E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 10.xcdatamodel"; sourceTree = "<group>"; };
 		73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 11.xcdatamodel"; sourceTree = "<group>"; };
 		7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 12.xcdatamodel"; sourceTree = "<group>"; };
@@ -898,6 +900,7 @@
 			children = (
 				A7B357B963A085C666251860 /* JSONValue.swift */,
 				8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */,
+				B302BDA5F741381059AE6948 /* ExportedFile.swift */,
 			);
 			path = Backup;
 			sourceTree = "<group>";
@@ -2191,6 +2194,7 @@
 			files = (
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
+				60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */,
 				54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */,
 				3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */,
 				600A7BA0DF3698461DA8A0DB /* FormulationSuggestionView.swift in Sources */,

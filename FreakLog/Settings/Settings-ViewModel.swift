@@ -5,19 +5,76 @@ extension SettingsScreen {
     @MainActor
     class ViewModel: ObservableObject {
         @Published var isExporting = false
-        @Published var journalFile = JournalFile(experiences: [], customSubstances: [], customUnits: [])
+        @Published var exportedFile = ExportedFile()
         weak var toastViewModel: ToastViewModel?
 
+        // The journal in the format the Android app reads
         func exportData() {
             let pc = PersistenceController.shared
-            journalFile = JournalFile(
+            let journalFile = JournalFile(
                 experiences: pc.getAllExperiences(),
                 customSubstances: pc.getAllCustomSubstances(),
                 customUnits: pc.getAllCustomUnits(),
                 substanceOverrideRoas: pc.getAllStandaloneCustomRoas(),
                 substanceOverrides: (try? pc.viewContext.fetch(PersistenceController.substanceOverridesRequest())) ?? [],
                 formulations: pc.getAllFormulations())
-            isExporting = true
+            do {
+                exportedFile = try ExportedFile(data: JSONEncoder().encode(journalFile), filename: "\(appName) \(Self.fileDate)")
+                isExporting = true
+            } catch {
+                showErrorToast(message: "Export Failed")
+            }
+        }
+
+        // Everything, to restore exactly
+        func exportBackup() {
+            let appVersion = getCurrentAppVersion()
+            Task {
+                do {
+                    let data = try await PersistenceController.shared.container.performBackgroundTask { context in
+                        try JournalBackup(context: context, appVersion: appVersion).data()
+                    }
+                    exportedFile = ExportedFile(data: data, filename: "\(appName) Backup \(Self.fileDate)")
+                    isExporting = true
+                } catch {
+                    print("Backup failed: \(error)")
+                    showErrorToast(message: "Backup Failed")
+                }
+            }
+        }
+
+        private static var fileDate: String {
+            Date().ISO8601Format(.iso8601(
+                timeZone: TimeZone.current,
+                dateSeparator: .dash,
+                dateTimeSeparator: .standard,
+                timeSeparator: .omitted))
+        }
+
+        // Restores a backup exactly, settings included: everything is replaced in one save, so a backup that can't be
+        // restored leaves the journal as it was
+        private func importBackup(_ backup: JournalBackup) async {
+            let container = PersistenceController.shared.container
+            let result: Result<Void, Error> = await container.performBackgroundTask { context in
+                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                do {
+                    try backup.restore(into: context)
+                    try context.save()
+                    return .success(())
+                } catch {
+                    return .failure(error)
+                }
+            }
+            switch result {
+            case .success:
+                backup.restoreSettings()
+                TabManager.shared.reload()
+                LeaderboardServerStore.shared.reload()
+                showSuccessToast(message: "Backup Restored")
+            case .failure(let error):
+                print("Restoring the backup failed: \(error)")
+                showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
+            }
         }
 
         // swiftlint:disable cyclomatic_complexity function_body_length
@@ -25,7 +82,15 @@ extension SettingsScreen {
             Task {
                 do {
                     let container = PersistenceController.shared.container
-                    
+
+                    // A backup restores everything; other files are journal files
+                    if let backup = try await Task.detached(priority: .userInitiated, operation: {
+                        try JournalBackup.read(data)
+                    }).value {
+                        await importBackup(backup)
+                        return
+                    }
+
                     // Decode off the main thread first; the view model, and so this task, is main-actor isolated
                     let file = try await Task.detached(priority: .userInitiated) {
                         try JSONDecoder().decode(JournalFile.self, from: Self.tryConvertFile(data))
@@ -56,7 +121,7 @@ extension SettingsScreen {
                 } catch {
                     print("Decoding failed: \(error)")
                     await MainActor.run {
-                        self.showErrorToast(message: "Import Failed")
+                        self.showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
                     }
                 }
             }

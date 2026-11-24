@@ -11,7 +11,10 @@ struct SettingsScreen: View {
         SettingsContent(
             isFaceIDAvailable: authenticator.isFaceIDEnabled,
             isExporting: $viewModel.isExporting,
-            journalFile: viewModel.journalFile,
+            exportedFile: viewModel.exportedFile,
+            exportBackup: {
+                viewModel.exportBackup()
+            },
             exportData: {
                 viewModel.exportData()
             },
@@ -40,8 +43,9 @@ struct SettingsContent: View {
     let isFaceIDAvailable: Bool
     @State var isImporting = false
     @Binding var isExporting: Bool
-    let journalFile: JournalFile
+    let exportedFile: ExportedFile
     @EnvironmentObject private var toastViewModel: ToastViewModel
+    let exportBackup: () -> Void
     let exportData: () -> Void
     let importData: (Data) -> Void
     let deleteEverything: () -> Void
@@ -104,12 +108,17 @@ struct SettingsContent: View {
             }
             Section(
                 header: Text("Journal Data"),
-                footer: Text("You can export all your data into a file on your phone and import it again at a later time. This way you can migrate your data to Android or delete the app without losing your data.")
+                footer: Text("A backup holds all your data and settings and restores them exactly, also in later versions of the app. It includes your webhook addresses and leaderboard servers, so keep it private. The JSON export leaves out settings, webhooks and more, and can be imported by the Android app. Importing reads both.")
             ) {
+                Button {
+                    exportBackup()
+                } label: {
+                    Label("Export Backup", systemImage: "externaldrive")
+                }
                 Button {
                     exportData()
                 } label: {
-                    Label("Export Data", systemImage: "arrow.up.doc")
+                    Label("Export JSON", systemImage: "arrow.up.doc")
                 }
                 Button {
                     isShowingImportAlert.toggle()
@@ -127,7 +136,7 @@ struct SettingsContent: View {
                         Button("Cancel", role: .cancel) {}
                     },
                     message: {
-                        Text("Importing will delete all the data currently in the app and replace it with the imported data.")
+                        Text("Importing will delete all the data currently in the app and replace it with the imported data. A backup also replaces your settings.")
                     }
                 )
                 Button {
@@ -198,9 +207,9 @@ struct SettingsContent: View {
         }
         .fileExporter(
             isPresented: $isExporting,
-            document: journalFile,
+            document: exportedFile,
             contentType: .json,
-            defaultFilename: "\(appName) \(Date().ISO8601Format(.iso8601(timeZone: TimeZone.current, dateSeparator: .dash, dateTimeSeparator: .standard, timeSeparator: .omitted)))"
+            defaultFilename: exportedFile.filename
         ) { result in
             if case .success = result {
                 toastViewModel.showSuccessToast(message: "Export Successful")
@@ -240,7 +249,8 @@ struct SettingsContent: View {
         isFaceIDAvailable: true,
         isImporting: false,
         isExporting: .constant(false),
-        journalFile: JournalFile(experiences: [], customSubstances: [], customUnits: []),
+        exportedFile: ExportedFile(),
+        exportBackup: {},
         exportData: {},
         importData: { _ in },
         deleteEverything: {}

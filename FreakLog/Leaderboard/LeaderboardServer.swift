@@ -68,6 +68,12 @@ final class LeaderboardServerStore: ObservableObject {
     load()
   }
 
+  // After the settings were replaced, e.g. by restoring a backup
+  func reload() {
+    servers = []
+    load()
+  }
+
   func add(_ server: LeaderboardServer) {
     servers.append(server)
     save()

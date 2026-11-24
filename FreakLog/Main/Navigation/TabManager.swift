@@ -41,6 +41,11 @@ class TabManager: ObservableObject {
         }
     }
     
+    // After the settings were replaced, e.g. by restoring a backup
+    func reload() {
+        loadState()
+    }
+
     private func loadState() {
         if let string = UserDefaults.standard.string(forKey: storageKey),
            let data = string.data(using: .utf8),
