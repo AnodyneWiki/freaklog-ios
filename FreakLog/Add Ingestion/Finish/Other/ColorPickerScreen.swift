@@ -1,47 +1,131 @@
 import SwiftUI
 
+// Picks a color from the suggested palette, the system color picker or a hex code. Changes apply right away.
 struct ColorPickerScreen: View {
     @Binding var selectedColor: SubstanceColor
-    // Colors already taken by other substances or notes, listed after the unused ones
+    // Colors already taken by other substances or notes, shown apart from the unused ones
     let usedColors: [SubstanceColor]
-    @Environment(\.dismiss) var dismiss
+
+    @State private var hexText = ""
+    @FocusState private var isHexFieldFocused: Bool
 
     var body: some View {
-        let alreadyUsedColors = SubstanceColor.palette.filter(Set(usedColors).contains)
-        let otherColors = SubstanceColor.unused(avoiding: usedColors)
-        List {
-            if !otherColors.isEmpty {
-                Section("Unused Colors") {
-                    ForEach(otherColors) { color in
-                        button(for: color)
+        Form {
+            Section {
+                HStack(spacing: 16) {
+                    ColorSwatch(color: selectedColor, size: 44)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(selectedColor.name.localizedCapitalized)
+                            .font(.headline)
+                        Text(selectedColor.hex)
+                            .font(.subheadline.monospaced())
+                            .foregroundColor(.secondary)
                     }
                 }
+                .accessibilityElement(children: .combine)
+                ColorPicker("Custom Color", selection: systemPickerColor, supportsOpacity: false)
+                LabeledContent("Hex Code") {
+                    TextField("#RRGGBB", text: $hexText)
+                        .font(.body.monospaced())
+                        .multilineTextAlignment(.trailing)
+                        .textInputAutocapitalization(.characters)
+                        .autocorrectionDisabled()
+                        .submitLabel(.done)
+                        .focused($isHexFieldFocused)
+                        .onChange(of: hexText) { text in
+                            if let color = SubstanceColor(hex: text), color != selectedColor {
+                                selectedColor = color
+                            }
+                        }
+                        .onSubmit {
+                            hexText = selectedColor.hex
+                        }
+                }
+            } footer: {
+                Text("Enter six hexadecimal digits, like #0A84FF.")
             }
-            if !alreadyUsedColors.isEmpty {
-                Section("Used Colors") {
-                    ForEach(alreadyUsedColors) { color in
-                        button(for: color)
-                    }
+            let unusedColors = SubstanceColor.unused(avoiding: usedColors)
+            if !unusedColors.isEmpty {
+                Section("Suggested") {
+                    swatchGrid(of: unusedColors)
                 }
             }
-        }.navigationTitle("Choose Color")
-    }
-
-    private func button(for color: SubstanceColor) -> some View {
-        Button {
-            selectedColor = color
-            dismiss()
-        } label: {
-            if selectedColor == color {
-                HStack {
-                    Label(color.name, systemImage: "circle.fill").foregroundColor(color.swiftUIColor)
-                    Spacer()
-                    Image(systemName: "checkmark")
+            let colorsInUse = Array(Set(usedColors)).sorted(by: Self.paletteOrder)
+            if !colorsInUse.isEmpty {
+                Section {
+                    swatchGrid(of: colorsInUse)
+                } header: {
+                    Text("In Use")
+                } footer: {
+                    Text("Already used by other substances or notes.")
                 }
-            } else {
-                Label(color.name, systemImage: "circle.fill").foregroundColor(color.swiftUIColor)
             }
         }
+        .scrollDismissesKeyboard(.interactively)
+        .navigationTitle("Color")
+        .onAppear {
+            hexText = selectedColor.hex
+        }
+        .onChange(of: selectedColor) { color in
+            // Typing a code updates the color; a color chosen elsewhere replaces the code
+            if !isHexFieldFocused || SubstanceColor(hex: hexText) != color {
+                hexText = color.hex
+            }
+        }
+    }
+
+    private var systemPickerColor: Binding<Color> {
+        Binding {
+            selectedColor.swiftUIColor
+        } set: { color in
+            selectedColor = SubstanceColor(color)
+        }
+    }
+
+    private func swatchGrid(of colors: [SubstanceColor]) -> some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 8)], spacing: 8) {
+            ForEach(colors) { color in
+                Button {
+                    isHexFieldFocused = false
+                    selectedColor = color
+                } label: {
+                    ColorSwatch(color: color, size: 32, isSelected: color == selectedColor)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(color.name)
+                .accessibilityAddTraits(color == selectedColor ? .isSelected : [])
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    // Palette colors in palette order, then other codes by code
+    private static func paletteOrder(_ lhs: SubstanceColor, _ rhs: SubstanceColor) -> Bool {
+        let lhsIndex = SubstanceColor.palette.firstIndex(of: lhs) ?? Int.max
+        let rhsIndex = SubstanceColor.palette.firstIndex(of: rhs) ?? Int.max
+        return lhsIndex == rhsIndex ? lhs.hex < rhs.hex : lhsIndex < rhsIndex
+    }
+}
+
+// A filled circle with a hairline edge, so light colors stay visible, and a ring when selected
+struct ColorSwatch: View {
+    let color: SubstanceColor
+    let size: Double
+    var isSelected = false
+
+    var body: some View {
+        Circle()
+            .fill(color.swiftUIColor)
+            .overlay(Circle().strokeBorder(Color.primary.opacity(0.15), lineWidth: 0.5))
+            .frame(width: size, height: size)
+            .padding(isSelected ? 3 : 0)
+            .overlay {
+                if isSelected {
+                    Circle().strokeBorder(Color.primary, lineWidth: 2)
+                }
+            }
     }
 }
 

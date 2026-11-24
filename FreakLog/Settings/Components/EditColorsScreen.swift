@@ -27,13 +27,7 @@ struct EditColorsScreen: View {
         }
         .sheet(item: $companionToEdit, content: { companion in
             NavigationStack {
-                ColorPickerScreen(
-                    selectedColor: Binding(get: { companion.color }, set: { color in
-                        companion.colorAsText = color.rawValue
-                        PersistenceController.shared.saveViewContext()
-                    }),
-                    usedColors: substanceCompanions.map(\.color)
-                )
+                EditCompanionColorScreen(companion: companion, usedColors: substanceCompanions.map(\.color))
             }
         })
         .navigationTitle("Edit Colors")
@@ -45,6 +39,39 @@ struct EditColorsScreen: View {
                 PersistenceController.shared.saveViewContext()
             }
         }
+    }
+}
+
+// Saves the color only with Done, as the system color picker changes it continuously while dragging
+private struct EditCompanionColorScreen: View {
+    let companion: SubstanceCompanion
+    let usedColors: [SubstanceColor]
+
+    @State private var color: SubstanceColor
+    @Environment(\.dismiss) private var dismiss
+
+    init(companion: SubstanceCompanion, usedColors: [SubstanceColor]) {
+        self.companion = companion
+        self.usedColors = usedColors
+        _color = State(initialValue: companion.color)
+    }
+
+    var body: some View {
+        ColorPickerScreen(selectedColor: $color, usedColors: usedColors)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    DoneButton {
+                        companion.colorAsText = color.rawValue
+                        PersistenceController.shared.saveViewContext()
+                        dismiss()
+                    }
+                }
+            }
     }
 }
 
