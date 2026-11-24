@@ -7,6 +7,10 @@ struct JournalSettingsScreen: View {
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
+    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
+    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
+    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
 
     var body: some View {
         List {
@@ -44,6 +48,7 @@ struct JournalSettingsScreen: View {
             Section {
                 Toggle("Draw redoses individually", isOn: $areRedosesDrawnIndividually)
                 Toggle("Independent substance heights", isOn: $areSubstanceHeightsIndependent)
+                Toggle("Dosage dots", isOn: $isHidingDosageDots.inverted)
             } header: {
                 Text("Timeline")
             } footer: {
@@ -52,6 +57,15 @@ struct JournalSettingsScreen: View {
                         + "Independent heights scale each substance to its own maximum "
                         + "instead of comparing heights across substances."
                 )
+            }
+            .tint(.accentColor)
+
+            Section("Experience") {
+                Toggle("Tolerance chart", isOn: $isHidingToleranceChartInExperience.inverted)
+                Toggle("Substance info", isOn: $isHidingSubstanceInfoInExperience.inverted)
+                if LiveActivities.areAvailable {
+                    Toggle("Automatic live activities", isOn: $shouldAutomaticallyStartLiveActivity)
+                }
             }
             .tint(.accentColor)
         }

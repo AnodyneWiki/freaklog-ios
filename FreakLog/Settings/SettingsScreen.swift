@@ -33,12 +33,8 @@ struct SettingsScreen: View {
 
 struct SettingsContent: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
-    @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
-    @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(PersistenceController.hasToUnlockAppKey) var hasToUnlockApp: Bool = false
     @AppStorage(PersistenceController.lockTimeOptionKey) var lockTimeOption: LockTimeOption = .after5Minutes
-    @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
     // PersistenceController reads this with bool(forKey:), so unset means off
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
@@ -104,14 +100,6 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.tabSettings) {
                         Label("Customize Tabs", systemImage: "rectangle.stack")
                     }
-                    Group {
-                        Toggle("Dosage dots", isOn: $isHidingDosageDots.inverted)
-                        Toggle("Tolerance chart", isOn: $isHidingToleranceChartInExperience.inverted)
-                        Toggle("Substance info", isOn: $isHidingSubstanceInfoInExperience.inverted)
-                        if LiveActivities.areAvailable {
-                            Toggle("Automatic live activities", isOn: $shouldAutomaticallyStartLiveActivity)
-                        }
-                    }.tint(.accentColor)
                 }
             }
             Section(
