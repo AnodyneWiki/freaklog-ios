@@ -112,30 +112,20 @@ struct JournalScreen: View {
                 }
             }
 
-            ToolbarItem(placement: .navigationBarLeading) {
+            ToolbarItemGroup(placement: .navigationBarLeading) {
                 Button {
                     isSearchPresented = true
                 } label: {
                     Label("Search", systemImage: "magnifyingglass")
                 }
+                favoriteButton
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                moreMenu
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                timeDisplayMenu
+                NavigationLink(value: GlobalNavigationDestination.calendar) {
+                    Label("Calendar", systemImage: "calendar")
+                }
             }
-        }
-    }
-
-    private var moreMenu: some View {
-        Menu {
-            Button {
-                Navigator.shared.openInCurrentTab(.calendar)
-            } label: {
-                Label("Calendar", systemImage: "calendar")
-            }
-            favoriteButton
-            timeDisplayMenu
-        } label: {
-            Label("More", systemImage: "ellipsis.circle")
         }
     }
 
