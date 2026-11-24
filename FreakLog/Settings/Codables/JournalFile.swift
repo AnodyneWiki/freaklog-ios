@@ -58,7 +58,7 @@ struct JournalFile: FileDocument, Codable {
                     if let companion = companions[substanceName] {
                         return companion
                     }
-                    let color = SubstanceColor.palette.randomElement() ?? .red
+                    let color = SubstanceColor.suggested(avoiding: companions.values.map(\.color))
                     let companion = CompanionCodable(substanceName: substanceName, color: color).insert(into: context)
                     companions[substanceName] = companion
                     return companion

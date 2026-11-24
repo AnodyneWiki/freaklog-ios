@@ -45,9 +45,7 @@ struct AddTimedNoteScreen: View {
             let experience = targetExperience(at: time)
             isPartOfTimeline = experience?.isCurrent ?? true
             usedColors = experience?.timedNotesForTimeline.map(\.color) ?? []
-            if let otherColor = SubstanceColor.unused(avoiding: usedColors).randomElement() {
-                color = otherColor
-            }
+            color = SubstanceColor.suggested(avoiding: usedColors)
         }
     }
 

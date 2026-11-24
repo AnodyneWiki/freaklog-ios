@@ -47,9 +47,33 @@ final class SubstanceColorTests: XCTestCase {
     XCTAssertEqual(SubstanceColor(Color(.sRGB, red: 0, green: 0, blue: 0)).hex, "#000000")
   }
 
-  func testSuggestsUnusedPaletteColorsFirst() {
-    XCTAssertEqual(SubstanceColor.suggested(avoiding: [.blue]), .brown)
-    XCTAssertFalse(SubstanceColor.unused(avoiding: [.blue, .red]).contains(.red))
+  func testSuggestionsStayApartFromTheColorsInUse() throws {
+    let used: [SubstanceColor] = [.blue, .red, .green, .orange, .purple, .yellow, .pink, .teal]
+    let suggestions = SubstanceColor.distinctColors(from: used, count: 12)
+    XCTAssertEqual(suggestions.count, 12)
+    XCTAssertEqual(Set(suggestions).count, 12)
+    XCTAssertTrue(Set(suggestions).isDisjoint(with: used))
+    // Each suggestion is at least as far from the others as a much later one would be
+    let minimumDistance = { (color: SubstanceColor, others: [SubstanceColor]) in
+      others.map { color.distance(to: $0) }.min() ?? .infinity
+    }
+    for (index, suggestion) in suggestions.enumerated() {
+      XCTAssertGreaterThan(minimumDistance(suggestion, used + suggestions[..<index]), 0.05, suggestion.hex)
+    }
+    XCTAssertEqual(SubstanceColor.distinctColors(from: used, count: 12), suggestions)
+  }
+
+  func testSuggestionsAvoidAColorCloseToOneInUse() {
+    let suggestion = SubstanceColor.suggested(avoiding: [.blue])
+    XCTAssertGreaterThan(suggestion.distance(to: .blue), 0.2)
+    let first = SubstanceColor.suggested(avoiding: [])
+    XCTAssertNotEqual(SubstanceColor.suggested(avoiding: [first]), first)
+  }
+
+  func testSuggestsEvenWithManyColorsInUse() {
+    let suggestions = SubstanceColor.distinctColors(from: SubstanceColor.palette, count: 30)
+    XCTAssertEqual(Set(suggestions).count, 30)
+    XCTAssertTrue(Set(suggestions).isDisjoint(with: SubstanceColor.palette))
   }
 
   func testMigrationStoresHexCodes() throws {

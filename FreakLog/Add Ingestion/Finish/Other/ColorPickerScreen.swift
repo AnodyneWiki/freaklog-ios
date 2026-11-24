@@ -1,12 +1,14 @@
 import SwiftUI
 
-// Picks a color from the suggested palette, the system color picker or a hex code. Changes apply right away.
+// Picks a suggested color, one from the system color picker or a hex code. Changes apply right away.
 struct ColorPickerScreen: View {
     @Binding var selectedColor: SubstanceColor
     // Colors already taken by other substances or notes, shown apart from the unused ones
     let usedColors: [SubstanceColor]
 
     @State private var hexText = ""
+    // Made once, so a suggestion stays in place after choosing it
+    @State private var suggestedColors: [SubstanceColor] = []
     @FocusState private var isHexFieldFocused: Bool
 
     var body: some View {
@@ -44,10 +46,13 @@ struct ColorPickerScreen: View {
             } footer: {
                 Text("Enter six hexadecimal digits, like #0A84FF.")
             }
-            let unusedColors = SubstanceColor.unused(avoiding: usedColors)
-            if !unusedColors.isEmpty {
-                Section("Suggested") {
-                    swatchGrid(of: unusedColors)
+            if !suggestedColors.isEmpty {
+                Section {
+                    swatchGrid(of: suggestedColors)
+                } header: {
+                    Text("Suggested")
+                } footer: {
+                    Text("Easy to tell apart from the colors in use.")
                 }
             }
             let colorsInUse = Array(Set(usedColors)).sorted(by: Self.paletteOrder)
@@ -65,6 +70,9 @@ struct ColorPickerScreen: View {
         .navigationTitle("Color")
         .onAppear {
             hexText = selectedColor.hex
+            if suggestedColors.isEmpty {
+                suggestedColors = SubstanceColor.distinctColors(from: usedColors, count: Self.numberOfSuggestions)
+            }
         }
         .onChange(of: selectedColor) { color in
             // Typing a code updates the color; a color chosen elsewhere replaces the code
@@ -100,6 +108,8 @@ struct ColorPickerScreen: View {
         }
         .padding(.vertical, 4)
     }
+
+    private static let numberOfSuggestions = 12
 
     // Palette colors in palette order, then other codes by code
     private static func paletteOrder(_ lhs: SubstanceColor, _ rhs: SubstanceColor) -> Bool {

@@ -79,21 +79,15 @@ struct SubstanceColor: Hashable, Identifiable, Sendable {
         PaletteColor.byHex[hex]
     }
 
-    // The colors suggested for something new, the basic system colors first
+    // The named colors of earlier versions
     static let palette = PaletteColor.allCases.map(SubstanceColor.init)
 
     // Shown for a substance that has no color assigned
     static let fallback = SubstanceColor.purple
 
-    // Palette colors not in `used`, in palette order
-    static func unused(avoiding used: some Sequence<SubstanceColor>) -> [SubstanceColor] {
-        let used = Set(used)
-        return palette.filter { !used.contains($0) }
-    }
-
-    // A color for something new: the first unused one, preferred colors first
+    // A color for something new, as different as possible from the ones in use
     static func suggested(avoiding used: some Sequence<SubstanceColor>) -> SubstanceColor {
-        unused(avoiding: used).first ?? palette.randomElement() ?? .blue
+        distinctColors(from: used, count: 1).first ?? .blue
     }
 
     static let blue = SubstanceColor(PaletteColor.blue)
@@ -165,6 +159,124 @@ extension SubstanceColor: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.singleValueContainer()
         try container.encode(hex)
+    }
+}
+
+// MARK: Suggestions
+
+extension SubstanceColor {
+    // Colors that are told apart easily from `used` and from each other, made on demand. Each one is the candidate
+    // farthest from every color taken so far, measured in OKLab, where distances follow how different colors look.
+    // The same colors in use give the same suggestions.
+    static func distinctColors(from used: some Sequence<SubstanceColor>, count: Int) -> [SubstanceColor] {
+        let candidates = SuggestionCandidate.all
+        // The distance from each candidate to the closest color taken so far
+        var distances = candidates.map { _ in Double.infinity }
+        func take(_ lab: OKLab) {
+            for index in candidates.indices {
+                distances[index] = min(distances[index], candidates[index].lab.distance(to: lab))
+            }
+        }
+        used.forEach { take($0.oklab) }
+        var result: [SubstanceColor] = []
+        for _ in 0 ..< count {
+            // The first of equally far candidates, so suggestions start with the first candidate's hue
+            guard let best = distances.indices.max(by: { distances[$0] < distances[$1] }) else { break }
+            result.append(candidates[best].color)
+            take(candidates[best].lab)
+        }
+        return result
+    }
+
+    // How different two colors look: 0 for the same, about 0.4 between blue and red
+    func distance(to other: SubstanceColor) -> Double {
+        oklab.distance(to: other.oklab)
+    }
+
+    fileprivate var oklab: OKLab {
+        let value = Int(hex.dropFirst(), radix: 16) ?? 0
+        return OKLab(
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255)
+    }
+}
+
+// A color that can be suggested: vivid hues at a few mid lightness levels, which read on light and dark backgrounds
+private struct SuggestionCandidate {
+    let color: SubstanceColor
+    let lab: OKLab
+
+    static let all: [SuggestionCandidate] = {
+        let lightnesses = [0.68, 0.6, 0.76]
+        // Starting at blue, the first suggestion when nothing is in use
+        let hues = (0 ..< 60).map { (250 + Double($0) * 6).truncatingRemainder(dividingBy: 360) }
+        return lightnesses.flatMap { lightness in
+            hues.map { hue in
+                let color = OKLab.inGamut(lightness: lightness, chroma: 0.16, hue: hue)
+                return SuggestionCandidate(color: color, lab: color.oklab)
+            }
+        }
+    }()
+}
+
+// The OKLab color space (https://bottosson.github.io/posts/oklab/), from and to sRGB
+private struct OKLab {
+    let lightness: Double
+    let a: Double
+    let b: Double
+
+    init(red: Double, green: Double, blue: Double) {
+        func linear(_ value: Double) -> Double {
+            value <= 0.04045 ? value / 12.92 : pow((value + 0.055) / 1.055, 2.4)
+        }
+        let (red, green, blue) = (linear(red), linear(green), linear(blue))
+        let l = cbrt(0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue)
+        let m = cbrt(0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue)
+        let s = cbrt(0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue)
+        lightness = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+        a = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+        b = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    }
+
+    func distance(to other: OKLab) -> Double {
+        let dl = lightness - other.lightness
+        let da = a - other.a
+        let db = b - other.b
+        return (dl * dl + da * da + db * db).squareRoot()
+    }
+
+    // The color of the lightness and hue (in degrees) with at most the given chroma that sRGB can show
+    static func inGamut(lightness: Double, chroma: Double, hue: Double) -> SubstanceColor {
+        var chroma = chroma
+        while true {
+            if let rgb = sRGB(lightness: lightness, chroma: chroma, hue: hue) {
+                let component = { (value: Double) in Int((value * 255).rounded()) }
+                return SubstanceColor(hex: String(format: "%02X%02X%02X", component(rgb.0), component(rgb.1), component(rgb.2)))
+                    ?? .fallback
+            }
+            chroma -= 0.005
+        }
+    }
+
+    private static func sRGB(lightness: Double, chroma: Double, hue: Double) -> (Double, Double, Double)? {
+        let radians = hue * .pi / 180
+        let a = chroma * cos(radians)
+        let b = chroma * sin(radians)
+        let l = pow(lightness + 0.3963377774 * a + 0.2158037573 * b, 3)
+        let m = pow(lightness - 0.1055613458 * a - 0.0638541728 * b, 3)
+        let s = pow(lightness - 0.0894841775 * a - 1.2914855480 * b, 3)
+        let linear = [
+            4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+            -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+            -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s,
+        ]
+        guard linear.allSatisfy({ (-0.0001 ... 1.0001).contains($0) }) else { return nil }
+        let encoded = linear.map { value in
+            let value = min(max(value, 0), 1)
+            return value <= 0.0031308 ? 12.92 * value : 1.055 * pow(value, 1 / 2.4) - 0.055
+        }
+        return (encoded[0], encoded[1], encoded[2])
     }
 }
 
