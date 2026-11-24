@@ -92,6 +92,7 @@ struct AssistantProviderScreen: View {
     let preset: AssistantPreset = OnDeviceModel.unavailableReason == nil ? .onDevice : .anthropic
     let profile = existing ?? AssistantProfile(preset: preset)
     _profile = State(initialValue: profile)
+    originalURL = existing.flatMap { URL(string: $0.baseURL) }
     isNew = existing == nil
     _hasSavedKey = State(initialValue: existing.map { AssistantKeychain.hasKey(for: $0.id) } ?? false)
     _maxOutputTokensText = State(initialValue: profile.maxOutputTokens.map(String.init) ?? "")
@@ -138,13 +139,36 @@ struct AssistantProviderScreen: View {
           .disabled(problem != nil)
       }
     }
+    .alert("Provider Settings", isPresented: Binding(get: { storageError != nil }, set: { if !$0 { storageError = nil } })) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text(storageError ?? "")
+    }
+    .onChange(of: profile.baseURL) { [oldURL = profile.baseURL] url in
+      if !AssistantHTTP.sameOrigin(URL(string: oldURL), URL(string: url)) {
+        apiKey = ""
+        profile.recentModels = nil
+      }
+      models = []
+      modelsError = nil
+      testResult = nil
+    }
+    .onChange(of: profile) { _ in clearConnectionTest() }
+    .onChange(of: apiKey) { _ in clearConnectionTest() }
+    .onChange(of: isRemovingSavedKey) { _ in clearConnectionTest() }
+    .onChange(of: maxOutputTokensText) { _ in clearConnectionTest() }
+    .onDisappear { clearConnectionTest() }
     .onChange(of: profile.preset) { [oldPreset = profile.preset] preset in
       apply(preset, replacing: oldPreset)
     }
     .confirmationDialog("Delete \(profile.name)?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
       Button("Delete", role: .destructive) {
-        AssistantProfileStore.delete(profile.id)
-        dismiss()
+        do {
+          try AssistantProfileStore.delete(profile.id)
+          dismiss()
+        } catch {
+          storageError = error.localizedDescription
+        }
       }
       Button("Cancel", role: .cancel) { }
     } message: {
@@ -168,10 +192,17 @@ struct AssistantProviderScreen: View {
   @State private var models: [String] = []
   @State private var isFetchingModels = false
   @State private var modelsError: String?
+  @State private var connectionTest: Task<Void, Never>?
   @State private var testResult: TestResult?
   @State private var isConfirmingDelete = false
 
+  @State private var storageError: String?
+  private let originalURL: URL?
   private let isNew: Bool
+
+  private var canUseSavedKey: Bool {
+    hasSavedKey && !isRemovingSavedKey && AssistantHTTP.sameOrigin(originalURL, URL(string: profile.baseURL))
+  }
 
   private var isOnDevice: Bool {
     profile.standard == .onDevice
@@ -183,7 +214,7 @@ struct AssistantProviderScreen: View {
     if !typed.isEmpty {
       return typed
     }
-    return hasSavedKey && !isRemovingSavedKey ? AssistantKeychain.key(for: profile.id) : ""
+    return canUseSavedKey ? AssistantKeychain.key(for: profile.id) : ""
   }
 
   private var maxOutputTokens: Int? {
@@ -232,10 +263,10 @@ struct AssistantProviderScreen: View {
       Text("The address the API's paths are added to, usually ending in /v1.")
     }
     Section {
-      SecureField(hasSavedKey && !isRemovingSavedKey ? "Saved, leave empty to keep it" : "API Key", text: $apiKey)
+      SecureField(canUseSavedKey ? "Saved, leave empty to keep it" : "API Key", text: $apiKey)
         .textInputAutocapitalization(.never)
         .autocorrectionDisabled()
-      if hasSavedKey, !isRemovingSavedKey {
+      if canUseSavedKey {
         Button("Remove Saved Key", role: .destructive) {
           isRemovingSavedKey = true
           apiKey = ""
@@ -324,6 +355,7 @@ struct AssistantProviderScreen: View {
     profile.standard = preset.standard
     profile.baseURL = preset.baseURL
     profile.model = preset.suggestedModel
+    profile.recentModels = nil
     if preset.standard == .anthropicMessages, maxOutputTokens == nil {
       maxOutputTokensText = String(AnthropicMessagesClient.defaultMaxOutputTokens)
     }
@@ -334,21 +366,32 @@ struct AssistantProviderScreen: View {
 
   private func fetchModels() {
     guard let client = profile.client(apiKey: effectiveAPIKey) else { return }
+    let address = profile.baseURL
+    let standard = profile.standard
     isFetchingModels = true
     modelsError = nil
     Task {
+      defer { isFetchingModels = false }
       do {
-        models = try await client.models()
+        let fetched = try await client.models()
+        guard address == profile.baseURL, standard == profile.standard else { return }
+        models = fetched.uniqued()
         if models.isEmpty {
           modelsError = "The server lists no models."
         } else if profile.model.isEmpty, let first = models.first {
           profile.model = first
         }
       } catch {
+        guard address == profile.baseURL, standard == profile.standard else { return }
         modelsError = error.localizedDescription
       }
-      isFetchingModels = false
     }
+  }
+
+  private func clearConnectionTest() {
+    connectionTest?.cancel()
+    connectionTest = nil
+    testResult = nil
   }
 
   private func test() {
@@ -360,11 +403,13 @@ struct AssistantProviderScreen: View {
       messages: [.user("Reply with the single word OK.")],
       tools: [],
       maxOutputTokens: maxOutputTokens)
-    Task {
+    connectionTest = Task {
       do {
         let answer = try await client.complete(request).trimmingCharacters(in: .whitespacesAndNewlines)
-        testResult = .succeeded(answer.isEmpty ? "(an empty answer)" : answer)
+        guard !Task.isCancelled else { return }
+        testResult = answer.isEmpty ? .failed("The model returned an empty answer.") : .succeeded(answer)
       } catch {
+        guard !Task.isCancelled else { return }
         testResult = .failed(error.localizedDescription)
       }
     }
@@ -376,12 +421,17 @@ struct AssistantProviderScreen: View {
     profile.model = profile.model.trimmingCharacters(in: .whitespaces)
     profile.maxOutputTokens = isOnDevice ? nil : maxOutputTokens
     let typedKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-    let key: String? = if isOnDevice || isRemovingSavedKey && typedKey.isEmpty {
+    let key: String? = if isOnDevice || hasSavedKey && !canUseSavedKey && typedKey.isEmpty {
       isNew ? nil : ""
     } else {
       typedKey.isEmpty ? nil : typedKey
     }
-    AssistantProfileStore.save(profile, apiKey: key)
-    dismiss()
+    do {
+      if let key { try AssistantKeychain.setKey(key, for: profile.id) }
+      AssistantProfileStore.save(profile)
+      dismiss()
+    } catch {
+      storageError = error.localizedDescription
+    }
   }
 }

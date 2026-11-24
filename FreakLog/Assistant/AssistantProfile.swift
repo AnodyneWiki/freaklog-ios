@@ -128,6 +128,28 @@ struct AssistantProfile: Codable, Hashable, Identifiable {
   var model: String
   // Nil leaves the limit to the provider, except for the Anthropic API, which needs one
   var maxOutputTokens: Int?
+  // Models chosen before, newest first, offered first in the chat's model menu
+  var recentModels: [String]?
+
+  static let maxRecentModels = 5
+
+  // The model, and the models chosen before it, for the chat's model menu
+  var quickModels: [String] {
+    ([model] + (recentModels ?? [])).filter { !$0.isEmpty }.uniqued()
+  }
+
+  // Makes the model the profile's, remembering the one before
+  mutating func choose(model newModel: String) {
+    guard newModel != model else { return }
+    recentModels = Array(([model] + (recentModels ?? [])).filter { !$0.isEmpty && $0 != newModel }.uniqued()
+      .prefix(Self.maxRecentModels))
+    model = newModel
+  }
+
+  // What the chat's title shows
+  var modelName: String {
+    standard == .onDevice ? "On-Device Model" : model
+  }
 
   // What the provider's row and the chat show, e.g. "claude-opus-5-5 · Anthropic Messages"
   var caption: String {
@@ -179,9 +201,7 @@ enum AssistantProfileStore {
     UserDefaults.standard.set(id.uuidString, forKey: PersistenceController.assistantActiveProfileKey)
   }
 
-  // Inserts or replaces the profile. A nil key keeps the saved one, an empty key removes it. The first profile
-  // saved becomes the active one.
-  static func save(_ profile: AssistantProfile, apiKey: String?) {
+  static func save(_ profile: AssistantProfile) {
     var profiles = profiles
     if let index = profiles.firstIndex(where: { $0.id == profile.id }) {
       profiles[index] = profile
@@ -189,18 +209,15 @@ enum AssistantProfileStore {
       profiles.append(profile)
     }
     write(profiles)
-    if let apiKey {
-      AssistantKeychain.setKey(apiKey.trimmingCharacters(in: .whitespacesAndNewlines), for: profile.id)
-    }
     if activeProfile == nil || profiles.count == 1 {
       setActive(profile.id)
     }
   }
 
-  static func delete(_ id: UUID) {
+  static func delete(_ id: UUID) throws {
+    try AssistantKeychain.setKey("", for: id)
     let remaining = profiles.filter { $0.id != id }
     write(remaining)
-    AssistantKeychain.setKey("", for: id)
     if UserDefaults.standard.string(forKey: PersistenceController.assistantActiveProfileKey) == id.uuidString {
       if let first = remaining.first {
         setActive(first.id)
@@ -235,14 +252,26 @@ enum AssistantKeychain {
   }
 
   // An empty key removes the saved one
-  static func setKey(_ key: String, for id: UUID) {
-    SecItemDelete(query(for: id) as CFDictionary)
-    guard !key.isEmpty else { return }
-    var item = query(for: id)
-    item[kSecValueData as String] = Data(key.utf8)
-    item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
-    item[kSecAttrSynchronizable as String] = false
-    SecItemAdd(item as CFDictionary, nil)
+  static func setKey(_ key: String, for id: UUID) throws {
+    let query = query(for: id)
+    let status: OSStatus
+    if key.isEmpty {
+      status = SecItemDelete(query as CFDictionary)
+      if status == errSecItemNotFound { return }
+    } else {
+      let attributes = [kSecValueData as String: Data(key.utf8)]
+      let updated = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+      if updated == errSecItemNotFound {
+        var item = query.merging(attributes) { _, value in value }
+        item[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+        status = SecItemAdd(item as CFDictionary, nil)
+      } else {
+        status = updated
+      }
+    }
+    guard status == errSecSuccess else {
+      throw AssistantError("The keychain could not update this provider’s API key (\(status)).")
+    }
   }
 
   private static let service = "FreakLog Assistant API Key"
