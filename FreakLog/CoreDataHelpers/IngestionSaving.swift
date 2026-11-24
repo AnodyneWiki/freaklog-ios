@@ -6,14 +6,22 @@ import CoreData
 @MainActor
 enum IngestionSaving {
     static func save(_ ingestion: Ingestion, sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) throws {
-        let isNew = ingestion.isInserted
+        try save([ingestion], sendingWebhooksTo: presetObjectIDs)
+    }
+
+    // Several ingestions logged together, like the substances of a formulation, are saved at once
+    // and each gets its own webhook message
+    static func save(_ ingestions: [Ingestion], sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) throws {
+        let newIngestions = ingestions.filter(\.isInserted)
         try PersistenceController.shared.viewContext.save()
-        if isNew {
-            if !presetObjectIDs.isEmpty {
-                WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
+        for ingestion in ingestions {
+            if newIngestions.contains(ingestion) {
+                if !presetObjectIDs.isEmpty {
+                    WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
+                }
+            } else {
+                WebhookManager.shared.editWebhookMessages(for: ingestion)
             }
-        } else {
-            WebhookManager.shared.editWebhookMessages(for: ingestion)
         }
         Task {
             await LeaderboardSyncManager.shared.syncAll()

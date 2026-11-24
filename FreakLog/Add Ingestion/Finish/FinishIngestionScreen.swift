@@ -14,14 +14,25 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    let arguments: FinishIngestionScreenArguments
+    // Logged together with the same time, experience, consumer, location and note,
+    // like the substances of a formulation
+    let ingestions: [FinishIngestionScreenArguments]
     let dismiss: () -> Void
+
+    init(arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void) {
+        self.init(ingestions: [arguments], dismiss: dismiss)
+    }
+
+    init(ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void) {
+        self.ingestions = ingestions
+        self.dismiss = dismiss
+    }
 
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
     @State private var sheetToShow: SheetOption?
-    @State private var selectedColor = SubstanceColor.allCases.randomElement() ?? SubstanceColor.blue
+    @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedEndTime = Date().addingTimeInterval(30*60)
@@ -30,7 +41,7 @@ struct FinishIngestionScreen: View {
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
     @State private var usedColors = [SubstanceColor]()
-    @State private var foundCompanion: SubstanceCompanion?
+    @State private var foundCompanions: [String: SubstanceCompanion] = [:]
 
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var selectedExperience: Experience?
@@ -85,7 +96,9 @@ struct FinishIngestionScreen: View {
                     experiences: experiencesWithinLargerRange
                 )
                 ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
-                AdministrationSitePicker(route: arguments.administrationRoute, selection: $siteSelection)
+                if let sharedRoute {
+                    AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
+                }
                 LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
             }
             .listRowSeparator(.hidden)
@@ -116,15 +129,18 @@ struct FinishIngestionScreen: View {
                 }
             }
             Section {
-                NavigationLink {
-                    ColorPickerScreen(
-                        selectedColor: $selectedColor,
-                        usedColors: usedColors)
-                } label: {
-                    HStack {
-                        Text("\(PersistenceController.shared.displayName(for: arguments.substanceName)) Color")
-                        Spacer()
-                        Image(systemName: "circle.fill").foregroundColor(selectedColor.swiftUIColor)
+                ForEach(substanceNames, id: \.self) { substanceName in
+                    let selectedColor = colorBinding(for: substanceName)
+                    NavigationLink {
+                        ColorPickerScreen(
+                            selectedColor: selectedColor,
+                            usedColors: usedColors)
+                    } label: {
+                        HStack {
+                            Text("\(PersistenceController.shared.displayName(for: substanceName)) Color")
+                            Spacer()
+                            Image(systemName: "circle.fill").foregroundColor(selectedColor.wrappedValue.swiftUIColor)
+                        }
                     }
                 }
             }
@@ -204,22 +220,36 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    func initializeColorCompanionAndNote() {
-        let companions = PersistenceController.shared.getSubstanceCompanions()
-        usedColors = companions.map(\.color)
-        let companionMatch = companions.first { comp in
-            comp.substanceNameUnwrapped == arguments.substanceName
-        }
-        if let companionMatchUnwrap = companionMatch {
-            foundCompanion = companionMatchUnwrap
-            selectedColor = companionMatchUnwrap.color
-        } else {
-            selectedColor = SubstanceColor.suggested(avoiding: usedColors)
+    private var substanceNames: [String] {
+        ingestions.map(\.substanceName).uniqued()
+    }
+
+    // The administration site is only asked for when every ingestion takes the same route
+    private var sharedRoute: AdministrationRoute? {
+        let routes = Set(ingestions.map(\.administrationRoute))
+        return routes.count == 1 ? routes.first : nil
+    }
+
+    private func colorBinding(for substanceName: String) -> Binding<SubstanceColor> {
+        Binding {
+            selectedColors[substanceName] ?? .fallback
+        } set: { color in
+            selectedColors[substanceName] = color
         }
     }
 
-    private func siteString() -> String {
-        siteSelection.siteString(for: arguments.administrationRoute)
+    func initializeColorCompanionAndNote() {
+        let companions = PersistenceController.shared.getSubstanceCompanions()
+        usedColors = companions.map(\.color)
+        for substanceName in substanceNames {
+            if let companion = companions.first(where: { $0.substanceNameUnwrapped == substanceName }) {
+                foundCompanions[substanceName] = companion
+                selectedColors[substanceName] = companion.color
+            } else {
+                // New substances logged together get different colors too
+                selectedColors[substanceName] = SubstanceColor.suggested(avoiding: usedColors + selectedColors.values)
+            }
+        }
     }
 
     func addIngestionWithExperience() throws {
@@ -227,8 +257,18 @@ struct FinishIngestionScreen: View {
         let selectedLocationValue = locationManager.selectedLocation
         let isNewExperience = selectedExperience == nil
         let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
-        let ingestion = createIngestionWithCompanion(with: experience, location: selectedLocationValue, and: context)
-        try IngestionSaving.save(ingestion, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
+        let companions = Dictionary(uniqueKeysWithValues: substanceNames.map { substanceName in
+            (substanceName, createOrUpdateCompanion(for: substanceName, with: context))
+        })
+        let newIngestions = ingestions.map { arguments in
+            createIngestion(
+                from: arguments,
+                companion: companions[arguments.substanceName],
+                with: experience,
+                location: selectedLocationValue,
+                and: context)
+        }
+        try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
         startLiveActivityIfWanted(for: experience, isNewExperience: isNewExperience)
     }
 
@@ -247,20 +287,22 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    private func createOrUpdateCompanion(with context: NSManagedObjectContext) -> SubstanceCompanion {
-        if let foundCompanion {
-            foundCompanion.colorAsText = selectedColor.rawValue
+    private func createOrUpdateCompanion(for substanceName: String, with context: NSManagedObjectContext) -> SubstanceCompanion {
+        let color = colorBinding(for: substanceName).wrappedValue
+        if let foundCompanion = foundCompanions[substanceName] {
+            foundCompanion.colorAsText = color.rawValue
             return foundCompanion
         } else {
             let companion = SubstanceCompanion(context: context)
-            companion.substanceName = arguments.substanceName
-            companion.colorAsText = selectedColor.rawValue
+            companion.substanceName = substanceName
+            companion.colorAsText = color.rawValue
             return companion
         }
     }
 
-    @discardableResult
-    private func createIngestionWithCompanion(
+    private func createIngestion(
+        from arguments: FinishIngestionScreenArguments,
+        companion: SubstanceCompanion?,
         with experience: Experience,
         location: Location?,
         and context: NSManagedObjectContext) -> Ingestion
@@ -282,14 +324,13 @@ struct FinishIngestionScreen: View {
         ingestion.note = enteredNote
         ingestion.administrationRoute = arguments.administrationRoute.rawValue
         ingestion.substanceName = arguments.substanceName
-        ingestion.color = selectedColor.rawValue
+        ingestion.color = colorBinding(for: arguments.substanceName).wrappedValue.rawValue
         ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
-        let site = siteString()
+        let site = siteSelection.siteString(for: arguments.administrationRoute)
         ingestion.administrationSite = site.isEmpty ? nil : site
         ingestion.webhookMessageId = nil
         ingestion.experience = experience
         ingestion.setLocation(location)
-        let companion = createOrUpdateCompanion(with: context)
         ingestion.substanceCompanion = companion
         return ingestion
     }
