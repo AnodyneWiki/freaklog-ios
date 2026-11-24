@@ -114,14 +114,21 @@ struct JournalScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 8) {
+                    // The assistant shares a menu with the time display, so the bar keeps two buttons a side
                     if isAssistantEnabled {
-                        Button {
-                            isShowingAssistant = true
+                        Menu {
+                            Button {
+                                isShowingAssistant = true
+                            } label: {
+                                Label("Assistant", systemImage: "bubble.left.and.bubble.right")
+                            }
+                            timeDisplayMenu
                         } label: {
-                            Label("Assistant", systemImage: "bubble.left.and.bubble.right")
+                            Label("More", systemImage: "ellipsis.circle")
                         }
+                    } else {
+                        timeDisplayMenu
                     }
-                    timeDisplayMenu
                     calendarLink
                 }
             }

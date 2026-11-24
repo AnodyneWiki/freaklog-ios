@@ -10,24 +10,49 @@ struct ExperienceToolbarContent: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
-    var body: some View {
-        Group {
-            Menu {
-                ForEach(SaveableTimeDisplayStyle.allCases) { option in
-                    Button {
-                        withAnimation {
-                            saveableTimeDisplayStyle = option
-                        }
-                    } label: {
-                        if saveableTimeDisplayStyle == option {
-                            Label(option.text, systemImage: "checkmark")
-                        } else {
-                            Text(option.text)
-                        }
+    private var timeDisplayMenu: some View {
+        Menu {
+            ForEach(SaveableTimeDisplayStyle.allCases) { option in
+                Button {
+                    withAnimation {
+                        saveableTimeDisplayStyle = option
+                    }
+                } label: {
+                    if saveableTimeDisplayStyle == option {
+                        Label(option.text, systemImage: "checkmark")
+                    } else {
+                        Text(option.text)
                     }
                 }
-            } label: {
-                Label("Time Display", systemImage: "timer")
+            }
+        } label: {
+            Label("Time Display", systemImage: "timer")
+        }
+    }
+
+    var body: some View {
+        Group {
+            // The assistant shares a menu with the time display, so the bar doesn't get another button
+            if isAssistantEnabled {
+                Menu {
+                    Section {
+                        Button {
+                            sheetToShow = .assistant(prompt: AssistantChat.summaryPrompt)
+                        } label: {
+                            Label("Summarize Session", systemImage: "doc.text.magnifyingglass")
+                        }
+                        Button {
+                            sheetToShow = .assistant(prompt: nil)
+                        } label: {
+                            Label("Ask Assistant", systemImage: "bubble.left.and.bubble.right")
+                        }
+                    }
+                    timeDisplayMenu
+                } label: {
+                    Label("More", systemImage: "ellipsis.circle")
+                }
+            } else {
+                timeDisplayMenu
             }
             Menu {
                 Button {
@@ -65,22 +90,6 @@ struct ExperienceToolbarContent: View {
                 }
             } label: {
                 Label("Edit", systemImage: "pencil")
-            }
-            if isAssistantEnabled {
-                Menu {
-                    Button {
-                        sheetToShow = .assistant(prompt: AssistantChat.summaryPrompt)
-                    } label: {
-                        Label("Summarize Session", systemImage: "doc.text.magnifyingglass")
-                    }
-                    Button {
-                        sheetToShow = .assistant(prompt: nil)
-                    } label: {
-                        Label("Ask Assistant", systemImage: "bubble.left.and.bubble.right")
-                    }
-                } label: {
-                    Label("Assistant", systemImage: "bubble.left.and.bubble.right")
-                }
             }
             if isEyeOpen {
                 Menu {
