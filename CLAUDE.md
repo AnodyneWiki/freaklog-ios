@@ -59,6 +59,8 @@ FreakLog/
 | `Spray` | Nasal spray calculator state |
 | `CustomRoa` | Dose/duration per route: a custom substance's data or a PsychonautWiki override |
 | `SubstanceOverride` | A substance's display name and categories, keyed by its stored name (model v9) |
+| `Formulation` | Named preset of several substances logged together, e.g. a pill with two actives (model v10) |
+| `FormulationComponent` | One substance of a formulation: route, dose per unit of the formulation, `position` for order |
 
 CoreData helper extensions live in `CoreDataHelpers/`. Each entity has a corresponding `EntityName-CoreDataHelpers.swift` file with computed properties and convenience methods. `Unwrapped` suffix on a property means it falls back to a safe default instead of returning an optional.
 
@@ -110,6 +112,9 @@ Save added and edited ingestions with `IngestionSaving.save(_:sendingWebhooksTo:
 The add (`FinishIngestionScreen`) and edit (`EditIngestionScreen`) forms share `ExperiencePickerRow`, `ConsumerRow`, `LocationButton` and `EstimateFields` (the estimate toggle with ± deviation field). Create experiences with `Experience.create(at:title:in:)` and set locations with `Ingestion.setLocation(_:)`; `ExperienceLocation.make(from:in:)` / `update(from:)` convert anything that is a `LocationValue` (`Location`, `LocationCodable`). Time labels for ingestions, notes and ratings under each `TimeDisplayStyle` come from `EventTimeText`.
 
 PsychonautWiki and custom substances go through the same add screens: `AddIngestionSubstance` names either one, and `ChooseRouteScreenArguments`, `SubstanceAndRoute` (also used to make custom units) and `ChooseOtherRouteScreenArguments` carry it. Open the add ingestion cover with `Navigator.shared.showAddIngestionFullScreenCover(startingAt:)`; the start time reaches `FinishIngestionScreen` as the `addIngestionStartTime` environment value.
+
+### Formulations
+A formulation logs several ingestions at once. `FormulationCodable` is its value form for editing (`EditFormulationScreen` only writes on Done), export and import; `apply(to:)` replaces the components, which keep their order in `position` because CloudKit can't sync ordered relationships. Formulations are managed in Settings > Formulations and listed on the New Ingestion screen: `FormulationDoseScreen` picks the amount taken, `ingestionArguments(amount:)` scales every dose (and deviation) by it, and `FinishIngestionScreen(ingestions:dismiss:)` logs them with shared time, experience, consumer, location, note and webhooks (one color per substance; the site picker only when all share a route). Save several ingestions with `IngestionSaving.save(_:[Ingestion], sendingWebhooksTo:)`. Ingestions don't remember their formulation, so deleting one keeps them. `SubstancePickerList` is the substance list shared with the custom unit flow.
 
 ### Live activities
 Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user) rather than repeating the checks. Start or switch the activity with `ActivityManager.shared.show(_:hiddenIngestions:hiddenRatings:)` and end it with `stop()`. Once shown, it follows its experience by itself: changes to the view context or the timeline settings redraw it and deleting the experience ends it, so never push a new state after saving.

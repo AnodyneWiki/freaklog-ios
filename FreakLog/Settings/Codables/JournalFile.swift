@@ -10,13 +10,15 @@ struct JournalFile: FileDocument, Codable {
     var customSubstances: [CustomSubstanceCodable]
     var customUnits: [CustomUnitCodable]
     var substanceDataOverrides: [SubstanceDataOverrideCodable]
+    var formulations: [FormulationCodable]
 
     init(
         experiences: [Experience],
         customSubstances: [CustomSubstance],
         customUnits: [CustomUnit],
         substanceOverrideRoas: [CustomRoa] = [],
-        substanceOverrides: [SubstanceOverride] = []
+        substanceOverrides: [SubstanceOverride] = [],
+        formulations: [Formulation] = []
     ) {
         self.experiences = experiences.map(ExperienceCodable.init)
         // One color for each substance that was taken
@@ -28,6 +30,7 @@ struct JournalFile: FileDocument, Codable {
         self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
         self.customUnits = customUnits.map(CustomUnitCodable.init)
         substanceDataOverrides = SubstanceDataOverrideCodable.grouped(substanceOverrideRoas, overrides: substanceOverrides)
+        self.formulations = formulations.map(FormulationCodable.init)
     }
 
     // Inserts everything in the file. The caller clears the journal before and saves after.
@@ -57,6 +60,7 @@ struct JournalFile: FileDocument, Codable {
         }
         substanceDataOverrides.forEach { $0.insert(into: context) }
         customSubstances.forEach { _ = $0.insert(into: context) }
+        formulations.forEach { $0.insert(into: context) }
     }
 
     init(configuration: ReadConfiguration) throws {
@@ -82,6 +86,7 @@ struct JournalFile: FileDocument, Codable {
         case customSubstances
         case customUnits
         case substanceDataOverrides
+        case formulations
     }
 
     init(from decoder: Decoder) throws {
@@ -91,5 +96,6 @@ struct JournalFile: FileDocument, Codable {
         customSubstances = try values.decodeIfPresent([CustomSubstanceCodable].self, forKey: .customSubstances) ?? []
         customUnits = try values.decodeIfPresent([CustomUnitCodable].self, forKey: .customUnits) ?? []
         substanceDataOverrides = try values.decodeIfPresent([SubstanceDataOverrideCodable].self, forKey: .substanceDataOverrides) ?? []
+        formulations = try values.decodeIfPresent([FormulationCodable].self, forKey: .formulations) ?? []
     }
 }

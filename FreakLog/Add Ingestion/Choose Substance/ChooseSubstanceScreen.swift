@@ -15,6 +15,7 @@ struct ChooseSubstanceScreen: View {
             filteredSuggestions: viewModel.filteredSuggestions,
             filteredSubstances: viewModel.filteredSubstances,
             filteredCustomUnits: viewModel.filteredCustomUnits,
+            filteredFormulations: viewModel.filteredFormulations,
             filteredCustomSubstances: viewModel.filteredCustomSubstances,
             dismiss: { dismiss() }).task {
                 locationManager.maybeRequestLocation() // because we might need current location on finish screen
@@ -29,6 +30,7 @@ struct ChooseSubstanceContent: View {
     let filteredSuggestions: [any SuggestionProtocol]
     let filteredSubstances: [Substance]
     let filteredCustomUnits: [CustomUnit]
+    let filteredFormulations: [Formulation]
     let filteredCustomSubstances: [CustomSubstanceModel]
     let dismiss: () -> Void
 
@@ -45,6 +47,12 @@ struct ChooseSubstanceContent: View {
             }
             .navigationDestination(for: FinishIngestionScreenArguments.self) { arguments in
                 FinishIngestionScreen(arguments: arguments, dismiss: dismiss)
+            }
+            .navigationDestination(for: Formulation.self) { formulation in
+                FormulationDoseScreen(formulation: formulation, dismiss: dismiss)
+            }
+            .navigationDestination(for: FinishFormulationArguments.self) { arguments in
+                FinishIngestionScreen(ingestions: arguments.ingestions, dismiss: dismiss)
             }
             .navigationDestination(for: AddIngestionDestination.self) { destination in
                 switch destination {
@@ -99,6 +107,9 @@ struct ChooseSubstanceContent: View {
                     } else if let customSubstanceSuggestions = suggestion as? CustomSubstanceSuggestions {
                         CustomSubstanceSuggestionView(customSubstanceSuggestions: customSubstanceSuggestions, isEyeOpen: isEyeOpen)
                     }
+                }
+                ForEach(filteredFormulations) { formulation in
+                    FormulationBox(formulation: formulation)
                 }
                 ForEach(filteredCustomUnits) { customUnit in
                     CustomUnitBox(customUnit: customUnit)

@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C2A73124B37921B3E4BE39 /* FormulationTests.swift */; };
+		54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */; };
+		3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05748EEA2FEA5D0659D33670 /* FormulationBox.swift */; };
+		68FE8330484BDABDC818294A /* EditFormulationComponentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9343243A79DDD2F109FAC03C /* EditFormulationComponentScreen.swift */; };
+		B5C11187407C1A6944FA01FC /* EditFormulationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E72376839861406B9DFE854 /* EditFormulationScreen.swift */; };
+		5B7F7A208CC17FF38E30142B /* FormulationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D49CB89962C43E8980B5158 /* FormulationsScreen.swift */; };
+		D85C928165B41CD5A43553CC /* FormulationCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EAD50EEFB6F9DDB56D2396E /* FormulationCodable.swift */; };
+		E3FFD71D3E342E7352AC63CF /* Formulation-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 712520B22884857FE1A7CBBF /* Formulation-CoreDataHelpers.swift */; };
 		0D235F2E2EF9B92800D9309D /* WebhookPresetEditScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */; };
 		0D235F322EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F312EF9BB0600D9309D /* WebhookPreset-CoreDataHelpers.swift */; };
 		0D235F332EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */; };
@@ -436,6 +444,15 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 10.xcdatamodel"; sourceTree = "<group>"; };
+		04C2A73124B37921B3E4BE39 /* FormulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationTests.swift; sourceTree = "<group>"; };
+		744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationDoseScreen.swift; sourceTree = "<group>"; };
+		05748EEA2FEA5D0659D33670 /* FormulationBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationBox.swift; sourceTree = "<group>"; };
+		9343243A79DDD2F109FAC03C /* EditFormulationComponentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFormulationComponentScreen.swift; sourceTree = "<group>"; };
+		1E72376839861406B9DFE854 /* EditFormulationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFormulationScreen.swift; sourceTree = "<group>"; };
+		4D49CB89962C43E8980B5158 /* FormulationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationsScreen.swift; sourceTree = "<group>"; };
+		3EAD50EEFB6F9DDB56D2396E /* FormulationCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationCodable.swift; sourceTree = "<group>"; };
+		712520B22884857FE1A7CBBF /* Formulation-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Formulation-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookPresetEditScreen.swift; sourceTree = "<group>"; };
 		0D235F2F2EF9BB0600D9309D /* Ingestion-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Ingestion-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		0D235F302EF9BB0600D9309D /* WebhookMessage-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "WebhookMessage-CoreDataHelpers.swift"; sourceTree = "<group>"; };
@@ -832,6 +849,25 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		230D2157EE450FCFB558EBEC /* Formulations */ = {
+			isa = PBXGroup;
+			children = (
+				744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */,
+				05748EEA2FEA5D0659D33670 /* FormulationBox.swift */,
+			);
+			path = Formulations;
+			sourceTree = "<group>";
+		};
+		1A6598198635B964C2B18D15 /* Formulations */ = {
+			isa = PBXGroup;
+			children = (
+				9343243A79DDD2F109FAC03C /* EditFormulationComponentScreen.swift */,
+				1E72376839861406B9DFE854 /* EditFormulationScreen.swift */,
+				4D49CB89962C43E8980B5158 /* FormulationsScreen.swift */,
+			);
+			path = Formulations;
+			sourceTree = "<group>";
+		};
 		0DC49ACE2EFB58B6000A9A0D /* Webhooks */ = {
 			isa = PBXGroup;
 			children = (
@@ -1176,6 +1212,7 @@
 		EA48F88629DD4FC2007DA8C5 /* Codables */ = {
 			isa = PBXGroup;
 			children = (
+				3EAD50EEFB6F9DDB56D2396E /* FormulationCodable.swift */,
 				A159D9242FDAC71900E19083 /* CustomRoaCodable.swift */,
 				A159D9252FDAC71900E19083 /* SubstanceDataOverrideCodable.swift */,
 				EA41C622295C2BE7000DA021 /* JournalFile.swift */,
@@ -1306,6 +1343,7 @@
 		EA6D44E12A4FF8B700BF2E8A /* Components */ = {
 			isa = PBXGroup;
 			children = (
+				1A6598198635B964C2B18D15 /* Formulations */,
 				A15CA2FC2EFB6F0100D90023 /* DynamicRangeOption.swift */,
 				EA302E422B2F3320007F113F /* Custom Units */,
 				EAC39DC1297881E90012823D /* EditColorsScreen.swift */,
@@ -1574,6 +1612,7 @@
 		EACB6E3B27D09C8800940291 /* FreakLogTests */ = {
 			isa = PBXGroup;
 			children = (
+				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
@@ -1689,6 +1728,7 @@
 		EAE4715E26CBA664009FB0EC /* CoreDataHelpers */ = {
 			isa = PBXGroup;
 			children = (
+				712520B22884857FE1A7CBBF /* Formulation-CoreDataHelpers.swift */,
 				A159D8F32FDAC57700E19083 /* CustomRoa-CoreDataHelpers.swift */,
 				A159D8F62FDAC57800E19083 /* CustomRoa+CoreDataClass.swift */,
 				A159D8F82FDAC57800E19083 /* CustomRoa+CoreDataProperties.swift */,
@@ -1760,6 +1800,7 @@
 		EAE471A326CBA664009FB0EC /* Add Ingestion */ = {
 			isa = PBXGroup;
 			children = (
+				230D2157EE450FCFB558EBEC /* Formulations */,
 				EA891BB827DF9F3B00AF04C6 /* Choose Substance */,
 				EA095A1227D9E400007D44D6 /* Interactions */,
 				EAACB08B2947C4040050E002 /* Route */,
@@ -2025,6 +2066,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
@@ -2037,6 +2079,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */,
+				3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */,
+				68FE8330484BDABDC818294A /* EditFormulationComponentScreen.swift in Sources */,
+				B5C11187407C1A6944FA01FC /* EditFormulationScreen.swift in Sources */,
+				5B7F7A208CC17FF38E30142B /* FormulationsScreen.swift in Sources */,
+				D85C928165B41CD5A43553CC /* FormulationCodable.swift in Sources */,
+				E3FFD71D3E342E7352AC63CF /* Formulation-CoreDataHelpers.swift in Sources */,
 				B26B98879A3FC6466E752644 /* CustomSubstanceScreen.swift in Sources */,
 				EAA9C3942A57214A00869E5A /* ToleranceChartExplanationScreen.swift in Sources */,
 				EA302E5A2B38758A007F113F /* FinishCustomUnitsScreen.swift in Sources */,
@@ -2767,6 +2816,7 @@
 		EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
 				2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */,
 				A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */,
 				EAB7946C2D00284D00ED37C8 /* PW Version 7.xcdatamodel */,
@@ -2778,7 +2828,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = 2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */;
+			currentVersion = E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

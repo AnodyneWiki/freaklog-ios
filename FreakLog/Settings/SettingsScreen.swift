@@ -89,6 +89,9 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.formulations) {
+                        Label("Formulations", systemImage: "testtube.2")
+                    }
                     NavigationLink(value: GlobalNavigationDestination.webhookSettings) {
                         Label("Webhooks", systemImage: "network")
                     }

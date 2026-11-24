@@ -30,7 +30,10 @@ struct ExperienceLogic {
     }
     
     static func interactions(from ingestions: [Ingestion]) -> [Interaction] {
-        let substanceNames = myIngestions(from: ingestions).map(\.substanceNameUnwrapped).uniqued()
+        interactions(between: myIngestions(from: ingestions).map(\.substanceNameUnwrapped).uniqued())
+    }
+
+    static func interactions(between substanceNames: [String]) -> [Interaction] {
         var interactions: [Interaction] = []
         for subIndex in 0 ..< substanceNames.count {
             let name = substanceNames[subIndex]

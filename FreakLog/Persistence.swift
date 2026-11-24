@@ -197,7 +197,7 @@ struct PersistenceController {
         // Entities not reached via cascade delete rules are listed explicitly
         let entityNames = [
             "Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa",
-            "SubstanceOverride",
+            "SubstanceOverride", "Formulation",
         ]
         for entityName in entityNames {
             let request = NSFetchRequest<NSManagedObject>(entityName: entityName)
@@ -527,6 +527,14 @@ struct PersistenceController {
         return r
     }
 
+    static func formulationsRequest() -> NSFetchRequest<Formulation> {
+        let r = Formulation.fetchRequest()
+        r.sortDescriptors = [
+            NSSortDescriptor(key: "name", ascending: true, selector: #selector(NSString.localizedCaseInsensitiveCompare(_:))),
+        ]
+        return r
+    }
+
     static func sprayRequest() -> NSFetchRequest<Spray> {
         let r = Spray.fetchRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \Spray.creationDate, ascending: false)]
@@ -575,6 +583,10 @@ struct PersistenceController {
 
     func getAllCustomUnits() -> [CustomUnit] {
         (try? viewContext.fetch(CustomUnit.fetchRequest())) ?? []
+    }
+
+    func getAllFormulations() -> [Formulation] {
+        (try? viewContext.fetch(Self.formulationsRequest())) ?? []
     }
 
     func getAllStandaloneCustomRoas() -> [CustomRoa] {
@@ -700,7 +712,9 @@ struct PersistenceController {
     }
 
     func renameSubstance(from oldName: String, to newName: String) {
-        for entityName in ["Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa", "SubstanceOverride"] {
+        for entityName in [
+            "Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa", "SubstanceOverride", "FormulationComponent",
+        ] {
             let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
             r.predicate = NSPredicate(format: "substanceName == %@", oldName)
             ((try? viewContext.fetch(r)) ?? []).forEach { $0.setValue(newName, forKey: "substanceName") }

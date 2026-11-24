@@ -50,6 +50,7 @@ enum GlobalNavigationDestination: Hashable {
     // settings tab
     case editColors
     case customUnits
+    case formulations
     case faq
     case customUnitsArchive
     case tabSettings

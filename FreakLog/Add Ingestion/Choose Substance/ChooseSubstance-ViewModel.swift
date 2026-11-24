@@ -10,6 +10,7 @@ extension ChooseSubstanceScreen {
         @Published var filteredSuggestions: [any SuggestionProtocol] = []
         @Published var filteredSubstances: [Substance] = []
         @Published var filteredCustomUnits: [CustomUnit] = []
+        @Published var filteredFormulations: [Formulation] = []
         @Published var filteredCustomSubstances: [CustomSubstanceModel] = []
         @Published var customSubstanceModels: [CustomSubstanceModel]
         @Published var isEyeOpen = false
@@ -20,6 +21,7 @@ extension ChooseSubstanceScreen {
         override init() {
             isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)
             let customUnits = PersistenceController.shared.getActiveCustomUnits()
+            let formulations = PersistenceController.shared.getAllFormulations()
             allPossibleSuggestions = getSuggestions(
                 sortedIngestions: PersistenceController.shared.getRecentIngestions(limit: 1000),
                 customUnits: customUnits
@@ -83,6 +85,9 @@ extension ChooseSubstanceScreen {
                     || customUnit.noteUnwrapped.lowercased().contains(search)
                 }
             }.assign(to: &$filteredCustomUnits)
+            $searchText.map { searchText in
+                formulations.filter { $0.matches(searchText: searchText) }
+            }.assign(to: &$filteredFormulations)
         }
 
         private func openEyeAndAnimate() {

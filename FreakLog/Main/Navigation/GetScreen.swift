@@ -79,6 +79,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             EditColorsScreen()
         case .customUnits:
             CustomUnitsScreen()
+        case .formulations:
+            FormulationsScreen()
         case .leaderboardServers:
             LeaderboardServersScreen()
                 .environmentObject(LeaderboardServerStore.shared)
