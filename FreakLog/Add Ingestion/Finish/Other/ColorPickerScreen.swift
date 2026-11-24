@@ -7,7 +7,7 @@ struct ColorPickerScreen: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        let alreadyUsedColors = Set(usedColors).sorted()
+        let alreadyUsedColors = SubstanceColor.palette.filter(Set(usedColors).contains)
         let otherColors = SubstanceColor.unused(avoiding: usedColors)
         List {
             if !otherColors.isEmpty {

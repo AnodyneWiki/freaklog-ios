@@ -27,8 +27,7 @@ enum ToleranceChartCalculator {
             uniquingKeysWith: { first, _ in first }
         )
         // Substances without a companion get a color no other substance uses
-        let fallbackColor = Set(SubstanceColor.allCases).subtracting(companionColors.values).first
-            ?? SubstanceColor.allCases.randomElement() ?? .blue
+        let fallbackColor = SubstanceColor.suggested(avoiding: companionColors.values)
         return substanceIntervals.map { substanceInterval in
             let color = (companionColors[substanceInterval.substanceName] ?? fallbackColor).swiftUIColor
             return ToleranceWindow(

@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C2A73124B37921B3E4BE39 /* FormulationTests.swift */; };
 		08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */; };
+		09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */; };
 		54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */; };
 		3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05748EEA2FEA5D0659D33670 /* FormulationBox.swift */; };
 		600A7BA0DF3698461DA8A0DB /* FormulationSuggestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF06A5DDF3E220A7710188B2 /* FormulationSuggestionView.swift */; };
@@ -466,6 +467,7 @@
 		7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 12.xcdatamodel"; sourceTree = "<group>"; };
 		04C2A73124B37921B3E4BE39 /* FormulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationTests.swift; sourceTree = "<group>"; };
 		0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookTests.swift; sourceTree = "<group>"; };
+		C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceColorTests.swift; sourceTree = "<group>"; };
 		744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationDoseScreen.swift; sourceTree = "<group>"; };
 		05748EEA2FEA5D0659D33670 /* FormulationBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationBox.swift; sourceTree = "<group>"; };
 		BF06A5DDF3E220A7710188B2 /* FormulationSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationSuggestionView.swift; sourceTree = "<group>"; };
@@ -1649,6 +1651,7 @@
 			children = (
 				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
 				0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */,
+				C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */,
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
@@ -2150,6 +2153,7 @@
 			files = (
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
+				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,

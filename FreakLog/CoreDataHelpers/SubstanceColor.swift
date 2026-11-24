@@ -1,11 +1,178 @@
 import SwiftUI
 
-// swiftlint:disable type_body_length file_length
-enum SubstanceColor: String, CaseIterable, Identifiable, Codable, Comparable {
-    static func < (lhs: SubstanceColor, rhs: SubstanceColor) -> Bool {
-        lhs.sortIndex < rhs.sortIndex
+// swiftlint:disable file_length
+
+// MARK: - SubstanceColor
+
+// A color stored as a hex code (#RRGGBB). The suggested palette holds the named colors of earlier versions:
+// a code from it is drawn in that color's light and dark variants, any other code as it is.
+struct SubstanceColor: Hashable, Identifiable, Sendable {
+    // e.g. "#0A84FF"
+    let hex: String
+
+    init?(hex: String) {
+        let digits = hex.trimmingCharacters(in: .whitespaces).uppercased()
+        let code = digits.hasPrefix("#") ? String(digits.dropFirst()) : digits
+        guard code.count == 6, code.allSatisfy(\.isHexDigit) else { return nil }
+        self.hex = "#" + code
     }
 
+    // A stored value: a hex code, or the name of a palette color in data from before hex codes
+    init?(rawValue: String) {
+        if let palette = PaletteColor(rawValue: rawValue.uppercased()) {
+            self.init(palette)
+        } else {
+            self.init(hex: rawValue)
+        }
+    }
+
+    // The closest code for a color, e.g. one chosen in the system color picker
+    init(_ color: Color) {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        UIColor(color).getRed(&red, green: &green, blue: &blue, alpha: nil)
+        let component = { (value: CGFloat) in Int((min(max(value, 0), 1) * 255).rounded()) }
+        hex = String(format: "#%02X%02X%02X", component(red), component(green), component(blue))
+    }
+
+    fileprivate init(_ palette: PaletteColor) {
+        hex = palette.hex
+    }
+
+    var id: String {
+        hex
+    }
+
+    // What is stored in CoreData
+    var rawValue: String {
+        hex
+    }
+
+    var swiftUIColor: Color {
+        if let palette {
+            return palette.swiftUIColor
+        }
+        let value = Int(hex.dropFirst(), radix: 16) ?? 0
+        return Color(
+            .sRGB,
+            red: Double((value >> 16) & 0xFF) / 255,
+            green: Double((value >> 8) & 0xFF) / 255,
+            blue: Double(value & 0xFF) / 255)
+    }
+
+    // "fire engine red" for a palette color, else the hex code
+    var name: String {
+        palette?.name ?? hex
+    }
+
+    // Journal files keep the names of palette colors, which the Android app reads
+    var exportValue: String {
+        palette?.rawValue ?? hex
+    }
+
+    var isInPalette: Bool {
+        palette != nil
+    }
+
+    private var palette: PaletteColor? {
+        PaletteColor.byHex[hex]
+    }
+
+    // The colors suggested for something new, the basic system colors first
+    static let palette = PaletteColor.allCases.map(SubstanceColor.init)
+
+    // Shown for a substance that has no color assigned
+    static let fallback = SubstanceColor.purple
+
+    // Palette colors not in `used`, in palette order
+    static func unused(avoiding used: some Sequence<SubstanceColor>) -> [SubstanceColor] {
+        let used = Set(used)
+        return palette.filter { !used.contains($0) }
+    }
+
+    // A color for something new: the first unused one, preferred colors first
+    static func suggested(avoiding used: some Sequence<SubstanceColor>) -> SubstanceColor {
+        unused(avoiding: used).first ?? palette.randomElement() ?? .blue
+    }
+
+    static let blue = SubstanceColor(PaletteColor.blue)
+    static let brown = SubstanceColor(PaletteColor.brown)
+    static let cyan = SubstanceColor(PaletteColor.cyan)
+    static let green = SubstanceColor(PaletteColor.green)
+    static let indigo = SubstanceColor(PaletteColor.indigo)
+    static let mint = SubstanceColor(PaletteColor.mint)
+    static let orange = SubstanceColor(PaletteColor.orange)
+    static let pink = SubstanceColor(PaletteColor.pink)
+    static let purple = SubstanceColor(PaletteColor.purple)
+    static let red = SubstanceColor(PaletteColor.red)
+    static let teal = SubstanceColor(PaletteColor.teal)
+    static let yellow = SubstanceColor(PaletteColor.yellow)
+    static let fireEngineRed = SubstanceColor(PaletteColor.fireEngineRed)
+    static let coral = SubstanceColor(PaletteColor.coral)
+    static let tomato = SubstanceColor(PaletteColor.tomato)
+    static let cinnabar = SubstanceColor(PaletteColor.cinnabar)
+    static let rust = SubstanceColor(PaletteColor.rust)
+    static let orangeRed = SubstanceColor(PaletteColor.orangeRed)
+    static let auburn = SubstanceColor(PaletteColor.auburn)
+    static let saddleBrown = SubstanceColor(PaletteColor.saddleBrown)
+    static let darkOrange = SubstanceColor(PaletteColor.darkOrange)
+    static let darkGold = SubstanceColor(PaletteColor.darkGold)
+    static let khaki = SubstanceColor(PaletteColor.khaki)
+    static let bronze = SubstanceColor(PaletteColor.bronze)
+    static let gold = SubstanceColor(PaletteColor.gold)
+    static let olive = SubstanceColor(PaletteColor.olive)
+    static let oliveDrab = SubstanceColor(PaletteColor.oliveDrab)
+    static let darkOliveGreen = SubstanceColor(PaletteColor.darkOliveGreen)
+    static let mossGreen = SubstanceColor(PaletteColor.mossGreen)
+    static let limeGreen = SubstanceColor(PaletteColor.limeGreen)
+    static let lime = SubstanceColor(PaletteColor.lime)
+    static let forestGreen = SubstanceColor(PaletteColor.forestGreen)
+    static let seaGreen = SubstanceColor(PaletteColor.seaGreen)
+    static let jungleGreen = SubstanceColor(PaletteColor.jungleGreen)
+    static let lightSeaGreen = SubstanceColor(PaletteColor.lightSeaGreen)
+    static let darkTurquoise = SubstanceColor(PaletteColor.darkTurquoise)
+    static let dodgerBlue = SubstanceColor(PaletteColor.dodgerBlue)
+    static let royalBlue = SubstanceColor(PaletteColor.royalBlue)
+    static let deepLavender = SubstanceColor(PaletteColor.deepLavender)
+    static let blueViolet = SubstanceColor(PaletteColor.blueViolet)
+    static let darkViolet = SubstanceColor(PaletteColor.darkViolet)
+    static let heliotrope = SubstanceColor(PaletteColor.heliotrope)
+    static let byzantium = SubstanceColor(PaletteColor.byzantium)
+    static let magenta = SubstanceColor(PaletteColor.magenta)
+    static let darkMagenta = SubstanceColor(PaletteColor.darkMagenta)
+    static let fuchsia = SubstanceColor(PaletteColor.fuchsia)
+    static let deepPink = SubstanceColor(PaletteColor.deepPink)
+    static let grayishMagenta = SubstanceColor(PaletteColor.grayishMagenta)
+    static let hotPink = SubstanceColor(PaletteColor.hotPink)
+    static let jazzberryJam = SubstanceColor(PaletteColor.jazzberryJam)
+    static let maroon = SubstanceColor(PaletteColor.maroon)
+}
+
+// MARK: Codable
+
+// A single string: the hex code, or a palette color's name as journal files and older data have them
+extension SubstanceColor: Codable {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        let text = try container.decode(String.self)
+        guard let color = SubstanceColor(rawValue: text) else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "\(text) is not a color")
+        }
+        self = color
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(hex)
+    }
+}
+
+// MARK: - PaletteColor
+
+// The named colors stored before hex codes, each with its light and dark variants
+// swiftlint:disable type_body_length
+private enum PaletteColor: String, CaseIterable {
     case blue = "BLUE"
     case brown = "BROWN"
     case cyan = "CYAN"
@@ -58,8 +225,68 @@ enum SubstanceColor: String, CaseIterable, Identifiable, Codable, Comparable {
     case jazzberryJam = "JAZZBERRY_JAM"
     case maroon = "MAROON"
 
-    var id: SubstanceColor {
-        self
+    static let byHex = Dictionary(uniqueKeysWithValues: allCases.map { ($0.hex, $0) })
+
+    // The dark variant's code
+    var hex: String {
+        switch self {
+        case .blue: "#0A84FF"
+        case .brown: "#AC8E68"
+        case .cyan: "#64D2FF"
+        case .green: "#30D158"
+        case .indigo: "#5E5CE6"
+        case .mint: "#63E6E2"
+        case .orange: "#FF9F0A"
+        case .pink: "#FF375F"
+        case .purple: "#BF5AF2"
+        case .red: "#FF453A"
+        case .teal: "#40C8E0"
+        case .yellow: "#FFD60A"
+        case .fireEngineRed: "#ED2B2A"
+        case .coral: "#FF8379"
+        case .tomato: "#FF6347"
+        case .cinnabar: "#E32400"
+        case .rust: "#C7513A"
+        case .orangeRed: "#FF4500"
+        case .auburn: "#D95000"
+        case .saddleBrown: "#BF5F19"
+        case .darkOrange: "#FF8C00"
+        case .darkGold: "#A96800"
+        case .khaki: "#CBB789"
+        case .bronze: "#A77B00"
+        case .gold: "#FFD700"
+        case .olive: "#8D8600"
+        case .oliveDrab: "#9AA60E"
+        case .darkOliveGreen: "#69853A"
+        case .mossGreen: "#669C35"
+        case .limeGreen: "#00FF00"
+        case .lime: "#32CD32"
+        case .forestGreen: "#228B22"
+        case .seaGreen: "#2E8B57"
+        case .jungleGreen: "#038858"
+        case .lightSeaGreen: "#20B2AA"
+        case .darkTurquoise: "#00CED1"
+        case .dodgerBlue: "#1E90FF"
+        case .royalBlue: "#4875FB"
+        case .deepLavender: "#874EFE"
+        case .blueViolet: "#A649FC"
+        case .darkViolet: "#A24CD2"
+        case .heliotrope: "#975DAF"
+        case .byzantium: "#BE38F3"
+        case .magenta: "#FF00FF"
+        case .darkMagenta: "#D900D9"
+        case .fuchsia: "#D64492"
+        case .deepPink: "#FF1493"
+        case .grayishMagenta: "#A16080"
+        case .hotPink: "#FF69B4"
+        case .jazzberryJam: "#E63B7A"
+        case .maroon: "#BB5263"
+        }
+    }
+
+    // "FIRE_ENGINE_RED" → "fire engine red"
+    var name: String {
+        rawValue.lowercased().replacingOccurrences(of: "_", with: " ")
     }
 
     var swiftUIColor: Color {
@@ -363,37 +590,6 @@ enum SubstanceColor: String, CaseIterable, Identifiable, Codable, Comparable {
             )
         }
     }
-
-    // Shown for a substance that has no color assigned
-    static let fallback = SubstanceColor.purple
-
-    // Colors not in `used`, in sort order
-    static func unused(avoiding used: some Sequence<SubstanceColor>) -> [SubstanceColor] {
-        let used = Set(used)
-        return allCases.filter { !used.contains($0) }
-    }
-
-    // A color for something new: the first unused one, preferred colors first
-    static func suggested(avoiding used: some Sequence<SubstanceColor>) -> SubstanceColor {
-        unused(avoiding: used).first ?? allCases.randomElement() ?? .blue
-    }
-
-    // "FIRE_ENGINE_RED" → "fire engine red"
-    var name: String {
-        rawValue.lowercased().replacingOccurrences(of: "_", with: " ")
-    }
-
-    // The basic system colors, declared first, are suggested before the others
-    var isPreferred: Bool {
-        sortIndex < 12
-    }
-
-    // Colors sort in declaration order
-    private var sortIndex: Int {
-        Self.sortIndices[self] ?? 0
-    }
-
-    private static let sortIndices = Dictionary(uniqueKeysWithValues: allCases.enumerated().map { ($1, $0) })
 }
 
 // swiftlint:enable type_body_length file_length

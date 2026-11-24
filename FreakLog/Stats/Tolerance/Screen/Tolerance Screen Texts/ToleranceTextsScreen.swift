@@ -45,7 +45,7 @@ struct ToleranceTextsScreen: View {
             return tolerance.halfToleranceInHours != nil && tolerance.zeroToleranceInHours != nil
         }.shuffled().prefix(5))
         let substancsWith = substances.map { sub in
-            sub.toSubstanceWithToleranceAndColor(substanceColor: SubstanceColor.allCases.randomElement() ?? .red)
+            sub.toSubstanceWithToleranceAndColor(substanceColor: SubstanceColor.palette.randomElement() ?? .red)
         }
         ToleranceTextsScreen(substances: substancsWith)
     }

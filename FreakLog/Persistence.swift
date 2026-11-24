@@ -51,6 +51,7 @@ struct PersistenceController {
     static let hasBeenMigrated6Key = "hasBeenMigrated6"
     static let hasBeenMigrated7Key = "hasBeenMigrated7"
     static let hasBeenMigrated8Key = "hasBeenMigrated8"
+    static let hasBeenMigrated9Key = "hasBeenMigrated9"
     static let openUntilRatedCountKey = "openUntilRatedCount"
     static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
 
@@ -231,6 +232,7 @@ struct PersistenceController {
             (Self.hasBeenMigrated6Key, migrateCannabisAndMushroomUnits),
             (Self.hasBeenMigrated7Key, migrateRemoveDuplicateCompanions),
             (Self.hasBeenMigrated8Key, migrateFillPartialSubstanceOverrides),
+            (Self.hasBeenMigrated9Key, migrateColorsToHex),
         ]
         for migration in migrations where !defaults.bool(forKey: migration.key) {
             migration.run()
@@ -337,6 +339,32 @@ struct PersistenceController {
             let allTimedNotes = (try? viewContext.fetch(timedNotesFetchRequest)) ?? []
             for timedNote in allTimedNotes {
                 timedNote.colorAsText = timedNote.colorAsText?.uppercased()
+            }
+            try? viewContext.save()
+        }
+    }
+
+    // Colors were stored as the names of a fixed palette and are hex codes now. Reading still understands the
+    // names (iCloud can bring them from older versions), so this only makes the stored values consistent.
+    func migrateColorsToHex() {
+        viewContext.performAndWait {
+            func hex(of text: String?) -> String? {
+                text.flatMap(SubstanceColor.init(rawValue:))?.hex
+            }
+            for companion in (try? viewContext.fetch(SubstanceCompanion.fetchRequest())) ?? [] {
+                if let hex = hex(of: companion.colorAsText), hex != companion.colorAsText {
+                    companion.colorAsText = hex
+                }
+            }
+            for ingestion in (try? viewContext.fetch(Ingestion.fetchRequest())) ?? [] {
+                if let hex = hex(of: ingestion.color), hex != ingestion.color {
+                    ingestion.color = hex
+                }
+            }
+            for timedNote in (try? viewContext.fetch(TimedNote.fetchRequest())) ?? [] {
+                if let hex = hex(of: timedNote.colorAsText), hex != timedNote.colorAsText {
+                    timedNote.colorAsText = hex
+                }
             }
             try? viewContext.save()
         }

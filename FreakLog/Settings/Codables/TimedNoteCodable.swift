@@ -38,7 +38,7 @@ struct TimedNoteCodable: Codable {
         try container.encodeMillis(creationDate, forKey: .creationDate)
         try container.encodeMillis(time, forKey: .time)
         try container.encode(note, forKey: .note)
-        try container.encode(color.rawValue.uppercased(), forKey: .color)
+        try container.encode(color.exportValue, forKey: .color)
         try container.encode(isPartOfTimeline, forKey: .isPartOfTimeline)
     }
 }
