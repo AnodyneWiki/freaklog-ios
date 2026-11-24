@@ -112,18 +112,20 @@ struct JournalScreen: View {
                 }
             }
 
-            ToolbarItemGroup(placement: .navigationBarLeading) {
-                Button {
-                    isSearchPresented = true
-                } label: {
-                    Label("Search", systemImage: "magnifyingglass")
+            ToolbarItem(placement: .navigationBarLeading) {
+                HStack(spacing: 8) {
+                    Button {
+                        isSearchPresented = true
+                    } label: {
+                        Label("Search", systemImage: "magnifyingglass")
+                    }
+                    favoriteButton
                 }
-                favoriteButton
             }
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                timeDisplayMenu
-                NavigationLink(value: GlobalNavigationDestination.calendar) {
-                    Label("Calendar", systemImage: "calendar")
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 8) {
+                    timeDisplayMenu
+                    calendarLink
                 }
             }
         }
@@ -144,6 +146,12 @@ struct JournalScreen: View {
             }
         } label: {
             Label("Time Display", systemImage: "timer")
+        }
+    }
+
+    private var calendarLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.calendar) {
+            Label("Calendar", systemImage: "calendar")
         }
     }
 
