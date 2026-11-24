@@ -173,8 +173,7 @@ struct AssistantProfile: Codable, Hashable, Identifiable {
 
 // MARK: - AssistantProfileStore
 
-// The saved providers and the one chats use. The list lives in the user defaults of this device; it isn't part
-// of backups or iCloud, since the keys it needs stay on this device too.
+// The saved providers and the one chats use. The list lives in user defaults and is included in journal backups.
 enum AssistantProfileStore {
   static var profiles: [AssistantProfile] {
     profiles(from: UserDefaults.standard.data(forKey: PersistenceController.assistantProfilesKey))
@@ -199,6 +198,33 @@ enum AssistantProfileStore {
 
   static func setActive(_ id: UUID) {
     UserDefaults.standard.set(id.uuidString, forKey: PersistenceController.assistantActiveProfileKey)
+  }
+
+  static func restore(
+    profilesFrom data: Data?,
+    activeID: String?,
+    to defaults: UserDefaults,
+    mayHaveKey: (UUID) -> Bool = AssistantKeychain.mayHaveKey)
+  {
+    let profilesKey = PersistenceController.assistantProfilesKey
+    let localProfiles = profiles(from: defaults.data(forKey: profilesKey))
+    var restoredActiveID: String?
+    let restoredProfiles = profiles(from: data).map { saved -> AssistantProfile in
+      var profile = saved
+      let local = localProfiles.first { $0.id == saved.id }
+      // Reuse a local key only when the profile still points to its original server.
+      if !AssistantHTTP.sameOrigin(local.flatMap { URL(string: $0.baseURL) }, URL(string: saved.baseURL)),
+         mayHaveKey(saved.id)
+      {
+        profile.id = UUID()
+      }
+      if saved.id.uuidString == activeID {
+        restoredActiveID = profile.id.uuidString
+      }
+      return profile
+    }
+    defaults.set(restoredProfiles.isEmpty ? nil : try? JSONEncoder().encode(restoredProfiles), forKey: profilesKey)
+    defaults.set(restoredActiveID, forKey: PersistenceController.assistantActiveProfileKey)
   }
 
   static func save(_ profile: AssistantProfile) {
@@ -249,6 +275,11 @@ enum AssistantKeychain {
 
   static func hasKey(for id: UUID) -> Bool {
     !key(for: id).isEmpty
+  }
+
+  // An inaccessible item can still become readable after the device is unlocked.
+  static func mayHaveKey(for id: UUID) -> Bool {
+    SecItemCopyMatching(query(for: id) as CFDictionary, nil) != errSecItemNotFound
   }
 
   // An empty key removes the saved one

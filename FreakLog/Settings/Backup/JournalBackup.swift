@@ -22,7 +22,7 @@ struct JournalBackup: Codable {
   }
 
   static let format = "FreakLog Backup"
-  static let formatVersion = 1
+  static let formatVersion = 2
   // The data model this format version mirrors; a test fails once the current one differs
   static let dataModelVersion = "PW Version 12"
 
@@ -145,6 +145,12 @@ extension JournalBackup {
       if let value = defaults.object(forKey: key) {
         settings[key] = JSONValue(propertyList: value)
       }
+    }
+    // An explicit null distinguishes an empty configuration from a version 1 backup.
+    let profilesKey = PersistenceController.assistantProfilesKey
+    settings[profilesKey] = defaults.data(forKey: profilesKey).map(JSONValue.init(propertyList:)) ?? .null
+    if let activeProfile = defaults.string(forKey: PersistenceController.assistantActiveProfileKey) {
+      settings[PersistenceController.assistantActiveProfileKey] = .string(activeProfile)
     }
   }
 
@@ -331,6 +337,12 @@ extension JournalBackup {
       } else {
         defaults.removeObject(forKey: key)
       }
+    }
+    if let profiles = settings[PersistenceController.assistantProfilesKey] {
+      AssistantProfileStore.restore(
+        profilesFrom: profiles.propertyList as? Data,
+        activeID: settings[PersistenceController.assistantActiveProfileKey]?.string,
+        to: defaults)
     }
   }
 

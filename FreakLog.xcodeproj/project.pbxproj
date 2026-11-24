@@ -28,6 +28,7 @@
 		2AC40D0BBECA9791DF78C01C /* AssistantChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4850A8D55A26B1CBC6785409 /* AssistantChat.swift */; };
 		22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */; };
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
+		5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */ = {isa = PBXBuildFile; fileRef = B0DFAA759F8B4CF783A9B54A /* Backup v2.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
 		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
 		2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */; };
@@ -508,6 +509,7 @@
 		4850A8D55A26B1CBC6785409 /* AssistantChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantChat.swift; sourceTree = "<group>"; };
 		F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantProviderTests.swift; sourceTree = "<group>"; };
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
+		B0DFAA759F8B4CF783A9B54A /* Backup v2.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v2.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
 		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
 		8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackup.swift; sourceTree = "<group>"; };
@@ -1766,6 +1768,7 @@
 			isa = PBXGroup;
 			children = (
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
+				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
 				57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */,
@@ -2200,6 +2203,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */,
+				5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);

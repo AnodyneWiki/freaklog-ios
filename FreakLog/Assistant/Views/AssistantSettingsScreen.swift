@@ -33,7 +33,7 @@ struct AssistantSettingsScreen: View {
       } header: {
         Text("Providers")
       } footer: {
-        Text("API keys are kept in the keychain of this device. Providers aren't part of backups and don't sync.")
+        Text("Journal backups include providers and model settings. API keys stay in this device’s keychain.")
       }
       if profiles.count > 1 {
         Section {

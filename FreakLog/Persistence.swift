@@ -38,7 +38,7 @@ struct PersistenceController {
     static let doseSourceKey = "doseSource"
     static let anodyneInstanceURLKey = "anodyneInstanceURL"
     static let isAssistantEnabledKey = "isAssistantEnabled"
-    // Provider profiles and the chosen one, which stay on this device like their API keys
+    // Provider profiles and the chosen one, included in journal backups
     static let assistantProfilesKey = "assistantProfiles"
     static let assistantActiveProfileKey = "assistantActiveProfile"
     static let isAssistantAnodyneWikiEnabledKey = "isAssistantAnodyneWikiEnabled"

@@ -1,0 +1,14 @@
+{
+  "appVersion": "1.5.0",
+  "created": "2026-11-24T18:30:00.000000Z",
+  "dataModel": "PW Version 12",
+  "entities": {},
+  "format": "FreakLog Backup",
+  "formatVersion": 2,
+  "settings": {
+    "assistantActiveProfile": "A1DCE198-942E-4B97-A939-503771970C50",
+    "assistantProfiles": {
+      "base64": "W3siaWQiOiI0RTUyRTA2My0yOTU1LTRFNTItODRGRi03MTdEMDJGNEEwNEUiLCJuYW1lIjoiQXBwbGUgT24tRGV2aWNlIE1vZGVsIiwicHJlc2V0Ijoib25EZXZpY2UiLCJzdGFuZGFyZCI6Im9uRGV2aWNlIiwiYmFzZVVSTCI6IiIsIm1vZGVsIjoiIn0seyJpZCI6IkExRENFMTk4LTk0MkUtNEI5Ny1BOTM5LTUwMzc3MTk3MEM1MCIsIm5hbWUiOiJNeSBQcm92aWRlciIsInByZXNldCI6ImN1c3RvbU9wZW5BSSIsInN0YW5kYXJkIjoib3BlbkFJQ2hhdCIsImJhc2VVUkwiOiJodHRwczovL2V4YW1wbGUuY29tL3YxIiwibW9kZWwiOiJwcmltYXJ5LW1vZGVsIiwibWF4T3V0cHV0VG9rZW5zIjo1MTIsInJlY2VudE1vZGVscyI6WyJwcmV2aW91cy1tb2RlbCJdfV0="
+    }
+  }
+}

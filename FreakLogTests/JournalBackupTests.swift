@@ -39,6 +39,75 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(try context.fetch(CustomRoa.fetchRequest()).first?.customSubstance?.name, "Coffee")
     XCTAssertEqual(try context.fetch(SubstanceOverride.fetchRequest()).first?.displayName, "K")
     XCTAssertEqual(backup.settings["webhookUsername"], .string("Sam"))
+
+    let defaults = Self.emptyDefaults()
+    let profile = AssistantProfile(preset: .onDevice)
+    let profiles = try JSONEncoder().encode([profile])
+    defaults.set(profiles, forKey: PersistenceController.assistantProfilesKey)
+    defaults.set(profile.id.uuidString, forKey: PersistenceController.assistantActiveProfileKey)
+    backup.restoreSettings(to: defaults)
+    XCTAssertEqual(defaults.data(forKey: PersistenceController.assistantProfilesKey), profiles)
+    XCTAssertEqual(defaults.string(forKey: PersistenceController.assistantActiveProfileKey), profile.id.uuidString)
+  }
+
+  func testVersion2BackupsRestoreAndExportModelConfiguration() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v2", withExtension: "json"))
+    let fixture = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let context = PersistenceController(inMemory: true).viewContext
+    try fixture.restore(into: context)
+    try context.save()
+
+    let defaults = Self.emptyDefaults()
+    fixture.restoreSettings(to: defaults)
+    let backup = try JournalBackup(context: context, defaults: defaults, appVersion: "1")
+    let read = try XCTUnwrap(JournalBackup.read(backup.data()))
+    let restored = Self.emptyDefaults()
+    read.restoreSettings(to: restored)
+
+    let profiles = AssistantProfileStore.profiles(from: restored.data(forKey: PersistenceController.assistantProfilesKey))
+    XCTAssertEqual(profiles.map(\.preset), [.onDevice, .customOpenAI])
+    let activeID = restored.string(forKey: PersistenceController.assistantActiveProfileKey)
+    let active = try XCTUnwrap(profiles.first { $0.id.uuidString == activeID })
+    XCTAssertEqual(active.name, "My Provider")
+    XCTAssertEqual(active.standard, .openAIChat)
+    XCTAssertEqual(active.baseURL, "https://example.com/v1")
+    XCTAssertEqual(active.model, "primary-model")
+    XCTAssertEqual(active.maxOutputTokens, 512)
+    XCTAssertEqual(active.recentModels, ["previous-model"])
+
+    let empty = try JournalBackup(context: context, defaults: Self.emptyDefaults(), appVersion: "1")
+    empty.restoreSettings(to: restored)
+    XCTAssertNil(restored.data(forKey: PersistenceController.assistantProfilesKey))
+    XCTAssertNil(restored.string(forKey: PersistenceController.assistantActiveProfileKey))
+  }
+
+  func testRestoringModelConfigurationKeepsKeysWithTheirServer() throws {
+    var local = AssistantProfile(preset: .customOpenAI)
+    local.baseURL = "https://example.com/v1"
+    let defaults = Self.emptyDefaults()
+    defaults.set(try JSONEncoder().encode([local]), forKey: PersistenceController.assistantProfilesKey)
+    let mayHaveKey: (UUID) -> Bool = { $0 == local.id }
+
+    var exported = local
+    exported.model = "restored-model"
+    AssistantProfileStore.restore(
+      profilesFrom: try JSONEncoder().encode([exported]),
+      activeID: exported.id.uuidString,
+      to: defaults,
+      mayHaveKey: mayHaveKey)
+    XCTAssertEqual(defaults.string(forKey: PersistenceController.assistantActiveProfileKey), local.id.uuidString)
+
+    exported.baseURL = "https://other.example/v1"
+    AssistantProfileStore.restore(
+      profilesFrom: try JSONEncoder().encode([exported]),
+      activeID: exported.id.uuidString,
+      to: defaults,
+      mayHaveKey: mayHaveKey)
+    let profiles = AssistantProfileStore.profiles(from: defaults.data(forKey: PersistenceController.assistantProfilesKey))
+    let restored = try XCTUnwrap(profiles.first)
+    XCTAssertNotEqual(restored.id, local.id)
+    XCTAssertEqual(restored.baseURL, exported.baseURL)
+    XCTAssertEqual(defaults.string(forKey: PersistenceController.assistantActiveProfileKey), restored.id.uuidString)
   }
 
   // Anything in the journal comes back the same: an export of the restored journal equals the first one,
