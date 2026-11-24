@@ -106,6 +106,8 @@ struct ChooseSubstanceContent: View {
                         CustomUnitSuggestionView(customUnitSuggestions: customUnitSuggestions, isEyeOpen: isEyeOpen)
                     } else if let customSubstanceSuggestions = suggestion as? CustomSubstanceSuggestions {
                         CustomSubstanceSuggestionView(customSubstanceSuggestions: customSubstanceSuggestions, isEyeOpen: isEyeOpen)
+                    } else if let formulationSuggestions = suggestion as? FormulationSuggestions {
+                        FormulationSuggestionView(formulationSuggestions: formulationSuggestions)
                     }
                 }
                 ForEach(filteredFormulations) { formulation in

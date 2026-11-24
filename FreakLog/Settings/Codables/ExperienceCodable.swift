@@ -93,7 +93,8 @@ extension ExperienceCodable {
     func insert(
         into context: NSManagedObjectContext,
         companion: (String) -> SubstanceCompanion,
-        customUnits: [Int32: CustomUnit]
+        customUnits: [Int32: CustomUnit],
+        formulations: [String: Formulation] = [:]
     ) -> Experience {
         let experience = Experience(context: context)
         experience.title = title
@@ -105,6 +106,7 @@ extension ExperienceCodable {
             let ingestion = ingestionCodable.insert(into: context, fallbackLocation: location)
             ingestion.substanceCompanion = companion(ingestionCodable.substanceName)
             ingestion.customUnit = ingestionCodable.customUnitId.flatMap { customUnits[$0] }
+            ingestion.formulation = ingestionCodable.formulationName.flatMap { formulations[$0] }
             experience.addToIngestions(ingestion)
         }
         for ratingCodable in ratings {

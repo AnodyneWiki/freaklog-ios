@@ -16,6 +16,9 @@ struct IngestionCodable: Codable {
     let customUnitId: Int32?
     let administrationSite: String?
     let location: LocationCodable?
+    // The name of the formulation the ingestion was logged with, and the amount taken of it
+    var formulationName: String?
+    var formulationAmount: Double?
 
     enum CodingKeys: String, CodingKey {
         case substanceName
@@ -32,6 +35,8 @@ struct IngestionCodable: Codable {
         case customUnitId
         case administrationSite
         case location
+        case formulationName
+        case formulationAmount
     }
 
     init(
@@ -87,6 +92,8 @@ struct IngestionCodable: Codable {
         customUnitId = try values.decodeIfPresent(Int32.self, forKey: .customUnitId)
         administrationSite = try values.decodeIfPresent(String.self, forKey: .administrationSite)
         location = try values.decodeIfPresent(LocationCodable.self, forKey: .location)
+        formulationName = try values.decodeIfPresent(String.self, forKey: .formulationName)
+        formulationAmount = try values.decodeIfPresent(Double.self, forKey: .formulationAmount)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -105,10 +112,12 @@ struct IngestionCodable: Codable {
         try container.encode(customUnitId, forKey: .customUnitId)
         try container.encode(administrationSite, forKey: .administrationSite)
         try container.encode(location, forKey: .location)
+        try container.encodeIfPresent(formulationName, forKey: .formulationName)
+        try container.encodeIfPresent(formulationAmount, forKey: .formulationAmount)
     }
 }
 
-// Export and import mapping. The importer links companions, custom units and the experience.
+// Export and import mapping. The importer links companions, custom units, formulations and the experience.
 extension IngestionCodable {
     init(_ ingestion: Ingestion) {
         self.init(
@@ -127,6 +136,10 @@ extension IngestionCodable {
             administrationSite: ingestion.administrationSite,
             location: ingestion.location.map(LocationCodable.init)
         )
+        if let formulation = ingestion.formulation {
+            formulationName = formulation.nameUnwrapped
+            formulationAmount = ingestion.formulationAmount
+        }
     }
 
     // An older export only has a location on the experience, which then goes to each of its ingestions
@@ -145,6 +158,7 @@ extension IngestionCodable {
         ingestion.note = notes
         ingestion.consumerName = consumerName
         ingestion.administrationSite = administrationSite
+        ingestion.formulationAmount = formulationAmount ?? 0
         if let location = location ?? fallbackLocation {
             ingestion.location = ExperienceLocation.make(from: location, in: context)
         }

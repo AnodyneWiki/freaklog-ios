@@ -54,6 +54,16 @@ extension Formulation {
     }.joined(separator: ", ")
   }
 
+  // The ingestions logged when taking the amount, linked to the formulation
+  func ingestionArguments(amount: Double) -> [FinishIngestionScreenArguments] {
+    FormulationCodable(self).ingestionArguments(amount: amount).map { arguments in
+      var arguments = arguments
+      arguments.formulation = self
+      arguments.formulationAmount = amount
+      return arguments
+    }
+  }
+
   func matches(searchText: String) -> Bool {
     guard !searchText.isEmpty else { return true }
     let search = searchText.lowercased()

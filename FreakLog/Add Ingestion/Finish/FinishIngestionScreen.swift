@@ -317,6 +317,8 @@ struct FinishIngestionScreen: View {
         }
         ingestion.creationDate = Date()
         ingestion.customUnit = arguments.customUnit
+        ingestion.formulation = arguments.formulation
+        ingestion.formulationAmount = arguments.formulationAmount ?? 0
         ingestion.dose = arguments.dose ?? 0
         ingestion.units = arguments.units
         ingestion.isEstimate = arguments.isEstimate

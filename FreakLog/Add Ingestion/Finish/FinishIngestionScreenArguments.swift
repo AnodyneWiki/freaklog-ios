@@ -8,4 +8,7 @@ struct FinishIngestionScreenArguments: Hashable {
     let isEstimate: Bool
     let estimatedDoseStandardDeviation: Double?
     var customUnit: CustomUnit?
+    // Set when logging a formulation, which then suggests the amount again instead of each substance
+    var formulation: Formulation?
+    var formulationAmount: Double?
 }

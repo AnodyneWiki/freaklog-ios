@@ -43,6 +43,14 @@ struct JournalFile: FileDocument, Codable {
         for customUnitCodable in customUnits {
             customUnitsById[customUnitCodable.id] = customUnitCodable.insert(into: context)
         }
+        // Ingestions name their formulation; with the same name twice the first one is linked
+        var formulationsByName: [String: Formulation] = [:]
+        for formulationCodable in formulations {
+            let formulation = formulationCodable.insert(into: context)
+            if formulationsByName[formulationCodable.name] == nil {
+                formulationsByName[formulationCodable.name] = formulation
+            }
+        }
         for experienceCodable in experiences {
             _ = experienceCodable.insert(
                 into: context,
@@ -55,12 +63,12 @@ struct JournalFile: FileDocument, Codable {
                     companions[substanceName] = companion
                     return companion
                 },
-                customUnits: customUnitsById
+                customUnits: customUnitsById,
+                formulations: formulationsByName
             )
         }
         substanceDataOverrides.forEach { $0.insert(into: context) }
         customSubstances.forEach { _ = $0.insert(into: context) }
-        formulations.forEach { $0.insert(into: context) }
     }
 
     init(configuration: ReadConfiguration) throws {

@@ -14,6 +14,7 @@ struct FormulationDoseScreen: View {
 
   init(formulation: Formulation, dismiss: @escaping () -> Void) {
     let values = FormulationCodable(formulation)
+    self.formulation = formulation
     self.values = values
     self.dismiss = dismiss
     interactions = ExperienceLogic.interactions(between: values.substanceNames)
@@ -64,7 +65,7 @@ struct FormulationDoseScreen: View {
         Button("Cancel", action: dismiss)
       }
       ToolbarItem(placement: .primaryAction) {
-        NavigationLink(value: FinishFormulationArguments(ingestions: values.ingestionArguments(amount: validAmount ?? 1))) {
+        NavigationLink(value: FinishFormulationArguments(ingestions: formulation.ingestionArguments(amount: validAmount ?? 1))) {
           NextLabel()
         }
         .disabled(validAmount == nil)
@@ -74,6 +75,7 @@ struct FormulationDoseScreen: View {
 
   @State private var amount: Double? = 1
 
+  private let formulation: Formulation
   private let values: FormulationCodable
   private let interactions: [Interaction]
 

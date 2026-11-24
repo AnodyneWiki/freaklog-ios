@@ -62,6 +62,60 @@ final class FormulationTests: XCTestCase {
     XCTAssertEqual(try context.count(for: FormulationComponent.fetchRequest()), 0)
   }
 
+  func testFormulationIngestionsAreSuggestedAsTheFormulation() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let formulation = sample.insert(into: context)
+    var ingestions = [Ingestion]()
+    for (index, arguments) in formulation.ingestionArguments(amount: 1.5).enumerated() {
+      let ingestion = Ingestion(context: context)
+      ingestion.substanceName = arguments.substanceName
+      ingestion.administrationRoute = arguments.administrationRoute.rawValue
+      ingestion.dose = arguments.dose ?? 0
+      ingestion.units = arguments.units
+      ingestion.formulation = arguments.formulation
+      ingestion.formulationAmount = arguments.formulationAmount ?? 0
+      ingestion.creationDate = Date(timeIntervalSince1970: 2_000 + Double(index))
+      ingestions.append(ingestion)
+    }
+    let alone = Ingestion(context: context)
+    alone.substanceName = "MDMA"
+    alone.administrationRoute = AdministrationRoute.oral.rawValue
+    alone.dose = 80
+    alone.units = "mg"
+    alone.creationDate = Date(timeIntervalSince1970: 1_000)
+    ingestions.append(alone)
+
+    let suggestions = getSuggestions(sortedIngestions: ingestions, customUnits: [])
+    let formulationSuggestions = suggestions.compactMap { $0 as? FormulationSuggestions }
+    XCTAssertEqual(formulationSuggestions.map(\.formulation), [formulation])
+    XCTAssertEqual(formulationSuggestions.first?.amounts, [1.5])
+    XCTAssertTrue(suggestions.first is FormulationSuggestions)
+    let pure = suggestions.compactMap { $0 as? PureSubstanceSuggestions }
+    XCTAssertEqual(pure.map(\.substance.name), ["MDMA"])
+    XCTAssertEqual(pure.first?.dosesAndUnit.map(\.dose), [80])
+  }
+
+  func testIngestionsKeepTheirFormulationThroughExport() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let formulation = sample.insert(into: source)
+    let experience = Experience.create(at: Date(timeIntervalSince1970: 5_000), title: "Test", in: source)
+    let ingestion = Ingestion(context: source)
+    ingestion.substanceName = "MDMA"
+    ingestion.time = Date(timeIntervalSince1970: 5_000)
+    ingestion.administrationRoute = AdministrationRoute.oral.rawValue
+    ingestion.formulation = formulation
+    ingestion.formulationAmount = 2
+    ingestion.experience = experience
+    let file = JournalFile(experiences: [experience], customSubstances: [], customUnits: [], formulations: [formulation])
+    let decoded = try JSONDecoder().decode(JournalFile.self, from: JSONEncoder().encode(file))
+    let target = PersistenceController(inMemory: true).viewContext
+    decoded.insert(into: target)
+
+    let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertEqual(imported.formulation?.nameUnwrapped, "Party pill")
+    XCTAssertEqual(imported.formulationAmount, 2)
+  }
+
   private let sample = FormulationCodable(
     name: "Party pill",
     note: "Tested",

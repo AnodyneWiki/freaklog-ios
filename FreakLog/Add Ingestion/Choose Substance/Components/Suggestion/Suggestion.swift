@@ -78,6 +78,22 @@ struct CustomSubstanceSuggestions: SuggestionProtocol {
     }
 }
 
+// The amounts recently taken of a formulation, which its ingestions are suggested as together
+struct FormulationSuggestions: SuggestionProtocol {
+    func isInResult(searchText: String, substanceNames: [String]) -> Bool {
+        formulation.matches(searchText: searchText)
+    }
+
+    var id: String {
+        formulation.objectID.uriRepresentation().absoluteString
+    }
+
+    let formulation: Formulation
+    // Most recent first
+    let amounts: [Double]
+    let sortDate: Date
+}
+
 struct CustomUnitDoseSuggestion: Identifiable, Equatable {
     let id = UUID()
     let dose: Double?

@@ -10,6 +10,7 @@
 		BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C2A73124B37921B3E4BE39 /* FormulationTests.swift */; };
 		54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */; };
 		3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05748EEA2FEA5D0659D33670 /* FormulationBox.swift */; };
+		600A7BA0DF3698461DA8A0DB /* FormulationSuggestionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF06A5DDF3E220A7710188B2 /* FormulationSuggestionView.swift */; };
 		68FE8330484BDABDC818294A /* EditFormulationComponentScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9343243A79DDD2F109FAC03C /* EditFormulationComponentScreen.swift */; };
 		B5C11187407C1A6944FA01FC /* EditFormulationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E72376839861406B9DFE854 /* EditFormulationScreen.swift */; };
 		5B7F7A208CC17FF38E30142B /* FormulationsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D49CB89962C43E8980B5158 /* FormulationsScreen.swift */; };
@@ -445,9 +446,11 @@
 
 /* Begin PBXFileReference section */
 		E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 10.xcdatamodel"; sourceTree = "<group>"; };
+		73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 11.xcdatamodel"; sourceTree = "<group>"; };
 		04C2A73124B37921B3E4BE39 /* FormulationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationTests.swift; sourceTree = "<group>"; };
 		744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationDoseScreen.swift; sourceTree = "<group>"; };
 		05748EEA2FEA5D0659D33670 /* FormulationBox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationBox.swift; sourceTree = "<group>"; };
+		BF06A5DDF3E220A7710188B2 /* FormulationSuggestionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationSuggestionView.swift; sourceTree = "<group>"; };
 		9343243A79DDD2F109FAC03C /* EditFormulationComponentScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFormulationComponentScreen.swift; sourceTree = "<group>"; };
 		1E72376839861406B9DFE854 /* EditFormulationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFormulationScreen.swift; sourceTree = "<group>"; };
 		4D49CB89962C43E8980B5158 /* FormulationsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormulationsScreen.swift; sourceTree = "<group>"; };
@@ -854,6 +857,7 @@
 			children = (
 				744732D2F3AC596B3CF28414 /* FormulationDoseScreen.swift */,
 				05748EEA2FEA5D0659D33670 /* FormulationBox.swift */,
+				BF06A5DDF3E220A7710188B2 /* FormulationSuggestionView.swift */,
 			);
 			path = Formulations;
 			sourceTree = "<group>";
@@ -2081,6 +2085,7 @@
 			files = (
 				54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */,
 				3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */,
+				600A7BA0DF3698461DA8A0DB /* FormulationSuggestionView.swift in Sources */,
 				68FE8330484BDABDC818294A /* EditFormulationComponentScreen.swift in Sources */,
 				B5C11187407C1A6944FA01FC /* EditFormulationScreen.swift in Sources */,
 				5B7F7A208CC17FF38E30142B /* FormulationsScreen.swift in Sources */,
@@ -2816,6 +2821,7 @@
 		EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
 				2282B670E818455AAF04B69D /* PW Version 9.xcdatamodel */,
 				A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */,
@@ -2828,7 +2834,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */;
+			currentVersion = 73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

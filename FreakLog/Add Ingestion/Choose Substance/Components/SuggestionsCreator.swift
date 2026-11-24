@@ -4,12 +4,15 @@ func getSuggestions(
     sortedIngestions: [Ingestion],
     customUnits: [CustomUnit]
 ) -> [any SuggestionProtocol] {
-    let bySubstance = Dictionary(grouping: sortedIngestions, by: { ingestion in
+    // Ingestions of a formulation are suggested as the formulation, not each substance
+    let formulationIngestions = sortedIngestions.filter { $0.formulation != nil }
+    let bySubstance = Dictionary(grouping: sortedIngestions.filter { $0.formulation == nil }, by: { ingestion in
         ingestion.substanceNameUnwrapped
     })
-    return bySubstance.flatMap { (substanceName: String, value: [Ingestion]) in
+    let substanceSuggestions = bySubstance.flatMap { (substanceName: String, value: [Ingestion]) in
         getSuggestionsForSubstance(substanceName: substanceName, ingestionsOfSubstance: value)
-    }.sorted { sug1, sug2 in
+    }
+    return (substanceSuggestions + getFormulationSuggestions(formulationIngestions: formulationIngestions)).sorted { sug1, sug2 in
         sug1.sortDate > sug2.sortDate
     }
 }
@@ -68,6 +71,19 @@ private func getSuggestionsForSubstance(substanceName: String, ingestionsOfSubst
 }
 
 private let maxNumberOfSuggestions = 8
+
+private func getFormulationSuggestions(formulationIngestions: [Ingestion]) -> [any SuggestionProtocol] {
+    Dictionary(grouping: formulationIngestions, by: { $0.formulation }).compactMap { formulation, ingestions in
+        guard let formulation else { return nil }
+        // All ingestions of one logging share the amount
+        let amounts = ingestions.map { $0.formulationAmount > 0 ? $0.formulationAmount : 1 }
+        return FormulationSuggestions(
+            formulation: formulation,
+            amounts: Array(amounts.uniqued().prefix(maxNumberOfSuggestions)),
+            sortDate: ingestions.compactMap { $0.creationDate }.max() ?? Date.distantPast
+        )
+    }
+}
 
 private func getPureSubstanceSuggestions(route: AdministrationRoute, pureSubstanceIngestions: [Ingestion], substance: Substance) -> PureSubstanceSuggestions? {
     if let ingestion = pureSubstanceIngestions.first {
