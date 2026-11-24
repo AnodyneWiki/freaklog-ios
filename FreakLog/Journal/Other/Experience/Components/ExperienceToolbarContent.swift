@@ -44,7 +44,7 @@ struct ExperienceToolbarContent: View {
                         Button {
                             sheetToShow = .assistant(prompt: nil)
                         } label: {
-                            Label("Ask Assistant", systemImage: "bubble.left.and.bubble.right")
+                            Label("Ask Assistant", systemImage: "text.bubble")
                         }
                     }
                     timeDisplayMenu

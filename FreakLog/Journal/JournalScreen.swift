@@ -101,37 +101,39 @@ struct JournalScreen: View {
                 }
             }
                 
-            // The same buttons in both tabs, so the switcher between them stays in place
-            ToolbarItem(placement: .navigationBarLeading) {
-                HStack(spacing: 8) {
+            // The same buttons in both tabs, so the switcher between them stays in place. Groups get the system's
+            // spacing; everything that isn't used all the time is in the More menu.
+            ToolbarItemGroup(placement: .navigationBarLeading) {
+                Button {
+                    isSearchPresented = true
+                } label: {
+                    Label("Search", systemImage: "magnifyingglass")
+                }
+                favoriteButton
+            }
+            ToolbarItemGroup(placement: .navigationBarTrailing) {
+                if isAssistantEnabled {
                     Button {
-                        isSearchPresented = true
+                        isShowingAssistant = true
                     } label: {
-                        Label("Search", systemImage: "magnifyingglass")
+                        Label("Assistant", systemImage: "text.bubble")
                     }
-                    favoriteButton
                 }
+                moreMenu
             }
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 8) {
-                    // The assistant shares a menu with the time display, so the bar keeps two buttons a side
-                    if isAssistantEnabled {
-                        Menu {
-                            Button {
-                                isShowingAssistant = true
-                            } label: {
-                                Label("Assistant", systemImage: "bubble.left.and.bubble.right")
-                            }
-                            timeDisplayMenu
-                        } label: {
-                            Label("More", systemImage: "ellipsis.circle")
-                        }
-                    } else {
-                        timeDisplayMenu
-                    }
-                    calendarLink
-                }
+        }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                Navigator.shared.openInCurrentTab(.calendar)
+            } label: {
+                Label("Calendar", systemImage: "calendar")
             }
+            timeDisplayMenu
+        } label: {
+            Label("More", systemImage: "ellipsis.circle")
         }
     }
 
@@ -150,12 +152,6 @@ struct JournalScreen: View {
             }
         } label: {
             Label("Time Display", systemImage: "timer")
-        }
-    }
-
-    private var calendarLink: some View {
-        NavigationLink(value: GlobalNavigationDestination.calendar) {
-            Label("Calendar", systemImage: "calendar")
         }
     }
 

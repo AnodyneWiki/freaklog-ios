@@ -191,7 +191,7 @@ struct AssistantScreen: View {
 
   private func setupNeeded(_ message: String) -> some View {
     VStack(spacing: 16) {
-      Image(systemName: "bubble.left.and.bubble.right")
+      Image(systemName: "text.bubble")
         .font(.largeTitle)
         .foregroundColor(.secondary)
       Text(message)
