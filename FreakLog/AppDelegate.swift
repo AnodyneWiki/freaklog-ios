@@ -11,6 +11,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             _ = ActivityManager.shared
         }
         setupCloudKitBackgroundTaskHandling()
+        PhoneWatchSession.shared.activate()
         return true
     }
 

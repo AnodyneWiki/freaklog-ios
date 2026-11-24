@@ -402,6 +402,13 @@
 		EAF76CA927D90CF900945587 /* SubstanceColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CA827D90CF900945587 /* SubstanceColor.swift */; };
 		EAF76CAC27D90F6A00945587 /* AdministrationRoute.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */; };
 		EAFA4BD42B400BE50056649E /* WrappingHStack in Frameworks */ = {isa = PBXBuildFile; productRef = EAFA4BD32B400BE50056649E /* WrappingHStack */; };
+		12DB8F9DC36963AB06CA06C4 /* WatchQuickLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5303B77620D50AE2EF5B98DC /* WatchQuickLog.swift */; };
+		6C0D45895A8997D665B4CA94 /* WatchQuickLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BF8A66807AEF9736FA7182 /* WatchQuickLogging.swift */; };
+		90EBB3E84448056D791CED40 /* PhoneWatchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11B9CCF97055AAF8DFFD75C /* PhoneWatchSession.swift */; };
+		A3E105CA24A6D53BD1D13520 /* WatchQuickLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5303B77620D50AE2EF5B98DC /* WatchQuickLog.swift */; };
+		ADF58E9E9FCCDE9D83866F30 /* Double-asRoundedReadableString.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */; };
+		AC07660D71E2A34B75CFF96E /* FreakLogWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 90977124578F063FA0B94D3B /* FreakLogWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B543170B220BA83D90DBCC89 /* WatchQuickLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15176E649D041308FC844ACB /* WatchQuickLogTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -418,6 +425,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = EAE4710226CBA57F009FB0EC;
 			remoteInfo = FreakLog;
+		};
+		DEB8B04B95CC4A8E158CD499 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = EAE470FB26CBA57F009FB0EC /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1F25DA26D471BD5021630698;
+			remoteInfo = FreakLogWatch;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -439,6 +453,7 @@
 			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
 			dstSubfolderSpec = 16;
 			files = (
+				AC07660D71E2A34B75CFF96E /* FreakLogWatch.app in Embed Watch Content */,
 			);
 			name = "Embed Watch Content";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -817,11 +832,17 @@
 		EAF76CA827D90CF900945587 /* SubstanceColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceColor.swift; sourceTree = "<group>"; };
 		EAF76CAB27D90F6A00945587 /* AdministrationRoute.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdministrationRoute.swift; sourceTree = "<group>"; };
 		F76C3410801D4B9BA7EFF787 /* LeaderboardSyncManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardSyncManager.swift; sourceTree = "<group>"; };
+		5303B77620D50AE2EF5B98DC /* WatchQuickLog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchQuickLog.swift; sourceTree = "<group>"; };
+		25BF8A66807AEF9736FA7182 /* WatchQuickLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchQuickLogging.swift; sourceTree = "<group>"; };
+		F11B9CCF97055AAF8DFFD75C /* PhoneWatchSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneWatchSession.swift; sourceTree = "<group>"; };
+		90977124578F063FA0B94D3B /* FreakLogWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FreakLogWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		15176E649D041308FC844ACB /* WatchQuickLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchQuickLogTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		440D42F52E74A40D00C73035 /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); name = Assets; path = ../FreakLog/Assets; sourceTree = "<group>"; };
 		44E43E022E71E9E9008D7FDD /* Assets */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = Assets; sourceTree = "<group>"; };
+		ADBC533B250C307B96AC5695 /* FreakLogWatch */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = FreakLogWatch; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -849,6 +870,13 @@
 				EAFA4BD42B400BE50056649E /* WrappingHStack in Frameworks */,
 				EAC3686C2B6F840100056C56 /* HorizonCalendar in Frameworks */,
 				EAF76C9927D899E700945587 /* AlertToast in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9E59C9E33B8DA98BD6C18793 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1628,6 +1656,7 @@
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
 				EA98D9102972968100D94E65 /* Roa.json */,
 				38F33FF90417A31F9657159B /* Anodyne.json */,
+				15176E649D041308FC844ACB /* WatchQuickLogTests.swift */,
 			);
 			path = FreakLogTests;
 			sourceTree = "<group>";
@@ -1651,6 +1680,7 @@
 				EA085DD129607229001638AC /* TimelineWidget */,
 				EAE4710426CBA57F009FB0EC /* Products */,
 				EAA2EC6826E2064D00B4FACF /* Frameworks */,
+				ADBC533B250C307B96AC5695 /* FreakLogWatch */,
 			);
 			sourceTree = "<group>";
 		};
@@ -1660,6 +1690,7 @@
 				EAE4710326CBA57F009FB0EC /* FreakLog.app */,
 				EACB6E3A27D09C8800940291 /* FreakLogTests.xctest */,
 				EA085DCC29607229001638AC /* LiveActivityExtension.appex */,
+				90977124578F063FA0B94D3B /* FreakLogWatch.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -1693,6 +1724,7 @@
 				EAF5D366270B3A6E00E78909 /* FreakLog.entitlements */,
 				EAE4715926CBA664009FB0EC /* Info.plist */,
 				A159D9182FDAC5DC00E19083 /* Decoding */,
+				7B0E5141764278BF896A68D6 /* Watch */,
 			);
 			path = FreakLog;
 			sourceTree = "<group>";
@@ -1872,6 +1904,16 @@
 			path = Enums;
 			sourceTree = "<group>";
 		};
+		7B0E5141764278BF896A68D6 /* Watch */ = {
+			isa = PBXGroup;
+			children = (
+				5303B77620D50AE2EF5B98DC /* WatchQuickLog.swift */,
+				25BF8A66807AEF9736FA7182 /* WatchQuickLogging.swift */,
+				F11B9CCF97055AAF8DFFD75C /* PhoneWatchSession.swift */,
+			);
+			path = Watch;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -1927,6 +1969,7 @@
 			);
 			dependencies = (
 				EA085DDC29607229001638AC /* PBXTargetDependency */,
+				687DA510A8DFD838E96E7414 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				44E43E022E71E9E9008D7FDD /* Assets */,
@@ -1940,6 +1983,26 @@
 			);
 			productName = FreakLog;
 			productReference = EAE4710326CBA57F009FB0EC /* FreakLog.app */;
+			productType = "com.apple.product-type.application";
+		};
+		1F25DA26D471BD5021630698 /* FreakLogWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F797B510E0C3EC4D73B670DA /* Build configuration list for PBXNativeTarget "FreakLogWatch" */;
+			buildPhases = (
+				283795B10873BFB372E57447 /* Sources */,
+				9E59C9E33B8DA98BD6C18793 /* Frameworks */,
+				225F0C1ED3A3C38F8E0ABFA3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				ADBC533B250C307B96AC5695 /* FreakLogWatch */,
+			);
+			name = FreakLogWatch;
+			productName = FreakLogWatch;
+			productReference = 90977124578F063FA0B94D3B /* FreakLogWatch.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -1961,6 +2024,9 @@
 					};
 					EAE4710226CBA57F009FB0EC = {
 						CreatedOnToolsVersion = 12.5.1;
+					};
+					1F25DA26D471BD5021630698 = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -1987,6 +2053,7 @@
 				EAE4710226CBA57F009FB0EC /* FreakLog */,
 				EACB6E3927D09C8800940291 /* FreakLogTests */,
 				EA085DCB29607229001638AC /* LiveActivityExtension */,
+				1F25DA26D471BD5021630698 /* FreakLogWatch */,
 			);
 		};
 /* End PBXProject section */
@@ -2017,6 +2084,13 @@
 			files = (
 				EAE48097297433D100B600EF /* LaunchScreen.storyboard in Resources */,
 				EA3E74612BADA9D500162354 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		225F0C1ED3A3C38F8E0ABFA3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2081,6 +2155,7 @@
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
 				EACB6E5227D2592800940291 /* DecodingTests.swift in Sources */,
+				B543170B220BA83D90DBCC89 /* WatchQuickLogTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2424,6 +2499,18 @@
 				798E9DFE70F94C93B5B5CC08 /* LeaderboardServersScreen.swift in Sources */,
 				4CCA768DE6A14FBB8FB444DC /* AddEditServerScreen.swift in Sources */,
 				3FA0D3E0FD3A44A8AF23EDC2 /* ServerLeaderboardScreen.swift in Sources */,
+				12DB8F9DC36963AB06CA06C4 /* WatchQuickLog.swift in Sources */,
+				6C0D45895A8997D665B4CA94 /* WatchQuickLogging.swift in Sources */,
+				90EBB3E84448056D791CED40 /* PhoneWatchSession.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		283795B10873BFB372E57447 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A3E105CA24A6D53BD1D13520 /* WatchQuickLog.swift in Sources */,
+				ADF58E9E9FCCDE9D83866F30 /* Double-asRoundedReadableString.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -2439,6 +2526,11 @@
 			isa = PBXTargetDependency;
 			target = EAE4710226CBA57F009FB0EC /* FreakLog */;
 			targetProxy = EACB6E3E27D09C8800940291 /* PBXContainerItemProxy */;
+		};
+		687DA510A8DFD838E96E7414 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1F25DA26D471BD5021630698 /* FreakLogWatch */;
+			targetProxy = DEB8B04B95CC4A8E158CD499 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -2715,6 +2807,59 @@
 			};
 			name = Release;
 		};
+		76AF6710C81A855209CCF6EF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "woof.freaklog-debug";
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "woof.freaklog-debug.watchkitapp";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		537D8BF91DC7FEDAA66FB250 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = woof.freaklog;
+				INFOPLIST_KEY_WKRunsIndependentlyOfCompanionApp = NO;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = woof.freaklog.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -2750,6 +2895,15 @@
 			buildConfigurations = (
 				EAE4711826CBA582009FB0EC /* Debug */,
 				EAE4711926CBA582009FB0EC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F797B510E0C3EC4D73B670DA /* Build configuration list for PBXNativeTarget "FreakLogWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				76AF6710C81A855209CCF6EF /* Debug */,
+				537D8BF91DC7FEDAA66FB250 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

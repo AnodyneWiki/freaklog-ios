@@ -17,6 +17,7 @@ Psychoactive substance ingestion journal. Users log ingestions, track effects ov
 | `FreakLog` | Main app |
 | `TimelineWidget` | Live Activity widget (iOS 16.2+) |
 | `FreakLogTests` | Unit tests (decoding, interaction logic, export/import round trip) |
+| `FreakLogWatch` | Watch app for quick logging (watchOS 10+), embedded in the main app |
 
 ## Directory layout
 
@@ -40,6 +41,8 @@ FreakLog/
   Timeline/               # Canvas-drawn effect timeline (used in experience screens)
   Webhooks/               # WebhookManager, WebhookService (HTTP)
   Main/                   # Navigation, auth, live activity, toast
+  Watch/                  # iPhone side of the watch app (WatchConnectivity)
+FreakLogWatch/            # Watch app (synchronized folder)
 ```
 
 ## CoreData entities
@@ -114,10 +117,13 @@ The add (`FinishIngestionScreen`) and edit (`EditIngestionScreen`) forms share `
 PsychonautWiki and custom substances go through the same add screens: `AddIngestionSubstance` names either one, and `ChooseRouteScreenArguments`, `SubstanceAndRoute` (also used to make custom units) and `ChooseOtherRouteScreenArguments` carry it. Open the add ingestion cover with `Navigator.shared.showAddIngestionFullScreenCover(startingAt:)`; the start time reaches `FinishIngestionScreen` as the `addIngestionStartTime` environment value.
 
 ### Formulations
-A formulation logs several ingestions at once. `FormulationCodable` is its value form for editing (`EditFormulationScreen` only writes on Done), export and import; `apply(to:)` replaces the components, which keep their order in `position` because CloudKit can't sync ordered relationships. Formulations are managed in Settings > Formulations and listed on the New Ingestion screen: `FormulationDoseScreen` picks the amount taken, `ingestionArguments(amount:)` scales every dose (and deviation) by it, and `FinishIngestionScreen(ingestions:dismiss:)` logs them with shared time, experience, consumer, location, note and webhooks (one color per substance; the site picker only when all share a route). Save several ingestions with `IngestionSaving.save(_:[Ingestion], sendingWebhooksTo:)`. Logged ingestions link to their formulation with the amount (`Formulation.ingestionArguments(amount:)` sets both), so the suggestions on New Ingestion offer the formulation's recent amounts (`FormulationSuggestions`) instead of its substances; deleting a formulation only drops the link. Exports name the formulation on each ingestion. `SubstancePickerList` is the substance list shared with the custom unit flow.
+A formulation logs several ingestions at once. `FormulationCodable` is its value form for editing (`EditFormulationScreen` only writes on Done), export and import; `apply(to:)` replaces the components, which keep their order in `position` because CloudKit can't sync ordered relationships. Formulations are managed in Settings > Formulations and listed on the New Ingestion screen: `FormulationDoseScreen` picks the amount taken, `ingestionArguments(amount:)` scales every dose (and deviation) by it, and `FinishIngestionScreen(ingestions:dismiss:)` logs them with shared time, experience, consumer, location, note and webhooks (one color per substance; the site picker only when all share a route). Save several ingestions with `IngestionSaving.save(_:[Ingestion], sendingWebhooksTo:)`. Logged ingestions link to their formulation with the amount (`Formulation.ingestionArguments(amount:)` sets both), so the suggestions on New Ingestion and the watch offer the formulation's recent amounts (`FormulationSuggestions`) instead of its substances; deleting a formulation only drops the link. Exports name the formulation on each ingestion. `SubstancePickerList` is the substance list shared with the custom unit flow.
 
 ### Live activities
 Check `LiveActivities.areAvailable` (iOS 16.2+, not on Mac, allowed by the user) rather than repeating the checks. Start or switch the activity with `ActivityManager.shared.show(_:hiddenIngestions:hiddenRatings:)` and end it with `stop()`. Once shown, it follows its experience by itself: changes to the view context or the timeline settings redraw it and deleting the experience ends it, so never push a new state after saving.
+
+### Watch app
+The iPhone owns the journal; the watch app (`FreakLogWatch/`) only holds what it was sent. `PhoneWatchSession` (activated at launch, since a watch message launches the app in the background) sends the quick log suggestions built by `WatchQuickLogging.suggestions()` from `getSuggestions` as the application context whenever the view context saves or merges, and logs or undoes the watch's requests with `WatchQuickLogging.log(_:)` / `undo(ingestionsWithIdentifiers:)`, the same way the add ingestion screens do (closest experience, companion color, default webhooks, live activity). The watch sends a request as a message and queues it with `transferUserInfo` when the iPhone isn't reachable; requests carry the new ingestion's identifier, so one delivered twice is logged once. Formulations are suggested like substances, with ones never logged last; their doses are amounts, and a request logs one ingestion per component, with identifiers derived from the request's (`WatchLogRequest.ingestionIdentifiers`). The message types in `Watch/WatchQuickLog.swift` belong to both targets, as does `Double-asRoundedReadableString.swift`; keep them Foundation-only.
 
 ### Administration site strings
 `AdministrationSiteSelection` holds the route-specific site (nostril, vein, muscle, subcutaneous site). `siteString(for:)` converts it into the string stored on `Ingestion.administrationSite` and `init(route:storedSite:)` parses it back. Use `AdministrationSitePicker` for the picker.

@@ -423,6 +423,12 @@ struct PersistenceController {
         return r
     }
 
+    static func ingestionsRequest(withIdentifiers identifiers: [UUID]) -> NSFetchRequest<Ingestion> {
+        let r = Ingestion.fetchRequest()
+        r.predicate = NSPredicate(format: "identifier IN %@", identifiers)
+        return r
+    }
+
     static func recentIngestionsRequest(limit: Int) -> NSFetchRequest<Ingestion> {
         let r = ingestionsRequest()
         r.fetchLimit = limit
