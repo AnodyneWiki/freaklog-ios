@@ -163,11 +163,15 @@ final class AssistantChat: ObservableObject {
       phase = .needsSetup(problem)
       return
     }
+    let limits: AssistantToolbox.Limits = profile.standard == .onDevice ? .compact : .standard
+    let webSearch = allowsWebSearch ? AssistantWebSearch(profile: profile, apiKey: activeKey ?? "") : nil
     let toolbox = AssistantToolbox(
       context: PersistenceController.shared.viewContext,
-      limits: profile.standard == .onDevice ? .compact : .standard,
+      limits: limits,
       includesAnodyneWiki: allowsWikiLookups,
-      includesWebSearch: allowsWebSearch)
+      webSearch: webSearch?.tool(textLimit: limits.maxTextCharacters) { [weak self] in
+        self?.activeProfile?.model ?? profile.model
+      })
     let instructions = AssistantInstructions.text(for: experience, toolbox: toolbox)
     if profile.standard == .onDevice {
       conversation = OnDeviceModel.conversation(instructions: instructions, toolbox: toolbox)

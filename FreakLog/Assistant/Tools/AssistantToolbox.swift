@@ -12,13 +12,13 @@ final class AssistantToolbox {
     context: NSManagedObjectContext,
     limits: Limits = .standard,
     includesAnodyneWiki: Bool,
-    includesWebSearch: Bool = false)
+    webSearch: Tool? = nil)
   {
     self.context = context
     self.limits = limits
     tools = journalTools() + substanceTools() + (includesAnodyneWiki ? anodyneTools() : [])
-    if includesWebSearch {
-      tools.append(AssistantWebSearch.tool(limits: limits))
+    if let webSearch {
+      tools.append(webSearch)
     }
   }
 
