@@ -13,7 +13,7 @@ struct AllIngestionsView: View {
     @AppStorage(PersistenceController.dynamicExperienceRangeHoursKey)
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
-    @State private var ingestionToEdit: Ingestion?
+    @State private var sheetToShow: SheetOption?
     @State private var hiddenIngestions: Set<ObjectIdentifier> = []
 
     var body: some View {
@@ -55,11 +55,16 @@ struct AllIngestionsView: View {
         .environment(\.defaultMinListHeaderHeight, 0)
         .scrollContentBackground(.hidden)
         .coordinateSpace(name: "scroll")
-        .sheet(item: $ingestionToEdit) { ingestion in
-            EditIngestionScreen(
-                ingestion: ingestion,
-                isHidden: $hiddenIngestions.contains(ingestion.id)
-            )
+        .sheet(item: $sheetToShow) { sheet in
+            switch sheet {
+            case .editIngestion(let ingestion):
+                EditIngestionScreen(
+                    ingestion: ingestion,
+                    isHidden: $hiddenIngestions.contains(ingestion.id)
+                )
+            case .editTimedNote(let timedNote, let experience):
+                EditTimedNoteScreen(timedNote: timedNote, experience: experience)
+            }
         }
         .onChange(of: searchText) { newValue in
             viewModel.searchText = newValue
@@ -105,6 +110,18 @@ struct AllIngestionsView: View {
         )
     }
 
+    private enum SheetOption: Identifiable {
+        case editIngestion(Ingestion)
+        case editTimedNote(TimedNote, experience: Experience)
+
+        var id: ObjectIdentifier {
+            switch self {
+            case .editIngestion(let ingestion): ingestion.id
+            case .editTimedNote(let timedNote, _): timedNote.id
+            }
+        }
+    }
+
     private func openDynamicExperience(ingestions: [Ingestion]) {
         guard !ingestions.isEmpty else { return }
         Navigator.shared.journalTabPath.append(GlobalNavigationDestination.dynamicExperience(ingestions: ingestions))
@@ -140,68 +157,16 @@ private extension AllIngestionsView {
     
     @ViewBuilder
     func sectionContent(_ section: IngestionSection) -> some View {
-        ForEach(section.ingestions) { ingestion in
+        ForEach(section.items) { item in
             VStack(spacing: 0) {
-                Button {
-                    ingestionToEdit = ingestion
-                } label: {
-                    IngestionRow(
-                        ingestion: ingestion,
-                        isEyeOpen: isEyeOpen,
-                        isHidingDosageDots: isHidingDosageDots,
-                        timeText: {
-                            let style = timeDisplayStyle.resolved(isCurrent: dynamicRange.containsRecent(ingestion.timeUnwrapped))
-
-                            if style == .relativeToNow {
-                                if timeDisplayStyle == .auto {
-                                    HStack(spacing: 0) {
-                                        Text(ingestion.timeUnwrapped, style: .time)
-                                        Text(" (")
-                                        RelativeTimeText(date: ingestion.timeUnwrapped)
-                                        Text(")")
-                                    }
-                                } else {
-                                    RelativeTimeText(date: ingestion.timeUnwrapped)
-                                }
-                            } else {
-                                Text(ingestion.timeUnwrapped, style: .time)
-                            }
-                        }
-                    )
-                    .padding(.vertical, 8)
-                    .padding(.horizontal)
-                    .background(Color(UIColor.systemBackground))
+                switch item {
+                case .ingestion(let ingestion):
+                    ingestionRow(ingestion)
+                case .timedNote(let timedNote):
+                    timedNoteRow(timedNote)
                 }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    Button {
-                        openDynamicExperience(ingestions: viewModel.getIngestionsForDynamicExperience(for: ingestion))
-                    } label: {
-                        Label("Overview", systemImage: "clock.arrow.circlepath")
-                    }
 
-                    if let experience = ingestion.experience {
-                        Button {
-                            Navigator.shared.journalTabPath.append(GlobalNavigationDestination.experience(experience: experience))
-                        } label: {
-                            Label("Open Experience", systemImage: "person.text.rectangle")
-                        }
-                    }
-                    
-                    Button {
-                        ingestionToEdit = ingestion
-                    } label: {
-                        Label("Edit", systemImage: "pencil")
-                    }
-                    
-                    Button(role: .destructive) {
-                        viewModel.delete(ingestion)
-                    } label: {
-                        Label("Delete", systemImage: "trash")
-                    }
-                }
-                
-                if ingestion != section.ingestions.last {
+                if item.id != section.items.last?.id {
                     Divider()
                         .padding(.leading, 56)
                 }
@@ -210,14 +175,127 @@ private extension AllIngestionsView {
             .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                 Button(role: .destructive) {
-                    viewModel.delete(ingestion)
+                    delete(item)
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
             }
         }
     }
-    
+
+    func ingestionRow(_ ingestion: Ingestion) -> some View {
+        Button {
+            sheetToShow = .editIngestion(ingestion)
+        } label: {
+            IngestionRow(
+                ingestion: ingestion,
+                isEyeOpen: isEyeOpen,
+                isHidingDosageDots: isHidingDosageDots,
+                timeText: { timeText(for: ingestion.timeUnwrapped) }
+            )
+            .padding(.vertical, 8)
+            .padding(.horizontal)
+            .background(Color(UIColor.systemBackground))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            Button {
+                openDynamicExperience(ingestions: viewModel.getIngestionsForDynamicExperience(for: ingestion))
+            } label: {
+                Label("Overview", systemImage: "clock.arrow.circlepath")
+            }
+
+            if let experience = ingestion.experience {
+                openExperienceButton(experience)
+            }
+
+            Button {
+                sheetToShow = .editIngestion(ingestion)
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                viewModel.delete(ingestion)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    func timedNoteRow(_ timedNote: TimedNote) -> some View {
+        Button {
+            editTimedNote(timedNote)
+        } label: {
+            TimedNoteRow(timedNote: timedNote) {
+                timeText(for: timedNote.timeUnwrapped)
+            }
+            .foregroundColor(.primary) // to override the button styles
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 8)
+            .padding(.horizontal)
+            .background(Color(UIColor.systemBackground))
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if let experience = timedNote.experience {
+                openExperienceButton(experience)
+            }
+
+            Button {
+                editTimedNote(timedNote)
+            } label: {
+                Label("Edit", systemImage: "pencil")
+            }
+
+            Button(role: .destructive) {
+                viewModel.delete(timedNote)
+            } label: {
+                Label("Delete", systemImage: "trash")
+            }
+        }
+    }
+
+    func openExperienceButton(_ experience: Experience) -> some View {
+        Button {
+            Navigator.shared.journalTabPath.append(GlobalNavigationDestination.experience(experience: experience))
+        } label: {
+            Label("Open Experience", systemImage: "person.text.rectangle")
+        }
+    }
+
+    func editTimedNote(_ timedNote: TimedNote) {
+        guard let experience = timedNote.experience else { return }
+        sheetToShow = .editTimedNote(timedNote, experience: experience)
+    }
+
+    func delete(_ item: IngestionSection.Item) {
+        switch item {
+        case .ingestion(let ingestion): viewModel.delete(ingestion)
+        case .timedNote(let timedNote): viewModel.delete(timedNote)
+        }
+    }
+
+    // Recent events are shown relative to now under the auto style, with their clock time
+    @ViewBuilder
+    func timeText(for time: Date) -> some View {
+        let style = timeDisplayStyle.resolved(isCurrent: dynamicRange.containsRecent(time))
+        if style == .relativeToNow {
+            if timeDisplayStyle == .auto {
+                HStack(spacing: 0) {
+                    Text(time, style: .time)
+                    Text(" (")
+                    RelativeTimeText(date: time)
+                    Text(")")
+                }
+            } else {
+                RelativeTimeText(date: time)
+            }
+        } else {
+            Text(time, style: .time)
+        }
+    }
+
     @ViewBuilder
     var loadingIndicator: some View {
         if !viewModel.hasReachedEnd {

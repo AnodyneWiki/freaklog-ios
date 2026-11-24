@@ -535,6 +535,12 @@ struct PersistenceController {
         return r
     }
 
+    static func timedNotesRequest() -> NSFetchRequest<TimedNote> {
+        let r = TimedNote.fetchRequest()
+        r.sortDescriptors = [NSSortDescriptor(keyPath: \TimedNote.time, ascending: false)]
+        return r
+    }
+
     static func sprayRequest() -> NSFetchRequest<Spray> {
         let r = Spray.fetchRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \Spray.creationDate, ascending: false)]

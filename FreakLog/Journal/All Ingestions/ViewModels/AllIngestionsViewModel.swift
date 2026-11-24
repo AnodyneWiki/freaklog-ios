@@ -2,7 +2,8 @@ import Foundation
 import CoreData
 import Combine
 
-/// A ViewModel managing basic pagination and grouping of `Ingestion` records from Core Data.
+/// A ViewModel managing basic pagination and grouping of `Ingestion` records from Core Data,
+/// with the timed notes of the loaded days in between.
 final class AllIngestionsViewModel: NSObject, ObservableObject {
     
     // MARK: - Published Properties
@@ -21,6 +22,8 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     private var currentOffset = 0
     private var cancellables = Set<AnyCancellable>()
     private var fetchedResultsController: NSFetchedResultsController<Ingestion>?
+    // There are few timed notes, so all matching ones are fetched and only those of the loaded range shown
+    private var timedNotesController: NSFetchedResultsController<TimedNote>?
 
     // MARK: - Initialization
     
@@ -63,6 +66,12 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         Task {
             await IngestionDeletion.delete(ingestions: [ingestion])
         }
+    }
+
+    func delete(_ timedNote: TimedNote) {
+        timedNote.experience?.objectWillChange.send()
+        context.delete(timedNote)
+        PersistenceController.shared.saveViewContext()
     }
 
     /// Returns ingestions for the configured dynamic range relative to the given ingestion.
@@ -135,7 +144,20 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
             cacheName: nil
         )
         fetchedResultsController?.delegate = self
-        
+
+        timedNotesController = NSFetchedResultsController(
+            fetchRequest: createTimedNotesFetchRequest(),
+            managedObjectContext: context,
+            sectionNameKeyPath: nil,
+            cacheName: nil
+        )
+        timedNotesController?.delegate = self
+        do {
+            try timedNotesController?.performFetch()
+        } catch {
+            print("ERROR: [AllIngestionsViewModel] Failed to fetch timed notes: \(error.localizedDescription)")
+        }
+
         do {
             try fetchedResultsController?.performFetch()
             if let results = fetchedResultsController?.fetchedObjects {
@@ -170,26 +192,39 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         return request
     }
 
-    private func processFetchedResults(_ results: [Ingestion]) {
-        if results.isEmpty && currentOffset > pageSize {
-            hasReachedEnd = true
-            return
+    // Matches the ingestion filters: the note text instead of the substance, and favorite experiences
+    private func createTimedNotesFetchRequest() -> NSFetchRequest<TimedNote> {
+        let request = PersistenceController.timedNotesRequest()
+        var predicates: [NSPredicate] = []
+        if isFavoriteFilterEnabled {
+            predicates.append(NSPredicate(format: "experience.isFavorite == YES"))
         }
+        if !searchText.isEmpty {
+            predicates.append(NSPredicate(format: "note CONTAINS[cd] %@", searchText))
+        }
+        if !predicates.isEmpty {
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        }
+        return request
+    }
 
+    private func processFetchedResults(_ results: [Ingestion]) {
+        hasReachedEnd = results.count < currentOffset
         groupIngestions(results)
-        
-        if results.count < currentOffset {
-            hasReachedEnd = true
-        } else {
-            hasReachedEnd = false
-        }
-        
         updateTimelineIngestions()
     }
 
     private func groupIngestions(_ ingestions: [Ingestion]) {
-        sections = Dictionary(grouping: ingestions) { Calendar.current.startOfDay(for: $0.timeUnwrapped) }
-            .map { day, ingestions in IngestionSection(id: dateToSectionId(day), date: day, ingestions: ingestions) }
+        // Older notes show up once the ingestions around them are loaded
+        let oldestLoadedTime = hasReachedEnd ? nil : ingestions.last?.timeUnwrapped
+        let timedNotes = (timedNotesController?.fetchedObjects ?? []).filter { timedNote in
+            oldestLoadedTime.map { timedNote.timeUnwrapped >= $0 } ?? true
+        }
+        let items = ingestions.map(IngestionSection.Item.ingestion) + timedNotes.map(IngestionSection.Item.timedNote)
+        sections = Dictionary(grouping: items) { Calendar.current.startOfDay(for: $0.time) }
+            .map { day, items in
+                IngestionSection(id: dateToSectionId(day), date: day, items: items.sorted { $0.time > $1.time })
+            }
             .sorted { $0.date > $1.date }
     }
 
@@ -208,11 +243,10 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
 // MARK: - NSFetchedResultsControllerDelegate
 
 extension AllIngestionsViewModel: NSFetchedResultsControllerDelegate {
+    // Called for both ingestions and timed notes
     func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
-        if let results = controller.fetchedObjects as? [Ingestion] {
-            DispatchQueue.main.async {
-                self.processFetchedResults(results)
-            }
+        DispatchQueue.main.async {
+            self.processFetchedResults(self.fetchedResultsController?.fetchedObjects ?? [])
         }
     }
 }
