@@ -115,6 +115,20 @@ final class AssistantProviderTests: XCTestCase {
     XCTAssertEqual(converted["properties"]?["names"]?["items"]?["type"], "STRING")
   }
 
+  func testCredentialsStayOnTheConfiguredOrigin() {
+    let original = URL(string: "https://example.com/v1")
+    XCTAssertTrue(AssistantHTTP.sameOrigin(original, URL(string: "https://example.com:443/models")))
+    for address in ["https://other.example/v1", "https://example.com:8443/v1", "http://example.com/v1"] {
+      XCTAssertFalse(AssistantHTTP.sameOrigin(original, URL(string: address)))
+    }
+  }
+
+  func testMalformedStreamIndicesAreRejected() {
+    for index in [-1, 0.5, Double.greatestFiniteMagnitude] {
+      XCTAssertThrowsError(try JSONValue.object(["index": .number(index)]).streamIndex(default: 0))
+    }
+  }
+
   func testOnlyLocalServersMayUseHTTP() {
     XCTAssertNoThrow(try AssistantHTTP.url("http://localhost:11434/v1", "models"))
     XCTAssertThrowsError(try AssistantHTTP.url("http://192.168.1.2:11434/v1", "models"))

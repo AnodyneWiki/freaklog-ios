@@ -81,7 +81,7 @@ enum AssistantHTTP {
   // HTTP to another machine, which would send the journal data unencrypted
   static func isInsecureRemote(_ url: URL) -> Bool {
     guard url.scheme?.lowercased() == "http", let host = url.host?.lowercased() else { return false }
-    return !["localhost", "127.0.0.1", "::1"].contains(host)
+    return !["localhost", "127.0.0.1", "::1", "[::1]"].contains(host)
   }
 
   // POSTs the body and streams the answer as server-sent events
@@ -111,21 +111,24 @@ enum AssistantHTTP {
           } else {
             var parser = ServerSentEventParser()
             var line: [UInt8] = []
+            var eventBytes = 0
             // Lines are split by hand because `bytes.lines` drops the empty lines that end events
             for try await byte in bytes {
+              eventBytes += 1
+              guard eventBytes <= maxEventBytes else {
+                throw AssistantError("\(url.host ?? "The server") sent an event that is too large.")
+              }
               if byte == UInt8(ascii: "\n") {
                 if line.last == UInt8(ascii: "\r") {
                   line.removeLast()
                 }
+                if line.isEmpty { eventBytes = 0 }
                 if let event = parser.feed(String(decoding: line, as: UTF8.self)) {
                   continuation.yield(event)
                 }
                 line.removeAll(keepingCapacity: true)
               } else {
                 line.append(byte)
-                if line.count > maxEventBytes {
-                  throw AssistantError("\(url.host ?? "The server") sent an event that is too large.")
-                }
               }
             }
             if !line.isEmpty, let event = parser.feed(String(decoding: line, as: UTF8.self)) {
@@ -183,8 +186,25 @@ enum AssistantHTTP {
     // Local models can take minutes before the first token
     configuration.timeoutIntervalForRequest = 300
     configuration.timeoutIntervalForResource = 60 * 60
-    return URLSession(configuration: configuration)
+    return URLSession(configuration: configuration, delegate: RedirectDelegate(), delegateQueue: nil)
   }()
+
+  // Credentials and journal content belong to the configured origin, including on redirects.
+  static func sameOrigin(_ first: URL?, _ second: URL?) -> Bool {
+    guard let first, let second, let host = first.host, let scheme = first.scheme?.lowercased() else { return false }
+    let defaultPort = scheme == "https" ? 443 : 80
+    return scheme == second.scheme?.lowercased() && host.lowercased() == second.host?.lowercased()
+      && (first.port ?? defaultPort) == (second.port ?? defaultPort)
+  }
+
+  private final class RedirectDelegate: NSObject, URLSessionTaskDelegate {
+    func urlSession(
+      _ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
+      newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void)
+    {
+      completionHandler(AssistantHTTP.sameOrigin(task.originalRequest?.url, request.url) ? request : nil)
+    }
+  }
 
   private static func connect<T>(_ operation: () async throws -> T) async throws -> T {
     do {

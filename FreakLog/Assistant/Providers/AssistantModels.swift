@@ -157,6 +157,14 @@ extension JSONValue: ExpressibleByStringLiteral {
     self = .string(value)
   }
 
+  func streamIndex(default fallback: Int) throws -> Int {
+    guard let value = self["index"] else { return fallback }
+    guard let number = value.number, let index = Int(exactly: number), index >= 0 else {
+      throw AssistantError("The server sent an invalid stream index.")
+    }
+    return index
+  }
+
   // Parses a JSON text, nil when it isn't valid JSON
   init?(jsonText: String) {
     guard let data = jsonText.data(using: .utf8), let value = try? JSONDecoder().decode(JSONValue.self, from: data) else {

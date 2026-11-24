@@ -18,7 +18,7 @@ struct OpenAIChatClient: AssistantChatClient {
       // A server that doesn't stream answers with the whole `message` instead of `delta`s
       guard let delta = choice["delta"] ?? choice["message"] else { return nil }
       for (position, fragment) in (delta["tool_calls"]?.array ?? []).enumerated() {
-        let index = fragment["index"]?.number.map(Int.init) ?? position
+        let index = try fragment.streamIndex(default: position)
         var call = calls[index] ?? PendingCall()
         if let id = fragment["id"]?.string, !id.isEmpty {
           call.id = id

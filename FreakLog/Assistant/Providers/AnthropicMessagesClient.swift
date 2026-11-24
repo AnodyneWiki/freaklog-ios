@@ -7,7 +7,7 @@ struct AnthropicMessagesClient: AssistantChatClient {
   struct MessageBuilder {
     // Adds one event and returns the text it adds to the answer
     mutating func add(_ data: JSONValue, named name: String?) throws -> [String] {
-      let index = data["index"]?.number.map(Int.init) ?? 0
+      let index = try data.streamIndex(default: 0)
       switch data["type"]?.string ?? name {
       case "error":
         throw AssistantError(AssistantHTTP.errorMessage(in: data) ?? "The provider reported an error.")
