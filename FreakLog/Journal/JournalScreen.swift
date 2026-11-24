@@ -9,13 +9,14 @@ struct JournalScreen: View {
 
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
+    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
     @AppStorage(PersistenceController.isHidingJournalTabSwitcherKey) var isHidingJournalTabSwitcher: Bool = false
     @AppStorage(PersistenceController.defaultJournalViewKey) private var defaultTab: JournalViewOption = .allIngestions
     // The tab switched to in the journal, nil while on the default. It doesn't change the default tab setting.
     @State private var switchedTab: JournalViewOption?
     // The experience list builds a new fetch for each search, so it only follows the text once typing pauses
     @State private var experienceSearchText = ""
+    @State private var isAddingTimedNote = false
 
     // Without the switcher there is no way to change tabs, so the default tab is shown
     private var selectedTab: JournalViewOption {
@@ -29,10 +30,10 @@ struct JournalScreen: View {
     var body: some View {
         FabPosition(alignment: fabButtonPosition.alignment) {
             if !isSearchPresented {
-                Button {
+                AddFabButton {
                     Navigator.shared.showAddIngestionFullScreenCover()
-                } label: {
-                    Label("New Ingestion", systemImage: "plus").labelStyle(FabLabelStyle())
+                } addTimedNote: {
+                    isAddingTimedNote = true
                 }
             }
         } screen: {
@@ -78,6 +79,9 @@ struct JournalScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: defaultTab) { _ in
             switchedTab = nil
+        }
+        .sheet(isPresented: $isAddingTimedNote) {
+            AddTimedNoteScreen(experience: nil)
         }
         .toolbar {
             if !isHidingJournalTabSwitcher {

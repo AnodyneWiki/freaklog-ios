@@ -17,7 +17,7 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
     @AppStorage(PersistenceController.isOpenLastExperienceSiriTipVisibleKey) private var isSiriTipVisible = false
-    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .center
+    @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
@@ -64,8 +64,8 @@ struct ExperienceScreen: View {
         FabPosition(alignment: fabButtonPosition.alignment) {
             let threeHours: TimeInterval = 3*60*60
             if isCurrent || experience.creationDateUnwrapped.distance(to: .now) < threeHours {
-                Button(action: addIngestion) {
-                    Label("New Ingestion", systemImage: "plus").labelStyle(FabLabelStyle())
+                AddFabButton(addIngestion: addIngestion) {
+                    sheetToShow = .addTimedNote
                 }
             }
         } screen: {

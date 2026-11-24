@@ -1,13 +1,16 @@
 import SwiftUI
 
+// Adds a note to the experience, or without one to the experience a new ingestion at the note's time
+// would join, starting a new experience if there is none
 struct AddTimedNoteScreen: View {
-    let experience: Experience
+    let experience: Experience?
 
     @Environment(\.dismiss) private var dismiss
     @State private var time = Date.now
     @State private var note = ""
     @State private var color = SubstanceColor.blue
     @State private var isPartOfTimeline = false
+    @State private var usedColors: [SubstanceColor] = []
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @FocusState private var isTextFieldFocused: Bool
 
@@ -19,7 +22,7 @@ struct AddTimedNoteScreen: View {
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
-                usedColors: experience.timedNotesForTimeline.map(\.color)
+                usedColors: usedColors
             )
             .navigationTitle("Add Timed Note")
             .toolbar {
@@ -35,22 +38,32 @@ struct AddTimedNoteScreen: View {
         }
         .onAppear {
             isTextFieldFocused = true
-            isPartOfTimeline = experience.isCurrent
-            if let otherColor = SubstanceColor.unused(avoiding: experience.timedNotesForTimeline.map(\.color)).randomElement() {
+            let experience = targetExperience(at: time)
+            isPartOfTimeline = experience?.isCurrent ?? true
+            usedColors = experience?.timedNotesForTimeline.map(\.color) ?? []
+            if let otherColor = SubstanceColor.unused(avoiding: usedColors).randomElement() {
                 color = otherColor
             }
         }
     }
 
+    private func targetExperience(at time: Date) -> Experience? {
+        experience ?? ExperienceLogic.closestExperience(from: PersistenceController.shared.getExperiences(near: time), to: time)
+    }
+
     var doneButton: some View {
         DoneButton {
-            save()
-            toastViewModel.showSuccessToast(message: "Note Added")
+            do {
+                try save()
+                toastViewModel.showSuccessToast(message: "Note Added")
+            } catch {
+                toastViewModel.showErrorToast(message: "Failed to add note")
+            }
             dismiss()
         }
     }
 
-    func save() {
+    func save() throws {
         let context = PersistenceController.shared.viewContext
         let newNote = TimedNote(context: context)
         newNote.creationDate = Date()
@@ -58,7 +71,7 @@ struct AddTimedNoteScreen: View {
         newNote.note = note
         newNote.colorAsText = color.rawValue
         newNote.isPartOfTimeline = isPartOfTimeline
-        newNote.experience = experience
-        try? context.save()
+        newNote.experience = targetExperience(at: time) ?? Experience.create(at: time, in: context)
+        try context.save()
     }
 }
