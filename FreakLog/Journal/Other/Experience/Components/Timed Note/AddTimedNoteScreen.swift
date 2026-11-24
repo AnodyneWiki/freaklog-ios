@@ -14,6 +14,9 @@ struct AddTimedNoteScreen: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @FocusState private var isTextFieldFocused: Bool
 
+    @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest())
+    private var enabledWebhookPresets: FetchedResults<WebhookPreset>
+
     var body: some View {
         NavigationStack {
             TimedNoteScreenContent(
@@ -22,7 +25,8 @@ struct AddTimedNoteScreen: View {
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
-                usedColors: usedColors
+                usedColors: usedColors,
+                isShowingWebhookToggle: !enabledWebhookPresets.isEmpty
             )
             .navigationTitle("Add Timed Note")
             .toolbar {
@@ -72,6 +76,6 @@ struct AddTimedNoteScreen: View {
         newNote.colorAsText = color.rawValue
         newNote.isPartOfTimeline = isPartOfTimeline
         newNote.experience = targetExperience(at: time) ?? Experience.create(at: time, in: context)
-        try context.save()
+        try TimedNoteSaving.save(newNote, sendingWebhooksTo: WebhookPreset.defaultPresetObjectIDs())
     }
 }

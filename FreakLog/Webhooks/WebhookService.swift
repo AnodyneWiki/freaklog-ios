@@ -8,6 +8,7 @@ struct WebhookResult {
 
 struct WebhookService {
     static let defaultTemplate = "[{user}: ][{dose} {unit} ]{substance} via {route}[ ({site})][\n> {note}]"
+    static let defaultNoteTemplate = "[{user}: ]{note}"
 
     static func deleteWebhookMessage(url: String, messageId: String) async -> Bool {
         guard let webhookUrl = URL(string: url) else { return false }
@@ -37,17 +38,10 @@ struct WebhookService {
         return false
     }
 
-    // Posts a new message, or edits the message with the given ID. The global username stands in for "you".
-    static func sendWebhookWithRetry(
-        url: String,
-        data: WebhookManager.WebhookDataSnapshot,
-        settings: WebhookManager.WebhookSettingsSnapshot,
-        editing messageId: String? = nil
-    ) async -> WebhookResult {
-        let isEdit = messageId != nil
+    // The message for an ingestion. The global username stands in for "you".
+    static func content(for data: WebhookManager.WebhookDataSnapshot, settings: WebhookManager.WebhookSettingsSnapshot) -> String {
         let dose = data.dose
-        let globalUsername = UserDefaults.standard.string(forKey: PersistenceController.webhookUsernameKey) ?? ""
-        let user = data.user.isEmpty ? globalUsername : data.user
+        let user = data.user.isEmpty ? settings.username : data.user
         let doseString: String
         let unitString: String
         if dose > 0 {
@@ -76,7 +70,17 @@ struct WebhookService {
             "note": data.note
         ]
 
-        let content = processTemplate(settings.template, values: values)
+        return processTemplate(settings.template, values: values)
+    }
+
+    // The message for a timed note, which is always the user's own
+    static func content(forNote note: String, settings: WebhookManager.WebhookSettingsSnapshot) -> String {
+        processTemplate(settings.noteTemplate, values: ["user": settings.username, "note": note])
+    }
+
+    // Posts a new message, or edits the message with the given ID
+    static func sendWebhookWithRetry(url: String, content: String, editing messageId: String? = nil) async -> WebhookResult {
+        let isEdit = messageId != nil
         let payload: [String: Any] = ["content": content]
 
         let maxRetries = 3

@@ -69,9 +69,9 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
     }
 
     func delete(_ timedNote: TimedNote) {
-        timedNote.experience?.objectWillChange.send()
-        context.delete(timedNote)
-        PersistenceController.shared.saveViewContext()
+        Task {
+            await IngestionDeletion.delete(timedNote: timedNote)
+        }
     }
 
     /// Returns ingestions for the configured dynamic range relative to the given ingestion.

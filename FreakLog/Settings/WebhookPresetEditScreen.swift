@@ -131,6 +131,6 @@ struct EditWebhookPresetScreen: View {
             site: "",
             note: "This is a test note."
         )
-        _ = await WebhookService.sendWebhookWithRetry(url: presetURL, data: data, settings: .current)
+        _ = await WebhookService.sendWebhookWithRetry(url: presetURL, content: WebhookService.content(for: data, settings: .current))
     }
 }

@@ -7,6 +7,10 @@ struct TimedNoteScreenContent: View {
     @Binding var isPartOfTimeline: Bool
     let isTextFieldFocused: FocusState<Bool>.Binding
     let usedColors: [SubstanceColor]
+    // Only new notes are sent, so only adding one shows the toggle
+    var isShowingWebhookToggle = false
+
+    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isSendingWebhooks = false
 
     var body: some View {
         Form {
@@ -38,6 +42,11 @@ struct TimedNoteScreenContent: View {
                         Spacer()
                         Image(systemName: "circle.fill").foregroundColor(color.swiftUIColor)
                     }
+                }
+            }
+            if isShowingWebhookToggle {
+                Section {
+                    Toggle("Send Webhooks", isOn: $isSendingWebhooks).tint(.accentColor)
                 }
             }
         }

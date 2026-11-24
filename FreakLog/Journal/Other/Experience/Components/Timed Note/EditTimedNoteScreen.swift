@@ -54,12 +54,17 @@ struct EditTimedNoteScreen: View {
         timedNote.colorAsText = color.rawValue
         timedNote.isPartOfTimeline = isPartOfTimeline
         timedNote.experience?.objectWillChange.send()
-        PersistenceController.shared.saveViewContext()
+        do {
+            try TimedNoteSaving.save(timedNote)
+        } catch {
+            assertionFailure("Failed to save timed note: \(error)")
+        }
     }
 
     func delete() {
-        PersistenceController.shared.viewContext.delete(timedNote)
-        PersistenceController.shared.saveViewContext()
+        Task {
+            await IngestionDeletion.delete(timedNote: timedNote)
+        }
         dismiss()
     }
 }

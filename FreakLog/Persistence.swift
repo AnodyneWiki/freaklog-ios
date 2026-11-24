@@ -31,6 +31,7 @@ struct PersistenceController {
     static let sendWebhooksEnabledKey = "sendWebhooksEnabled"
     static let webhookUsernameKey = "webhookUsername"
     static let webhookTemplateKey = "webhookTemplate"
+    static let webhookNoteTemplateKey = "webhookNoteTemplate"
     static let webhookIsHyperlinkedKey = "webhookIsHyperlinked"
     static let webhookSubstanceInfoUrlKey = "webhookSubstanceInfoUrl"
     static let isAnodyneAutoLoadEnabledKey = "isAnodyneAutoLoadEnabled"

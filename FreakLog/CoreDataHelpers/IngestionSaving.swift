@@ -28,3 +28,29 @@ enum IngestionSaving {
         }
     }
 }
+
+// Timed notes are sent to webhooks like ingestions: a new one to the chosen presets, an edited one updates
+// the messages already sent for it. Save added and edited timed notes through here.
+@MainActor
+enum TimedNoteSaving {
+    static func save(_ timedNote: TimedNote, sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) throws {
+        let isNew = timedNote.isInserted
+        let isNoteChanged = timedNote.changedValues().keys.contains("note")
+        try PersistenceController.shared.viewContext.save()
+        if isNew {
+            WebhookManager.shared.sendWebhooks(for: timedNote, presetObjectIDs: presetObjectIDs)
+        } else if isNoteChanged {
+            WebhookManager.shared.editWebhookMessages(for: timedNote)
+        }
+    }
+}
+
+extension WebhookPreset {
+    // What adding sends to unless chosen otherwise: every enabled preset, if sending is turned on
+    @MainActor
+    static func defaultPresetObjectIDs() -> [NSManagedObjectID] {
+        guard UserDefaults.standard.bool(forKey: PersistenceController.sendWebhooksEnabledKey) else { return [] }
+        let context = PersistenceController.shared.viewContext
+        return ((try? context.fetch(PersistenceController.enabledWebhookPresetsRequest())) ?? []).map(\.objectID)
+    }
+}

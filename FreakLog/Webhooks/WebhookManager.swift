@@ -21,14 +21,19 @@ final class WebhookManager: Sendable {
 
     struct WebhookSettingsSnapshot: Sendable {
         let template: String
+        let noteTemplate: String
+        let username: String
         let isHyperlinked: Bool
         let substanceInfoUrl: String
 
         static var current: WebhookSettingsSnapshot {
-            WebhookSettingsSnapshot(
-                template: UserDefaults.standard.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate,
-                isHyperlinked: UserDefaults.standard.bool(forKey: PersistenceController.webhookIsHyperlinkedKey),
-                substanceInfoUrl: UserDefaults.standard.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
+            let defaults = UserDefaults.standard
+            return WebhookSettingsSnapshot(
+                template: defaults.string(forKey: PersistenceController.webhookTemplateKey) ?? WebhookService.defaultTemplate,
+                noteTemplate: defaults.string(forKey: PersistenceController.webhookNoteTemplateKey) ?? WebhookService.defaultNoteTemplate,
+                username: defaults.string(forKey: PersistenceController.webhookUsernameKey) ?? "",
+                isHyperlinked: defaults.bool(forKey: PersistenceController.webhookIsHyperlinkedKey),
+                substanceInfoUrl: defaults.string(forKey: PersistenceController.webhookSubstanceInfoUrlKey) ?? ""
             )
         }
     }
@@ -36,27 +41,37 @@ final class WebhookManager: Sendable {
     // MARK: - Sending Webhooks
 
     func sendWebhooks(for ingestion: Ingestion, presetObjectIDs: [NSManagedObjectID]) {
-        let ingestionObjectID = ingestion.objectID
-        let data = WebhookDataSnapshot(ingestion: ingestion)
+        let content = WebhookService.content(for: WebhookDataSnapshot(ingestion: ingestion), settings: .current)
+        send(content, about: ingestion.objectID, to: presetObjectIDs)
+    }
+
+    func sendWebhooks(for timedNote: TimedNote, presetObjectIDs: [NSManagedObjectID]) {
+        send(WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current), about: timedNote.objectID, to: presetObjectIDs)
+    }
+
+    // Remembers each sent message on the ingestion or timed note it is about, to edit and delete it later
+    private func send(_ content: String, about ownerObjectID: NSManagedObjectID, to presetObjectIDs: [NSManagedObjectID]) {
+        guard !presetObjectIDs.isEmpty else { return }
         Task.detached(priority: .background) {
             let container = PersistenceController.shared.container
             let urls = await Self.urls(of: presetObjectIDs, in: container)
             await withTaskGroup(of: Void.self) { group in
                 for (presetObjectID, url) in urls {
                     group.addTask {
-                        let result = await WebhookService.sendWebhookWithRetry(url: url, data: data, settings: .current)
+                        let result = await WebhookService.sendWebhookWithRetry(url: url, content: content)
                         guard result.success, let messageId = result.messageId else { return }
                         await container.performBackgroundTask { bgContext in
                             guard
                                 let bgPreset = try? bgContext.existingObject(with: presetObjectID) as? WebhookPreset,
-                                let bgIngestion = try? bgContext.existingObject(with: ingestionObjectID) as? Ingestion
+                                let owner = try? bgContext.existingObject(with: ownerObjectID)
                             else { return }
 
                             let message = WebhookMessage(context: bgContext)
                             message.id = UUID()
                             message.creationDate = Date()
                             message.messageId = messageId
-                            message.ingestion = bgIngestion
+                            message.ingestion = owner as? Ingestion
+                            message.timedNote = owner as? TimedNote
                             message.webhookPreset = bgPreset
                             try? bgContext.save()
                         }
@@ -69,8 +84,16 @@ final class WebhookManager: Sendable {
     // MARK: - Editing Webhooks
 
     func editWebhookMessages(for ingestion: Ingestion) {
-        let data = WebhookDataSnapshot(ingestion: ingestion)
-        let messages = ingestion.webhookMessagesSorted.compactMap { message -> (preset: NSManagedObjectID, id: String)? in
+        let content = WebhookService.content(for: WebhookDataSnapshot(ingestion: ingestion), settings: .current)
+        edit(ingestion.webhookMessagesSorted, to: content)
+    }
+
+    func editWebhookMessages(for timedNote: TimedNote) {
+        edit(timedNote.webhookMessagesSorted, to: WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current))
+    }
+
+    private func edit(_ sentMessages: [WebhookMessage], to content: String) {
+        let messages = sentMessages.compactMap { message -> (preset: NSManagedObjectID, id: String)? in
             guard let preset = message.webhookPreset, let messageId = message.messageId else { return nil }
             return (preset.objectID, messageId)
         }
@@ -83,12 +106,7 @@ final class WebhookManager: Sendable {
                 for message in messages {
                     guard let url = urls.first(where: { $0.presetObjectID == message.preset })?.url else { continue }
                     group.addTask {
-                        _ = await WebhookService.sendWebhookWithRetry(
-                            url: url,
-                            data: data,
-                            settings: .current,
-                            editing: message.id
-                        )
+                        _ = await WebhookService.sendWebhookWithRetry(url: url, content: content, editing: message.id)
                     }
                 }
             }
@@ -117,7 +135,7 @@ final class WebhookManager: Sendable {
         let messageId: String
     }
 
-    // Messages to delete, collected before their ingestions are deleted locally
+    // Messages to delete, collected before their ingestions or timed notes are deleted locally
     struct PendingMessageDeletion: Sendable {
         fileprivate let targets: [DeletionTarget]
 
@@ -167,14 +185,15 @@ final class WebhookManager: Sendable {
         await prepareMessageDeletion(for: ingestions).run()
     }
 
-    func prepareMessageDeletion(for ingestions: [Ingestion]) async -> PendingMessageDeletion {
-        let ingestionObjectIDs = ingestions.map(\.objectID)
-        guard !ingestionObjectIDs.isEmpty else { return PendingMessageDeletion(targets: []) }
+    func prepareMessageDeletion(for ingestions: [Ingestion], timedNotes: [TimedNote] = []) async -> PendingMessageDeletion {
+        let ownerObjectIDs = ingestions.map(\.objectID) + timedNotes.map(\.objectID)
+        guard !ownerObjectIDs.isEmpty else { return PendingMessageDeletion(targets: []) }
         let container = PersistenceController.shared.container
         let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-            ingestionObjectIDs.flatMap { ingestionID -> [DeletionTarget] in
-                guard let ingestion = try? bgContext.existingObject(with: ingestionID) as? Ingestion else { return [] }
-                return ingestion.webhookMessagesSorted.compactMap { message in
+            ownerObjectIDs.flatMap { ownerID -> [DeletionTarget] in
+                guard let owner = try? bgContext.existingObject(with: ownerID) else { return [] }
+                let messages = (owner as? Ingestion)?.webhookMessagesSorted ?? (owner as? TimedNote)?.webhookMessagesSorted ?? []
+                return messages.compactMap { message in
                     guard let preset = message.webhookPreset,
                           let messageId = message.messageId,
                           let url = preset.url, !url.isEmpty

@@ -7,6 +7,7 @@ struct WebhooksScreen: View {
 
     @AppStorage(PersistenceController.webhookUsernameKey) private var webhookUsername: String = ""
     @AppStorage(PersistenceController.webhookTemplateKey) private var webhookTemplate: String = WebhookService.defaultTemplate
+    @AppStorage(PersistenceController.webhookNoteTemplateKey) private var webhookNoteTemplate: String = WebhookService.defaultNoteTemplate
     @AppStorage(PersistenceController.webhookIsHyperlinkedKey) private var isHyperlinked: Bool = false
     @AppStorage(PersistenceController.webhookSubstanceInfoUrlKey) private var substanceInfoUrl: String = ""
 
@@ -90,6 +91,20 @@ struct WebhooksScreen: View {
 
                 Button("Reset to Default") {
                     webhookTemplate = WebhookService.defaultTemplate
+                }
+                .font(.caption)
+            }
+
+            Section(
+                header: Text("Timed Note Layout"),
+                footer: Text("Variables: {user}, {note}")
+            ) {
+                TextEditor(text: $webhookNoteTemplate)
+                    .frame(minHeight: 60)
+                    .font(.system(.body, design: .monospaced))
+
+                Button("Reset to Default") {
+                    webhookNoteTemplate = WebhookService.defaultNoteTemplate
                 }
                 .font(.caption)
             }

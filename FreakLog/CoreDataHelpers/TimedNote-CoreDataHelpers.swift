@@ -17,6 +17,12 @@ extension TimedNote: Comparable {
         note ?? ""
     }
 
+    var webhookMessagesSorted: [WebhookMessage] {
+        (webhookMessages as? Set<WebhookMessage> ?? []).sorted {
+            ($0.creationDate ?? .distantPast) < ($1.creationDate ?? .distantPast)
+        }
+    }
+
     var color: SubstanceColor {
         if let text = colorAsText, let color = SubstanceColor(rawValue: text) {
             return color
