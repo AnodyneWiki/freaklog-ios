@@ -71,21 +71,13 @@ final class OnDeviceConversation: AssistantConversation {
       let task = Task { @MainActor in
         // The session takes one request at a time, also while a stopped one winds down
         await previous?.value
+        lastTurn = (text, session.transcript)
         reporter.continuation = continuation
         do {
           var written = ""
           for try await snapshot in session.streamResponse(to: text) {
-            let content = snapshot.content
-            // Snapshots hold the whole answer so far
-            if content.hasPrefix(written) {
-              let delta = String(content.dropFirst(written.count))
-              if !delta.isEmpty {
-                continuation.yield(.text(delta))
-              }
-            } else {
-              continuation.yield(.text(String(content.dropFirst(written.commonPrefix(with: content).count))))
-            }
-            written = content
+            written = snapshot.content
+            continuation.yield(.text(written, replacesPrevious: true))
           }
           continuation.yield(.completed(written))
           continuation.finish()
@@ -101,20 +93,18 @@ final class OnDeviceConversation: AssistantConversation {
     }
   }
 
-  func rollBackLastTurn() -> String? {
-    let entries = Array(session.transcript)
-    guard
-      let index = entries.lastIndex(where: { if case .prompt = $0 { true } else { false } }),
-      case .prompt(let prompt) = entries[index]
-    else { return nil }
-    let text = prompt.segments.compactMap { segment in
-      if case .text(let text) = segment { text.content } else { nil }
-    }.joined()
-    // The instructions are the first entry, so the new session keeps them
-    session = LanguageModelSession(tools: tools, transcript: Transcript(entries: entries[..<index]))
-    return text
+  func waitForTurnToFinish() async {
+    await runningTurn?.value
   }
 
+  func rollBackLastTurn() -> String? {
+    guard let lastTurn else { return nil }
+    session = LanguageModelSession(tools: tools, transcript: lastTurn.transcript)
+    self.lastTurn = nil
+    return lastTurn.question
+  }
+
+  private var lastTurn: (question: String, transcript: Transcript)?
   private let tools: [any FoundationModels.Tool]
   private let reporter: ToolEventReporter
   private var session: LanguageModelSession
@@ -146,16 +136,8 @@ final class ToolEventReporter: @unchecked Sendable {
     set { lock.withLock { current = newValue } }
   }
 
-  func nextKey() -> String {
-    lock.withLock {
-      count += 1
-      return "\(count)"
-    }
-  }
-
   private let lock = NSLock()
   private var current: AsyncThrowingStream<AssistantTurnEvent, Error>.Continuation?
-  private var count = 0
 
 }
 
@@ -185,10 +167,8 @@ struct DynamicTool: FoundationModels.Tool {
 
   func call(arguments: GeneratedContent) async throws -> String {
     let call = AssistantToolCall(id: nil, name: name, arguments: Self.json(from: arguments).object ?? [:])
-    let key = reporter.nextKey()
-    reporter.continuation?.yield(.toolStarted(key: key, call: call))
+    reporter.continuation?.yield(.toolStarted(call))
     let result = await toolbox.run(call)
-    reporter.continuation?.yield(.toolFinished(key: key, call: call, result: result))
     return result.jsonText
   }
 

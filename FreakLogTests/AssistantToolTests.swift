@@ -32,7 +32,7 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(details["notes_truncated"], .bool(true))
     XCTAssertEqual(details["ingestions"]?.array?.first?["dose"], .number(100))
     let call = AssistantToolCall(id: nil, name: "get_experience_details", arguments: ["experience_id": .string(reference)])
-    XCTAssertEqual(toolbox.label(for: call), "Opened “Saturday”")
+    XCTAssertEqual(toolbox.progress(for: call), "Reading the session…")
   }
 
   func testToolsRejectBrokenCalls() async {

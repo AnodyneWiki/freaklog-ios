@@ -4,10 +4,8 @@ import Foundation
 
 // What happens during one turn of the user, in order
 enum AssistantTurnEvent: Sendable {
-  case text(String)
-  // `key` is unique within the turn and pairs a tool's start with its finish
-  case toolStarted(key: String, call: AssistantToolCall)
-  case toolFinished(key: String, call: AssistantToolCall, result: JSONValue)
+  case text(String, replacesPrevious: Bool = false)
+  case toolStarted(AssistantToolCall)
   // The model answered without asking for more tools
   case completed(String)
 }
@@ -18,6 +16,8 @@ enum AssistantTurnEvent: Sendable {
 @MainActor
 protocol AssistantConversation: AnyObject {
   func send(_ text: String) -> AsyncThrowingStream<AssistantTurnEvent, Error>
+
+  func waitForTurnToFinish() async
 
   // Removes the last question and everything after it, and returns the question so it can be sent again
   func rollBackLastTurn() -> String?
@@ -66,6 +66,14 @@ final class APIConversation: AssistantConversation {
     }
   }
 
+  func waitForTurnToFinish() async {
+    await runningTurn?.value
+  }
+
+  func switchModel(to model: String) {
+    self.model = model
+  }
+
   func rollBackLastTurn() -> String? {
     // A failed turn may already be removed by repair, and rolling back would then remove the question before it
     guard isLastTurnInHistory else { return nil }
@@ -79,7 +87,7 @@ final class APIConversation: AssistantConversation {
   }
 
   private let client: any AssistantChatClient
-  private let model: String
+  private var model: String
   private let system: String
   private let toolbox: AssistantToolbox
   private let maxOutputTokens: Int?
@@ -142,12 +150,10 @@ final class APIConversation: AssistantConversation {
           throw AssistantError("The assistant asked for too many tools at once. Try a more specific question.")
         }
         var results: [AssistantToolResult] = []
-        for (index, call) in reply.toolCalls.enumerated() {
-          let key = "\(round)-\(index)"
-          emit(.toolStarted(key: key, call: call))
+        for call in reply.toolCalls {
+          emit(.toolStarted(call))
           let result = await toolbox.run(call)
           try Task.checkCancellation()
-          emit(.toolFinished(key: key, call: call, result: result))
           results.append(AssistantToolResult(callID: call.id, name: call.name, result: result))
         }
         // All results of one answer go back in one message

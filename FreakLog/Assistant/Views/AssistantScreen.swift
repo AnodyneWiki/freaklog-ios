@@ -114,9 +114,13 @@ struct AssistantScreen: View {
             case .message(let message):
               MessageView(
                 message: message,
+                status: chat.status,
                 actions: actions(for: message))
-            case .tool(let tool):
-              ToolEventView(tool: tool)
+            case .notice(let notice):
+              Text(notice.text)
+                .font(.caption)
+                .foregroundColor(.secondary)
+                .frame(maxWidth: .infinity)
             }
           }
           if !chat.hasQuestions {
@@ -233,6 +237,8 @@ private struct MessageView: View {
   }
 
   let message: AssistantChatItem.Message
+  // What the assistant is doing, shown while waiting for its answer
+  let status: String?
   let actions: Actions?
 
   var body: some View {
@@ -249,8 +255,15 @@ private struct MessageView: View {
       VStack(alignment: .leading, spacing: 6) {
         switch message.state {
         case .waiting:
-          ProgressView()
-            .padding(.vertical, 4)
+          HStack(spacing: 8) {
+            ProgressView()
+            if let status {
+              Text(status)
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            }
+          }
+          .padding(.vertical, 4)
         case .failed:
           Label(message.text, systemImage: "exclamationmark.triangle")
             .foregroundColor(.red)
@@ -306,26 +319,9 @@ private struct MessageView: View {
   }
 }
 
-// MARK: - ToolEventView
-
-private struct ToolEventView: View {
-  let tool: AssistantChatItem.ToolEvent
-
-  var body: some View {
-    HStack(alignment: .firstTextBaseline, spacing: 6) {
-      switch tool.status {
-      case .running:
-        ProgressView().controlSize(.mini)
-      case .succeeded:
-        Image(systemName: "checkmark.circle")
-      case .failed:
-        Image(systemName: "exclamationmark.circle")
-      }
-      Text(tool.label + (tool.summary.map { " · \($0)" } ?? ""))
-        .lineLimit(2)
-    }
-    .font(.footnote)
-    .foregroundColor(.secondary)
-    .accessibilityElement(children: .combine)
+private extension View {
+  func assistantTapTarget() -> some View {
+    frame(minWidth: 44, minHeight: 44)
+      .contentShape(Rectangle())
   }
 }

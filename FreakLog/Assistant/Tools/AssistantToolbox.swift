@@ -20,10 +20,6 @@ final class AssistantToolbox {
     let parameters: [Parameter]
     // What the transcript shows while the tool runs, e.g. "Looking through your journal…"
     let progress: String
-    // What the tool did, in words, e.g. "Searched the journal for “mdma”"
-    let label: @MainActor ([String: JSONValue]) -> String
-    // A short description of the result, e.g. "3 matches"
-    let summary: @MainActor (JSONValue) -> String
     let run: @MainActor ([String: JSONValue]) async throws -> JSONValue
   }
 
@@ -106,19 +102,8 @@ final class AssistantToolbox {
     tools.first { $0.name == name }
   }
 
-  func label(for call: AssistantToolCall) -> String {
-    tool(named: call.name)?.label(call.arguments) ?? call.name
-  }
-
   func progress(for call: AssistantToolCall) -> String {
     tool(named: call.name)?.progress ?? "Working…"
-  }
-
-  func summary(for call: AssistantToolCall, result: JSONValue) -> String {
-    if result["status"]?.string == "error" {
-      return result["message"]?.string ?? "failed"
-    }
-    return tool(named: call.name)?.summary(result) ?? "done"
   }
 
   func run(_ call: AssistantToolCall) async -> JSONValue {

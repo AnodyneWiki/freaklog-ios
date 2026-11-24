@@ -6,7 +6,13 @@ import Foundation
 // One entry of the transcript
 enum AssistantChatItem: Identifiable, Equatable {
   case message(Message)
-  case tool(ToolEvent)
+  // A line about the chat itself, e.g. that it continues with another model
+  case notice(Notice)
+
+  struct Notice: Equatable {
+    let id = UUID()
+    let text: String
+  }
 
   struct Message: Equatable {
     enum State: Equatable {
@@ -25,24 +31,10 @@ enum AssistantChatItem: Identifiable, Equatable {
     var state: State = .done
   }
 
-  // A tool the assistant ran, shown as a line between the messages
-  struct ToolEvent: Equatable {
-    enum Status: Equatable {
-      case running
-      case succeeded
-      case failed
-    }
-
-    let id = UUID()
-    let label: String
-    var status: Status = .running
-    var summary: String?
-  }
-
   var id: UUID {
     switch self {
     case .message(let message): message.id
-    case .tool(let tool): tool.id
+    case .notice(let notice): notice.id
     }
   }
 
@@ -210,7 +202,7 @@ final class AssistantChat: ObservableObject {
     turnTask = Task { [weak self] in
       do {
         for try await event in conversation.send(text) {
-          guard let self, self.chatID == chatID else { return }
+          guard let self, self.chatID == chatID, !Task.isCancelled else { return }
           handle(event, in: &turn, toolbox: toolbox)
         }
       } catch {
@@ -222,23 +214,20 @@ final class AssistantChat: ObservableObject {
 
   // Stops the answer that is streaming; what arrived of it stays
   func stop() {
-    guard let task = turnTask else { return }
+    guard let task = turnTask, let conversation else { return }
     turnTask = nil
     task.cancel()
     let chatID = chatID
     Task {
       // The conversation repairs its history when the turn ends, so the next question waits for that
       await task.value
+      await conversation.waitForTurnToFinish()
       guard self.chatID == chatID else { return }
       items = items.map { item in
         switch item {
         case .message(var message) where message.state == .waiting || message.state == .streaming:
           message.state = .stopped
           return .message(message)
-        case .tool(var tool) where tool.status == .running:
-          tool.status = .failed
-          tool.summary = "stopped"
-          return .tool(tool)
         default:
           return item
         }
@@ -278,6 +267,7 @@ final class AssistantChat: ObservableObject {
     turnTask?.cancel()
     turnTask = nil
     chatID = UUID()
+    status = nil
   }
 
   // The state of the turn that is streaming. Text before a tool call stays in its own message; the answer after
@@ -286,7 +276,6 @@ final class AssistantChat: ObservableObject {
     var replyID: UUID
     var text = ""
     var lastDraw = Date.distantPast
-    var toolItems: [String: UUID] = [:]
   }
 
   // How often streaming text is drawn at most
@@ -303,46 +292,33 @@ final class AssistantChat: ObservableObject {
 
   private func handle(_ event: AssistantTurnEvent, in turn: inout Turn, toolbox: AssistantToolbox) {
     switch event {
-    case .text(let delta):
-      turn.text += delta
+    case .text(let text, let replacesPrevious):
+      if replacesPrevious {
+        turn.text = text
+      } else {
+        turn.text += text
+      }
       if Date.now.timeIntervalSince(turn.lastDraw) >= Self.drawInterval {
         turn.lastDraw = .now
         updateMessage(turn.replyID) { message in
           message.text = turn.text
           message.state = .streaming
         }
-        status = "Writing…"
       }
-    case .toolStarted(let key, let call):
-      let tool = AssistantChatItem.ToolEvent(label: toolbox.label(for: call))
-      turn.toolItems[key] = tool.id
-      if turn.text.isEmpty {
-        if let index = items.firstIndex(where: { $0.id == turn.replyID }) {
-          items.insert(.tool(tool), at: index)
-        }
-      } else {
+    case .toolStarted(let call):
+      if !turn.text.isEmpty {
         updateMessage(turn.replyID) { message in
           message.text = turn.text
           message.state = .done
         }
         let next = AssistantChatItem.Message(isUser: false, text: "", state: .waiting)
-        items.append(.tool(tool))
         items.append(.message(next))
         turn.replyID = next.id
         turn.text = ""
       }
       status = toolbox.progress(for: call)
-    case .toolFinished(let key, let call, let result):
-      if let id = turn.toolItems[key], let index = items.firstIndex(where: { $0.id == id }), case .tool(var tool) = items[index] {
-        tool.status = result["status"]?.string == "error" ? .failed : .succeeded
-        tool.summary = toolbox.summary(for: call, result: result)
-        items[index] = .tool(tool)
-      }
-      status = "Thinking…"
     case .completed(let text):
-      if turn.text.isEmpty {
-        turn.text = text
-      }
+      if !text.isEmpty { turn.text = text }
       if turn.text.isEmpty {
         let questionIndex = items.lastIndex { $0.message?.isUser == true } ?? 0
         let answeredBefore = items[questionIndex...].contains { item in
@@ -380,12 +356,6 @@ final class AssistantChat: ObservableObject {
         reply.state = .done
       }
       items.append(.message(.init(isUser: false, text: message, state: .failed)))
-    }
-    for (index, item) in items.enumerated() {
-      if case .tool(var tool) = item, tool.status == .running {
-        tool.status = .failed
-        items[index] = .tool(tool)
-      }
     }
     finishTurn()
   }

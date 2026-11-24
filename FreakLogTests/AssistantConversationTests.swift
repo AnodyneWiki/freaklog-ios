@@ -16,19 +16,30 @@ final class AssistantConversationTests: XCTestCase {
     var events: [String] = []
     for try await event in conversation.send("Recent?") {
       switch event {
-      case .text(let text): events.append("text:\(text)")
-      case .toolStarted(_, let call): events.append("start:\(call.name)")
-      case .toolFinished(_, _, let result): events.append("done:\(result["status"]?.string ?? "")")
+      case .text(let text, _): events.append("text:\(text)")
+      case .toolStarted(let call): events.append("start:\(call.name)")
       case .completed(let text): events.append("completed:\(text)")
       }
     }
     XCTAssertEqual(
       events,
-      ["start:list_recent_experiences", "done:success", "text:You had ", "text:none.", "completed:You had none."])
+      ["start:list_recent_experiences", "text:You had ", "text:none.", "completed:You had none."])
     XCTAssertEqual(conversation.history.count, 4)
     XCTAssertEqual(client.requests.last?.messages.count, 3)
     guard case .toolResults(let results) = conversation.history[2] else { return XCTFail("No tool results") }
     XCTAssertEqual(results.first?.callID, "1")
+    XCTAssertEqual(results.first?.result["status"], "success")
+  }
+
+  func testSwitchingModelsKeepsHistoryAndUsesTheNewModelOnTheNextRequest() async throws {
+    let replies = Array(repeating: ScriptedClient.Reply.success([.completed(AssistantReply(text: "Answer"))]), count: 2)
+    let client = ScriptedClient(replies: replies)
+    let conversation = APIConversation(client: client, model: "first", system: "s", toolbox: makeToolbox(), maxOutputTokens: nil)
+    for try await _ in conversation.send("First question") {}
+    conversation.switchModel(to: "second")
+    for try await _ in conversation.send("Follow-up") {}
+    XCTAssertEqual(client.requests.map(\.model), ["first", "second"])
+    XCTAssertEqual(client.requests.last?.messages, [.user("First question"), .assistant(AssistantReply(text: "Answer")), .user("Follow-up")])
   }
 
   func testAFailedTurnKeepsItsTextAndCanBeRetried() async throws {

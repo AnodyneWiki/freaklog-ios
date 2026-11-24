@@ -16,8 +16,6 @@ extension AssistantToolbox {
             kind: .integer),
         ],
         progress: progress,
-        label: { _ in "Listed recent experiences" },
-        summary: { "\($0["experiences"]?.array?.count ?? 0) experiences" },
         run: { [unowned self] arguments in
           let request = PersistenceController.experiencesRequest(prefetchingIngestions: true)
           request.fetchLimit = listLength(arguments)
@@ -38,8 +36,6 @@ extension AssistantToolbox {
             kind: .integer),
         ],
         progress: progress,
-        label: { "Searched the journal for “\($0.string("query"))”" },
-        summary: { "\($0["matches"]?.array?.count ?? 0) matches" },
         run: { [unowned self] arguments in
           let query = arguments.string("query")
           guard !query.isEmpty else { return Self.error("'query' is required.") }
@@ -63,8 +59,6 @@ extension AssistantToolbox {
             kind: .integer),
         ],
         progress: progress,
-        label: { "Looked for experiences with \($0.string("substance"))" },
-        summary: { "\($0["matches"]?.array?.count ?? 0) matches" },
         run: { [unowned self] arguments in
           let substance = arguments.string("substance")
           guard !substance.isEmpty else { return Self.error("'substance' is required.") }
@@ -85,13 +79,7 @@ extension AssistantToolbox {
             description: "How many characters of the notes to include (default \(limits.defaultNotesCharacters), at most \(limits.maxNotesCharacters)).",
             kind: .integer),
         ],
-        progress: progress,
-        label: { arguments in
-          let reference = arguments.string("experience_id")
-          let title = self.experience(for: reference)?.titleUnwrapped ?? ""
-          return title.isEmpty ? "Opened experience \(reference)" : "Opened “\(title)”"
-        },
-        summary: { $0["title"]?.string ?? "opened" },
+        progress: "Reading the session…",
         run: { [unowned self] arguments in
           guard let experience = experience(for: arguments.string("experience_id")) else {
             return Self
@@ -114,12 +102,6 @@ extension AssistantToolbox {
             kind: .string),
         ],
         progress: progress,
-        label: { arguments in
-          let substance = arguments.string("substance")
-          let days = arguments.integer("days_back", default: 30, in: 1 ... 730)
-          return "Listed ingestions of the last \(days) days" + (substance.isEmpty ? "" : " (\(substance))")
-        },
-        summary: { "\($0["count"]?.number.map(Int.init) ?? 0) ingestions" },
         run: { [unowned self] arguments in
           let days = arguments.integer("days_back", default: 30, in: 1 ... 730)
           let request = PersistenceController.ingestionsRequest(
@@ -141,12 +123,6 @@ extension AssistantToolbox {
           Parameter(name: "days_back", description: "How many days to look back (default 90, at most 1825).", kind: .integer),
         ],
         progress: progress,
-        label: { "Counted use per substance (\($0.integer("days_back", default: 90, in: 1 ... 1825)) days)" },
-        summary: { result in
-          let substances = result["substances"]?.array?.count ?? 0
-          let total = result["total_ingestions"]?.number.map(Int.init) ?? 0
-          return "\(substances) substances, \(total) ingestions"
-        },
         run: { [unowned self] arguments in
           let days = arguments.integer("days_back", default: 90, in: 1 ... 1825)
           // Every ingestion of the window is needed for counting; the cap only guards against runaway journals

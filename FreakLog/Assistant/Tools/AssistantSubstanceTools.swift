@@ -18,8 +18,6 @@ extension AssistantToolbox {
             isRequired: true),
         ],
         progress: progress,
-        label: { "Looked up \($0.string("name"))" },
-        summary: { $0["name"]?.string ?? "found" },
         run: { [unowned self] arguments in substanceInfo(arguments.string("name")) }),
       Tool(
         name: "check_interactions",
@@ -32,26 +30,12 @@ extension AssistantToolbox {
             isRequired: true),
         ],
         progress: progress,
-        label: { "Checked interactions: \($0.strings("substances").joined(separator: " + "))" },
-        summary: { result in
-          if let unknown = result["unrecognized_substances"]?.array, !unknown.isEmpty {
-            return "unknown substance: " + unknown.compactMap(\.string).joined(separator: ", ")
-          }
-          let count = result["interactions"]?.array?.count ?? 0
-          return switch count {
-          case 0: "no interactions on record"
-          case 1: "1 interaction found"
-          default: "\(count) interactions found"
-          }
-        },
         run: { [unowned self] arguments in checkInteractions(arguments.strings("substances")) }),
       Tool(
         name: "get_tolerance",
         description: "Estimate the user's tolerance to a substance from their last logged use of it and of cross-tolerant substances, with the time it is expected to be back at baseline.",
         parameters: [Parameter(name: "substance", description: "Substance name.", kind: .string, isRequired: true)],
         progress: progress,
-        label: { "Estimated tolerance to \($0.string("substance"))" },
-        summary: { $0["estimate"]?.string ?? "estimated" },
         run: { [unowned self] arguments in try tolerance(arguments.string("substance")) }),
       Tool(
         name: "get_active_ingestions",
@@ -61,11 +45,6 @@ extension AssistantToolbox {
           description: "How many hours to look back (default 24, at most 72).",
           kind: .integer)],
         progress: progress,
-        label: { "Checked what is still active (last \($0.integer("hours_back", default: 24, in: 1 ... 72)) h)" },
-        summary: { result in
-          let active = (result["ingestions"]?.array ?? []).filter { $0["status"]?.string == "probably still active" }.count
-          return "\(active) probably still active"
-        },
         run: { [unowned self] arguments in try activeIngestions(hoursBack: arguments.integer(
           "hours_back",
           default: 24,
@@ -81,8 +60,6 @@ extension AssistantToolbox {
         description: "Search the substance index of AnodyneWiki (a pharmacology and harm-reduction wiki) by name or abbreviation, to find the exact page title for lookup_anodyne_wiki.",
         parameters: [Parameter(name: "query", description: "Substance name or abbreviation.", kind: .string, isRequired: true)],
         progress: progress,
-        label: { "Searched AnodyneWiki for “\($0.string("query"))”" },
-        summary: { "\($0["matches"]?.array?.count ?? 0) matches" },
         run: { [unowned self] arguments in try await searchAnodyneWiki(arguments.string("query")) }),
       Tool(
         name: "lookup_anodyne_wiki",
@@ -93,8 +70,6 @@ extension AssistantToolbox {
           kind: .string,
           isRequired: true)],
         progress: progress,
-        label: { "Read AnodyneWiki on \($0.string("substance"))" },
-        summary: { $0["title"]?.string ?? "found" },
         run: { [unowned self] arguments in try await lookUpAnodyneWiki(arguments.string("substance")) }),
     ]
   }
