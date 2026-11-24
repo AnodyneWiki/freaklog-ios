@@ -42,6 +42,14 @@ enum JSONValue: Codable, Hashable, Sendable {
     if case .object(let object) = self { object } else { nil }
   }
 
+  var array: [JSONValue]? {
+    if case .array(let array) = self { array } else { nil }
+  }
+
+  subscript(key: String) -> JSONValue? {
+    object?[key]
+  }
+
   func encode(to encoder: Encoder) throws {
     var container = encoder.singleValueContainer()
     switch self {

@@ -7,6 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5A5426D157C4024BC7B7232F /* AssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */; };
+		4A327E2CAC9D22A54C24994E /* AssistantHTTP.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C53CB17E45A11FF18786BAB /* AssistantHTTP.swift */; };
+		09DBDF7DC64DA147AB102EAA /* OpenAIChatClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667B8B60948F20D93CBD2BA7 /* OpenAIChatClient.swift */; };
+		E4916DC6341C994D2D53FFE5 /* AnthropicMessagesClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 965647C72042B932ED55CC25 /* AnthropicMessagesClient.swift */; };
+		9D59F53EC6DB99F7E0E9A8F3 /* GeminiClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C6103A70D47388DBD76B44E /* GeminiClient.swift */; };
+		22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */; };
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
 		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
@@ -467,6 +473,12 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantModels.swift; sourceTree = "<group>"; };
+		2C53CB17E45A11FF18786BAB /* AssistantHTTP.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantHTTP.swift; sourceTree = "<group>"; };
+		667B8B60948F20D93CBD2BA7 /* OpenAIChatClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenAIChatClient.swift; sourceTree = "<group>"; };
+		965647C72042B932ED55CC25 /* AnthropicMessagesClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicMessagesClient.swift; sourceTree = "<group>"; };
+		2C6103A70D47388DBD76B44E /* GeminiClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeminiClient.swift; sourceTree = "<group>"; };
+		F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantProviderTests.swift; sourceTree = "<group>"; };
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
 		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
@@ -895,6 +907,26 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		7FEB368142E0DD2E75401B23 /* Providers */ = {
+			isa = PBXGroup;
+			children = (
+				E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */,
+				2C53CB17E45A11FF18786BAB /* AssistantHTTP.swift */,
+				667B8B60948F20D93CBD2BA7 /* OpenAIChatClient.swift */,
+				965647C72042B932ED55CC25 /* AnthropicMessagesClient.swift */,
+				2C6103A70D47388DBD76B44E /* GeminiClient.swift */,
+			);
+			path = Providers;
+			sourceTree = "<group>";
+		};
+		551625259A66CBDA0A0438EF /* Assistant */ = {
+			isa = PBXGroup;
+			children = (
+				7FEB368142E0DD2E75401B23 /* Providers */,
+			);
+			path = Assistant;
+			sourceTree = "<group>";
+		};
 		548887993659BF20F29ECA17 /* Backup */ = {
 			isa = PBXGroup;
 			children = (
@@ -1672,6 +1704,7 @@
 			children = (
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
+				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
 				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
 				0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */,
 				C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */,
@@ -1734,6 +1767,7 @@
 				EAE471A326CBA664009FB0EC /* Add Ingestion */,
 				EA60482F2A1623EC005C6A4B /* Stats */,
 				398FFA157629457D89252C8A /* Leaderboard */,
+				551625259A66CBDA0A0438EF /* Assistant */,
 				EACB0C1C293FA48B00C605E2 /* Settings */,
 				EAE4718726CBA664009FB0EC /* Journal */,
 				EABD91FE294108100073303A /* Timeline */,
@@ -2175,6 +2209,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */,
 				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
@@ -2192,6 +2227,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5A5426D157C4024BC7B7232F /* AssistantModels.swift in Sources */,
+				4A327E2CAC9D22A54C24994E /* AssistantHTTP.swift in Sources */,
+				09DBDF7DC64DA147AB102EAA /* OpenAIChatClient.swift in Sources */,
+				E4916DC6341C994D2D53FFE5 /* AnthropicMessagesClient.swift in Sources */,
+				9D59F53EC6DB99F7E0E9A8F3 /* GeminiClient.swift in Sources */,
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
 				60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */,
