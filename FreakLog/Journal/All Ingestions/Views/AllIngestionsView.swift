@@ -180,6 +180,7 @@ private extension AllIngestionsView {
                     Label("Delete", systemImage: "trash")
                 }
             }
+            .modifier(SubstanceInfoSwipeAction(substanceName: item.substanceName ?? ""))
         }
     }
 

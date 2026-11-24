@@ -73,7 +73,7 @@ CoreData helper extensions live in `CoreDataHelpers/`. Each entity has a corresp
 - `managedObjectContext` — SwiftUI environment key for CoreData
 
 ### Navigation
-`GlobalNavigationDestination` enum is the single type used as `NavigationLink` values throughout the app. Add a new case there when adding a new destination. Each tab's stack is built by `ContentScreen.view(for:)`; `Navigator.pathKeyPath(for:)` maps a `Tab` to its path.
+`GlobalNavigationDestination` enum is the single type used as `NavigationLink` values throughout the app. Add a new case there when adding a new destination. Each tab's stack is built by `ContentScreen.view(for:)`; `Navigator.pathKeyPath(for:)` maps a `Tab` to its path. `Navigator.substanceInfoDestination(for:)` is the info page of a stored substance name (PsychonautWiki or custom), and `openInCurrentTab(_:)` pushes a destination from places that can't use a `NavigationLink`, like swipe actions (`SubstanceInfoSwipeAction` on ingestion rows).
 
 ### Logic separation
 Pure logic that doesn't need a SwiftUI context lives in `ExperienceLogic.swift` (static methods). Use these instead of duplicating logic on the entity extension:

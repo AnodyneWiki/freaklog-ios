@@ -78,6 +78,19 @@ class Navigator: ObservableObject {
         }
     }
 
+    // The info page of a substance by its stored name, nil for a custom substance that no longer exists
+    static func substanceInfoDestination(for substanceName: String) -> GlobalNavigationDestination? {
+        if let substance = SubstanceRepo.shared.getSubstance(name: substanceName) {
+            return .substance(substance: substance)
+        }
+        return PersistenceController.shared.getCustomSubstance(name: substanceName).map { .customSubstance(customSubstance: $0) }
+    }
+
+    // Opens on top of the current tab, where the swipe or tap asking for it happened
+    func openInCurrentTab(_ destination: GlobalNavigationDestination) {
+        self[keyPath: Self.pathKeyPath(for: selectedTab)].append(destination)
+    }
+
     func maybeSearchForSubstance() {
         selectedTab = .substances
         let isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)

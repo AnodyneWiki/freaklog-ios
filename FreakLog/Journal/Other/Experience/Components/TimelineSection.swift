@@ -49,6 +49,7 @@ struct TimelineSection: View {
                         }
                     }
                 }
+                .modifier(SubstanceInfoSwipeAction(substanceName: ingestion.substanceNameUnwrapped))
                 if isLastIngestion && isCurrentExperience {
                     if timeDisplayStyle == .between  {
                         TimelineView(.everyMinute) { _ in

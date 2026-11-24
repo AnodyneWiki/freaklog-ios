@@ -109,6 +109,24 @@ private struct IngestionRowContent<Content: View>: View {
     }
 }
 
+// Swiping an ingestion from the leading edge opens its substance's info
+struct SubstanceInfoSwipeAction: ViewModifier {
+    let substanceName: String
+
+    func body(content: Content) -> some View {
+        content.swipeActions(edge: .leading) {
+            if let destination = Navigator.substanceInfoDestination(for: substanceName) {
+                Button {
+                    Navigator.shared.openInCurrentTab(destination)
+                } label: {
+                    Label("Substance Info", systemImage: "info.circle")
+                }
+                .tint(.accentColor)
+            }
+        }
+    }
+}
+
 #Preview {
     List {
         Section {

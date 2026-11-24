@@ -14,6 +14,11 @@ struct IngestionSection: Identifiable {
             }
         }
 
+        // Notes have no substance
+        var substanceName: String? {
+            if case .ingestion(let ingestion) = self { ingestion.substanceNameUnwrapped } else { nil }
+        }
+
         var time: Date {
             switch self {
             case .ingestion(let ingestion): ingestion.timeUnwrapped
