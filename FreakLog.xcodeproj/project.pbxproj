@@ -7,6 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
+		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
+		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
+		2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */; };
 		BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C2A73124B37921B3E4BE39 /* FormulationTests.swift */; };
 		08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */; };
 		09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */; };
@@ -462,6 +466,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
+		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
+		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackup.swift; sourceTree = "<group>"; };
 		E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 10.xcdatamodel"; sourceTree = "<group>"; };
 		73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 11.xcdatamodel"; sourceTree = "<group>"; };
 		7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 12.xcdatamodel"; sourceTree = "<group>"; };
@@ -885,6 +893,15 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		548887993659BF20F29ECA17 /* Backup */ = {
+			isa = PBXGroup;
+			children = (
+				A7B357B963A085C666251860 /* JSONValue.swift */,
+				8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */,
+			);
+			path = Backup;
+			sourceTree = "<group>";
+		};
 		230D2157EE450FCFB558EBEC /* Formulations */ = {
 			isa = PBXGroup;
 			children = (
@@ -1631,6 +1648,7 @@
 		EACB0C1C293FA48B00C605E2 /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				548887993659BF20F29ECA17 /* Backup */,
 				A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */,
 				D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */,
 				EA460D202763790C002EF80B /* FAQ */,
@@ -1649,6 +1667,8 @@
 		EACB6E3B27D09C8800940291 /* FreakLogTests */ = {
 			isa = PBXGroup;
 			children = (
+				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
+				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
 				0DD0195B9146BC4ED209D0F5 /* WebhookTests.swift */,
 				C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */,
@@ -2076,6 +2096,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
@@ -2151,6 +2172,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
@@ -2167,6 +2189,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
+				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
 				54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */,
 				3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */,
 				600A7BA0DF3698461DA8A0DB /* FormulationSuggestionView.swift in Sources */,

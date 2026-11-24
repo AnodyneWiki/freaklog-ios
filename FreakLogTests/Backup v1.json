@@ -1,0 +1,336 @@
+{
+  "appVersion" : "1.4.2",
+  "created" : "2026-11-24T10:00:00.000000Z",
+  "dataModel" : "PW Version 12",
+  "entities" : {
+    "CustomRoa" : [
+      {
+        "attributes" : {
+          "administrationRoute" : "oral",
+          "commonDose" : 1,
+          "doseUnits" : "cups",
+          "onsetHigh" : 20,
+          "onsetLow" : 10,
+          "substanceName" : "Coffee"
+        },
+        "id" : "roa-1",
+        "relationships" : {
+          "customSubstance" : "custom-1"
+        }
+      }
+    ],
+    "CustomSubstance" : [
+      {
+        "attributes" : {
+          "explanation" : "Bitter",
+          "name" : "Coffee",
+          "units" : "cups"
+        },
+        "id" : "custom-1",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "CustomUnit" : [
+      {
+        "attributes" : {
+          "administrationRoute" : "insufflated",
+          "creationDate" : "2026-11-01T12:00:00.000000Z",
+          "dose" : 20,
+          "estimatedDoseStandardDeviation" : 0,
+          "idForAndroid" : 7,
+          "isArchived" : false,
+          "isEstimate" : false,
+          "name" : "Spoon",
+          "note" : "Small spoon",
+          "originalUnit" : "mg",
+          "substanceName" : "Ketamine",
+          "unit" : "spoon",
+          "unitPlural" : "spoons"
+        },
+        "id" : "unit-1",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "Experience" : [
+      {
+        "attributes" : {
+          "creationDate" : "2026-11-21T18:00:00.000000Z",
+          "isFavorite" : true,
+          "sortDate" : "2026-11-21T19:00:00.250000Z",
+          "text" : "A good night",
+          "title" : "Saturday"
+        },
+        "id" : "experience-1",
+        "relationships" : {
+          "legacyLocation" : null
+        }
+      }
+    ],
+    "ExperienceLocation" : [
+      {
+        "attributes" : {
+          "latitude" : 52.52,
+          "longitude" : 13.405,
+          "name" : "Home"
+        },
+        "id" : "location-1",
+        "relationships" : {
+          "ingestion" : "ingestion-1",
+          "legacyExperience" : null
+        }
+      }
+    ],
+    "Formulation" : [
+      {
+        "attributes" : {
+          "creationDate" : "2026-11-20T09:00:00.000000Z",
+          "name" : "Party pill",
+          "note" : "Tested"
+        },
+        "id" : "formulation-1",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "FormulationComponent" : [
+      {
+        "attributes" : {
+          "administrationRoute" : "oral",
+          "dose" : 50,
+          "estimatedDoseStandardDeviation" : 0,
+          "isEstimate" : false,
+          "position" : 1,
+          "substanceName" : "Caffeine",
+          "units" : "mg"
+        },
+        "id" : "component-2",
+        "relationships" : {
+          "formulation" : "formulation-1"
+        }
+      },
+      {
+        "attributes" : {
+          "administrationRoute" : "oral",
+          "dose" : 100,
+          "estimatedDoseStandardDeviation" : 10,
+          "isEstimate" : true,
+          "position" : 0,
+          "substanceName" : "MDMA",
+          "units" : "mg"
+        },
+        "id" : "component-1",
+        "relationships" : {
+          "formulation" : "formulation-1"
+        }
+      }
+    ],
+    "Ingestion" : [
+      {
+        "attributes" : {
+          "administrationRoute" : "oral",
+          "administrationSite" : null,
+          "color" : "#FF375F",
+          "consumerName" : null,
+          "creationDate" : "2026-11-21T19:00:05.000000Z",
+          "dose" : 100,
+          "endTime" : null,
+          "estimatedDoseStandardDeviation" : 10,
+          "formulationAmount" : 1,
+          "identifier" : "6F1F0F3E-2C4B-4E36-9F1D-3A1B2C3D4E5F",
+          "isEstimate" : true,
+          "note" : "Pressed pill",
+          "stomachFullness" : null,
+          "substanceName" : "MDMA",
+          "time" : "2026-11-21T19:00:00.250000Z",
+          "units" : "mg",
+          "webhookMessageId" : null
+        },
+        "id" : "ingestion-1",
+        "relationships" : {
+          "customUnit" : null,
+          "experience" : "experience-1",
+          "formulation" : "formulation-1",
+          "location" : "location-1",
+          "substanceCompanion" : "companion-mdma"
+        }
+      },
+      {
+        "attributes" : {
+          "administrationRoute" : "insufflated",
+          "administrationSite" : "left",
+          "color" : "#ED2B2A",
+          "consumerName" : "Alex",
+          "creationDate" : "2026-11-21T21:30:00.000000Z",
+          "dose" : 2,
+          "endTime" : "2026-11-21T21:45:00.000000Z",
+          "estimatedDoseStandardDeviation" : 0,
+          "formulationAmount" : 0,
+          "identifier" : "0B9C2E61-7A44-4F1B-8C2D-9E8F7A6B5C4D",
+          "isEstimate" : false,
+          "note" : "",
+          "stomachFullness" : null,
+          "substanceName" : "Ketamine",
+          "time" : "2026-11-21T21:30:00.000000Z",
+          "units" : "mg",
+          "webhookMessageId" : null
+        },
+        "id" : "ingestion-2",
+        "relationships" : {
+          "customUnit" : "unit-1",
+          "experience" : "experience-1",
+          "formulation" : null,
+          "location" : null,
+          "substanceCompanion" : "companion-ketamine"
+        }
+      }
+    ],
+    "ShulginRating" : [
+      {
+        "attributes" : {
+          "creationDate" : "2026-11-21T23:00:00.000000Z",
+          "option" : "twoPlus",
+          "time" : null
+        },
+        "id" : "rating-1",
+        "relationships" : {
+          "experience" : "experience-1"
+        }
+      }
+    ],
+    "Spray" : [
+      {
+        "attributes" : {
+          "contentInMl" : 10,
+          "creationDate" : "2026-10-01T08:00:00.000000Z",
+          "isPreferred" : true,
+          "name" : "Nasal spray",
+          "numSprays" : 100
+        },
+        "id" : "spray-1",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "SubstanceCompanion" : [
+      {
+        "attributes" : {
+          "colorAsText" : "#FF375F",
+          "substanceName" : "MDMA"
+        },
+        "id" : "companion-mdma",
+        "relationships" : {
+
+        }
+      },
+      {
+        "attributes" : {
+          "colorAsText" : "#ED2B2A",
+          "substanceName" : "Ketamine"
+        },
+        "id" : "companion-ketamine",
+        "relationships" : {
+
+        }
+      },
+      {
+        "attributes" : {
+          "colorAsText" : "BROWN",
+          "substanceName" : "Caffeine"
+        },
+        "id" : "companion-caffeine",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "SubstanceOverride" : [
+      {
+        "attributes" : {
+          "categories" : null,
+          "displayName" : "K",
+          "substanceName" : "Ketamine"
+        },
+        "id" : "override-1",
+        "relationships" : {
+
+        }
+      }
+    ],
+    "TimedNote" : [
+      {
+        "attributes" : {
+          "colorAsText" : "#63E6E2",
+          "creationDate" : "2026-11-21T20:00:00.000000Z",
+          "isPartOfTimeline" : true,
+          "note" : "Peaking",
+          "time" : "2026-11-21T20:00:00.000000Z"
+        },
+        "id" : "note-1",
+        "relationships" : {
+          "experience" : "experience-1"
+        }
+      }
+    ],
+    "WebhookMessage" : [
+      {
+        "attributes" : {
+          "creationDate" : "2026-11-21T19:00:06.000000Z",
+          "id" : "A1B2C3D4-E5F6-4A1B-9C2D-3E4F5A6B7C8D",
+          "messageId" : "1300000000000000001"
+        },
+        "id" : "message-1",
+        "relationships" : {
+          "ingestion" : "ingestion-1",
+          "timedNote" : null,
+          "webhookPreset" : "preset-1"
+        }
+      },
+      {
+        "attributes" : {
+          "creationDate" : "2026-11-21T20:00:01.000000Z",
+          "id" : "B2C3D4E5-F6A1-4B2C-8D3E-4F5A6B7C8D9E",
+          "messageId" : "1300000000000000002"
+        },
+        "id" : "message-2",
+        "relationships" : {
+          "ingestion" : null,
+          "timedNote" : "note-1",
+          "webhookPreset" : "preset-1"
+        }
+      }
+    ],
+    "WebhookPreset" : [
+      {
+        "attributes" : {
+          "creationDate" : "2026-09-01T10:00:00.000000Z",
+          "id" : "C3D4E5F6-A1B2-4C3D-9E4F-5A6B7C8D9E0F",
+          "isArchived" : false,
+          "isEnabled" : true,
+          "name" : "Friends",
+          "url" : "https://discord.com/api/webhooks/1/token"
+        },
+        "id" : "preset-1",
+        "relationships" : {
+
+        }
+      }
+    ]
+  },
+  "format" : "FreakLog Backup",
+  "formatVersion" : 1,
+  "settings" : {
+    "dynamicExperienceRangeHours" : 24,
+    "isHidingDosageDots" : true,
+    "leaderboardServers" : {
+      "base64" : "W10="
+    },
+    "timeDisplayStyle" : "regular",
+    "webhookUsername" : "Sam"
+  }
+}
