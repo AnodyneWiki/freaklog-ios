@@ -8,6 +8,7 @@ struct ExperienceToolbarContent: View {
     let addIngestion: () -> Void
 
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen: Bool = false
+    @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
     var body: some View {
         Group {
@@ -64,6 +65,22 @@ struct ExperienceToolbarContent: View {
                 }
             } label: {
                 Label("Edit", systemImage: "pencil")
+            }
+            if isAssistantEnabled {
+                Menu {
+                    Button {
+                        sheetToShow = .assistant(prompt: AssistantChat.summaryPrompt)
+                    } label: {
+                        Label("Summarize Session", systemImage: "doc.text.magnifyingglass")
+                    }
+                    Button {
+                        sheetToShow = .assistant(prompt: nil)
+                    } label: {
+                        Label("Ask Assistant", systemImage: "bubble.left.and.bubble.right")
+                    }
+                } label: {
+                    Label("Assistant", systemImage: "bubble.left.and.bubble.right")
+                }
             }
             if isEyeOpen {
                 Menu {

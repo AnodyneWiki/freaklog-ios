@@ -25,6 +25,10 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             AnodyneSearchScreen(searchText: query)
         case .anodyneSettings:
             AnodyneSettingsScreen()
+        case .assistantSettings:
+            AssistantSettingsScreen()
+        case let .assistantProvider(id):
+            AssistantProviderScreen(profileID: id)
         case let .anodyneUserNotes(notes):
             AnodyneUserNotesScreen(notes: notes)
         case let .anodyneUserNote(note):

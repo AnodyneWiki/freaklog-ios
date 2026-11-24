@@ -17,6 +17,8 @@ struct JournalScreen: View {
     // The experience list builds a new fetch for each search, so it only follows the text once typing pauses
     @State private var experienceSearchText = ""
     @State private var isAddingTimedNote = false
+    @State private var isShowingAssistant = false
+    @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
     // Without the switcher there is no way to change tabs, so the default tab is shown
     private var selectedTab: JournalViewOption {
@@ -83,6 +85,9 @@ struct JournalScreen: View {
         .sheet(isPresented: $isAddingTimedNote) {
             AddTimedNoteScreen(experience: nil)
         }
+        .sheet(isPresented: $isShowingAssistant) {
+            AssistantScreen(experience: nil)
+        }
         .toolbar {
             if !isHidingJournalTabSwitcher {
                 ToolbarItem(placement: .principal) {
@@ -109,6 +114,13 @@ struct JournalScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 8) {
+                    if isAssistantEnabled {
+                        Button {
+                            isShowingAssistant = true
+                        } label: {
+                            Label("Assistant", systemImage: "bubble.left.and.bubble.right")
+                        }
+                    }
                     timeDisplayMenu
                     calendarLink
                 }

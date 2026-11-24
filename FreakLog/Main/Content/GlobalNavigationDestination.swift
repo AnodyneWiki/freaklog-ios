@@ -58,4 +58,7 @@ enum GlobalNavigationDestination: Hashable {
     case webhookArchive
     case journalSettings
     case anodyneSettings
+    case assistantSettings
+    // An existing provider, or a new one for nil
+    case assistantProvider(id: UUID?)
 }

@@ -31,6 +31,8 @@ struct ExperienceScreen: View {
         case addTimedNote
         case editTimedNote(timedNote: TimedNote)
         case editIngestion(ingestion: Ingestion)
+        // The assistant about this experience, asking the prompt right away if there is one
+        case assistant(prompt: String?)
 
         var id: Self {
             return self
@@ -240,6 +242,8 @@ struct ExperienceScreen: View {
                         EditIngestionScreen(
                             ingestion: ingestion,
                             isHidden: $hiddenIngestions.contains(ingestion.id))
+                    case let .assistant(prompt):
+                        AssistantScreen(experience: experience, initialPrompt: prompt)
                     }
                 })
         }

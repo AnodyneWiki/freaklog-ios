@@ -37,6 +37,11 @@ struct PersistenceController {
     static let isAnodyneAutoLoadEnabledKey = "isAnodyneAutoLoadEnabled"
     static let doseSourceKey = "doseSource"
     static let anodyneInstanceURLKey = "anodyneInstanceURL"
+    static let isAssistantEnabledKey = "isAssistantEnabled"
+    // Provider profiles and the chosen one, which stay on this device like their API keys
+    static let assistantProfilesKey = "assistantProfiles"
+    static let assistantActiveProfileKey = "assistantActiveProfile"
+    static let isAssistantAnodyneWikiEnabledKey = "isAssistantAnodyneWikiEnabled"
     static let defaultJournalViewKey = "defaultJournalView"
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
     static let leaderboardServersKey = "leaderboardServers"

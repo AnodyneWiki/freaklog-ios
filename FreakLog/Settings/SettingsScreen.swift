@@ -98,6 +98,9 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.anodyneSettings) {
                         Label("AnodyneWiki", systemImage: "books.vertical")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.assistantSettings) {
+                        Label("Assistant", systemImage: "bubble.left.and.bubble.right")
+                    }
                     NavigationLink(value: GlobalNavigationDestination.leaderboardServers) {
                         Label("Leaderboard", systemImage: "chart.bar.xaxis")
                     }

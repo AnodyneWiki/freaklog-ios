@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
 		5A5426D157C4024BC7B7232F /* AssistantModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */; };
@@ -19,7 +20,12 @@
 		1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */; };
 		E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988EED94A98760900D8303B /* AssistantJournalTools.swift */; };
 		6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */; };
+		FAEE600765D72D3874B98808 /* AssistantScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366000FA374319CB34426DEA /* AssistantScreen.swift */; };
+		C985D39B11FA86F7F6935857 /* AssistantMarkdownText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 191A2C56DBDAC7FD86940452 /* AssistantMarkdownText.swift */; };
+		B32725E22F9A994F3CEB182E /* AssistantSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B300DBB598AAE1F03DFB183 /* AssistantSettingsScreen.swift */; };
+		71EB24E46CE25DE6743CBC91 /* AssistantProfile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28088DB9B0160AC0B719B1AA /* AssistantProfile.swift */; };
 		E6073134F884A8F724717D64 /* AssistantInstructions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */; };
+		2AC40D0BBECA9791DF78C01C /* AssistantChat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4850A8D55A26B1CBC6785409 /* AssistantChat.swift */; };
 		22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */; };
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
@@ -481,6 +487,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
 		E5EBEB78B30784A4B48E2B1D /* AssistantModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantModels.swift; sourceTree = "<group>"; };
@@ -493,7 +500,12 @@
 		9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolbox.swift; sourceTree = "<group>"; };
 		9988EED94A98760900D8303B /* AssistantJournalTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantJournalTools.swift; sourceTree = "<group>"; };
 		EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantSubstanceTools.swift; sourceTree = "<group>"; };
+		366000FA374319CB34426DEA /* AssistantScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantScreen.swift; sourceTree = "<group>"; };
+		191A2C56DBDAC7FD86940452 /* AssistantMarkdownText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownText.swift; sourceTree = "<group>"; };
+		9B300DBB598AAE1F03DFB183 /* AssistantSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantSettingsScreen.swift; sourceTree = "<group>"; };
+		28088DB9B0160AC0B719B1AA /* AssistantProfile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantProfile.swift; sourceTree = "<group>"; };
 		60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantInstructions.swift; sourceTree = "<group>"; };
+		4850A8D55A26B1CBC6785409 /* AssistantChat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantChat.swift; sourceTree = "<group>"; };
 		F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantProviderTests.swift; sourceTree = "<group>"; };
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
@@ -954,13 +966,26 @@
 			path = Tools;
 			sourceTree = "<group>";
 		};
+		0A2982149DFEE5F2E72A68D7 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				366000FA374319CB34426DEA /* AssistantScreen.swift */,
+				191A2C56DBDAC7FD86940452 /* AssistantMarkdownText.swift */,
+				9B300DBB598AAE1F03DFB183 /* AssistantSettingsScreen.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
 		551625259A66CBDA0A0438EF /* Assistant */ = {
 			isa = PBXGroup;
 			children = (
 				7FEB368142E0DD2E75401B23 /* Providers */,
 				35320E7319D7470BF1232616 /* Conversation */,
 				D24BD2D69755596EF3F7E11C /* Tools */,
+				0A2982149DFEE5F2E72A68D7 /* Views */,
+				28088DB9B0160AC0B719B1AA /* AssistantProfile.swift */,
 				60DC4D22D0D4D80F4E916B33 /* AssistantInstructions.swift */,
+				4850A8D55A26B1CBC6785409 /* AssistantChat.swift */,
 			);
 			path = Assistant;
 			sourceTree = "<group>";
@@ -1743,6 +1768,7 @@
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
+				57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */,
 				082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */,
 				43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */,
 				04C2A73124B37921B3E4BE39 /* FormulationTests.swift */,
@@ -2250,6 +2276,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				22C139D710DE3F671BCEBF59 /* AssistantProviderTests.swift in Sources */,
+				AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */,
 				5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */,
 				A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */,
 				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
@@ -2279,7 +2306,12 @@
 				1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */,
 				E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */,
 				6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */,
+				FAEE600765D72D3874B98808 /* AssistantScreen.swift in Sources */,
+				C985D39B11FA86F7F6935857 /* AssistantMarkdownText.swift in Sources */,
+				B32725E22F9A994F3CEB182E /* AssistantSettingsScreen.swift in Sources */,
+				71EB24E46CE25DE6743CBC91 /* AssistantProfile.swift in Sources */,
 				E6073134F884A8F724717D64 /* AssistantInstructions.swift in Sources */,
+				2AC40D0BBECA9791DF78C01C /* AssistantChat.swift in Sources */,
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
 				60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */,
