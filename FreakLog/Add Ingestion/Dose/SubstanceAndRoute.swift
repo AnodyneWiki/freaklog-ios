@@ -6,6 +6,15 @@ enum AddIngestionSubstance: Hashable {
     case psychonautWiki(Substance)
     case custom(name: String, units: String)
 
+    // A stored substance name that isn't PsychonautWiki's is a custom substance logged in the given units
+    init(storedName name: String, units: String) {
+        if let substance = SubstanceRepo.shared.getSubstance(name: name) {
+            self = .psychonautWiki(substance)
+        } else {
+            self = .custom(name: name, units: units)
+        }
+    }
+
     var name: String {
         switch self {
         case .psychonautWiki(let substance): substance.name
