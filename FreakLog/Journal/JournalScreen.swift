@@ -32,10 +32,21 @@ struct JournalScreen: View {
     var body: some View {
         FabPosition(alignment: fabButtonPosition.alignment) {
             if !isSearchPresented {
-                AddFabButton {
-                    Navigator.shared.showAddIngestionFullScreenCover()
-                } addTimedNote: {
-                    isAddingTimedNote = true
+                VStack(spacing: 12) {
+                    if isAssistantEnabled {
+                        Button {
+                            isShowingAssistant = true
+                        } label: {
+                            Label("Assistant", systemImage: "text.bubble")
+                                .labelStyle(FabLabelStyle(isSecondary: true))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    AddFabButton {
+                        Navigator.shared.showAddIngestionFullScreenCover()
+                    } addTimedNote: {
+                        isAddingTimedNote = true
+                    }
                 }
             }
         } screen: {
@@ -111,14 +122,7 @@ struct JournalScreen: View {
                 }
                 favoriteButton
             }
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                if isAssistantEnabled {
-                    Button {
-                        isShowingAssistant = true
-                    } label: {
-                        Label("Assistant", systemImage: "text.bubble")
-                    }
-                }
+            ToolbarItem(placement: .navigationBarTrailing) {
                 moreMenu
             }
         }

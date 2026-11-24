@@ -1,18 +1,24 @@
 import SwiftUI
 
 struct FabLabelStyle: LabelStyle {
+    // A smaller, quieter button for an action next to the main one
+    var isSecondary = false
+
     func makeBody(configuration: Configuration) -> some View {
         ZStack {
-            let circleWidth: Double = 54
+            let circleWidth: Double = isSecondary ? 40 : 54
             Circle()
-                .fill(Color.accentColor)
+                .fill(isSecondary ? Color(.secondarySystemBackground) : Color.accentColor)
                 .frame(width: circleWidth, height: circleWidth)
                 .shadow(color: Color.black.opacity(0.3), radius: 3, x: 3, y: 3)
             Label(configuration)
                 .labelStyle(.iconOnly)
-                .font(.title.weight(.semibold))
-                .foregroundColor(.white)
+                .font(isSecondary ? .title3.weight(.semibold) : .title.weight(.semibold))
+                .foregroundColor(isSecondary ? .accentColor : .white)
         }
+        // Keeps the smaller button at the minimum tap target
+        .frame(minWidth: 44, minHeight: 44)
+        .contentShape(Circle())
     }
 }
 
