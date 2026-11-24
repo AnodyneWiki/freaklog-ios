@@ -97,7 +97,7 @@ struct JournalScreen: View {
             AddTimedNoteScreen(experience: nil)
         }
         .sheet(isPresented: $isShowingAssistant) {
-            AssistantScreen(experience: nil)
+            AssistantScreen(experience: nil, suggestsCurrentSessionSummary: selectedTab == .allIngestions)
         }
         .toolbar {
             if !isHidingJournalTabSwitcher {
@@ -111,16 +111,13 @@ struct JournalScreen: View {
                     .frame(maxWidth: 220)
                 }
             }
-                
-            // The same buttons in both tabs, so the switcher between them stays in place. Groups get the system's
-            // spacing; everything that isn't used all the time is in the More menu.
-            ToolbarItemGroup(placement: .navigationBarLeading) {
+
+            ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     isSearchPresented = true
                 } label: {
                     Label("Search", systemImage: "magnifyingglass")
                 }
-                favoriteButton
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 moreMenu
@@ -135,6 +132,7 @@ struct JournalScreen: View {
             } label: {
                 Label("Calendar", systemImage: "calendar")
             }
+            favoriteButton
             timeDisplayMenu
         } label: {
             Label("More", systemImage: "ellipsis.circle")

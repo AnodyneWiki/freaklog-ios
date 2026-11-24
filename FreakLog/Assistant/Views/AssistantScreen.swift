@@ -5,12 +5,13 @@ import SwiftUI
 // The chat with the assistant, about an experience or the whole journal. Opened with a prompt, such as the
 // summary of a session, it asks that right away.
 struct AssistantScreen: View {
-  init(experience: Experience?, initialPrompt: String? = nil) {
+  init(experience: Experience?, initialPrompt: String? = nil, suggestsCurrentSessionSummary: Bool = false) {
     _chat = StateObject(wrappedValue: AssistantChat(experience: experience, initialPrompt: initialPrompt))
+    self.suggestsCurrentSessionSummary = suggestsCurrentSessionSummary
   }
 
   var body: some View {
-    NavigationStack {
+    NavigationStack(path: $path) {
       Group {
         switch chat.phase {
         case .ready:
@@ -22,26 +23,38 @@ struct AssistantScreen: View {
       .navigationBarTitleDisplayMode(.inline)
       .toolbar {
         ToolbarItem(placement: .principal) {
-          VStack(spacing: 0) {
-            Text("Assistant").font(.headline)
-            Text(chat.status ?? chat.contextLabel)
-              .font(.caption)
-              .foregroundColor(.secondary)
-              .lineLimit(1)
-          }
-          .accessibilityElement(children: .combine)
+          modelMenu
         }
         ToolbarItem(placement: .navigationBarLeading) {
-          Button("Done") { dismiss() }
+          Button {
+            dismiss()
+          } label: {
+            Image(systemName: "xmark")
+              .assistantTapTarget()
+          }
+          .accessibilityLabel("Close")
         }
         ToolbarItem(placement: .navigationBarTrailing) {
-          menu
+          Button {
+            draft = ""
+            chat.start()
+          } label: {
+            Image(systemName: "square.and.pencil")
+              .assistantTapTarget()
+          }
+          .accessibilityLabel("New Chat")
+          .disabled(!chat.hasQuestions)
         }
       }
       .navigationDestination(for: GlobalNavigationDestination.self) { destination in
         getScreen(from: destination)
       }
       .onAppear { chat.startIfNeeded() }
+      .alert("Couldn’t Add to Notes", isPresented: Binding(get: { noteSaveError != nil }, set: { if !$0 { noteSaveError = nil } })) {
+        Button("OK", role: .cancel) {}
+      } message: {
+        Text(noteSaveError ?? "")
+      }
       .confirmationDialog(
         "Switch to \(profileToSwitchTo?.name ?? "")?",
         isPresented: Binding(get: { profileToSwitchTo != nil }, set: { if !$0 { profileToSwitchTo = nil } }),
@@ -54,54 +67,107 @@ struct AssistantScreen: View {
         }
         Button("Cancel", role: .cancel) { }
       } message: {
-        Text("The other provider starts without this chat.")
+        Text("Switching providers starts a new conversation.")
       }
+    }
+    .onChange(of: isAssistantEnabled) { enabled in
+      if !enabled { dismiss() }
     }
     .onDisappear { chat.cancel() }
   }
 
+  @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
   @StateObject private var chat: AssistantChat
   @Environment(\.dismiss) private var dismiss
+  @State private var noteSaveError: String?
   @State private var draft = ""
   @State private var profileToSwitchTo: AssistantProfile?
+  @State private var path = NavigationPath()
   @FocusState private var isInputFocused: Bool
 
   private let bottomID = "bottom"
+  private let suggestsCurrentSessionSummary: Bool
 
-  private var menu: some View {
+  // The title: the model in use, which opens a menu of models and providers
+  private var modelMenu: some View {
     Menu {
-      if chat.profiles.count > 1 {
-        Section("Provider") {
-          ForEach(chat.profiles) { profile in
+      if let profile = chat.activeProfile, profile.standard != .onDevice {
+        Section(profile.name) {
+          ForEach(profile.quickModels, id: \.self) { model in
+            modelButton(model, isSelected: model == profile.model)
+          }
+          if !chat.models.isEmpty {
+            Menu {
+              ForEach(chat.models, id: \.self) { model in
+                modelButton(model, isSelected: model == profile.model)
+              }
+            } label: {
+              Label("All Models", systemImage: "list.bullet")
+            }
+          } else if chat.isLoadingModels {
+            Text("Loading Models…")
+          } else {
+            Button("Fetch Models", action: chat.loadModels)
+          }
+        }
+      }
+      let otherProfiles = chat.profiles.filter { $0.id != chat.activeProfile?.id }
+      if !otherProfiles.isEmpty {
+        Section("Providers") {
+          ForEach(otherProfiles) { profile in
             Button {
-              guard profile.id != chat.activeProfile?.id else { return }
               if chat.hasQuestions {
                 profileToSwitchTo = profile
               } else {
                 chat.switchProfile(to: profile.id)
               }
             } label: {
-              if profile.id == chat.activeProfile?.id {
-                Label(profile.name, systemImage: "checkmark")
-              } else {
-                Text(profile.name)
-              }
+              Text("\(profile.name) · \(profile.modelName)")
             }
           }
         }
-        .disabled(chat.isBusy)
       }
       Button {
-        draft = ""
-        chat.start()
+        path.append(GlobalNavigationDestination.assistantSettings)
       } label: {
-        Label("New Chat", systemImage: "square.and.pencil")
-      }
-      NavigationLink(value: GlobalNavigationDestination.assistantSettings) {
         Label("Assistant Settings", systemImage: "gearshape")
       }
     } label: {
-      Label("More", systemImage: "ellipsis.circle")
+      VStack(spacing: 1) {
+        HStack(spacing: 4) {
+          Text(chat.activeProfile.flatMap { $0.modelName.isEmpty ? nil : $0.modelName } ?? "Assistant")
+            .font(.headline)
+            .foregroundColor(.primary)
+            .lineLimit(1)
+            .truncationMode(.middle)
+          Image(systemName: "chevron.down")
+            .font(.caption2.weight(.bold))
+            .foregroundColor(.secondary)
+        }
+        if let profile = chat.activeProfile, profile.standard != .onDevice {
+          Text(profile.name)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .lineLimit(1)
+        }
+      }
+      .frame(maxWidth: 200)
+      .assistantTapTarget()
+      .accessibilityElement(children: .combine)
+      .accessibilityHint("Opens model and provider options")
+    }
+    .disabled(chat.isBusy)
+  }
+
+  private func modelButton(_ model: String, isSelected: Bool) -> some View {
+    Button {
+      chat.selectModel(model)
+    } label: {
+      if isSelected {
+        Label(model, systemImage: "checkmark")
+      } else {
+        Text(model)
+      }
     }
   }
 
@@ -109,6 +175,10 @@ struct AssistantScreen: View {
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 12) {
+          Text(chat.contextLabel)
+            .font(.caption)
+            .foregroundColor(.secondary)
+            .frame(maxWidth: .infinity)
           ForEach(chat.items) { item in
             switch item {
             case .message(let message):
@@ -141,14 +211,16 @@ struct AssistantScreen: View {
   }
 
   private var suggestions: some View {
-    VStack(alignment: .leading, spacing: 8) {
-      ForEach(chat.suggestions, id: \.self) { suggestion in
+    let prompts = suggestsCurrentSessionSummary ? ["Summarize current session"] + chat.suggestions : chat.suggestions
+    return VStack(alignment: .leading, spacing: 8) {
+      ForEach(prompts, id: \.self) { suggestion in
         Button {
           chat.send(suggestion)
         } label: {
           Text(suggestion)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .assistantTapTarget()
         }
         .buttonStyle(.bordered)
         .disabled(chat.isBusy)
@@ -164,12 +236,15 @@ struct AssistantScreen: View {
           .focused($isInputFocused)
           .padding(.horizontal, 12)
           .padding(.vertical, 8)
+          .frame(minHeight: 44)
           .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
         if chat.isBusy {
           Button {
             chat.stop()
           } label: {
-            Image(systemName: "stop.circle.fill").font(.title)
+            Image(systemName: "stop.circle.fill")
+              .font(.title)
+              .assistantTapTarget()
           }
           .accessibilityLabel("Stop")
         } else {
@@ -177,7 +252,9 @@ struct AssistantScreen: View {
             chat.send(draft)
             draft = ""
           } label: {
-            Image(systemName: "arrow.up.circle.fill").font(.title)
+            Image(systemName: "arrow.up.circle.fill")
+              .font(.title)
+              .assistantTapTarget()
           }
           .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           .accessibilityLabel("Send")
@@ -211,15 +288,20 @@ struct AssistantScreen: View {
 
   private func actions(for message: AssistantChatItem.Message) -> MessageView.Actions? {
     guard
-      !message.isUser, [.done, .stopped, .failed].contains(message.state),
-      message.id != chat.items.first?.id
+      !message.isUser, [.done, .stopped, .failed].contains(message.state)
     else { return nil }
     let isLast = chat.items.last { $0.message?.isUser == false }?.id == message.id
     return MessageView.Actions(
       canAddToNotes: chat.experience != nil && !chat.isBusy,
       isAddedToNotes: chat.addedToNotes.contains(message.id),
       canRetry: isLast && chat.canRetry && !chat.isBusy,
-      addToNotes: { chat.addToNotes(message) },
+      addToNotes: {
+        do {
+          try chat.addToNotes(message)
+        } catch {
+          noteSaveError = error.localizedDescription
+        }
+      },
       retry: { chat.retry() })
   }
 
@@ -240,6 +322,8 @@ private struct MessageView: View {
   // What the assistant is doing, shown while waiting for its answer
   let status: String?
   let actions: Actions?
+
+  @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
   var body: some View {
     if message.isUser {
@@ -290,20 +374,26 @@ private struct MessageView: View {
   }
 
   private func actionRow(_ actions: Actions) -> some View {
-    HStack(spacing: 16) {
+    let layout = dynamicTypeSize.isAccessibilitySize
+      ? AnyLayout(VStackLayout(alignment: .leading, spacing: 4))
+      : AnyLayout(HStackLayout(spacing: 16))
+    return layout {
       if hasText {
         Button {
           UIPasteboard.general.string = message.text
         } label: {
           Label("Copy", systemImage: "doc.on.doc")
+            .assistantTapTarget()
         }
       }
       if hasText, actions.canAddToNotes || actions.isAddedToNotes {
         Button(action: actions.addToNotes) {
           if actions.isAddedToNotes {
             Label("Added to Notes", systemImage: "checkmark")
+              .assistantTapTarget()
           } else {
             Label("Add to Notes", systemImage: "note.text.badge.plus")
+              .assistantTapTarget()
           }
         }
         .disabled(actions.isAddedToNotes)
@@ -311,6 +401,7 @@ private struct MessageView: View {
       if actions.canRetry {
         Button(action: actions.retry) {
           Label("Retry", systemImage: "arrow.clockwise")
+            .assistantTapTarget()
         }
       }
     }

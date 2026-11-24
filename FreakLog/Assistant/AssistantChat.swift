@@ -83,6 +83,9 @@ final class AssistantChat: ObservableObject {
   @Published private(set) var canRetry = false
   @Published private(set) var profiles: [AssistantProfile] = []
   @Published private(set) var activeProfile: AssistantProfile?
+  // The models the active provider offers, loaded when the chat starts
+  @Published private(set) var models: [String] = []
+  @Published private(set) var isLoadingModels = false
   // Answers that were added to the experience's notes
   @Published private(set) var addedToNotes: Set<UUID> = []
 
@@ -98,9 +101,9 @@ final class AssistantChat: ObservableObject {
 
   // What the assistant knows about without looking it up
   var contextLabel: String {
-    guard let experience else { return "Whole journal" }
+    guard let experience else { return "About your whole journal" }
     let title = experience.titleUnwrapped
-    return title.isEmpty ? "This experience" : "This experience: \(title)"
+    return title.isEmpty ? "About this experience" : "About “\(title)”"
   }
 
   // What keeps the profile from being used, nil when nothing does
@@ -127,8 +130,10 @@ final class AssistantChat: ObservableObject {
       start()
       return
     }
-    guard !hasQuestions else { return }
-    if phase != .ready || AssistantProfileStore.profiles != profiles || AssistantProfileStore.activeProfile != activeProfile {
+    profiles = AssistantProfileStore.profiles
+    if phase != .ready || AssistantProfileStore.activeProfile != activeProfile ||
+      allowsWikiLookups != AssistantProfileStore.isAnodyneWikiEnabled ||
+      activeProfile.map({ AssistantKeychain.key(for: $0.id) }) != activeKey {
       start()
     }
   }
@@ -140,11 +145,15 @@ final class AssistantChat: ObservableObject {
     chatID = UUID()
     conversation = nil
     items = []
+    addedToNotes = []
     isBusy = false
     status = nil
     canRetry = false
     profiles = AssistantProfileStore.profiles
     activeProfile = AssistantProfileStore.activeProfile
+    activeKey = activeProfile.map { AssistantKeychain.key(for: $0.id) }
+    allowsWikiLookups = AssistantProfileStore.isAnodyneWikiEnabled
+    loadModels()
     guard let profile = activeProfile else {
       phase = .needsSetup("Add a provider to start chatting.")
       return
@@ -156,11 +165,11 @@ final class AssistantChat: ObservableObject {
     let toolbox = AssistantToolbox(
       context: PersistenceController.shared.viewContext,
       limits: profile.standard == .onDevice ? .compact : .standard,
-      includesAnodyneWiki: AssistantProfileStore.isAnodyneWikiEnabled)
+      includesAnodyneWiki: allowsWikiLookups)
     let instructions = AssistantInstructions.text(for: experience, toolbox: toolbox)
     if profile.standard == .onDevice {
       conversation = OnDeviceModel.conversation(instructions: instructions, toolbox: toolbox)
-    } else if let client = profile.client(apiKey: AssistantKeychain.key(for: profile.id)) {
+    } else if let client = profile.client(apiKey: activeKey ?? "") {
       conversation = APIConversation(
         client: client,
         model: profile.model,
@@ -174,9 +183,6 @@ final class AssistantChat: ObservableObject {
     }
     self.toolbox = toolbox
     phase = .ready
-    items = [.message(.init(
-      isUser: false,
-      text: "Hi! I can look through your journal, sum up sessions and answer questions about substances and safer use. Ask me anything or pick a suggestion."))]
     if let prompt = pendingPrompt {
       pendingPrompt = nil
       send(prompt)
@@ -184,9 +190,43 @@ final class AssistantChat: ObservableObject {
   }
 
   func switchProfile(to id: UUID) {
+    guard !isBusy, profiles.contains(where: { $0.id == id }) else { return }
     AssistantProfileStore.setActive(id)
     start()
   }
+
+  func selectModel(_ model: String) {
+    guard !isBusy, var profile = activeProfile, model != profile.model else { return }
+    profile.choose(model: model)
+    AssistantProfileStore.save(profile)
+    guard let conversation = conversation as? APIConversation else {
+      start()
+      return
+    }
+    conversation.switchModel(to: model)
+    profiles = AssistantProfileStore.profiles
+    activeProfile = profile
+    if hasQuestions {
+      items.append(.notice(.init(text: "Continuing with \(model)")))
+    }
+  }
+
+  func loadModels() {
+    modelListTask?.cancel()
+    models = []
+    isLoadingModels = false
+    guard let profile = activeProfile, profile.standard != .onDevice,
+          let client = profile.client(apiKey: activeKey ?? "") else { return }
+    isLoadingModels = true
+    modelListTask = Task { [weak self] in
+      let loaded = (try? await client.models()) ?? []
+      guard !Task.isCancelled else { return }
+      self?.models = loaded.uniqued()
+      self?.isLoadingModels = false
+    }
+  }
+
+  private var modelListTask: Task<Void, Never>?
 
   func send(_ text: String) {
     let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -250,20 +290,23 @@ final class AssistantChat: ObservableObject {
   }
 
   // Adds an answer to the end of the experience's notes
-  func addToNotes(_ message: AssistantChatItem.Message) {
-    guard let experience else { return }
+  func addToNotes(_ message: AssistantChatItem.Message) throws {
+    guard let experience, let context = experience.managedObjectContext, !addedToNotes.contains(message.id) else { return }
+    let previousNotes = experience.text
     let notes = experience.textUnwrapped.trimmingCharacters(in: .whitespacesAndNewlines)
     let addition = message.text.trimmingCharacters(in: .whitespacesAndNewlines)
     experience.text = notes.isEmpty ? addition : notes + "\n\n" + addition
     do {
-      try PersistenceController.shared.viewContext.save()
+      try context.save()
       addedToNotes.insert(message.id)
     } catch {
-      print("Failed to add the answer to the notes: \(error)")
+      experience.text = previousNotes
+      throw error
     }
   }
 
   func cancel() {
+    modelListTask?.cancel()
     turnTask?.cancel()
     turnTask = nil
     chatID = UUID()
@@ -288,6 +331,8 @@ final class AssistantChat: ObservableObject {
   // Changes with every new chat, so a turn that was still running can't change the new one
   private var chatID = UUID()
 
+  private var allowsWikiLookups = false
+  private var activeKey: String?
   private var hasStarted = false
 
   private func handle(_ event: AssistantTurnEvent, in turn: inout Turn, toolbox: AssistantToolbox) {

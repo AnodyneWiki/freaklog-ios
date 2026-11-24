@@ -21,7 +21,7 @@ enum AssistantInstructions {
       It is now \(AssistantFormat.date(now)) (\(TimeZone.current.identifier)).
       """
     guard let experience else {
-      text += "\n\nThe user opened you from the journal, not from one experience. Use the tools to find the sessions they mean."
+      text += "\n\nThe user opened you from the journal, not from one experience. Use the tools to find the sessions they mean. For a summary of the current session, list the most recent experience and read its details. If there are no experiences, say so."
       return text
     }
     let details = toolbox.experienceDetails(experience, notesLimit: isCompact ? 400 : 1500)
