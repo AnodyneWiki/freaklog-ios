@@ -200,9 +200,7 @@ struct FinishIngestionScreen: View {
         if wantsToForceNewExperience {
             selectedExperience = nil
         } else {
-            selectedExperience = FinishIngestionScreen.getClosestExperience(
-                from: experiencesWithinLargerRange,
-                date: selectedTime)
+            selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: selectedTime)
         }
     }
 
@@ -294,17 +292,6 @@ struct FinishIngestionScreen: View {
         let companion = createOrUpdateCompanion(with: context)
         ingestion.substanceCompanion = companion
         return ingestion
-    }
-
-    private static func getClosestExperience(from experiences: [Experience], date: Date) -> Experience? {
-        let fifteenHours: TimeInterval = 15 * 60 * 60
-        let threeHours: TimeInterval = 3 * 60 * 60
-        return experiences.first { exp in
-            let experienceStart = exp.ingestionsSorted.first?.time ?? exp.sortDateUnwrapped
-            let lastIngestionTime = exp.ingestionsSorted.last?.time ?? exp.sortDateUnwrapped
-            let experienceRange = experienceStart.addingTimeInterval(-threeHours) ... max(experienceStart.addingTimeInterval(fifteenHours), lastIngestionTime.addingTimeInterval(threeHours))
-            return experienceRange.contains(date)
-        }
     }
 
     private let generator = UINotificationFeedbackGenerator()

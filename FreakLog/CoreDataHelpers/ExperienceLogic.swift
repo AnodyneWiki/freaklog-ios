@@ -1,6 +1,19 @@
 import SwiftUI
 
 struct ExperienceLogic {
+    // The experience a new ingestion at the date belongs to: one starting at most 3 hours later, or that started
+    // at most 15 hours before, or whose last ingestion was at most 3 hours before
+    static func closestExperience(from experiences: [Experience], to date: Date) -> Experience? {
+        let fifteenHours: TimeInterval = 15 * 60 * 60
+        let threeHours: TimeInterval = 3 * 60 * 60
+        return experiences.first { exp in
+            let experienceStart = exp.ingestionsSorted.first?.time ?? exp.sortDateUnwrapped
+            let lastIngestionTime = exp.ingestionsSorted.last?.time ?? exp.sortDateUnwrapped
+            let experienceRange = experienceStart.addingTimeInterval(-threeHours) ... max(experienceStart.addingTimeInterval(fifteenHours), lastIngestionTime.addingTimeInterval(threeHours))
+            return experienceRange.contains(date)
+        }
+    }
+
     static func myIngestions(from ingestions: [Ingestion]) -> [Ingestion] {
         ingestions.filter(\.isMine)
     }
