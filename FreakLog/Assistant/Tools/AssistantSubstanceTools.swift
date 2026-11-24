@@ -1,0 +1,423 @@
+import CoreData
+import Foundation
+
+// Tools for substance facts: the bundled PsychonautWiki data and the user's own substances and overrides, the
+// interaction checker, a tolerance estimate, what is still active, and AnodyneWiki
+extension AssistantToolbox {
+  func substanceTools() -> [Tool] {
+    let progress = "Checking substance data…"
+    return [
+      Tool(
+        name: "get_substance_info",
+        description: "Look up a substance in the PsychonautWiki data bundled with the app, or the user's own custom substances: summary, dose ranges and durations per route (including the user's own changes), tolerance, cross-tolerances, toxicity, risks, safer-use tips and listed interactions. Takes common names and abbreviations.",
+        parameters: [
+          Parameter(
+            name: "name",
+            description: "Substance name, common name or abbreviation, e.g. 'MDMA' or 'Molly'.",
+            kind: .string,
+            isRequired: true),
+        ],
+        progress: progress,
+        label: { "Looked up \($0.string("name"))" },
+        summary: { $0["name"]?.string ?? "found" },
+        run: { [unowned self] arguments in substanceInfo(arguments.string("name")) }),
+      Tool(
+        name: "check_interactions",
+        description: "Check every pair of the substances for known interactions (dangerous, unsafe, uncertain) with the app's interaction checker. Pairs without data are listed as no_data, which doesn't mean they are safe.",
+        parameters: [
+          Parameter(
+            name: "substances",
+            description: "Two to \(Self.maxInteractionSubstances) substance names as the app's data names them, e.g. 'Alcohol' (not 'ethanol'), 'MDMA'.",
+            kind: .stringArray,
+            isRequired: true),
+        ],
+        progress: progress,
+        label: { "Checked interactions: \($0.strings("substances").joined(separator: " + "))" },
+        summary: { result in
+          if let unknown = result["unrecognized_substances"]?.array, !unknown.isEmpty {
+            return "unknown substance: " + unknown.compactMap(\.string).joined(separator: ", ")
+          }
+          let count = result["interactions"]?.array?.count ?? 0
+          return switch count {
+          case 0: "no interactions on record"
+          case 1: "1 interaction found"
+          default: "\(count) interactions found"
+          }
+        },
+        run: { [unowned self] arguments in checkInteractions(arguments.strings("substances")) }),
+      Tool(
+        name: "get_tolerance",
+        description: "Estimate the user's tolerance to a substance from their last logged use of it and of cross-tolerant substances, with the time it is expected to be back at baseline.",
+        parameters: [Parameter(name: "substance", description: "Substance name.", kind: .string, isRequired: true)],
+        progress: progress,
+        label: { "Estimated tolerance to \($0.string("substance"))" },
+        summary: { $0["estimate"]?.string ?? "estimated" },
+        run: { [unowned self] arguments in try tolerance(arguments.string("substance")) }),
+      Tool(
+        name: "get_active_ingestions",
+        description: "List the ingestions of the last N hours with the expected end of their effects, from each route's duration. Use it for 'what is still active?', and before talking about redosing or combining.",
+        parameters: [Parameter(
+          name: "hours_back",
+          description: "How many hours to look back (default 24, at most 72).",
+          kind: .integer)],
+        progress: progress,
+        label: { "Checked what is still active (last \($0.integer("hours_back", default: 24, in: 1 ... 72)) h)" },
+        summary: { result in
+          let active = (result["ingestions"]?.array ?? []).filter { $0["status"]?.string == "probably still active" }.count
+          return "\(active) probably still active"
+        },
+        run: { [unowned self] arguments in try activeIngestions(hoursBack: arguments.integer(
+          "hours_back",
+          default: 24,
+          in: 1 ... 72)) }),
+    ]
+  }
+
+  func anodyneTools() -> [Tool] {
+    let progress = "Asking AnodyneWiki…"
+    return [
+      Tool(
+        name: "search_anodyne_wiki",
+        description: "Search the substance index of AnodyneWiki (a pharmacology and harm-reduction wiki) by name or abbreviation, to find the exact page title for lookup_anodyne_wiki.",
+        parameters: [Parameter(name: "query", description: "Substance name or abbreviation.", kind: .string, isRequired: true)],
+        progress: progress,
+        label: { "Searched AnodyneWiki for “\($0.string("query"))”" },
+        summary: { "\($0["matches"]?.array?.count ?? 0) matches" },
+        run: { [unowned self] arguments in try await searchAnodyneWiki(arguments.string("query")) }),
+      Tool(
+        name: "lookup_anodyne_wiki",
+        description: "Read a substance page on AnodyneWiki: dose tiers per route from users' logged doses, duration, half-life, interactions, adverse effects, warnings and subjective effects. Takes titles and common abbreviations. Say that the facts come from AnodyneWiki when you use them.",
+        parameters: [Parameter(
+          name: "substance",
+          description: "Page title or abbreviation, e.g. 'MDMA' or 'Amphetamine'.",
+          kind: .string,
+          isRequired: true)],
+        progress: progress,
+        label: { "Read AnodyneWiki on \($0.string("substance"))" },
+        summary: { $0["title"]?.string ?? "found" },
+        run: { [unowned self] arguments in try await lookUpAnodyneWiki(arguments.string("substance")) }),
+    ]
+  }
+
+  // The name the app stores a substance under, from its name, a common name, an abbreviation or display name
+  func storedSubstanceName(for query: String) -> String? {
+    let name = query.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !name.isEmpty else { return nil }
+    func matches(_ other: String) -> Bool {
+      other.caseInsensitiveCompare(name) == .orderedSame
+    }
+    let persistence = PersistenceController.shared
+    if let custom = persistence.getAllCustomSubstances().first(where: { matches($0.nameUnwrapped) }) {
+      return custom.nameUnwrapped
+    }
+    if
+      let renamed = persistence.substanceNames(withDisplayNameContaining: name)
+        .first(where: { matches(persistence.displayName(for: $0)) })
+    {
+      return renamed
+    }
+    let substances = SubstanceRepo.shared.substances
+    if
+      let substance = substances.first(where: { matches($0.name) }) ?? substances
+        .first(where: { $0.commonNames.contains(where: matches) })
+    {
+      return substance.name
+    }
+    if let alias = Self.aliases[name.lowercased()], SubstanceRepo.shared.getSubstance(name: alias) != nil {
+      return alias
+    }
+    return InteractionChecker.additionalInteractionsToCheck.first(where: matches)
+  }
+
+  // Everyday or chemical names models tend to use that the bundled data doesn't list
+  private static let aliases = [
+    "ethanol": "Alcohol",
+    "ethyl alcohol": "Alcohol",
+    "beer": "Alcohol",
+    "wine": "Alcohol",
+    "thc": "Cannabis",
+    "weed": "Cannabis",
+  ]
+  private static let maxInteractionSubstances = 8
+
+  // Cuts long texts and lists of a page down, so a page fits into a request
+  private static func trimmed(_ value: JSONValue, textLimit: Int) -> JSONValue {
+    switch value {
+    case .string(let string): AssistantFormat.text(string.anodyneCleaned, limit: textLimit)
+    case .array(let array): .array(array.prefix(30).map { trimmed($0, textLimit: textLimit) })
+    case .object(let object): .object(object.mapValues { trimmed($0, textLimit: textLimit) })
+    default: value
+    }
+  }
+
+  private func substanceInfo(_ query: String) -> JSONValue {
+    guard !query.isEmpty else { return Self.error("'name' is required.") }
+    guard let name = storedSubstanceName(for: query) else {
+      let similar = SubstanceRepo.shared.substances.map(\.name).filter { $0.localizedCaseInsensitiveContains(query) }.prefix(5)
+      return Self.error(
+        "There is no substance called '\(query)' in the app's data. Similar names: \(similar.isEmpty ? "none" : similar.joined(separator: ", "))."
+          + (tool(named: "search_anodyne_wiki") == nil ? "" : " You can also try search_anodyne_wiki."))
+    }
+    let persistence = PersistenceController.shared
+    if let custom = persistence.getCustomSubstance(name: name) {
+      return Self.success([
+        "name": .string(persistence.displayName(for: name)),
+        "is_custom_substance": .bool(true),
+        "source": "A custom substance the user added to the app",
+        "description": AssistantFormat.optionalText(custom.explanationUnwrapped, limit: limits.maxTextCharacters),
+        "units": .string(custom.unitsUnwrapped),
+        "categories": AssistantFormat.strings(persistence.categories(for: name)),
+        "routes": routesJSON(for: name),
+      ])
+    }
+    guard let substance = SubstanceRepo.shared.getSubstance(name: name) else {
+      // One of the interaction checker's extra names, such as SSRIs, which has no substance page
+      return Self.success([
+        "name": .string(name),
+        "source": "The app's interaction checker",
+        "note": "The app has no substance page for this, but check_interactions knows it.",
+      ])
+    }
+    let limit = limits.maxTextCharacters
+    return Self.success([
+      "name": .string(persistence.displayName(for: name)),
+      "source": "PsychonautWiki data bundled with the app, with the user's own dose and duration changes",
+      "url": .string(substance.url.absoluteString),
+      "common_names": AssistantFormat.strings(Array(substance.commonNames.prefix(10))),
+      "categories": AssistantFormat.strings(persistence.categories(for: name)),
+      "summary": AssistantFormat.optionalText(substance.summary, limit: limit),
+      "dosage_remark": AssistantFormat.optionalText(substance.dosageRemark, limit: limit),
+      "tolerance": substance.tolerance.map { tolerance in
+        .object([
+          "full": tolerance.full.map { .string($0) } ?? .null,
+          "half": tolerance.half.map { .string($0) } ?? .null,
+          "zero": tolerance.zero.map { .string($0) } ?? .null,
+        ])
+      } ?? .null,
+      "cross_tolerances": AssistantFormat.strings(substance.crossTolerances),
+      "addiction_potential": AssistantFormat.optionalText(substance.addictionPotential, limit: limit),
+      "toxicity": AssistantFormat.strings(substance.toxicities),
+      "general_risks": AssistantFormat.optionalText(substance.generalRisks, limit: limit),
+      "long_term_risks": AssistantFormat.optionalText(substance.longtermRisks, limit: limit),
+      "safer_use": AssistantFormat.strings(substance.saferUse),
+      "interactions": substance.interactions.map { interactions in
+        .object([
+          "dangerous": AssistantFormat.strings(interactions.dangerous),
+          "unsafe": AssistantFormat.strings(interactions.unsafe),
+          "uncertain": AssistantFormat.strings(interactions.uncertain),
+        ])
+      } ?? .null,
+      "routes": routesJSON(for: name),
+    ])
+  }
+
+  // Dose ranges and durations of every route the app has data for, as the app shows them
+  private func routesJSON(for substanceName: String) -> JSONValue {
+    .array(AdministrationRoute.allCases.compactMap { route in
+      let roa = PersistenceController.shared.resolvedRoa(for: substanceName, route: route)
+      guard roa.dose != nil || roa.duration != nil else { return nil }
+      var json: [String: JSONValue] = ["route": .string(route.rawValue)]
+      if let dose = roa.dose {
+        json["dose_units"] = .string(dose.units)
+        json["light_from"] = AssistantFormat.number(dose.lightMin)
+        json["common_from"] = AssistantFormat.number(dose.commonMin)
+        json["strong_from"] = AssistantFormat.number(dose.strongMin)
+        json["heavy_from"] = AssistantFormat.number(dose.heavyMin)
+      }
+      if let duration = roa.duration {
+        let phases = [
+          ("onset", duration.onset), ("comeup", duration.comeup), ("peak", duration.peak),
+          ("offset", duration.offset), ("total", duration.total), ("afterglow", duration.afterglow),
+        ]
+        for (key, range) in phases {
+          if let text = range?.displayString {
+            json[key] = .string(text)
+          }
+        }
+      }
+      return .object(json)
+    })
+  }
+
+  private func checkInteractions(_ requested: [String]) -> JSONValue {
+    let unrecognized = requested.filter { storedSubstanceName(for: $0) == nil }
+    var names: [String] = []
+    for name in requested.map({ storedSubstanceName(for: $0) ?? $0 })
+      where !names.contains(where: { $0.caseInsensitiveCompare(name) == .orderedSame })
+    {
+      names.append(name)
+    }
+    guard names.count >= 2 else { return Self.error("Give at least two different substances.") }
+    guard names.count <= Self.maxInteractionSubstances else {
+      return Self.error("Check at most \(Self.maxInteractionSubstances) substances at once.")
+    }
+    var found: [JSONValue] = []
+    var noData: [JSONValue] = []
+    for (index, name) in names.enumerated() {
+      for other in names.dropFirst(index + 1) {
+        if let type = InteractionChecker.getInteractionTypeBetween(aName: name, bName: other) {
+          found.append(.object(["a": .string(name), "b": .string(other), "risk": .string(String(describing: type))]))
+        } else {
+          noData.append(.string("\(name) + \(other)"))
+        }
+      }
+    }
+    var result: [String: JSONValue] = [
+      "substances": AssistantFormat.strings(names),
+      "interactions": .array(found),
+      "no_data": .array(noData),
+      "note": "From the PsychonautWiki and TripSit interaction data and the user's categories. No data doesn't mean a combination is safe.",
+    ]
+    if !unrecognized.isEmpty {
+      result["unrecognized_substances"] = AssistantFormat.strings(unrecognized)
+      result["warning"] = .string(
+        "The app's data doesn't know \(unrecognized.joined(separator: ", ")), so pairs with it couldn't be checked. Find the name the app uses with get_substance_info and check again; don't tell the user the combination has no known interactions.")
+    }
+    return Self.success(result)
+  }
+
+  private func tolerance(_ query: String) throws -> JSONValue {
+    guard !query.isEmpty else { return Self.error("'substance' is required.") }
+    let name = storedSubstanceName(for: query) ?? query
+    let substance = SubstanceRepo.shared.getSubstance(name: name)
+    let lastUse = try lastPersonalIngestion(of: [name])
+    // Substances in a category this one is cross-tolerant with
+    let crossTolerances = Set((substance?.crossTolerances ?? []).map { $0.lowercased() })
+    let crossTolerant = SubstanceRepo.shared.substances
+      .filter { $0.name != name && !crossTolerances.isDisjoint(with: $0.categories.map { $0.lowercased() }) }
+      .map(\.name)
+    let lastCrossTolerantUse = crossTolerant.isEmpty ? nil : try lastPersonalIngestion(of: crossTolerant)
+    let mostRecent = [lastUse, lastCrossTolerantUse].compactMap { $0 }.max { $0.timeUnwrapped < $1.timeUnwrapped }
+    var result: [String: JSONValue] = [
+      "substance": .string(PersistenceController.shared.displayName(for: name)),
+      "last_use": lastUse.map { .string(AssistantFormat.date($0.timeUnwrapped)) } ?? .null,
+      "cross_tolerances": AssistantFormat.strings(substance?.crossTolerances ?? []),
+      "tolerance_data": substance?.tolerance.map { tolerance in
+        .object([
+          "full": tolerance.full.map { .string($0) } ?? .null,
+          "half": tolerance.half.map { .string($0) } ?? .null,
+          "zero": tolerance.zero.map { .string($0) } ?? .null,
+        ])
+      } ?? .null,
+      "note": "A rough estimate from logged ingestions and PsychonautWiki's tolerance times; tolerance differs between people.",
+    ]
+    if let lastCrossTolerantUse, lastCrossTolerantUse != lastUse {
+      result["last_cross_tolerant_use"] = .object([
+        "substance": .string(PersistenceController.shared.displayName(for: lastCrossTolerantUse.substanceNameUnwrapped)),
+        "time": .string(AssistantFormat.date(lastCrossTolerantUse.timeUnwrapped)),
+      ])
+    }
+    guard let mostRecent else {
+      result["estimate"] = "no logged use, probably no tolerance from it"
+      return Self.success(result)
+    }
+    let hoursSince = Date.now.timeIntervalSince(mostRecent.timeUnwrapped) / 3600
+    let half = substance?.tolerance?.halfToleranceInHours
+    let zero = substance?.tolerance?.zeroToleranceInHours
+    result["hours_since_relevant_use"] = AssistantFormat.number(hoursSince)
+    result["estimate"] = if let zero, hoursSince >= zero {
+      "probably back at baseline"
+    } else if let half, hoursSince >= half {
+      "probably about half of full tolerance or less"
+    } else if half != nil || zero != nil {
+      "probably elevated"
+    } else {
+      "unknown, the app has no tolerance times for this substance"
+    }
+    if let zero {
+      result["baseline_expected"] = .string(AssistantFormat.date(mostRecent.timeUnwrapped.addingTimeInterval(zero * 3600)))
+    }
+    return Self.success(result)
+  }
+
+  private func lastPersonalIngestion(of substanceNames: [String]) throws -> Ingestion? {
+    let request = PersistenceController.personalIngestionsRequest()
+    request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+      request.predicate ?? NSPredicate(value: true),
+      NSPredicate(format: "substanceName IN %@", substanceNames),
+    ])
+    request.fetchLimit = 1
+    return try context.fetch(request).first
+  }
+
+  private func activeIngestions(hoursBack: Int) throws -> JSONValue {
+    let now = Date.now
+    let request = PersistenceController.ingestionsRequest(
+      since: now.addingTimeInterval(-Double(hoursBack) * 3600),
+      limit: limits.maxIngestions)
+    let ingestions = try context.fetch(request).reversed().map { ingestion -> JSONValue in
+      var json = ingestionJSON(ingestion, includingExperience: true).object ?? [:]
+      let duration = PersistenceController.shared.resolvedDuration(
+        for: ingestion.substanceNameUnwrapped,
+        route: ingestion.administrationRouteUnwrapped)
+      let phases = [duration?.onset, duration?.comeup, duration?.peak, duration?.offset].compactMap { $0?.maxSec }
+      let seconds = duration?.total?.maxSec ?? (phases.isEmpty ? nil : phases.reduce(0, +))
+      if let seconds, seconds.isFinite, seconds > 0 {
+        // An infusion's effects last from its end
+        let end = (ingestion.endTime ?? ingestion.timeUnwrapped).addingTimeInterval(min(seconds, 30 * 24 * 3600))
+        json["expected_end"] = .string(AssistantFormat.date(end))
+        json["status"] = .string(now < end ? "probably still active" : "probably worn off")
+      } else {
+        json["status"] = "unknown duration"
+      }
+      return .object(json)
+    }
+    return Self.success([
+      "now": .string(AssistantFormat.date(now)),
+      "hours_back": .number(Double(hoursBack)),
+      "ingestions": .array(ingestions),
+      "note": "Expected ends use the longest total duration listed; after-effects can last longer.",
+    ])
+  }
+
+  // The index is downloaded whole and searched here, so the query never leaves the device
+  private func searchAnodyneWiki(_ query: String) async throws -> JSONValue {
+    guard !query.isEmpty else { return Self.error("'query' is required.") }
+    let entries = try await AnodyneClient.shared.indexEntries()
+    let matches = entries
+      .filter { entry in
+        entry.matches(query) || entry.title.localizedCaseInsensitiveContains(query)
+          || entry.abbreviations.contains { $0.localizedCaseInsensitiveContains(query) }
+      }
+      .prefix(limits.defaultListLength)
+    return Self.success([
+      "source": .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki"),
+      "matches": .array(matches.map { entry in
+        .object([
+          "title": .string(entry.title),
+          "abbreviations": AssistantFormat.strings(entry.abbreviations),
+          "classes": AssistantFormat.strings(entry.classes),
+        ])
+      }),
+    ])
+  }
+
+  // Only a title from AnodyneWiki's own index is requested, so names of the user's own substances stay private
+  private func lookUpAnodyneWiki(_ query: String) async throws -> JSONValue {
+    guard !query.isEmpty else { return Self.error("'substance' is required.") }
+    let entries = try await AnodyneClient.shared.indexEntries()
+    let pwName = storedSubstanceName(for: query).flatMap { SubstanceRepo.shared.getSubstance(name: $0)?.name }
+    guard
+      let entry = entries.first(where: { $0.matches(query) }) ?? pwName
+        .flatMap({ name in entries.first { $0.matches(name) } })
+    else {
+      return Self.error("AnodyneWiki has no page called '\(query)'. Try search_anodyne_wiki first.")
+    }
+    guard case .found(let substance) = try await AnodyneClient.shared.lookup(entry.title) else {
+      return Self.error("AnodyneWiki has no page called '\(entry.title)'.")
+    }
+    var page = Self.trimmed((try? JSONValue(encoding: substance)) ?? .null, textLimit: limits.maxTextCharacters * 2).object ?? [:]
+    page["source"] = .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki")
+    page["url"] = .string(substance.pageURL.absoluteString)
+    return Self.success(page)
+  }
+
+}
+
+extension JSONValue {
+  // The JSON form of an encodable value
+  init(encoding value: some Encodable) throws {
+    let data = try JSONEncoder().encode(value)
+    self = try JSONDecoder().decode(JSONValue.self, from: data)
+  }
+}

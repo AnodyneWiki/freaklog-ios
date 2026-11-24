@@ -457,6 +457,40 @@ struct PersistenceController {
         return r
     }
 
+    // Ingestions since the date, newest first; with a query only those of substances whose stored or display
+    // name contains it
+    static func ingestionsRequest(since date: Date, substanceMatching query: String? = nil, limit: Int) -> NSFetchRequest<Ingestion> {
+        let r = ingestionsRequest()
+        var predicates = [NSPredicate(format: "time >= %@", date as NSDate)]
+        if let query, !query.isEmpty {
+            predicates.append(substancePredicate(matching: query, keyPath: "substanceName"))
+        }
+        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+        r.fetchLimit = limit
+        return r
+    }
+
+    // Experiences whose title or notes contain the text, newest first
+    static func experiencesRequest(containing text: String, limit: Int) -> NSFetchRequest<Experience> {
+        let r = experiencesRequest()
+        r.predicate = NSPredicate(format: "title CONTAINS[cd] %@ OR text CONTAINS[cd] %@", text, text)
+        r.fetchLimit = limit
+        return r
+    }
+
+    // Experiences with an ingestion of a substance whose stored or display name contains the query, newest first
+    static func experiencesRequest(withSubstanceMatching query: String, limit: Int) -> NSFetchRequest<Experience> {
+        let r = experiencesRequest()
+        r.predicate = substancePredicate(matching: query, keyPath: "ANY ingestions.substanceName")
+        r.fetchLimit = limit
+        return r
+    }
+
+    private static func substancePredicate(matching query: String, keyPath: String) -> NSPredicate {
+        let displayNameMatches = shared.substanceNames(withDisplayNameContaining: query)
+        return NSPredicate(format: "\(keyPath) CONTAINS[cd] %@ OR \(keyPath) IN %@", query, displayNameMatches)
+    }
+
     static func recentIngestionsRequest(limit: Int) -> NSFetchRequest<Ingestion> {
         let r = ingestionsRequest()
         r.fetchLimit = limit
