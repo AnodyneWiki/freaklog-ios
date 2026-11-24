@@ -18,6 +18,7 @@
 		49E077D023F35753D6D3E6AA /* AssistantConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EAB6A95483189B3B9CA2D21 /* AssistantConversation.swift */; };
 		765887D3C8C16DC421A14315 /* OnDeviceConversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B8FD57BB05C7BBF11460696 /* OnDeviceConversation.swift */; };
 		1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */; };
+		78618A01869542BCAEF49FD9 /* AssistantWebSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 207307FDF53B4D499A4D1317 /* AssistantWebSearch.swift */; };
 		E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9988EED94A98760900D8303B /* AssistantJournalTools.swift */; };
 		6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */; };
 		FAEE600765D72D3874B98808 /* AssistantScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 366000FA374319CB34426DEA /* AssistantScreen.swift */; };
@@ -499,6 +500,7 @@
 		7EAB6A95483189B3B9CA2D21 /* AssistantConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversation.swift; sourceTree = "<group>"; };
 		0B8FD57BB05C7BBF11460696 /* OnDeviceConversation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnDeviceConversation.swift; sourceTree = "<group>"; };
 		9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolbox.swift; sourceTree = "<group>"; };
+		207307FDF53B4D499A4D1317 /* AssistantWebSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantWebSearch.swift; sourceTree = "<group>"; };
 		9988EED94A98760900D8303B /* AssistantJournalTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantJournalTools.swift; sourceTree = "<group>"; };
 		EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantSubstanceTools.swift; sourceTree = "<group>"; };
 		366000FA374319CB34426DEA /* AssistantScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantScreen.swift; sourceTree = "<group>"; };
@@ -962,6 +964,7 @@
 			isa = PBXGroup;
 			children = (
 				9D39E519BE8E1F12CA361C07 /* AssistantToolbox.swift */,
+				207307FDF53B4D499A4D1317 /* AssistantWebSearch.swift */,
 				9988EED94A98760900D8303B /* AssistantJournalTools.swift */,
 				EB7AE35893E948004E773FD7 /* AssistantSubstanceTools.swift */,
 			);
@@ -2308,6 +2311,7 @@
 				49E077D023F35753D6D3E6AA /* AssistantConversation.swift in Sources */,
 				765887D3C8C16DC421A14315 /* OnDeviceConversation.swift in Sources */,
 				1D71D952DD5BFC1D359DDC88 /* AssistantToolbox.swift in Sources */,
+				78618A01869542BCAEF49FD9 /* AssistantWebSearch.swift in Sources */,
 				E803015907D0C8EA922213A1 /* AssistantJournalTools.swift in Sources */,
 				6EDF6811FE6E6DFA1FC8820E /* AssistantSubstanceTools.swift in Sources */,
 				FAEE600765D72D3874B98808 /* AssistantScreen.swift in Sources */,

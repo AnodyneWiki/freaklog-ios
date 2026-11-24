@@ -77,6 +77,36 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(schema["properties"]?["names"]?["items"]?["type"], "string")
   }
 
+  func testWebSearchToolIsOptIn() {
+    let context = PersistenceController(inMemory: true).viewContext
+    let defaultTools = AssistantToolbox(context: context, includesAnodyneWiki: false)
+    let enabledTools = AssistantToolbox(context: context, includesAnodyneWiki: false, includesWebSearch: true)
+    XCTAssertFalse(defaultTools.specs.contains { $0.name == "search_web" })
+    XCTAssertTrue(enabledTools.specs.contains { $0.name == "search_web" })
+  }
+
+  func testWebSearchEncodesQueriesAndReturnsCitableExcerpts() throws {
+    let url = try AssistantWebSearch.requestURL(query: "C++ & Swift #1")
+    XCTAssertEqual(url.host, "api.search.brave.com")
+    XCTAssertEqual(url.path, "/res/v1/llm/context")
+    XCTAssertTrue(url.absoluteString.contains("C%2B%2B"))
+    let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+    XCTAssertEqual(components?.queryItems?.first(where: { $0.name == "q" })?.value, "C++ & Swift #1")
+    XCTAssertThrowsError(try AssistantWebSearch.requestURL(query: ""))
+
+    let json = try XCTUnwrap(JSONValue(jsonText: """
+      {"grounding":{"generic":[
+        {"url":"https://example.com/article","title":"An Article","snippets":["Source text","More text"]},
+        {"url":"freaklog://example.com","title":"Invalid","snippets":["Unsafe link"]}
+      ]}}
+      """))
+    let results = try AssistantWebSearch.results(from: json, textLimit: 11)
+    XCTAssertEqual(results, [
+      .object(["url": "https://example.com/article", "title": "An Article", "excerpt": "Source text…"]),
+    ])
+    XCTAssertThrowsError(try AssistantWebSearch.results(from: .object([:]), textLimit: 11))
+  }
+
   func testArgumentsAreClamped() {
     let arguments: [String: JSONValue] = ["limit": "500", "days": .number(-3), "huge": .number(1e100)]
     XCTAssertEqual(arguments.integer("huge", default: 10, in: 1 ... 50), 50)

@@ -264,8 +264,20 @@ enum AssistantProfileStore {
 // API keys, kept in the keychain of this device only: never synced through iCloud Keychain, never in backups of
 // the device, and only readable while it is unlocked
 enum AssistantKeychain {
+  static var webSearchKey: String {
+    key(forAccount: webSearchAccount)
+  }
+
+  static func setWebSearchKey(_ key: String) throws {
+    try setKey(key, forAccount: webSearchAccount)
+  }
+
   static func key(for id: UUID) -> String {
-    var query = query(for: id)
+    key(forAccount: id.uuidString)
+  }
+
+  private static func key(forAccount account: String) -> String {
+    var query = query(forAccount: account)
     query[kSecReturnData as String] = true
     query[kSecMatchLimit as String] = kSecMatchLimitOne
     var result: AnyObject?
@@ -279,12 +291,16 @@ enum AssistantKeychain {
 
   // An inaccessible item can still become readable after the device is unlocked.
   static func mayHaveKey(for id: UUID) -> Bool {
-    SecItemCopyMatching(query(for: id) as CFDictionary, nil) != errSecItemNotFound
+    SecItemCopyMatching(query(forAccount: id.uuidString) as CFDictionary, nil) != errSecItemNotFound
   }
 
   // An empty key removes the saved one
   static func setKey(_ key: String, for id: UUID) throws {
-    let query = query(for: id)
+    try setKey(key, forAccount: id.uuidString)
+  }
+
+  private static func setKey(_ key: String, forAccount account: String) throws {
+    let query = query(forAccount: account)
     let status: OSStatus
     if key.isEmpty {
       status = SecItemDelete(query as CFDictionary)
@@ -301,17 +317,18 @@ enum AssistantKeychain {
       }
     }
     guard status == errSecSuccess else {
-      throw AssistantError("The keychain could not update this provider’s API key (\(status)).")
+      throw AssistantError("The keychain could not update the API key (\(status)).")
     }
   }
 
   private static let service = "FreakLog Assistant API Key"
+  private static let webSearchAccount = "Brave Search"
 
-  private static func query(for id: UUID) -> [String: Any] {
+  private static func query(forAccount account: String) -> [String: Any] {
     [
       kSecClass as String: kSecClassGenericPassword,
       kSecAttrService as String: service,
-      kSecAttrAccount as String: id.uuidString,
+      kSecAttrAccount as String: account,
     ]
   }
 

@@ -46,6 +46,7 @@ struct AssistantSettingsScreen: View {
           Text("You can also switch providers in a chat.")
         }
       }
+      webAccessSection
       Section {
         Toggle("Look Up Substances on AnodyneWiki", isOn: $isAnodyneWikiEnabled)
         if isAnodyneWikiEnabled {
@@ -64,9 +65,54 @@ struct AssistantSettingsScreen: View {
   }
 
   @AppStorage(PersistenceController.isAssistantEnabledKey) private var isEnabled = false
+  @AppStorage(PersistenceController.isAssistantWebAccessEnabledKey) private var isWebAccessEnabled = false
   @AppStorage(PersistenceController.isAssistantAnodyneWikiEnabledKey) private var isAnodyneWikiEnabled = true
   @AppStorage(PersistenceController.assistantProfilesKey) private var profilesData = Data()
   @AppStorage(PersistenceController.assistantActiveProfileKey) private var activeProfileID = ""
+  @State private var webSearchKey = ""
+  @State private var hasWebSearchKey = !AssistantKeychain.webSearchKey.isEmpty
+  @State private var webSearchKeyError: String?
+
+  private var webAccessSection: some View {
+    Section {
+      Toggle("Web Access", isOn: $isWebAccessEnabled)
+      if isWebAccessEnabled {
+        SecureField(hasWebSearchKey ? "Replace Brave Search API Key" : "Brave Search API Key", text: $webSearchKey)
+          .textInputAutocapitalization(.never)
+          .autocorrectionDisabled()
+        Button("Save Search Key") { saveWebSearchKey(webSearchKey.trimmingCharacters(in: .whitespacesAndNewlines)) }
+          .disabled(webSearchKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+        if hasWebSearchKey {
+          Button("Remove Search Key", role: .destructive) { saveWebSearchKey("") }
+        } else {
+          Link("Get a Brave Search API Key", destination: URL(string: "https://api-dashboard.search.brave.com/")!)
+        }
+        if let webSearchKeyError {
+          Label(webSearchKeyError, systemImage: "exclamationmark.triangle")
+            .foregroundStyle(.red)
+        }
+      }
+    } footer: {
+      Text("Web Access sends search queries to Brave Search, including when you use an on-device model. It requires a Brave Search API key, which is stored in this device’s keychain.")
+    }
+    .onChange(of: isWebAccessEnabled) { enabled in
+      if !enabled {
+        webSearchKey = ""
+        webSearchKeyError = nil
+      }
+    }
+  }
+
+  private func saveWebSearchKey(_ key: String) {
+    do {
+      try AssistantKeychain.setWebSearchKey(key)
+      webSearchKey = ""
+      hasWebSearchKey = !key.isEmpty
+      webSearchKeyError = nil
+    } catch {
+      webSearchKeyError = error.localizedDescription
+    }
+  }
 
   private var profiles: [AssistantProfile] {
     AssistantProfileStore.profiles(from: profilesData)

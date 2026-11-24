@@ -123,8 +123,7 @@ final class AssistantChat: ObservableObject {
     return nil
   }
 
-  // Starts the chat the first time, and again when the providers changed before anything was asked, e.g. after
-  // adding one from the setup message
+  // Starts the chat when it opens or when its provider or tools change in settings.
   func startIfNeeded() {
     guard hasStarted else {
       start()
@@ -133,6 +132,7 @@ final class AssistantChat: ObservableObject {
     profiles = AssistantProfileStore.profiles
     if phase != .ready || AssistantProfileStore.activeProfile != activeProfile ||
       allowsWikiLookups != AssistantProfileStore.isAnodyneWikiEnabled ||
+      allowsWebSearch != AssistantWebSearch.isEnabled ||
       activeProfile.map({ AssistantKeychain.key(for: $0.id) }) != activeKey {
       start()
     }
@@ -153,6 +153,7 @@ final class AssistantChat: ObservableObject {
     activeProfile = AssistantProfileStore.activeProfile
     activeKey = activeProfile.map { AssistantKeychain.key(for: $0.id) }
     allowsWikiLookups = AssistantProfileStore.isAnodyneWikiEnabled
+    allowsWebSearch = AssistantWebSearch.isEnabled
     loadModels()
     guard let profile = activeProfile else {
       phase = .needsSetup("Add a provider to start chatting.")
@@ -165,7 +166,8 @@ final class AssistantChat: ObservableObject {
     let toolbox = AssistantToolbox(
       context: PersistenceController.shared.viewContext,
       limits: profile.standard == .onDevice ? .compact : .standard,
-      includesAnodyneWiki: allowsWikiLookups)
+      includesAnodyneWiki: allowsWikiLookups,
+      includesWebSearch: allowsWebSearch)
     let instructions = AssistantInstructions.text(for: experience, toolbox: toolbox)
     if profile.standard == .onDevice {
       conversation = OnDeviceModel.conversation(instructions: instructions, toolbox: toolbox)
@@ -332,6 +334,7 @@ final class AssistantChat: ObservableObject {
   private var chatID = UUID()
 
   private var allowsWikiLookups = false
+  private var allowsWebSearch = false
   private var activeKey: String?
   private var hasStarted = false
 
