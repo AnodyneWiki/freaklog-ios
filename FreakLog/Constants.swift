@@ -18,5 +18,6 @@ let namesOfLegalSubstances = [
 let appName = "FreakLog"
 let communityUrl = "https://discord.com/invite/DKfYmNrz6Z"
 let repoUrl = "https://woof.rip/freaklog/freaklog-ios"
+let issuesUrl = repoUrl + "/issues"
 
 let minimumDistanceForDetectingDragGesture: CGFloat = 20
