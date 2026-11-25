@@ -23,6 +23,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationWillEnterForeground(_ application: UIApplication) {
         // End the background task when app comes to foreground
         endCloudKitBackgroundTask()
+        PhoneWatchSession.shared.retryPendingUndos()
     }
 
     private func setupCloudKitBackgroundTaskHandling() {

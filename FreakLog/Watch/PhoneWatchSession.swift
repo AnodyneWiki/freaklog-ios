@@ -14,6 +14,7 @@ final class PhoneWatchSession: NSObject {
     guard WCSession.isSupported() else { return }
     WCSession.default.delegate = self
     WCSession.default.activate()
+    retryPendingUndos()
     let context = PersistenceController.shared.viewContext
     let center = NotificationCenter.default
     for name in [NSManagedObjectContext.didSaveObjectsNotification, NSManagedObjectContext.didMergeChangesObjectIDsNotification] {
@@ -23,6 +24,10 @@ final class PhoneWatchSession: NSObject {
         }
       }
     }
+  }
+
+  func retryPendingUndos() {
+    Task { await WatchQuickLogging.retryPendingUndos() }
   }
 
   private var lastSentSuggestions: Data?
@@ -75,7 +80,13 @@ final class PhoneWatchSession: NSObject {
         return [WatchQuickLog.errorKey: error.localizedDescription]
       }
     } else if let identifiers = message[WatchQuickLog.undoKey] as? [String] {
-      await WatchQuickLogging.undo(ingestionsWithIdentifiers: identifiers.compactMap(UUID.init(uuidString:)))
+      do {
+        let decoded = identifiers.compactMap(UUID.init(uuidString:))
+        guard decoded.count == identifiers.count else { throw WatchQuickLogError.invalidUndo }
+        try await WatchQuickLogging.undo(ingestionsWithIdentifiers: decoded)
+      } catch {
+        return [WatchQuickLog.errorKey: error.localizedDescription]
+      }
     }
     return [:]
   }
@@ -118,7 +129,9 @@ extension PhoneWatchSession: WCSessionDelegate {
   // Logs and undos the watch queued while the iPhone wasn't reachable, in order
   nonisolated func session(_: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
     Task { @MainActor in
-      _ = await handle(userInfo)
+      if let error = await handle(userInfo)[WatchQuickLog.errorKey] as? String {
+        print("Queued watch request failed: \(error)")
+      }
     }
   }
 }

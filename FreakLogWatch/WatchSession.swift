@@ -57,16 +57,17 @@ final class WatchSession: NSObject, ObservableObject {
   }
 
   func undo(_ request: WatchLogRequest) async {
-    let queuedTransfer = WCSession.default.outstandingUserInfoTransfers.first { transfer in
-      WatchQuickLog.decode(WatchLogRequest.self, from: transfer.userInfo[WatchQuickLog.logKey])?.id == request.id
-    }
-    if let queuedTransfer {
-      queuedTransfer.cancel()
-    } else {
-      let message = [WatchQuickLog.undoKey: request.ingestionIdentifiers.map(\.uuidString)]
-      if await send(message) == nil {
-        WCSession.default.transferUserInfo(message)
+    let session = WCSession.default
+    for transfer in session.outstandingUserInfoTransfers {
+      if WatchQuickLog.decode(WatchLogRequest.self, from: transfer.userInfo[WatchQuickLog.logKey])?.id == request.id {
+        transfer.cancel()
       }
+    }
+    // The original message may have been saved even if its reply was lost.
+    let message = [WatchQuickLog.undoKey: request.ingestionIdentifiers.map(\.uuidString)]
+    let reply = await send(message)
+    if reply == nil || reply?[WatchQuickLog.errorKey] != nil {
+      session.transferUserInfo(message)
     }
     updateQueuedCount()
   }

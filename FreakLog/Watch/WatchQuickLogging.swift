@@ -5,11 +5,14 @@ import UIKit
 
 enum WatchQuickLogError: LocalizedError {
   case customUnitMissing
+  case invalidUndo
 
   var errorDescription: String? {
     switch self {
     case .customUnitMissing:
       "This unit was deleted on your iPhone"
+    case .invalidUndo:
+      "The watch undo request couldn't be read"
     }
   }
 }
@@ -21,6 +24,8 @@ enum WatchQuickLogError: LocalizedError {
 // Formulations never logged yet come last, as they have no recent use to sort by.
 @MainActor
 enum WatchQuickLogging {
+  private static let undos = WatchUndoJournal(file: URL.applicationSupportDirectory.appendingPathComponent("WatchUndos.json"))
+
   static func suggestions() -> [WatchSuggestion] {
     let persistence = PersistenceController.shared
     let suggestions = getSuggestions(
@@ -59,10 +64,11 @@ enum WatchQuickLogging {
   // Logging the same request twice, e.g. once as a message and again as a queued transfer, adds it once
   // A formulation is logged as it was when sent, with an ingestion for each of its components
   static func log(_ request: WatchLogRequest) throws {
+    guard try !undos.contains(request.id) else { return }
     let persistence = PersistenceController.shared
     let context = persistence.viewContext
     let identifiers = request.ingestionIdentifiers
-    guard (try? context.count(for: PersistenceController.ingestionsRequest(withIdentifiers: identifiers))) == 0 else { return }
+    guard try context.count(for: PersistenceController.ingestionsRequest(withIdentifiers: identifiers)) == 0 else { return }
     let suggestion = request.suggestion
     var customUnit: CustomUnit?
     if let unitID = suggestion.customUnit?.id {
@@ -122,24 +128,49 @@ enum WatchQuickLogging {
     }
   }
 
-  // Also deletes an experience the ingestions started, unless something else was added to it since
-  static func undo(ingestionsWithIdentifiers identifiers: [UUID]) async {
-    let context = PersistenceController.shared.viewContext
-    let ingestions = (try? context.fetch(PersistenceController.ingestionsRequest(withIdentifiers: identifiers))) ?? []
-    guard let experience = ingestions.first?.experience else {
-      if !ingestions.isEmpty {
-        await IngestionDeletion.delete(ingestions: ingestions)
+  static func undo(ingestionsWithIdentifiers identifiers: [UUID]) async throws {
+    try await undos.undo(identifiers, delete: deleteUndoneIngestions)
+  }
+
+  static func retryPendingUndos() async {
+    do {
+      for identifiers in try undos.pending() {
+        do {
+          try await undo(ingestionsWithIdentifiers: identifiers)
+        } catch {
+          print("Retrying watch undo failed: \(error)")
+        }
       }
-      return
+    } catch {
+      print("Could not read pending watch undos: \(error)")
     }
-    if
+  }
+
+  private static func deleteUndoneIngestions(_ identifiers: [UUID]) async throws {
+    let persistence = PersistenceController.shared
+    let ingestions = try persistence.viewContext.fetch(PersistenceController.ingestionsRequest(withIdentifiers: identifiers))
+    guard !ingestions.isEmpty else { return }
+    let cleanUp = await IngestionDeletion.remoteCleanUp(for: ingestions)
+    // Save in a dedicated context so a failed undo cannot commit or roll back unrelated edits.
+    try await persistence.container.performBackgroundTask { context in
+      try saveUndoDeletion(identifiers, in: context)
+    }
+    cleanUp()
+  }
+
+  // Also deletes the experience when these are its only ingestions and it has no notes or ratings.
+  nonisolated static func saveUndoDeletion(_ identifiers: [UUID], in context: NSManagedObjectContext) throws {
+    let ingestions = try context.fetch(PersistenceController.ingestionsRequest(withIdentifiers: identifiers))
+    guard !ingestions.isEmpty else { return }
+    if let experience = ingestions.first?.experience,
       Set(experience.ingestionsSorted) == Set(ingestions),
       experience.timedNotesSorted.isEmpty, experience.ratingsUnwrapped.isEmpty, (experience.text ?? "").isEmpty
     {
-      await IngestionDeletion.delete(experience: experience)
+      context.delete(experience)
     } else {
-      await IngestionDeletion.delete(ingestions: ingestions)
+      ingestions.forEach(context.delete)
     }
+    try context.save()
   }
 
   private static let maxNumberOfSuggestions = 30
@@ -247,5 +278,74 @@ enum WatchQuickLogging {
     companion.substanceName = substanceName
     companion.colorAsText = SubstanceColor.suggested(avoiding: companions.map(\.color)).rawValue
     return companion
+  }
+}
+
+// The first ingestion ID is the watch request ID, including for formulations. A durable undo record
+// blocks retries before deletion starts. Pending records are retried if the phone stops before saving.
+@MainActor
+final class WatchUndoJournal {
+  private struct Record: Codable {
+    let identifiers: [UUID]
+    var isPending = true
+  }
+
+  init(file: URL) {
+    self.file = file
+  }
+
+  func contains(_ id: UUID) throws -> Bool {
+    try load()[id] != nil
+  }
+
+  func pending() throws -> [[UUID]] {
+    try load().values.filter(\.isPending).map(\.identifiers)
+  }
+
+  func undo(_ identifiers: [UUID], delete: @escaping @MainActor ([UUID]) async throws -> Void) async throws {
+    guard let id = identifiers.first else { throw WatchQuickLogError.invalidUndo }
+    if let task = inProgress[id] {
+      return try await task.value
+    }
+
+    var records = try load()
+    let record = records[id] ?? Record(identifiers: identifiers)
+    guard record.isPending else { return }
+    if records[id] == nil {
+      records[id] = record
+      try save(records)
+    }
+
+    let task = Task {
+      try await delete(record.identifiers)
+      var updated = try load()
+      updated[id]?.isPending = false
+      try save(updated)
+    }
+    inProgress[id] = task
+    defer { inProgress.removeValue(forKey: id) }
+    try await task.value
+  }
+
+  private let file: URL
+  private var records: [UUID: Record]?
+  private var inProgress: [UUID: Task<Void, Error>] = [:]
+
+  private func load() throws -> [UUID: Record] {
+    if let records { return records }
+    let loaded: [UUID: Record]
+    do {
+      loaded = try JSONDecoder().decode([UUID: Record].self, from: Data(contentsOf: file))
+    } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+      loaded = [:]
+    }
+    records = loaded
+    return loaded
+  }
+
+  private func save(_ records: [UUID: Record]) throws {
+    try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try JSONEncoder().encode(records).write(to: file, options: .atomic)
+    self.records = records
   }
 }

@@ -1,3 +1,4 @@
+import CoreData
 import XCTest
 @testable import FreakLog
 
@@ -84,6 +85,62 @@ final class WatchQuickLogTests: XCTestCase {
       WatchLogRequest(id: request.id, suggestion: suggestion(doses: []), dose: request.dose, time: request.time)
         .ingestionIdentifiers,
       [request.id])
+  }
+
+  @MainActor
+  func testUndoRemovesAllSavedFormulationEntriesAndBlocksTheRetry() async throws {
+    let file = temporaryUndoFile()
+    defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+    let undos = WatchUndoJournal(file: file)
+    let request = WatchLogRequest(
+      id: UUID(), suggestion: formulationSuggestion(),
+      dose: WatchDose(amount: 1, isEstimate: false, standardDeviation: nil), time: .now)
+    let identifiers = request.ingestionIdentifiers
+    let persistence = PersistenceController(inMemory: true)
+    let context = persistence.viewContext
+    let experience = Experience.create(at: .now, in: context)
+    let unrelatedID = UUID()
+    for id in identifiers + [unrelatedID] {
+      let ingestion = Ingestion(context: context)
+      ingestion.identifier = id
+      ingestion.experience = experience
+    }
+    try context.save()
+
+    try await undos.undo(identifiers) { ids in
+      XCTAssertTrue(try undos.contains(request.id))
+      try WatchQuickLogging.saveUndoDeletion(ids, in: context)
+    }
+    let reloaded = WatchUndoJournal(file: file)
+    XCTAssertTrue(try reloaded.contains(request.id))
+    XCTAssertEqual(try reloaded.pending(), [])
+    XCTAssertEqual(try context.fetch(Ingestion.fetchRequest()).compactMap(\.identifier), [unrelatedID])
+    try await reloaded.undo(identifiers) { _ in XCTFail("A completed undo should be acknowledged without deleting again") }
+  }
+
+  @MainActor
+  func testUndoBlocksAQueuedLogBeforeItArrivesAndSurvivesAFailedSave() async throws {
+    let file = temporaryUndoFile()
+    defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }
+    let undos = WatchUndoJournal(file: file)
+    let id = UUID()
+    do {
+      try await undos.undo([id]) { _ in throw CocoaError(.fileWriteOutOfSpace) }
+      XCTFail("An undo must fail if its deletion cannot be saved")
+    } catch let error as CocoaError {
+      XCTAssertEqual(error.code, .fileWriteOutOfSpace)
+    }
+
+    let reloaded = WatchUndoJournal(file: file)
+    XCTAssertTrue(try reloaded.contains(id))
+    XCTAssertEqual(try reloaded.pending(), [[id]])
+    try await reloaded.undo([id]) { XCTAssertEqual($0, [id]) }
+    XCTAssertTrue(try reloaded.contains(id))
+    XCTAssertEqual(try reloaded.pending(), [])
+  }
+
+  private func temporaryUndoFile() -> URL {
+    URL.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("WatchUndos.json")
   }
 
   private func formulationSuggestion() -> WatchSuggestion {
