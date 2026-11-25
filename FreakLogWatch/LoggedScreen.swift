@@ -10,8 +10,11 @@ struct LoggedScreen: View {
         icon
           .font(.system(size: 40))
           .frame(height: 48)
+          .accessibilityHidden(true)
         Text(title)
           .font(.headline)
+          .multilineTextAlignment(.center)
+          .accessibilityAddTraits(.isHeader)
         Text(doseText)
           .font(.footnote)
           .foregroundStyle(.secondary)
@@ -28,14 +31,17 @@ struct LoggedScreen: View {
           }
           .padding(.top, 4)
         }
+        if outcome != nil {
+          Button("Done") { model.logging = nil }
+        }
       }
       .frame(maxWidth: .infinity)
     }
     .toolbar(outcome == nil ? .hidden : .visible, for: .navigationBar)
     .interactiveDismissDisabled(outcome == nil)
     .task(id: outcome) {
-      // Leaves time to undo before returning to the suggestions
-      guard canUndo || outcome == .undone || outcome == .undoQueued else { return }
+      // Never remove the only Undo action while somebody is reading the receipt.
+      guard outcome == .undone || outcome == .undoQueued else { return }
       try? await Task.sleep(for: .seconds(5))
       if !Task.isCancelled, model.logging?.id == request.id {
         model.logging = nil

@@ -5,58 +5,122 @@ import WidgetKit
 struct TimelineWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: TimelineWidgetAttributes.self) { context in
-            let timelineModel = context.state.timelineModel
-            VStack(spacing: 0) {
-                GeometryReader { geo in
-                    EffectTimeline(
-                        timelineModel: timelineModel,
-                        height: geo.size.height,
-                        timeDisplayStyle: .regular, 
-                        isShowingCurrentTime: false,
-                        spaceToLabels: 7
-                    )
-                }
-                .padding(.bottom, 3)
-                ProgressView(
-                    timerInterval: timelineModel.startTime ... timelineModel.startTime.addingTimeInterval(timelineModel.totalWidth),
-                    countsDown: false
-                )
-                .progressViewStyle(.linear)
-            }
-            .padding(.top, 8)
-            .padding(.bottom, 6)
-            .padding(.horizontal, 10)
-            .widgetURL(continueJournalURL)
-            .frame(height: 160) // in the documentation: https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities it says that truncation only happens if the height exceeds 160 points
+            LockScreenTimeline(model: context.state.timelineModel)
+                .widgetURL(continueJournalURL)
         } dynamicIsland: { context in
             let timelineModel = context.state.timelineModel
             return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(timelineModel.startTime, style: .timer)
+                    TimelineTimer(interval: timelineModel.activityInterval, countsDown: false)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text(Date(timeInterval: timelineModel.totalWidth, since: timelineModel.startTime), style: .timer)
+                    TimelineTimer(interval: timelineModel.activityInterval, countsDown: true)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
-                    EffectTimeline(
-                        timelineModel: timelineModel,
-                        height: 90,
-                        timeDisplayStyle: .regular, 
-                        isShowingCurrentTime: false,
-                        spaceToLabels: 7
-                    )
-                    .padding(.horizontal, 5)
+                    ActivityTimelineChart(model: timelineModel, height: 90)
+                        .padding(.horizontal, 5)
                 }
             } compactLeading: {
-                Text(timelineModel.startTime, style: .timer)
+                TimelineTimer(interval: timelineModel.activityInterval, countsDown: false, compact: true)
             } compactTrailing: {
-                Text(Date(timeInterval: timelineModel.totalWidth, since: timelineModel.startTime), style: .timer)
+                TimelineTimer(interval: timelineModel.activityInterval, countsDown: true, compact: true)
             } minimal: {
                 Image(systemName: "eye")
+                    .accessibilityLabel("Journal Timeline")
             }
             .contentMargins(.bottom, 13, for: .expanded)
             .widgetURL(continueJournalURL)
         }
+    }
+}
+
+private extension TimelineModel {
+    var activityInterval: ClosedRange<Date> {
+        startTime ... startTime.addingTimeInterval(max(1, totalWidth))
+    }
+}
+
+private struct LockScreenTimeline: View {
+    let model: TimelineModel
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    var body: some View {
+        let interval = model.activityInterval
+        VStack(alignment: .leading, spacing: 8) {
+            if dynamicTypeSize.isAccessibilitySize {
+                Text("Estimated Timeline")
+                    .font(.headline)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+                Text((interval.lowerBound..<interval.upperBound).formatted(.interval.hour().minute()))
+                    .font(.subheadline)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.75)
+                    .accessibilityLabel(Text(interval))
+            } else {
+                GeometryReader { geometry in
+                    ActivityTimelineChart(model: model, height: geometry.size.height)
+                }
+            }
+            ProgressView(timerInterval: interval, countsDown: false)
+                .progressViewStyle(.linear)
+                .accessibilityLabel("Estimated Timeline Progress")
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .frame(height: 160)
+    }
+}
+
+private struct ActivityTimelineChart: View {
+    let model: TimelineModel
+    let height: CGFloat
+
+    var body: some View {
+        ZStack {
+            EffectTimeline(
+                timelineModel: model,
+                height: height,
+                timeDisplayStyle: .regular,
+                isShowingCurrentTime: false,
+                spaceToLabels: 7
+            )
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Estimated Timeline")
+        .accessibilityValue(Text(model.activityInterval))
+    }
+}
+
+private struct TimelineTimer: View {
+    let interval: ClosedRange<Date>
+    let countsDown: Bool
+    var compact = false
+
+    var body: some View {
+        Group {
+            if compact {
+                ViewThatFits(in: .horizontal) {
+                    value.fixedSize(horizontal: true, vertical: false)
+                    Image(systemName: countsDown ? "hourglass" : "clock")
+                }
+            } else {
+                VStack(alignment: countsDown ? .trailing : .leading, spacing: 2) {
+                    Text(countsDown ? "Remaining" : "Elapsed")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    value
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(countsDown ? "Estimated Time Remaining" : "Elapsed Time"))
+        .accessibilityValue(value)
+    }
+
+    private var value: Text {
+        Text(timerInterval: interval, countsDown: countsDown)
+            .monospacedDigit()
     }
 }
 

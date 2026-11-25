@@ -8,13 +8,14 @@ struct DosesScreen: View {
     List {
       Section {
         ForEach(suggestion.doses, id: \.self) { dose in
+          let calculated = suggestion.calculatedDescription(of: dose)
           Button {
             model.log(dose, of: suggestion)
           } label: {
             VStack(alignment: .leading, spacing: 2) {
               Text(suggestion.description(of: dose))
                 .font(.title3.weight(.semibold))
-              if let calculated = suggestion.calculatedDescription(of: dose) {
+              if let calculated {
                 Text(calculated)
                   .font(.footnote)
                   .foregroundStyle(.secondary)
@@ -23,6 +24,7 @@ struct DosesScreen: View {
             .padding(.vertical, 2)
           }
           .accessibilityLabel("Log \(suggestion.description(of: dose))")
+          .accessibilityValue(calculated ?? "")
         }
       } header: {
         Text(suggestion.routeName)
