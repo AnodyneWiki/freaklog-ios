@@ -67,8 +67,12 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             SubstanceDetailsScreen(substanceData: substanceData)
         case .saferRoutes:
             SaferRoutesScreen()
+        case .tools:
+            ToolsScreen()
         case .sprayCalculator:
             SprayCalculatorScreen()
+        case .saferUse:
+            SaferScreen()
         case .testingServices:
             TestingServicesScreen()
         case .reagentTesting:

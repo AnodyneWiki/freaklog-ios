@@ -20,6 +20,7 @@ struct JournalScreen: View {
     @State private var isShowingAssistant = false
     @State private var isShowingRoutines = false
     @ObservedObject private var routines = RoutineSchedules.shared
+    @ObservedObject private var tabs = TabManager.shared
     @AppStorage(PersistenceController.showsDueTodayKey) private var showsDueToday = false
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
@@ -170,6 +171,13 @@ struct JournalScreen: View {
             if isEyeOpen, !routines.schedules.isEmpty {
                 Button { isShowingRoutines = true } label: {
                     Label("Due Today", systemImage: "calendar.badge.clock")
+                }
+            }
+            if isEyeOpen, tabs.hiddenTabs.contains(.tools) {
+                Button {
+                    Navigator.shared.openInCurrentTab(.tools)
+                } label: {
+                    Label("Tools", systemImage: Tab.tools.icon)
                 }
             }
             favoriteButton

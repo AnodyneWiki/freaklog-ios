@@ -4,6 +4,24 @@ import XCTest
 
 @MainActor
 final class JournalBackupTests: XCTestCase {
+  func testRemovedSaferTabDoesNotResetHiddenTabs() throws {
+    let suite = "TabVisibilityTests-" + UUID().uuidString
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+    defer { defaults.removePersistentDomain(forName: suite) }
+    defaults.set("[\"stats\",\"safer\"]", forKey: PersistenceController.hiddenTabsKey)
+
+    let tabs = TabManager(defaults: defaults)
+    XCTAssertEqual(tabs.hiddenTabs, [.stats])
+    XCTAssertTrue(tabs.enabledTabs.contains(.tools))
+
+    tabs.toggleVisibility(for: .tools)
+    XCTAssertEqual(TabManager(defaults: defaults).hiddenTabs, [.stats, .tools])
+
+    defaults.set("[\"substances\",\"tools\",\"safer\"]", forKey: PersistenceController.hiddenTabsKey)
+    tabs.reload()
+    XCTAssertEqual(tabs.hiddenTabs, [.substances, .tools])
+  }
+
   // Backups of every format version must keep importing. Never edit a fixture; add one for each new version.
   func testImportsVersion1Backups() throws {
     let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v1", withExtension: "json"))

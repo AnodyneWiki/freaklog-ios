@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */; };
 		EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */; };
 		1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
@@ -499,6 +500,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsScreen.swift; sourceTree = "<group>"; };
 		7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageLabelDraftButton.swift; path = "../Inventory/PackageLabelDraftButton.swift"; sourceTree = "<group>"; };
 		6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryScreen.swift; path = "../Inventory/InventoryScreen.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
@@ -1584,6 +1586,7 @@
 			children = (
 				EAE4711B26CBA663009FB0EC /* Welcome Screen */,
 				EAE4712926CBA663009FB0EC /* ContentView.swift */,
+				7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */,
 				EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */,
 			);
 			path = Content;
@@ -2616,6 +2619,7 @@
 				EA039AC72A6C6657006DFAFE /* View-ColorBackground.swift in Sources */,
 				EAC25C04295603B10002D68F /* VolumetricDosingScreen.swift in Sources */,
 				EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */,
+				5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */,
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,

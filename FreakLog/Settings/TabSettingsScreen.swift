@@ -1,61 +1,29 @@
 import SwiftUI
 
 struct TabSettingsScreen: View {
-    @ObservedObject var tabManager = TabManager.shared
-    
+    @ObservedObject private var tabManager = TabManager.shared
+
     var body: some View {
         List {
-            Section(header: Text("Active Tabs"), footer: Text("These tabs appear in your navigation bar.")) {
-                ForEach(tabManager.enabledTabs) { tab in
-                    HStack {
-                        Image(systemName: tab.icon)
-                            .frame(width: 24)
-                            .foregroundColor(.accentColor)
-                        Text(tab.title)
-                        
-                        Spacer()
-                        
-                        if !tab.isMandatory {
-                            Button {
-                                withAnimation {
-                                    tabManager.toggleVisibility(for: tab)
-                                }
-                            } label: {
-                                Image(systemName: "minus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.red)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-            }
-            
-            if !tabManager.disabledTabs.isEmpty {
-                Section(header: Text("Disabled Tabs")) {
-                    ForEach(tabManager.disabledTabs) { tab in
-                        HStack {
-                            Image(systemName: tab.icon)
-                                .frame(width: 24)
-                                .foregroundColor(.secondary)
+            Section {
+                ForEach(Tab.allCases.filter { !$0.isMandatory }) { tab in
+                    Toggle(isOn: Binding(
+                        get: { !tabManager.hiddenTabs.contains(tab) },
+                        set: { tabManager.setVisibility(for: tab, isVisible: $0) }
+                    )) {
+                        Label {
                             Text(tab.title)
-                                .foregroundColor(.secondary)
-                            
-                            Spacer()
-                            
-                            Button {
-                                withAnimation {
-                                    tabManager.toggleVisibility(for: tab)
-                                }
-                            } label: {
-                                Image(systemName: "plus.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.green)
-                            }
-                            .buttonStyle(.plain)
+                        } icon: {
+                            Image(systemName: tab.icon)
+                                .foregroundStyle(Color.accentColor)
+                                .accessibilityHidden(true)
                         }
                     }
                 }
+            } header: {
+                Text("Show in Tab Bar")
+            } footer: {
+                Text("Journal and Settings always appear.")
             }
         }
         .navigationTitle("Customize Tabs")

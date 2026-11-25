@@ -36,9 +36,13 @@ enum GlobalNavigationDestination: Hashable {
     case substanceDetails(substanceData: SubstanceData)
     case dosageStat(substanceName: String)
 
-    // safer tab
-    case saferRoutes
+    // tools tab
+    case tools
     case sprayCalculator
+    case saferUse
+
+    // safer use
+    case saferRoutes
     case testingServices
     case reagentTesting
     case doseGuide
