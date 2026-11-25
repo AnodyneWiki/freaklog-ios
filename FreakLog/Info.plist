@@ -29,6 +29,8 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Scan medication package barcodes on this device to identify products in Inventory.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Authenticate yourself to see your journal.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -324,6 +324,8 @@ struct StockContainerEditor: View {
 
     let container: StockContainer?
     @State private var productID: NSManagedObjectID?
+    @State private var packageCode: PharmacyPackageCode?
+    @State private var pendingPackageMatch: (code: PharmacyPackageCode, productID: NSManagedObjectID)?
     @State private var importingPreset = false
     @State private var productDraft: ProductDraft?
     @State private var productEditor: ProductEditor?
@@ -375,6 +377,12 @@ struct StockContainerEditor: View {
         return unit.trimmed
     }
 
+    private var conflictingPackageProductID: NSManagedObjectID? {
+        guard let packageCode, let remembered = rememberedProductID(for: packageCode),
+              remembered != productID else { return nil }
+        return remembered
+    }
+
     var body: some View {
         Form {
             if container == nil {
@@ -397,7 +405,9 @@ struct StockContainerEditor: View {
                         }
                         if productID == nil {
                             TextField("Product Name (Optional)", text: $productName)
-                            PackageLabelDraftButton { productName = $0 }
+                        }
+                        PackageLabelDraftButton(usePackage: applyPackageLabel)
+                        if productID == nil {
                             Menu {
                                 createProductButton(.customUnit)
                                 createProductButton(.formulation)
@@ -412,6 +422,24 @@ struct StockContainerEditor: View {
                                 Label("Import Preset", systemImage: "arrow.down.doc")
                             }
                         }
+                    }
+                    if let match = pendingPackageMatch {
+                        Text("PZN \(match.code.digits) is linked to a different product.")
+                            .foregroundStyle(.secondary)
+                        Button("Use Matched Product") {
+                            productID = match.productID
+                            packageCode = match.code
+                            pendingPackageMatch = nil
+                        }
+                        Button("Keep Current Product") { pendingPackageMatch = nil }
+                    } else if let packageCode {
+                        LabeledContent("PZN", value: packageCode.digits)
+                        if let conflictingPackageProductID {
+                            Text("This PZN is already linked to another product.")
+                                .foregroundStyle(.secondary)
+                            Button("Use Matched Product") { productID = conflictingPackageProductID }
+                        }
+                        Button("Clear PZN") { self.packageCode = nil }
                     }
                 }
             }
@@ -449,7 +477,9 @@ struct StockContainerEditor: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save", action: save).disabled(containerName.isEmpty || chosenUnit.isEmpty)
+                Button("Save", action: save)
+                    .disabled(containerName.isEmpty || chosenUnit.isEmpty
+                              || conflictingPackageProductID != nil || pendingPackageMatch != nil)
             }
         }
         .sheet(item: $productEditor) { editor in
@@ -488,6 +518,25 @@ struct StockContainerEditor: View {
         })
     }
 
+    private func rememberedProductID(for code: PharmacyPackageCode) -> NSManagedObjectID? {
+        guard let id = PharmacyPackageMatches.productID(for: code, in: PersistenceController.shared.viewContext),
+              customUnits.contains(where: { $0.objectID == id }) || formulations.contains(where: { $0.objectID == id })
+        else { return nil }
+        return id
+    }
+
+    private func applyPackageLabel(name: String?, code: PharmacyPackageCode?) {
+        pendingPackageMatch = nil
+        let remembered = code.flatMap(rememberedProductID)
+        if let code, let remembered, let productID, productID != remembered {
+            pendingPackageMatch = (code, remembered)
+            return
+        }
+        if let name { productName = name }
+        packageCode = code
+        if let remembered { productID = remembered }
+    }
+
     private func createProductButton(_ editor: ProductEditor) -> some View {
         Button {
             productEditor = editor
@@ -497,7 +546,8 @@ struct StockContainerEditor: View {
     }
 
     private func save() {
-        guard !containerName.isEmpty, !chosenUnit.isEmpty else { return }
+        guard !containerName.isEmpty, !chosenUnit.isEmpty,
+              conflictingPackageProductID == nil, pendingPackageMatch == nil else { return }
         let enteredCapacity = capacity.trimmed
         let knownCapacity = enteredCapacity.stockQuantity
         guard enteredCapacity.isEmpty || knownCapacity.map({ $0 > 0 }) == true else {
@@ -537,6 +587,13 @@ struct StockContainerEditor: View {
                 record.lowThreshold = threshold
                 record.expiresAt = hasExpiry ? expiresAt : nil
                 try PersistenceController.saveJournalChanges(in: context)
+                if let packageCode {
+                    if let unit = record.customUnit {
+                        PharmacyPackageMatches.remember(packageCode, product: unit)
+                    } else if let formulation = record.formulation {
+                        PharmacyPackageMatches.remember(packageCode, product: formulation)
+                    }
+                }
             }
             dismiss()
         } catch {
