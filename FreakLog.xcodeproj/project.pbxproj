@@ -10,6 +10,7 @@
 		5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */; };
 		EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */; };
 		1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */; };
+		B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4945BF062A782A1202689601 /* MedicationReference.swift */; };
 		616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */; };
 		FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
@@ -505,6 +506,7 @@
 		7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsScreen.swift; sourceTree = "<group>"; };
 		7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageLabelDraftButton.swift; path = "../Inventory/PackageLabelDraftButton.swift"; sourceTree = "<group>"; };
 		6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryScreen.swift; path = "../Inventory/InventoryScreen.swift"; sourceTree = "<group>"; };
+		4945BF062A782A1202689601 /* MedicationReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MedicationReference.swift; path = "../Inventory/MedicationReference.swift"; sourceTree = "<group>"; };
 		5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductDetailScreen.swift; path = "../Inventory/ProductDetailScreen.swift"; sourceTree = "<group>"; };
 		E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StockLevelViews.swift; path = "../Inventory/StockLevelViews.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
@@ -1782,6 +1784,7 @@
 				0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */,
 				45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */,
 				6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */,
+				4945BF062A782A1202689601 /* MedicationReference.swift */,
 				5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */,
 				E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */,
 				7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */,
@@ -2492,6 +2495,7 @@
 				0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */,
 				1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */,
 				1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */,
+				B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */,
 				616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */,
 				FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */,
 				EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */,

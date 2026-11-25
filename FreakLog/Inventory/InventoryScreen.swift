@@ -443,6 +443,15 @@ struct StockContainerEditor: View {
                     }
                 }
             }
+            if container == nil, (productID == nil && productDraft == nil) || packageCode != nil {
+                MedicationReferenceSection(
+                    suggestedName: chosenProductName ?? "",
+                    pzn: packageCode?.digits,
+                    allowsNameSuggestions: productID == nil && productDraft == nil
+                ) { medication in
+                    productName = medication.name
+                }
+            }
             Section("Container") {
                 TextField("Name", text: $name, prompt: container == nil ? chosenProductName.map { Text($0) } : nil)
                 TextField("Storage Location", text: $location)
