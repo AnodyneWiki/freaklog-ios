@@ -14,6 +14,7 @@ struct EditCustomRoaView: View {
   @State private var text: [CustomRoaField: String] = [:]
   @State private var durationUnit = DurationInputUnit.minutes
   @State private var existingRoa: CustomRoa?
+  @State private var isShowingSaveError = false
   @State private var saveTask: Task<Void, Never>?
   @State private var copySources: [CopySource] = []
   @State private var anodyneSources: [CopySource] = []
@@ -102,6 +103,10 @@ struct EditCustomRoaView: View {
       await loadAnodyneSources()
     }
     .onChange(of: values) { _ in saveDebounced() }
+    .alert("Couldn't save route changes", isPresented: $isShowingSaveError) {
+      Button("Retry") { save() }
+      Button("OK", role: .cancel) {}
+    }
     .confirmationDialog(
       "Replace the data of this route?",
       isPresented: Binding(get: { pendingCopy != nil }, set: { if !$0 { pendingCopy = nil } }),
@@ -328,15 +333,20 @@ struct EditCustomRoaView: View {
 
   private func clear() {
     saveTask?.cancel()
-    deleteExisting()
-    values = baseline
-    fillText()
+    do {
+      try deleteExisting()
+      values = baseline
+      fillText()
+    } catch {
+      isShowingSaveError = true
+    }
   }
 
-  private func deleteExisting() {
+  private func deleteExisting() throws {
     guard let existingRoa else { return }
-    context.delete(existingRoa)
-    try? context.save()
+    let edit = try PersistenceController.shared.journalEditContext()
+    edit.delete(try PersistenceController.journalObject(existingRoa, in: edit))
+    try edit.save()
     self.existingRoa = nil
   }
 
@@ -354,17 +364,23 @@ struct EditCustomRoaView: View {
       for: customSubstance == nil ? substanceName : nil,
       route: route
     )
-    guard values.needsSavedRow(hasExistingRow: existingRoa != nil, baseline: baseline, psychonautWiki: psychonautWiki)
-    else {
-      deleteExisting()
-      return
+    do {
+      guard values.needsSavedRow(hasExistingRow: existingRoa != nil, baseline: baseline, psychonautWiki: psychonautWiki)
+      else {
+        try deleteExisting()
+        return
+      }
+      let edit = try PersistenceController.shared.journalEditContext()
+      let target = try existingRoa.map { try PersistenceController.journalObject($0, in: edit) }
+        ?? CustomRoa(context: edit)
+      target.substanceName = substanceName
+      target.customSubstance = try customSubstance.map { try PersistenceController.journalObject($0, in: edit) }
+      values.apply(to: target)
+      try edit.save()
+      existingRoa = context.object(with: target.objectID) as? CustomRoa
+    } catch {
+      isShowingSaveError = true
     }
-    let target = existingRoa ?? CustomRoa(context: context)
-    target.substanceName = substanceName
-    target.customSubstance = customSubstance
-    values.apply(to: target)
-    try? context.save()
-    existingRoa = target
   }
 }
 

@@ -3,6 +3,7 @@ import SwiftUI
 struct EditCustomSubstanceView: View {
   @ObservedObject var customSubstance: CustomSubstance
   @Environment(\.dismiss) private var dismiss
+  @EnvironmentObject private var toastViewModel: ToastViewModel
   @State private var isShowingConfirmation = false
   @State private var units = ""
   @State private var name = ""
@@ -78,13 +79,22 @@ struct EditCustomSubstanceView: View {
       guard !units.isEmpty else { return }
       let oldName = customSubstance.nameUnwrapped
       let newName = trimmedName.isEmpty || isNameTaken ? oldName : trimmedName
-      customSubstance.name = newName
-      customSubstance.units = units
-      customSubstance.explanation = description
-      if newName != oldName {
-        PersistenceController.shared.renameSubstance(from: oldName, to: newName)
+      guard !customSubstance.isDeleted,
+            newName != oldName || units != customSubstance.unitsUnwrapped || description != customSubstance.explanationUnwrapped
+      else { return }
+      do {
+        let context = try PersistenceController.shared.journalEditContext()
+        let updated = try PersistenceController.journalObject(customSubstance, in: context)
+        updated.name = newName
+        updated.units = units
+        updated.explanation = description
+        if newName != oldName {
+          try PersistenceController.renameSubstance(from: oldName, to: newName, in: context)
+        }
+        try context.save()
+      } catch {
+        toastViewModel.showErrorToast(message: "Couldn't save substance changes")
       }
-      PersistenceController.shared.saveViewContext()
     }
     .toolbar {
       ToolbarItem {

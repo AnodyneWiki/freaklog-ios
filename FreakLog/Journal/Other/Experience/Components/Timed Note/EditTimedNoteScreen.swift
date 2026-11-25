@@ -5,6 +5,7 @@ struct EditTimedNoteScreen: View {
     @ObservedObject var experience: Experience
 
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var toastViewModel: ToastViewModel
     @State private var time = Date.now
     @State private var note = ""
     @State private var color = SubstanceColor.blue
@@ -49,22 +50,28 @@ struct EditTimedNoteScreen: View {
     }
 
     func save() {
-        timedNote.time = time
-        timedNote.note = note
-        timedNote.colorAsText = color.rawValue
-        timedNote.isPartOfTimeline = isPartOfTimeline
-        timedNote.experience?.objectWillChange.send()
         do {
-            try TimedNoteSaving.save(timedNote)
+            let context = try PersistenceController.shared.journalEditContext()
+            let updated = try PersistenceController.journalObject(timedNote, in: context)
+            updated.time = time
+            updated.note = note
+            updated.colorAsText = color.rawValue
+            updated.isPartOfTimeline = isPartOfTimeline
+            try TimedNoteSaving.save(updated)
+            experience.objectWillChange.send()
+            dismiss()
         } catch {
-            assertionFailure("Failed to save timed note: \(error)")
+            toastViewModel.showErrorToast(message: "Failed to save note")
         }
     }
 
     func delete() {
         Task {
-            await IngestionDeletion.delete(timedNote: timedNote)
+            if await IngestionDeletion.delete(timedNote: timedNote) {
+                dismiss()
+            } else {
+                toastViewModel.showErrorToast(message: "Failed to delete note")
+            }
         }
-        dismiss()
     }
 }

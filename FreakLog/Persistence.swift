@@ -180,6 +180,13 @@ struct PersistenceController {
         return context
     }
 
+    static func journalObject<T: NSManagedObject>(_ object: T, in context: NSManagedObjectContext) throws -> T {
+        guard let result = try context.existingObject(with: object.objectID) as? T, !result.isDeleted else {
+            throw JournalOperationError.storeUnavailable
+        }
+        return result
+    }
+
     static func saveJournalChanges(in context: NSManagedObjectContext) throws {
         Experience.updateSortDates(beforeSaving: context)
         try context.save()
@@ -653,14 +660,18 @@ struct PersistenceController {
         (try? viewContext.fetch(Self.experiencesRequest())) ?? []
     }
 
-    func getExperiences(near date: Date) -> [Experience] {
+    static func experiencesRequest(near date: Date) -> NSFetchRequest<Experience> {
         let window: TimeInterval = 60 * 60 * 60
         let r = Self.experiencesRequest()
         r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "sortDate > %@", date.addingTimeInterval(-window) as NSDate),
             NSPredicate(format: "sortDate < %@", date.addingTimeInterval(window) as NSDate),
         ])
-        return (try? viewContext.fetch(r)) ?? []
+        return r
+    }
+
+    func getExperiences(near date: Date) -> [Experience] {
+        (try? viewContext.fetch(Self.experiencesRequest(near: date))) ?? []
     }
 
     func getAllCustomSubstances() -> [CustomSubstance] {
@@ -805,13 +816,13 @@ struct PersistenceController {
         resolvedRoa(for: substanceName, route: route).duration
     }
 
-    func renameSubstance(from oldName: String, to newName: String) {
+    static func renameSubstance(from oldName: String, to newName: String, in context: NSManagedObjectContext) throws {
         for entityName in [
             "Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa", "SubstanceOverride", "FormulationComponent",
         ] {
             let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
             r.predicate = NSPredicate(format: "substanceName == %@", oldName)
-            ((try? viewContext.fetch(r)) ?? []).forEach { $0.setValue(newName, forKey: "substanceName") }
+            try context.fetch(r).forEach { $0.setValue(newName, forKey: "substanceName") }
         }
     }
 }

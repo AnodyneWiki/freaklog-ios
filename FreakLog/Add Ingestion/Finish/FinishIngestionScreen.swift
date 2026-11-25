@@ -74,11 +74,11 @@ struct FinishIngestionScreen: View {
                 try addIngestionWithExperience()
                 toastViewModel.showSuccessToast()
                 generateSuccessHaptic()
+                dismiss()
             } catch {
                 toastViewModel.showErrorToast(message: "Failed Ingestion")
                 generateFailedHaptic()
             }
-            dismiss()
         }
     }
 
@@ -253,15 +253,17 @@ struct FinishIngestionScreen: View {
     }
 
     func addIngestionWithExperience() throws {
-        let context = PersistenceController.shared.viewContext
+        let persistence = PersistenceController.shared
+        let context = try persistence.journalEditContext()
         let selectedLocationValue = locationManager.selectedLocation
         let isNewExperience = selectedExperience == nil
-        let experience = selectedExperience ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
-        let companions = Dictionary(uniqueKeysWithValues: substanceNames.map { substanceName in
-            (substanceName, createOrUpdateCompanion(for: substanceName, with: context))
+        let experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
+            ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
+        let companions = try Dictionary(uniqueKeysWithValues: substanceNames.map { substanceName in
+            (substanceName, try createOrUpdateCompanion(for: substanceName, with: context))
         })
-        let newIngestions = ingestions.map { arguments in
-            createIngestion(
+        let newIngestions = try ingestions.map { arguments in
+            try createIngestion(
                 from: arguments,
                 companion: companions[arguments.substanceName],
                 with: experience,
@@ -269,7 +271,10 @@ struct FinishIngestionScreen: View {
                 and: context)
         }
         try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
-        startLiveActivityIfWanted(for: experience, isNewExperience: isNewExperience)
+        let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
+        if let savedExperience {
+            startLiveActivityIfWanted(for: savedExperience, isNewExperience: isNewExperience)
+        }
     }
 
     private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
@@ -287,9 +292,10 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    private func createOrUpdateCompanion(for substanceName: String, with context: NSManagedObjectContext) -> SubstanceCompanion {
+    private func createOrUpdateCompanion(for substanceName: String, with context: NSManagedObjectContext) throws -> SubstanceCompanion {
         let color = colorBinding(for: substanceName).wrappedValue
         if let foundCompanion = foundCompanions[substanceName] {
+            let foundCompanion = try PersistenceController.journalObject(foundCompanion, in: context)
             foundCompanion.colorAsText = color.rawValue
             return foundCompanion
         } else {
@@ -316,8 +322,8 @@ struct FinishIngestionScreen: View {
             ingestion.endTime = nil
         }
         ingestion.creationDate = Date()
-        ingestion.customUnit = arguments.customUnit
-        ingestion.formulation = arguments.formulation
+        ingestion.customUnit = try arguments.customUnit.map { try PersistenceController.journalObject($0, in: context) }
+        ingestion.formulation = try arguments.formulation.map { try PersistenceController.journalObject($0, in: context) }
         ingestion.formulationAmount = arguments.formulationAmount ?? 0
         ingestion.dose = arguments.dose ?? 0
         ingestion.units = arguments.units
