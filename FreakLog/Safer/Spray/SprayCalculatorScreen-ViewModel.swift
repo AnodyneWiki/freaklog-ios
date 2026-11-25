@@ -4,76 +4,34 @@ extension SprayCalculatorScreen {
     @MainActor
     class ViewModel: NSObject, ObservableObject, NSFetchedResultsControllerDelegate {
         private let sprayFetchController: NSFetchedResultsController<Spray>
-        @Published var sprayModels: [SprayModel] = []
-        @Published var selectedSpray: SprayModel? {
-            didSet {
-                maybeUpdateTotalWeight()
-            }
-        }
 
+        @Published private(set) var sprayModels: [SprayModel] = []
+        @Published private(set) var selectedSpray: SprayModel?
+        @Published private(set) var calculation: SprayCalculation = .soluteWeight
         @Published var units = WeightUnit.mg
-        @Published var weightPerSprayText = "" {
-            didSet {
-                maybeUpdateTotalWeight()
-            }
-        }
-
-        @Published var liquidAmountInMlText = "" {
-            didSet {
-                maybeUpdateTotalWeight()
-            }
-        }
-
-        @Published var totalWeightText = "" {
-            didSet {
-                maybeUpdateLiquidVolume()
-            }
-        }
-
+        @Published var weightPerSprayText = ""
+        @Published var knownQuantityText = ""
         @Published var purityInPercentText = ""
         @Published var isShowingAddSpray = false
+        @Published var errorMessage: String?
 
-        var weightPerSpray: Double? {
-            getDouble(from: weightPerSprayText)
+        var weightPerSpray: Double? { SprayCalculation.positiveNumber(weightPerSprayText) }
+        var knownQuantity: Double? { SprayCalculation.positiveNumber(knownQuantityText) }
+
+        var purity: Double? {
+            guard let value = SprayCalculation.positiveNumber(purityInPercentText), value <= 100 else { return nil }
+            return value
         }
 
-        var liquidAmountInMl: Double? {
-            getDouble(from: liquidAmountInMlText)
+        var result: Double? {
+            guard let selectedSpray, let knownQuantity, let weightPerSpray else { return nil }
+            return calculation.result(knownQuantity: knownQuantity, weightPerSpray: weightPerSpray, spray: selectedSpray)
         }
 
-        var purityInPercent: Double? {
-            getDouble(from: purityInPercentText)
-        }
-
-        var totalWeight: Double? {
-            getDouble(from: totalWeightText)
-        }
-
-        var doseAdjustedToPurity: Double? {
-            guard let totalWeight, let purityInPercent else { return nil }
-            return totalWeight * 100 / purityInPercent
-        }
-
-        private func maybeUpdateTotalWeight() {
-            if let liquidAmountInMl, let selectedSpray, let weightPerSpray {
-                let numSprays = liquidAmountInMl * selectedSpray.numSprays / selectedSpray.contentInMl
-                let result = numSprays * weightPerSpray
-                let resultText = result.asRoundedReadableString
-                if resultText != totalWeightText {
-                    totalWeightText = resultText
-                }
-            }
-        }
-
-        private func maybeUpdateLiquidVolume() {
-            if let totalWeight, let selectedSpray, let weightPerSpray {
-                let numSprays = totalWeight / weightPerSpray
-                let result = numSprays * selectedSpray.contentInMl / selectedSpray.numSprays
-                let resultText = result.asRoundedReadableString
-                if resultText != liquidAmountInMlText {
-                    liquidAmountInMlText = resultText
-                }
-            }
+        var adjustedWeight: Double? {
+            let weight = calculation == .soluteWeight ? result : (result == nil ? nil : knownQuantity)
+            guard let weight, let purity else { return nil }
+            return SprayCalculation.adjustedWeight(weight, purity: purity)
         }
 
         override init() {
@@ -86,11 +44,16 @@ extension SprayCalculatorScreen {
             sprayFetchController.delegate = self
             do {
                 try sprayFetchController.performFetch()
-                let sprays = sprayFetchController.fetchedObjects ?? []
-                assignToSprayModels(sprays: sprays)
+                assignToSprayModels(sprays: sprayFetchController.fetchedObjects ?? [])
             } catch {
-                NSLog("Error: could not fetch CustomSubstances")
+                errorMessage = "Couldn’t load saved sprays."
             }
+        }
+
+        func selectCalculation(_ next: SprayCalculation) {
+            guard next != calculation else { return }
+            knownQuantityText = result?.formatted(.number.grouping(.never).precision(.significantDigits(1...15))) ?? ""
+            calculation = next
         }
 
         public nonisolated func controllerDidChangeContent(_ controller: NSFetchedResultsController<NSFetchRequestResult>) {
@@ -100,44 +63,48 @@ extension SprayCalculatorScreen {
             }
         }
 
-        private func assignToSprayModels(sprays: [Spray]) {
-            sprayModels = sprays.map { spray in
-                SprayModel(name: spray.nameUnwrapped, numSprays: spray.numSprays, contentInMl: spray.contentInMl, spray: spray)
-            }
-            if let sel = sprays.first(where: { spray in
-                spray.isPreferred
-            }) {
-                selectedSpray = SprayModel(name: sel.nameUnwrapped, numSprays: sel.numSprays, contentInMl: sel.contentInMl, spray: sel)
-            } else {
-                selectedSpray = sprayModels.first
-            }
-        }
-
-        func saveSelect() {
-            let sprays = sprayModels.compactMap { $0.spray }
-            sprays.forEach { spray in
-                spray.isPreferred = false
-            }
-            if let selectedSpray = selectedSpray?.spray {
-                selectedSpray.isPreferred = true
-            }
-            let context = PersistenceController.shared.viewContext
-            if context.hasChanges {
-                try? context.save()
+        func select(_ model: SprayModel) {
+            guard model.isValid, selectedSpray?.id != model.id, let spray = model.spray else { return }
+            do {
+                try PersistenceController.withJournalStoreWrite {
+                    let context = try PersistenceController.shared.journalEditContext()
+                    let preferred = try PersistenceController.journalObject(spray, in: context)
+                    for other in try context.fetch(PersistenceController.sprayRequest()) where other.isPreferred && other != preferred {
+                        other.isPreferred = false
+                    }
+                    preferred.isPreferred = true
+                    try context.save()
+                }
+                selectedSpray = model
+            } catch {
+                errorMessage = "Couldn’t select this spray. \(error.localizedDescription)"
             }
         }
 
         func deleteSprays(at offsets: IndexSet) {
-            let context = PersistenceController.shared.viewContext
-            let spraysToDelete = offsets.compactMap { sprayModels[$0].spray }
-            for spray in spraysToDelete {
-                context.delete(spray)
+            let sprays = offsets.compactMap { index in
+                sprayModels.indices.contains(index) ? sprayModels[index].spray : nil
             }
+            guard !sprays.isEmpty else { return }
             do {
-                try context.save()
+                try PersistenceController.withJournalStoreWrite {
+                    let context = try PersistenceController.shared.journalEditContext()
+                    for spray in sprays {
+                        context.delete(try PersistenceController.journalObject(spray, in: context))
+                    }
+                    try context.save()
+                }
             } catch {
-                assertionFailure("Failed to delete sprays")
+                errorMessage = "Couldn’t delete these sprays. \(error.localizedDescription)"
             }
+        }
+
+        private func assignToSprayModels(sprays: [Spray]) {
+            sprayModels = sprays.map { spray in
+                SprayModel(name: spray.nameUnwrapped, numSprays: spray.numSprays, contentInMl: spray.contentInMl, spray: spray)
+            }
+            selectedSpray = sprayModels.first { $0.isValid && $0.spray?.isPreferred == true }
+                ?? sprayModels.first { $0.isValid }
         }
     }
 }
