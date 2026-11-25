@@ -1,5 +1,13 @@
 import SwiftUI
 
+private struct AssistantTranscriptFrame: PreferenceKey {
+  static let defaultValue: CGRect? = nil
+
+  static func reduce(value: inout CGRect?, nextValue: () -> CGRect?) {
+    value = nextValue() ?? value
+  }
+}
+
 // MARK: - AssistantScreen
 
 // The chat with the assistant, about an experience or the whole journal. Opened with a prompt, such as the
@@ -37,6 +45,7 @@ struct AssistantScreen: View {
         ToolbarItem(placement: .navigationBarTrailing) {
           Button {
             draft = ""
+            followsLatest = true
             chat.start()
           } label: {
             Image(systemName: "square.and.pencil")
@@ -65,6 +74,7 @@ struct AssistantScreen: View {
       {
         Button("Switch and Start a New Chat") {
           if let profile = profileToSwitchTo {
+            followsLatest = true
             chat.switchProfile(to: profile.id)
           }
         }
@@ -88,9 +98,13 @@ struct AssistantScreen: View {
   @State private var searchesWeb = false
   @State private var profileToSwitchTo: AssistantProfile?
   @State private var path = NavigationPath()
+  @State private var followsLatest = true
+  @State private var transcriptTop: CGFloat?
+  @GestureState private var isDraggingTranscript = false
   @FocusState private var isInputFocused: Bool
 
   private let bottomID = "bottom"
+  private let transcriptSpace = "assistantTranscript"
   private let suggestsCurrentSessionSummary: Bool
 
   // The title: the model in use, which opens a menu of models and providers
@@ -178,38 +192,76 @@ struct AssistantScreen: View {
 
   private var transcript: some View {
     ScrollViewReader { proxy in
-      ScrollView {
-        LazyVStack(alignment: .leading, spacing: 12) {
-          if let contextLabel = chat.contextLabel {
-            Text(contextLabel)
-              .font(.caption)
-              .foregroundColor(.secondary)
-              .frame(maxWidth: .infinity)
-          }
-          ForEach(chat.items) { item in
-            switch item {
-            case .message(let message):
-              MessageView(
-                message: message,
-                status: chat.status,
-                actions: actions(for: message))
-            case .notice(let notice):
-              Text(notice.text)
+      GeometryReader { viewport in
+        ScrollView {
+          LazyVStack(alignment: .leading, spacing: 12) {
+            if let contextLabel = chat.contextLabel {
+              Text(contextLabel)
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity)
             }
+            ForEach(chat.items) { item in
+              switch item {
+              case .message(let message):
+                MessageView(
+                  message: message,
+                  status: chat.status,
+                  actions: actions(for: message))
+              case .notice(let notice):
+                Text(notice.text)
+                  .font(.caption)
+                  .foregroundColor(.secondary)
+                  .frame(maxWidth: .infinity)
+              }
+            }
+            if !chat.hasQuestions {
+              suggestions
+            }
+            Color.clear.frame(height: 1).id(bottomID)
           }
-          if !chat.hasQuestions {
-            suggestions
+          .padding()
+          .background {
+            GeometryReader { content in
+              Color.clear.preference(
+                key: AssistantTranscriptFrame.self,
+                value: content.frame(in: .named(transcriptSpace)))
+            }
           }
-          Color.clear.frame(height: 1).id(bottomID)
         }
-        .padding()
-      }
-      .scrollDismissesKeyboard(.interactively)
-      .onChange(of: chat.items) { _ in
-        proxy.scrollTo(bottomID, anchor: .bottom)
+        .coordinateSpace(name: transcriptSpace)
+        .scrollDismissesKeyboard(.interactively)
+        .simultaneousGesture(
+          DragGesture().updating($isDraggingTranscript) { _, dragging, _ in dragging = true }
+        )
+        .onPreferenceChange(AssistantTranscriptFrame.self) { frame in
+          guard let frame, frame.minY != transcriptTop else { return }
+          // Streaming changes the content height even when the reader's position hasn't moved.
+          if transcriptTop != nil {
+            followsLatest = frame.maxY - viewport.size.height <= 64
+          }
+          transcriptTop = frame.minY
+        }
+        .onChange(of: chat.items) { _ in
+          if followsLatest && !isDraggingTranscript {
+            proxy.scrollTo(bottomID, anchor: .bottom)
+          }
+        }
+        .overlay(alignment: .bottom) {
+          if chat.hasQuestions && !followsLatest {
+            Button {
+              followsLatest = true
+              proxy.scrollTo(bottomID, anchor: .bottom)
+            } label: {
+              Label("Jump to Latest", systemImage: "arrow.down")
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 14)
+                .frame(minHeight: 44)
+                .background(.regularMaterial, in: Capsule())
+            }
+            .padding(.bottom, 8)
+          }
+        }
       }
       .safeAreaInset(edge: .bottom) {
         inputBar
@@ -222,6 +274,7 @@ struct AssistantScreen: View {
     return VStack(alignment: .leading, spacing: 8) {
       ForEach(prompts, id: \.self) { suggestion in
         Button {
+          followsLatest = true
           chat.send(suggestion)
         } label: {
           Text(suggestion)
@@ -266,6 +319,7 @@ struct AssistantScreen: View {
           .accessibilityLabel("Stop")
         } else {
           Button {
+            followsLatest = true
             chat.send(draft, searchWeb: searchWeb)
             draft = ""
           } label: {
