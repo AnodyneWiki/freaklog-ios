@@ -28,9 +28,16 @@ struct ChameleonHeader: View {
                     
                     if let onOverview {
                         Button(action: onOverview) {
-                            Label("Overview", systemImage: "arrow.down.left.and.arrow.up.right.square")
-                                .labelStyle(.iconOnly)
-                                .foregroundColor(.blue)
+                            HStack(spacing: 4) {
+                                Text("Overview")
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .accessibilityHidden(true)
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(Color.accentColor)
+                            .frame(minHeight: 44)
+                            .contentShape(Rectangle())
                         }
                     }
                 }
@@ -57,6 +64,6 @@ struct ChameleonHeader: View {
                 }
             }
         }
-        .frame(height: 38)
+        .frame(height: 44)
     }
 }

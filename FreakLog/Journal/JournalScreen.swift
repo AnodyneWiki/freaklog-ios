@@ -61,11 +61,24 @@ struct JournalScreen: View {
                     AllIngestionsView(
                         searchText: searchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
-                        timeDisplayStyle: timeDisplayStyle
+                        timeDisplayStyle: timeDisplayStyle,
+                        showsTimeline: !isSearchPresented && !isFavoriteFilterEnabled
                     )
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if isSearchPresented || isFavoriteFilterEnabled {
+                    HStack {
+                        favoriteButton
+                            .labelStyle(.titleAndIcon)
+                            .frame(minHeight: 44)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 16)
+                    .background(.bar)
+                }
+            }
             .task(id: searchText) {
                 if !searchText.isEmpty {
                     try? await Task.sleep(nanoseconds: 300_000_000)
@@ -108,26 +121,39 @@ struct JournalScreen: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 228)
+                    .frame(maxWidth: 220)
                 }
             }
 
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack(spacing: 4) {
-                    Button {
-                        isSearchPresented = true
-                    } label: {
-                        Label("Search", systemImage: "magnifyingglass")
-                    }
-                    favoriteButton
+                Button {
+                    isSearchPresented = true
+                } label: {
+                    Label("Search", systemImage: "magnifyingglass")
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 4) {
-                    timeDisplayMenu
-                    calendarLink
-                }
+                moreMenu
             }
+        }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                isAddingTimedNote = true
+            } label: {
+                Label("Add Timed Note", systemImage: "note.text")
+            }
+            Button {
+                Navigator.shared.openInCurrentTab(.calendar)
+            } label: {
+                Label("Calendar", systemImage: "calendar")
+            }
+            favoriteButton
+            timeDisplayMenu
+        } label: {
+            Label("More", systemImage: "ellipsis.circle")
         }
     }
 
@@ -149,22 +175,31 @@ struct JournalScreen: View {
         }
     }
 
-    private var calendarLink: some View {
-        NavigationLink(value: GlobalNavigationDestination.calendar) {
-            Label("Calendar", systemImage: "calendar")
-        }
-    }
-
     private var favoriteButton: some View {
         Button {
             isFavoriteFilterEnabled.toggle()
         } label: {
-            if isFavoriteFilterEnabled {
-                Label("Don't Filter Favorites", systemImage: "star.fill")
-            } else {
-                Label("Filter Favorites", systemImage: "star")
+            Label("Favorites", systemImage: isFavoriteFilterEnabled ? "star.fill" : "star")
+        }
+        .accessibilityAddTraits(isFavoriteFilterEnabled ? .isSelected : [])
+    }
+}
+
+struct JournalEmptyState: View {
+    let message: String
+    let offersLogging: Bool
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(message).foregroundStyle(.secondary)
+            if offersLogging {
+                Button("Log an Ingestion") {
+                    Navigator.shared.showAddIngestionFullScreenCover()
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
+        .padding()
     }
 }
 

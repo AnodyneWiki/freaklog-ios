@@ -5,6 +5,7 @@ struct AllIngestionsView: View {
     let searchText: String
     let isFavoriteFilterEnabled: Bool
     var timeDisplayStyle: SaveableTimeDisplayStyle
+    var showsTimeline = true
     
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
@@ -18,9 +19,11 @@ struct AllIngestionsView: View {
 
     var body: some View {
         List {
-            timelineSection
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
+            if showsTimeline {
+                timelineSection
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            }
 
             ForEach(viewModel.sections) { section in
                 Section(header: ChameleonHeader(
@@ -47,8 +50,10 @@ struct AllIngestionsView: View {
         .listStyle(.plain)
         .overlay {
             if viewModel.sections.isEmpty && viewModel.hasReachedEnd {
-                Text(emptyText)
-                    .foregroundColor(.secondary)
+                JournalEmptyState(
+                    message: emptyText,
+                    offersLogging: searchText.isEmpty && !isFavoriteFilterEnabled
+                )
             }
         }
         .scrollIndicators(.hidden)

@@ -74,8 +74,10 @@ struct ExperiencesList: View {
             }
             .listStyle(.plain)
             if fetchedExperiences.isEmpty {
-                Text(emptyText)
-                    .foregroundColor(.secondary)
+                JournalEmptyState(
+                    message: emptyText,
+                    offersLogging: searchText.isEmpty && !isFavoriteFilterEnabled
+                )
             }
         }
     }
@@ -86,7 +88,7 @@ struct ExperiencesList: View {
         case (false, true): "No favorites match the search"
         case (false, false): "No experiences match the search"
         case (true, true): "No favorite experiences yet"
-        case (true, false): "No ingestions yet"
+        case (true, false): "No experiences yet"
         }
     }
 }
