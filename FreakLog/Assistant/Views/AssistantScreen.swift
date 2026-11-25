@@ -44,9 +44,7 @@ struct AssistantScreen: View {
         }
         ToolbarItem(placement: .navigationBarTrailing) {
           Button {
-            draft = ""
-            followsLatest = true
-            chat.start()
+            confirmsNewChat = true
           } label: {
             Image(systemName: "square.and.pencil")
               .assistantTapTarget()
@@ -82,6 +80,16 @@ struct AssistantScreen: View {
       } message: {
         Text("Switching providers starts a new conversation.")
       }
+      .confirmationDialog("Start a new chat?", isPresented: $confirmsNewChat, titleVisibility: .visible) {
+        Button("Start New Chat", role: .destructive) {
+          draft = ""
+          followsLatest = true
+          chat.start()
+        }
+        Button("Cancel", role: .cancel) {}
+      } message: {
+        Text("Starting a new chat replaces this conversation and applies your current Assistant settings.")
+      }
     }
     .onChange(of: isAssistantEnabled) { enabled in
       if !enabled { dismiss() }
@@ -96,6 +104,7 @@ struct AssistantScreen: View {
   @State private var noteSaveError: String?
   @State private var draft = ""
   @State private var searchesWeb = false
+  @State private var confirmsNewChat = false
   @State private var profileToSwitchTo: AssistantProfile?
   @State private var path = NavigationPath()
   @State private var followsLatest = true
@@ -188,6 +197,7 @@ struct AssistantScreen: View {
         Text(model)
       }
     }
+    .disabled(chat.requiresRestart)
   }
 
   private var transcript: some View {
@@ -291,6 +301,15 @@ struct AssistantScreen: View {
   private var inputBar: some View {
     let searchWeb = isWebAccessEnabled && searchesWeb
     return VStack(spacing: 4) {
+      if chat.requiresRestart {
+        VStack(alignment: .leading, spacing: 4) {
+          Text("Assistant settings changed. Start a new chat to use them.")
+            .foregroundStyle(.secondary)
+          Button("Start New Chat") { confirmsNewChat = true }
+        }
+        .font(.footnote)
+        .frame(maxWidth: .infinity, alignment: .leading)
+      }
       HStack(alignment: .bottom, spacing: 8) {
         if isWebAccessEnabled {
           Toggle(isOn: $searchesWeb) {
@@ -308,6 +327,7 @@ struct AssistantScreen: View {
           .padding(.vertical, 8)
           .frame(minHeight: 44)
           .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+          .disabled(chat.requiresRestart)
         if chat.isBusy {
           Button {
             chat.stop()
@@ -327,7 +347,7 @@ struct AssistantScreen: View {
               .font(.title)
               .assistantTapTarget()
           }
-          .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+          .disabled(chat.requiresRestart || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
           .accessibilityLabel(searchWeb ? "Search" : "Send")
         }
       }
@@ -365,7 +385,7 @@ struct AssistantScreen: View {
     return MessageView.Actions(
       canAddToNotes: chat.experience != nil && !chat.isBusy,
       isAddedToNotes: chat.addedToNotes.contains(message.id),
-      canRetry: isLast && chat.canRetry && !chat.isBusy,
+      canRetry: isLast && chat.canRetry && !chat.isBusy && !chat.requiresRestart,
       addToNotes: {
         do {
           try chat.addToNotes(message)
