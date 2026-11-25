@@ -7,9 +7,10 @@ struct AnodyneSearchScreen: View {
 
   var body: some View {
     AnodyneSearchResults(searchText: searchText)
-      .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+      .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Search AnodyneWiki")
       .disableAutocorrection(true)
       .navigationTitle("AnodyneWiki")
+      .navigationBarTitleDisplayMode(.inline)
   }
 }
 

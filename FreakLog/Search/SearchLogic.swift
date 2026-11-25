@@ -78,13 +78,38 @@ extension SearchLogic {
 /// Each term can match a different field. For example, an experience can match two
 /// substance names from separate ingestions plus a word in a timed note.
 struct UnifiedJournalQuery {
+    enum IngestionKind: CaseIterable {
+        case any, formulationComponent, standalone
+
+        var title: String {
+            switch self {
+            case .any: String(localized: "All Ingestions")
+            case .formulationComponent: String(localized: "Formulation Components")
+            case .standalone: String(localized: "Standalone Ingestions")
+            }
+        }
+
+        func condition(for keyPath: String) -> String? {
+            switch self {
+            case .any: nil
+            case .formulationComponent: "\(keyPath) != nil"
+            case .standalone: "\(keyPath) == nil"
+            }
+        }
+    }
+
     let terms: [String]
     let substanceNames: [String: [String]]
     let favoritesOnly: Bool
+    let ingestionKind: IngestionKind
 
-    init(terms: [String], customSubstances: [CustomSubstance], favoritesOnly: Bool) {
+    init(
+        terms: [String], customSubstances: [CustomSubstance], favoritesOnly: Bool,
+        ingestionKind: IngestionKind = .any
+    ) {
         self.terms = terms
         self.favoritesOnly = favoritesOnly
+        self.ingestionKind = ingestionKind
         let catalog = SubstanceRepo.shared.substances.map { substance in
             (substance.name, [substance.name, substance.displayName] + substance.commonNames)
         }
@@ -105,13 +130,26 @@ struct UnifiedJournalQuery {
         request.fetchLimit = limit
         request.relationshipKeyPathsForPrefetching = ["ingestions", "ingestions.substanceCompanion", "ratings", "legacyLocation"]
         var clauses = terms.map { term in
-            let fields = [
-                "title", "text", "legacyLocation.name", "ANY timedNotes.note",
-                "ANY ingestions.note", "ANY ingestions.substanceName", "ANY ingestions.consumerName",
-                "ANY ingestions.customUnit.name", "ANY ingestions.formulation.name"
-            ]
+            let fields = ["title", "text", "legacyLocation.name", "ANY timedNotes.note"]
             var matches = fields.map { contains(term, field: $0) }
-            appendSubstanceMatches(for: term, field: "ANY ingestions.substanceName", to: &matches)
+            let ingestionFields = ["note", "substanceName", "consumerName", "customUnit.name", "formulation.name"]
+            if let condition = ingestionKind.condition(for: "$entry.formulation") {
+                // Match the search term and the selected kind on the same ingestion.
+                var comparisons = ingestionFields.map { "$entry.\($0) CONTAINS[cd] %@" }
+                var arguments: [Any] = ingestionFields.map { _ in term }
+                if let names = substanceNames[term], !names.isEmpty {
+                    comparisons.append("$entry.substanceName IN %@")
+                    arguments.append(names)
+                }
+                let matchingFields = comparisons.joined(separator: " OR ")
+                matches.append(NSPredicate(
+                    format: "SUBQUERY(ingestions, $entry, \(condition) AND (\(matchingFields))).@count > 0",
+                    argumentArray: arguments
+                ))
+            } else {
+                matches += ingestionFields.map { contains(term, field: "ANY ingestions.\($0)") }
+                appendSubstanceMatches(for: term, field: "ANY ingestions.substanceName", to: &matches)
+            }
             if let rating = ShulginRatingOption.allCases.first(where: {
                 $0.stringRepresentation == term || $0.rawValue.localizedCaseInsensitiveCompare(term) == .orderedSame
             }) {
@@ -120,6 +158,9 @@ struct UnifiedJournalQuery {
             return NSCompoundPredicate(orPredicateWithSubpredicates: matches) as NSPredicate
         }
         if favoritesOnly { clauses.append(NSPredicate(format: "isFavorite == YES")) }
+        if let condition = ingestionKind.condition(for: "$entry.formulation") {
+            clauses.append(NSPredicate(format: "SUBQUERY(ingestions, $entry, \(condition)).@count > 0"))
+        }
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: clauses)
         return request
     }
@@ -136,6 +177,9 @@ struct UnifiedJournalQuery {
             return NSCompoundPredicate(orPredicateWithSubpredicates: matches) as NSPredicate
         }
         if favoritesOnly { clauses.append(NSPredicate(format: "experience.isFavorite == YES")) }
+        if let condition = ingestionKind.condition(for: "formulation") {
+            clauses.append(NSPredicate(format: condition))
+        }
         request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: clauses)
         return request
     }

@@ -26,6 +26,7 @@ struct UnifiedSearchFilters {
     }
 
     var journalType = JournalType.all
+    var ingestionKind = UnifiedJournalQuery.IngestionKind.any
     var libraryType = LibraryType.all
     var categories: Set<String> = []
     var personalTag: String?
@@ -60,6 +61,11 @@ struct UnifiedSearchFilterScreen: View {
                         Picker("Result Type", selection: $filters.journalType) {
                             ForEach(UnifiedSearchFilters.JournalType.allCases, id: \.self) { type in
                                 Text(type.title).tag(type)
+                            }
+                        }
+                        Picker("Logged As", selection: $filters.ingestionKind) {
+                            ForEach(UnifiedJournalQuery.IngestionKind.allCases, id: \.self) { kind in
+                                Text(kind.title).tag(kind)
                             }
                         }
                         Toggle("Favorite Experiences Only", isOn: $favoritesOnly)

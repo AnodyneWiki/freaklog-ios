@@ -4,7 +4,7 @@ import SwiftUI
 import WrappingHStack
 
 enum UnifiedSearchScope: String, CaseIterable, Identifiable {
-    case all, journal, library, anodyne
+    case all, journal, library
 
     var id: Self { self }
 
@@ -13,7 +13,6 @@ enum UnifiedSearchScope: String, CaseIterable, Identifiable {
         case .all: "All"
         case .journal: "Journal"
         case .library: "Library"
-        case .anodyne: "AnodyneWiki"
         }
     }
 
@@ -53,7 +52,6 @@ struct SearchScreen: View {
 
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(PersistenceController.isSearchSubstanceSiriTipVisibleKey) private var isSiriTipVisible = false
-    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @State private var filters = UnifiedSearchFilters()
     @State private var isShowingFilters = false
     @State private var isShowingAddCustomSubstance = false
@@ -74,13 +72,16 @@ struct SearchScreen: View {
     private var categories: [String] { SubstanceRepo.shared.categories.map(\.name) }
     private var tags: [String] { PersonalSubstanceTags(overrides.flatMap { $0.personalTags.names }.sorted()).names }
     private var terms: [String] { SearchLogic.unifiedTerms(in: searchText) }
+    private var journalIsFiltered: Bool {
+        favoritesOnly || filters.journalType != .all || filters.ingestionKind != .any
+    }
     private var filterIsActive: Bool {
-        (visibleScope.includesJournal && (favoritesOnly || filters.journalType != .all))
+        (visibleScope.includesJournal && journalIsFiltered)
             || (visibleScope.includesLibrary && filters.libraryIsFiltered)
     }
 
     var body: some View {
-        searchableResults
+        scopedSearch
             .textInputAutocapitalization(.never)
             .disableAutocorrection(true)
             .navigationTitle(startsInJournal ? "Search" : "Substances")
@@ -119,53 +120,41 @@ struct SearchScreen: View {
             }
     }
 
-    private var scopedResults: some View {
-        results.safeAreaInset(edge: .top, spacing: 0) {
-            if isEyeOpen { scopeBar }
-        }
-    }
-
-    private var scopePicker: some View {
-        Picker("Search Scope", selection: $scope) {
-            ForEach(UnifiedSearchScope.allCases) { scope in
-                Text(scope.title).tag(scope)
-            }
-        }
-    }
-
-    @ViewBuilder private var scopeBar: some View {
-        VStack {
-            if dynamicTypeSize.isAccessibilitySize {
-                scopePicker.pickerStyle(.menu)
+    @ViewBuilder private var scopedSearch: some View {
+        if isEyeOpen {
+            if #available(iOS 16.4, *) {
+                searchableResults.searchScopes($scope, activation: .onSearchPresentation) { scopeOptions }
             } else {
-                scopePicker.pickerStyle(.segmented)
+                searchableResults.searchScopes($scope) { scopeOptions }
             }
+        } else {
+            searchableResults
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.bar)
+    }
+
+    private var scopeOptions: some View {
+        ForEach(UnifiedSearchScope.allCases) { scope in
+            Text(scope.title).tag(scope)
+        }
     }
 
     @ViewBuilder private var searchableResults: some View {
         if #available(iOS 17, *) {
-            scopedResults.searchable(
+            localResults.searchable(
                 text: $searchText, isPresented: $isSearchPresented,
                 placement: .navigationBarDrawer(displayMode: .always), prompt: searchPrompt
             )
         } else {
-            scopedResults.searchable(
+            localResults.searchable(
                 text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: searchPrompt
             )
         }
     }
 
     @ToolbarContentBuilder private var searchToolbar: some ToolbarContent {
-        if visibleScope != .anodyne {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
-                filterButton
-                if visibleScope.includesLibrary { libraryActions }
-            }
+        ToolbarItemGroup(placement: .navigationBarTrailing) {
+            filterButton
+            if visibleScope.includesLibrary || !terms.isEmpty { searchActions }
         }
     }
 
@@ -179,26 +168,42 @@ struct SearchScreen: View {
         .accessibilityAddTraits(filterIsActive ? .isSelected : [])
     }
 
-    private var libraryActions: some View {
+    private var searchActions: some View {
         Menu {
-            createSubstanceButton
-            if customSubstances.count > 1 {
-                NavigationLink {
-                    SimilarCustomSubstancesScreen()
-                } label: {
-                    Label("Review Similar Names", systemImage: "rectangle.on.rectangle")
+            if !terms.isEmpty {
+                Section {
+                    if visibleScope.includesJournal { calendarLink }
+                    if isEyeOpen { anodyneLink }
+                }
+            }
+            if visibleScope.includesLibrary {
+                Section {
+                    createSubstanceButton
+                    if customSubstances.count > 1 {
+                        NavigationLink {
+                            SimilarCustomSubstancesScreen()
+                        } label: {
+                            Label("Review Similar Names", systemImage: "rectangle.on.rectangle")
+                        }
+                    }
                 }
             }
         } label: {
-            Label("Library Actions", systemImage: "ellipsis.circle")
+            Label("Search Actions", systemImage: "ellipsis.circle")
         }
     }
 
-    @ViewBuilder private var results: some View {
-        if visibleScope == .anodyne {
-            AnodyneSearchResults(searchText: searchText)
-        } else {
-            localResults
+    private var calendarLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.calendar) {
+            Label("Open Calendar", systemImage: "calendar")
+        }
+    }
+
+    private var anodyneLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.anodyneSearch(
+            query: searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        )) {
+            Label(terms.isEmpty ? "Browse AnodyneWiki" : "Search AnodyneWiki", systemImage: "books.vertical")
         }
     }
 
@@ -207,12 +212,17 @@ struct SearchScreen: View {
         case .all: Text("Substances or journal entries")
         case .journal: Text("Journal entries or notes")
         case .library: Text("Substances")
-        case .anodyne: Text("AnodyneWiki")
         }
     }
 
     private var localResults: some View {
         List {
+            if terms.isEmpty {
+                Section {
+                    if visibleScope.includesJournal { calendarLink }
+                    if visibleScope.includesLibrary { anodyneLink }
+                }
+            }
             if filterIsActive {
                 Section {
                     Button {
@@ -224,7 +234,7 @@ struct SearchScreen: View {
                 }
             }
             if visibleScope.includesJournal {
-                if terms.isEmpty && !favoritesOnly {
+                if terms.isEmpty && !journalIsFiltered {
                     if visibleScope == .journal {
                         Text("Search by substance, person, or note. Use quotes to match a phrase.")
                             .foregroundStyle(.secondary)
@@ -234,6 +244,7 @@ struct SearchScreen: View {
                 } else {
                     UnifiedJournalResults(
                         terms: terms, customSubstances: Array(customSubstances), type: filters.journalType,
+                        ingestionKind: filters.ingestionKind,
                         favoritesOnly: favoritesOnly, limit: resultLimit, isEyeOpen: isEyeOpen,
                         edit: { ingestionToEdit = $0 },
                         showMore: { resultLimit += 50 }
@@ -242,6 +253,9 @@ struct SearchScreen: View {
             }
             if visibleScope.includesLibrary {
                 libraryResults
+            }
+            if isEyeOpen, !terms.isEmpty {
+                Section { anodyneLink }
             }
         }
         .listStyle(.plain)
@@ -360,6 +374,7 @@ struct SearchScreen: View {
         if visibleScope.includesJournal {
             if favoritesOnly { labels.append(String(localized: "Favorites")) }
             if filters.journalType != .all { labels.append(filters.journalType.title) }
+            if filters.ingestionKind != .any { labels.append(filters.ingestionKind.title) }
         }
         if visibleScope.includesLibrary {
             if filters.libraryType != .all { labels.append(filters.libraryType.title) }
@@ -373,6 +388,7 @@ struct SearchScreen: View {
     private func clearVisibleFilters() {
         if visibleScope.includesJournal {
             filters.journalType = .all
+            filters.ingestionKind = .any
             favoritesOnly = false
         }
         if visibleScope.includesLibrary { filters.clearLibrary() }
@@ -392,6 +408,7 @@ private struct UnifiedJournalResults: View {
 
     init(
         terms: [String], customSubstances: [CustomSubstance], type: UnifiedSearchFilters.JournalType,
+        ingestionKind: UnifiedJournalQuery.IngestionKind,
         favoritesOnly: Bool, limit: Int, isEyeOpen: Bool,
         edit: @escaping (Ingestion) -> Void, showMore: @escaping () -> Void
     ) {
@@ -400,7 +417,10 @@ private struct UnifiedJournalResults: View {
         self.isEyeOpen = isEyeOpen
         self.edit = edit
         self.showMore = showMore
-        let query = UnifiedJournalQuery(terms: terms, customSubstances: customSubstances, favoritesOnly: favoritesOnly)
+        let query = UnifiedJournalQuery(
+            terms: terms, customSubstances: customSubstances, favoritesOnly: favoritesOnly,
+            ingestionKind: ingestionKind
+        )
         let experienceRequest = query.experiencesRequest(limit: limit + 1)
         if type == .ingestions { experienceRequest.predicate = NSPredicate(value: false) }
         let ingestionRequest = query.ingestionsRequest(limit: limit + 1)
