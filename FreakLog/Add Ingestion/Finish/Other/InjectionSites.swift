@@ -1,72 +1,156 @@
 import SwiftUI
 
-enum Nostril: String, CaseIterable, Identifiable {
-    case left = "Left Nostril"
-    case right = "Right Nostril"
-    case both = "Both Nostrils"
-    var id: Self { self }
+// Keep the existing site strings as identifiers so exports and integrations retain their meaning.
+private struct AdministrationSitePreset: Identifiable {
+    let id: String
+    let title: LocalizedStringKey
+    let isSpecific: Bool
+
+    init(_ id: String, _ title: LocalizedStringKey, isSpecific: Bool = false) {
+        self.id = id
+        self.title = title
+        self.isSpecific = isSpecific
+    }
+
+    static func options(for route: AdministrationRoute) -> [Self] {
+        switch route {
+        case .insufflated:
+            [
+                Self("Left Nostril", "Left"),
+                Self("Right Nostril", "Right"),
+                Self("Both Nostrils", "Both"),
+            ]
+        case .intravenous:
+            [
+                Self("Forearm", "Forearm"),
+                Self("Dorsal Hand", "Back of hand"),
+                Self("Inner Elbow", "Inner elbow"),
+                Self("Median Cubital", "Median cubital vein", isSpecific: true),
+                Self("Cephalic", "Cephalic vein", isSpecific: true),
+                Self("Basilic", "Basilic vein", isSpecific: true),
+                Self("Median Antebrachial", "Median antebrachial vein", isSpecific: true),
+            ]
+        case .intramuscular:
+            [
+                Self("Upper Arm", "Upper arm"),
+                Self("Thigh", "Thigh"),
+                Self("Hip", "Hip"),
+                Self("Buttock", "Buttock"),
+                Self("Deltoid", "Shoulder (deltoid)", isSpecific: true),
+                Self("Vastus Lateralis", "Outer thigh (vastus lateralis)", isSpecific: true),
+                Self("Rectus Femoris", "Front of thigh (rectus femoris)", isSpecific: true),
+                Self("Ventrogluteal", "Side of hip (ventrogluteal)", isSpecific: true),
+                Self("Dorsogluteal", "Upper outer buttock (dorsogluteal)", isSpecific: true),
+            ]
+        case .subcutaneous:
+            [
+                Self("Abdomen", "Abdomen"),
+                Self("Upper Arm", "Upper arm"),
+                Self("Thigh", "Thigh"),
+                Self("Upper Buttock", "Upper buttock"),
+                Self("Abdomen (Periumbilical)", "Around the navel", isSpecific: true),
+                Self("Posterior Upper Arm", "Back of upper arm", isSpecific: true),
+                Self("Anterior Thigh", "Front of thigh", isSpecific: true),
+            ]
+        case .transdermal:
+            [
+                Self("Abdomen", "Abdomen"),
+                Self("Upper Arm", "Upper arm"),
+                Self("Thigh", "Thigh"),
+                Self("Hip", "Hip"),
+                Self("Buttock", "Buttock"),
+            ]
+        default:
+            []
+        }
+    }
 }
 
-enum Vein: String, CaseIterable, Identifiable {
-    case leftMedianCubital = "Left Median Cubital"
-    case leftCephalic = "Left Cephalic"
-    case leftBasilic = "Left Basilic"
-    case leftDorsalHand = "Left Dorsal Hand"
-    case leftForearm = "Left Median Antebrachial"
-    case rightMedianCubital = "Right Median Cubital"
-    case rightCephalic = "Right Cephalic"
-    case rightBasilic = "Right Basilic"
-    case rightDorsalHand = "Right Dorsal Hand"
-    case rightForearm = "Right Median Antebrachial"
-    case other = "Other"
-    var id: Self { self }
+private enum AdministrationSiteChoice: Hashable {
+    case unknown
+    case preset(String)
+    case other
 }
 
-enum Muscle: String, CaseIterable, Identifiable {
-    case leftDeltoid = "Left Deltoid"
-    case rightDeltoid = "Right Deltoid"
-    case leftVastusLateralis = "Left Vastus Lateralis"
-    case rightVastusLateralis = "Right Vastus Lateralis"
-    case leftVentrogluteal = "Left Ventrogluteal"
-    case rightVentrogluteal = "Right Ventrogluteal"
-    case leftDorsogluteal = "Left Dorsogluteal"
-    case rightDorsogluteal = "Right Dorsogluteal"
-    case leftRectusFemoris = "Left Rectus Femoris"
-    case rightRectusFemoris = "Right Rectus Femoris"
-    case other = "Other Muscle"
+private enum AdministrationSiteSide: String, CaseIterable, Identifiable {
+    case left = "Left"
+    case right = "Right"
+
     var id: Self { self }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .left: "Left"
+        case .right: "Right"
+        }
+    }
 }
 
-enum SubcutaneousSite: String, CaseIterable, Identifiable {
-    case leftAbdomen = "Left Abdomen (Periumbilical)"
-    case rightAbdomen = "Right Abdomen (Periumbilical)"
-    case leftUpperArm = "Left Posterior Upper Arm"
-    case rightUpperArm = "Right Posterior Upper Arm"
-    case leftThigh = "Left Anterior Thigh"
-    case rightThigh = "Right Anterior Thigh"
-    case leftUpperButtock = "Left Upper Buttock"
-    case rightUpperButtock = "Right Upper Buttock"
-    case other = "Other Site"
-    var id: Self { self }
+private struct AdministrationSiteDraft {
+    let choice: AdministrationSiteChoice
+    var side: AdministrationSiteSide?
+    var otherLabel = ""
+    private var unlabeledOther = "Other"
+
+    init(choice: AdministrationSiteChoice = .unknown) {
+        self.choice = choice
+    }
+
+    init(route: AdministrationRoute, storedSite: String) {
+        guard !storedSite.isEmpty else {
+            choice = .unknown
+            return
+        }
+        let presets = AdministrationSitePreset.options(for: route)
+        if let preset = presets.first(where: { $0.id == storedSite }) {
+            choice = .preset(preset.id)
+            return
+        }
+        if route != .insufflated {
+            for side in AdministrationSiteSide.allCases {
+                let prefix = side.rawValue + " "
+                guard storedSite.hasPrefix(prefix) else { continue }
+                let region = String(storedSite.dropFirst(prefix.count))
+                if presets.contains(where: { $0.id == region }) {
+                    choice = .preset(region)
+                    self.side = side
+                    return
+                }
+            }
+        }
+        choice = .other
+        if ["Other", "Other Muscle", "Other Site"].contains(storedSite) {
+            unlabeledOther = storedSite
+        } else {
+            otherLabel = storedSite
+        }
+    }
+
+    var storedSite: String {
+        switch choice {
+        case .unknown: ""
+        case .preset(let name): side.map { "\($0.rawValue) \(name)" } ?? name
+        case .other: otherLabel.isEmpty ? unlabeledOther : otherLabel
+        }
+    }
 }
 
-// Preserve labels read from imports, including labels outside the picker.
 struct AdministrationSiteSelection {
-    private var sites: [AdministrationRoute: String] = [:]
+    private var drafts: [AdministrationRoute: AdministrationSiteDraft] = [:]
 
     init() {}
 
     init(route: AdministrationRoute, storedSite: String) {
-        self[route] = storedSite
+        drafts[route] = AdministrationSiteDraft(route: route, storedSite: storedSite)
     }
 
-    subscript(route: AdministrationRoute) -> String {
-        get { sites[route] ?? "" }
-        set { sites[route] = newValue.isEmpty ? nil : newValue }
+    fileprivate subscript(route: AdministrationRoute) -> AdministrationSiteDraft {
+        get { drafts[route] ?? AdministrationSiteDraft() }
+        set { drafts[route] = newValue }
     }
 
     func siteString(for route: AdministrationRoute) -> String {
-        self[route]
+        self[route].storedSite
     }
 }
 
@@ -74,38 +158,63 @@ struct AdministrationSitePicker: View {
     let route: AdministrationRoute
     @Binding var selection: AdministrationSiteSelection
 
+    private var draft: Binding<AdministrationSiteDraft> {
+        Binding(get: { selection[route] }, set: { selection[route] = $0 })
+    }
+
+    private var choice: Binding<AdministrationSiteChoice> {
+        Binding(
+            get: { selection[route].choice },
+            set: { selection[route] = AdministrationSiteDraft(choice: $0) })
+    }
+
     var body: some View {
-        if let options {
-            let storedSite = selection[route]
-            Picker(title, selection: Binding(get: { selection[route] }, set: { selection[route] = $0 })) {
-                Text("No Site").tag("")
-                if !storedSite.isEmpty, !options.contains(storedSite) {
-                    Text(storedSite).tag(storedSite)
+        let options = AdministrationSitePreset.options(for: route)
+        if !options.isEmpty {
+            sitePicker(options: options)
+
+            switch selection[route].choice {
+            case .preset where route != .insufflated:
+                Picker("Side", selection: draft.side) {
+                    Text("Unknown").tag(nil as AdministrationSiteSide?)
+                    ForEach(AdministrationSiteSide.allCases) { side in
+                        Text(side.title).tag(Optional(side))
+                    }
                 }
-                ForEach(options, id: \.self) { site in
-                    Text(site).tag(site)
+                .pickerStyle(.menu)
+            case .other:
+                TextField("Site description (optional)", text: draft.otherLabel)
+                    .textInputAutocapitalization(.sentences)
+            default:
+                EmptyView()
+            }
+        }
+    }
+
+    private func sitePicker(options: [AdministrationSitePreset]) -> some View {
+        let specific = options.filter(\.isSpecific)
+        return Picker(title, selection: choice) {
+            Text("Unknown").tag(AdministrationSiteChoice.unknown)
+            ForEach(options.filter { !$0.isSpecific }) { option in
+                Text(option.title).tag(AdministrationSiteChoice.preset(option.id))
+            }
+            if !specific.isEmpty {
+                Section("More Specific Sites") {
+                    ForEach(specific) { option in
+                        Text(option.title).tag(AdministrationSiteChoice.preset(option.id))
+                    }
                 }
             }
-            .pickerStyle(.menu)
+            Text("Other…").tag(AdministrationSiteChoice.other)
         }
+        .pickerStyle(.menu)
     }
 
     private var title: LocalizedStringKey {
         switch route {
         case .insufflated: "Nostril"
-        case .intravenous: "Injection Vein"
-        case .intramuscular: "Injection Muscle"
+        case .transdermal: "Application Site"
         default: "Injection Site"
-        }
-    }
-
-    private var options: [String]? {
-        switch route {
-        case .insufflated: Nostril.allCases.map(\.rawValue)
-        case .intravenous: Vein.allCases.map(\.rawValue)
-        case .intramuscular: Muscle.allCases.map(\.rawValue)
-        case .subcutaneous: SubcutaneousSite.allCases.map(\.rawValue)
-        default: nil
         }
     }
 }
