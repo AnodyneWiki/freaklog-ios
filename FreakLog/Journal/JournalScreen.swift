@@ -108,12 +108,12 @@ struct JournalScreen: View {
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: 220)
+                    .frame(maxWidth: 228)
                 }
             }
 
             ToolbarItem(placement: .navigationBarLeading) {
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     Button {
                         isSearchPresented = true
                     } label: {
@@ -123,7 +123,7 @@ struct JournalScreen: View {
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 8) {
+                HStack(spacing: 4) {
                     timeDisplayMenu
                     calendarLink
                 }
