@@ -13,6 +13,7 @@ struct StatsScreen: View {
     @State private var showsAllSubstances = false
     @State private var substanceOrder = StatsSubstanceOrder.count
     @State private var filters = StatsSelection()
+    @State private var periodStep = 0
     @State private var showingFilters = false
     @AppStorage(StatsPreferences.pinnedViewsKey) private var pinnedStatsData = Data()
     @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
@@ -27,13 +28,28 @@ struct StatsScreen: View {
             List {
                 Section {
                     StatsPeriodControls(
-                        period: $period, start: dateBinding($customStart), end: dateBinding($customEnd)
+                        period: $period, start: dateBinding($customStart), end: dateBinding($customEnd), step: $periodStep
                     )
+                } footer: {
+                    if !selection.substances.isEmpty {
+                        let names = selection.substances.map(PersistenceController.shared.displayName(for:))
+                            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                        Text(names.formatted(.list(type: .and)))
+                    }
                 }
 
                 Section("Summary") {
                     ingestionOverview(records: records, selection: selection)
-                    StatsCoverageRows(records: records)
+                    NavigationLink {
+                        StatsDetailScreen(metric: .experiences, selection: selection)
+                    } label: {
+                        LabeledContent {
+                            Text(records.experiences.count, format: .number).monospacedDigit()
+                        } label: {
+                            Label("Experiences", systemImage: "square.stack")
+                        }
+                    }
+                    LabeledContent("Days Logged", value: records.daysLogged.formatted())
                 }
 
                 let counts = Dictionary(grouping: records.entries, by: \.substanceNameUnwrapped).mapValues(\.count)
@@ -132,7 +148,7 @@ struct StatsScreen: View {
             .sheet(isPresented: $showingFilters) {
                 StatsFiltersScreen(
                     selection: $filters, entries: entries,
-                    tagNames: Set(tags.values.flatMap(\.names)), lockedSubstance: nil
+                    tagNames: Set(tags.values.flatMap(\.names))
                 )
             }
         }
@@ -143,6 +159,7 @@ struct StatsScreen: View {
         selection.period = period
         selection.customStart = Date(timeIntervalSinceReferenceDate: customStart)
         selection.customEnd = Date(timeIntervalSinceReferenceDate: customEnd)
+        selection.periodStep = periodStep
         if !isEyeOpen { selection.route = nil }
         return selection
     }

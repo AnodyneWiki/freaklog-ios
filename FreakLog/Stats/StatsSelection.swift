@@ -11,10 +11,10 @@ enum StatsPeriod: String, CaseIterable, Codable {
 
     var title: LocalizedStringKey {
         switch self {
-        case .last7Days: "Last 7 Days"
-        case .last30Days: "Last 30 Days"
-        case .thisMonth: "This Month"
-        case .last12Months: "Last 12 Months"
+        case .last7Days: "7 Days"
+        case .last30Days: "30 Days"
+        case .thisMonth: "Month"
+        case .last12Months: "12 Months"
         case .allTime: "All Time"
         case .custom: "Custom Dates"
         }
@@ -24,12 +24,14 @@ enum StatsPeriod: String, CaseIterable, Codable {
 enum StatsMetric: String, Codable {
     case experiences
     case ingestions
+    case amounts
     case gaps
 
     var title: LocalizedStringKey {
         switch self {
         case .experiences: "Experiences"
         case .ingestions: "Ingestions"
+        case .amounts: "Recorded Amounts"
         case .gaps: "Time Between Logs"
         }
     }
@@ -37,8 +39,7 @@ enum StatsMetric: String, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.singleValueContainer()
         let rawValue = try container.decode(String.self)
-        if rawValue == "days" || rawValue == "amounts" {
-            // Older pins now open the ingestion detail with their original filters.
+        if rawValue == "days" {
             self = .ingestions
         } else if let metric = Self(rawValue: rawValue) {
             self = metric
@@ -58,6 +59,8 @@ struct StatsSelection: Codable, Equatable {
     var period: StatsPeriod = .last30Days
     var customStart = Calendar.current.date(byAdding: .day, value: -29, to: .now) ?? .now
     var customEnd = Date.now
+    var periodStep = 0
+    var groupsByPrimaryTag = false
     var substances: Set<String> = []
     var route: AdministrationRoute?
     var person: Person = .me
@@ -73,6 +76,7 @@ struct StatsSelection: Codable, Equatable {
         let metric: StatsMetric
         let sourceInterval: DateInterval
         let experienceFilter: EntryFilter?
+        let experienceInterval: DateInterval?
     }
 
     struct EntryFilter: Codable, Equatable {
@@ -85,7 +89,7 @@ struct StatsSelection: Codable, Equatable {
 
         func includes(_ ingestion: Ingestion, tags personalTags: PersonalSubstanceTags) -> Bool {
             if !substances.isEmpty, !substances.contains(ingestion.substanceNameUnwrapped) { return false }
-            if let route, route != ingestion.administrationRouteUnwrapped { return false }
+            if let route, route != StatsRecords.recordedRoute(for: ingestion) { return false }
             if let requiredPrimaryTag,
                personalTags.primary.map(PersonalSubstanceTags.key) != PersonalSubstanceTags.key(requiredPrimaryTag) { return false }
             if !tags.isEmpty {
@@ -126,7 +130,7 @@ struct StatsSelection: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case period, customStart, customEnd, substances, route, person, tags, matchesPrimaryTagOnly, requiredPrimaryTag
-        case alongside, alongsideFilter, focus
+        case alongside, alongsideFilter, focus, periodStep, groupsByPrimaryTag
     }
 
     private enum LegacyKeys: String, CodingKey {
@@ -152,6 +156,8 @@ struct StatsSelection: Codable, Equatable {
         alongside = try fields.decodeIfPresent(String.self, forKey: .alongside)
         alongsideFilter = try fields.decodeIfPresent(EntryFilter.self, forKey: .alongsideFilter)
         focus = try fields.decodeIfPresent(Focus.self, forKey: .focus)
+        periodStep = min(0, max(-1_000, try fields.decodeIfPresent(Int.self, forKey: .periodStep) ?? 0))
+        groupsByPrimaryTag = try fields.decodeIfPresent(Bool.self, forKey: .groupsByPrimaryTag) ?? false
     }
 
     var singleSubstance: String? { substances.count == 1 ? substances.first : nil }
@@ -164,9 +170,13 @@ struct StatsSelection: Codable, Equatable {
 
     func focused(on interval: DateInterval, metric: StatsMetric, within sourceInterval: DateInterval) -> Self {
         var copy = self
+        let experienceFilter = focus?.experienceFilter ?? (metric == .experiences ? entryFilter : nil)
+        let previousExperienceInterval = focus.flatMap { previous in
+            previous.experienceFilter == nil ? nil : (previous.experienceInterval ?? previous.interval)
+        }
         copy.focus = Focus(
             interval: interval, metric: metric, sourceInterval: sourceInterval,
-            experienceFilter: metric == .experiences ? focus?.experienceFilter ?? entryFilter : nil
+            experienceFilter: experienceFilter, experienceInterval: previousExperienceInterval
         )
         return copy
     }
@@ -179,14 +189,20 @@ struct StatsSelection: Codable, Equatable {
         let today = calendar.startOfDay(for: now)
         let until = now.addingTimeInterval(0.001)
         switch period {
-        case .last7Days:
-            return DateInterval(start: calendar.date(byAdding: .day, value: -6, to: today) ?? today, end: until)
-        case .last30Days:
-            return DateInterval(start: calendar.date(byAdding: .day, value: -29, to: today) ?? today, end: until)
+        case .last7Days, .last30Days:
+            let days = period == .last7Days ? 7 : 30
+            let start = calendar.date(byAdding: .day, value: days * periodStep - days + 1, to: today) ?? today
+            let end = calendar.date(byAdding: .day, value: days * periodStep + 1, to: today) ?? until
+            return DateInterval(start: start, end: min(end, until))
         case .thisMonth:
-            return DateInterval(start: calendar.dateInterval(of: .month, for: today)?.start ?? today, end: until)
+            let date = calendar.date(byAdding: .month, value: periodStep, to: today) ?? today
+            let month = calendar.dateInterval(of: .month, for: date)
+            return DateInterval(start: month?.start ?? today, end: min(month?.end ?? until, until))
         case .last12Months:
-            return DateInterval(start: calendar.date(byAdding: .month, value: -12, to: today) ?? today, end: until)
+            let boundary = calendar.date(byAdding: .day, value: 1, to: today) ?? until
+            let start = calendar.date(byAdding: .month, value: (periodStep - 1) * 12, to: boundary) ?? today
+            let end = calendar.date(byAdding: .month, value: periodStep * 12, to: boundary) ?? until
+            return DateInterval(start: start, end: min(end, until))
         case .allTime:
             return DateInterval(start: .distantPast, end: .distantFuture)
         case .custom:
@@ -195,6 +211,17 @@ struct StatsSelection: Codable, Equatable {
             let nextDay = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? until
             return DateInterval(start: firstDay, end: min(nextDay, until))
         }
+    }
+
+    func anchored(now: Date, calendar: Calendar = .current) -> Self {
+        guard periodStep < 0, period != .allTime, period != .custom else { return self }
+        var copy = self
+        let interval = dateRange(now: now, calendar: calendar)
+        copy.period = .custom
+        copy.periodStep = 0
+        copy.customStart = interval.start
+        copy.customEnd = interval.end.addingTimeInterval(-0.001)
+        return copy
     }
 
     func includes(_ ingestion: Ingestion, tags: PersonalSubstanceTags) -> Bool {
@@ -243,12 +270,33 @@ struct StatsRecords {
     }
 
     var ingestionContributions: [Contribution] {
+        contributions(for: .ingestions)
+    }
+
+    func contributions(
+        for metric: StatsMetric,
+        group: ((Ingestion) -> String)? = nil,
+        mixedGroup: String = ""
+    ) -> [Contribution] {
         var counts: [Contribution.Key: Int] = [:]
-        let component = bucketComponent
-        for entry in entries {
-            guard let date = entry.time,
-                  let start = calendar.dateInterval(of: component, for: date)?.start else { continue }
-            counts[.init(date: start, substance: entry.substanceNameUnwrapped), default: 0] += 1
+        func count(at date: Date, in category: String) {
+            guard let start = calendar.dateInterval(of: bucketComponent, for: date)?.start else { return }
+            counts[.init(date: start, substance: category), default: 0] += 1
+        }
+        switch metric {
+        case .experiences:
+            for match in experiences {
+                let categories = Set(match.entries.compactMap { group?($0) })
+                let category = categories.count == 1 ? categories.first ?? mixedGroup : mixedGroup
+                count(at: match.firstMatchingDate, in: category)
+            }
+        case .ingestions:
+            for entry in entries {
+                guard let date = entry.time else { continue }
+                count(at: date, in: group?(entry) ?? entry.substanceNameUnwrapped)
+            }
+        case .amounts, .gaps:
+            break
         }
         return counts.map { Contribution(id: $0.key, count: $0.value) }.sorted {
             ($0.id.date, $0.id.substance) < ($1.id.date, $1.id.substance)
@@ -260,6 +308,33 @@ struct StatsRecords {
             let substance: String
             let unit: String
             let customUnitID: NSManagedObjectID?
+
+            init(_ entry: Ingestion) {
+                substance = entry.substanceNameUnwrapped
+                customUnitID = entry.customUnit?.objectID
+                let original = entry.unitsUnwrapped
+                if customUnitID != nil {
+                    unit = original
+                } else if ["g", "mg", "µg", "μg", "mcg", "ug"].contains(original) {
+                    unit = "mg"
+                } else {
+                    unit = original == "ml" ? "mL" : original
+                }
+            }
+
+            func value(for entry: Ingestion) -> Double? {
+                guard let recorded = StatsRecords.recordedAmount(entry) else { return nil }
+                guard customUnitID == nil, unit == "mg" else { return recorded }
+                let factor: Double
+                switch entry.unitsUnwrapped {
+                case "g": factor = 1_000
+                case "µg", "μg", "mcg", "ug": factor = 0.001
+                default: factor = 1
+                }
+                let result = recorded * factor
+                return result.isFinite ? result : nil
+            }
+
         }
 
         var id: Key { key }
@@ -271,6 +346,14 @@ struct StatsRecords {
         let minimum: Double
         let maximum: Double
         let customUnitName: String?
+        let experienceCount: Int
+        let experienceAverage: Double?
+    }
+
+    struct AmountBucket: Identifiable {
+        var id: Date { interval.start }
+        let interval: DateInterval
+        let total: Double
     }
 
     struct Gap: Identifiable {
@@ -328,13 +411,14 @@ struct StatsRecords {
         let entries = scopedEntries(using: filter)
         if let focus = selection.focus, let firstFilter = focus.experienceFilter {
             let eligible = Self(entries: scopedEntries(using: firstFilter), range: range, calendar: calendar)
-                .selecting(focus.interval, for: .experiences)
+                .selecting(focus.experienceInterval ?? focus.interval, for: .experiences)
             let experienceIDs = Set(eligible.experiences.map(\.experience.objectID))
-            self.init(
+            let records = Self(
                 entries: entries.filter { $0.experience.map { experienceIDs.contains($0.objectID) } == true },
-                range: eligible.range,
+                range: focus.experienceInterval == nil ? eligible.range : range,
                 calendar: calendar
             )
+            self = focus.experienceInterval == nil ? records : records.selecting(focus.interval, for: focus.metric)
         } else {
             let records = Self(entries: entries, range: range, calendar: calendar)
             self = selection.focus.map { records.selecting($0.interval, for: $0.metric) } ?? records
@@ -361,28 +445,45 @@ struct StatsRecords {
         Set(entries.compactMap(\.time).map { calendar.startOfDay(for: $0) }).count
     }
 
-    var unknownAmountCount: Int { entries.filter { Self.recordedAmount($0) == nil }.count }
+    static func recordedRoute(for entry: Ingestion) -> AdministrationRoute? {
+        entry.administrationRoute.flatMap(AdministrationRoute.init(rawValue:))
+    }
+
+    var unknownAmountCount: Int { entries.filter { Amount.Key($0).value(for: $0) == nil }.count }
 
     var amounts: [Amount] {
-        let groups = Dictionary(grouping: entries) { entry in
-            Amount.Key(
-                substance: entry.substanceNameUnwrapped,
-                unit: entry.unitsUnwrapped,
-                customUnitID: entry.customUnit?.objectID
-            )
-        }
+        Self.amounts(in: entries)
+    }
+
+    static func amounts(in entries: [Ingestion]) -> [Amount] {
+        let groups = Dictionary(grouping: entries, by: Amount.Key.init)
         return groups.compactMap { key, entries in
-            let known = entries.compactMap(Self.recordedAmount).sorted()
+            let known = entries.compactMap(key.value).sorted()
             guard let minimum = known.first, let maximum = known.last else { return nil }
             let middle = known.count / 2
             let median = known.count.isMultiple(of: 2) ? known[middle - 1] / 2 + known[middle] / 2 : known[middle]
             let total = known.reduce(0, +)
+            guard total.isFinite else { return nil }
+            let linked = entries.filter { key.value(for: $0) != nil && $0.experience != nil }
+            let experienceCount = Set(linked.compactMap { $0.experience?.objectID }).count
+            let experienceAverage = experienceCount == 0 ? nil : linked.compactMap(key.value).reduce(0, +) / Double(experienceCount)
             return Amount(key: key, total: total, count: known.count, average: total / Double(known.count),
                           median: median, minimum: minimum, maximum: maximum,
-                          customUnitName: entries.first?.customUnit?.nameUnwrapped)
+                          customUnitName: entries.first?.customUnit?.nameUnwrapped,
+                          experienceCount: experienceCount, experienceAverage: experienceAverage)
         }.sorted {
             ($0.key.substance, $0.key.unit, $0.customUnitName ?? "") < ($1.key.substance, $1.key.unit, $1.customUnitName ?? "")
         }
+    }
+
+    func amountBuckets(for key: Amount.Key) -> [AmountBucket] {
+        let totals = entries.reduce(into: [DateInterval: Double]()) { totals, entry in
+            guard Amount.Key(entry) == key, let value = key.value(for: entry), let date = entry.time,
+                  let interval = calendar.dateInterval(of: bucketComponent, for: date) else { return }
+            totals[interval, default: 0] += value
+        }
+        return totals.filter { $0.value.isFinite }.map { AmountBucket(interval: $0.key, total: $0.value) }
+            .sorted { $0.id < $1.id }
     }
 
     var gapsBetweenLogs: [Gap] {
@@ -405,7 +506,7 @@ struct StatsRecords {
         let dates: [Date]
         switch metric {
         case .experiences: dates = experiences.map(\.firstMatchingDate)
-        case .ingestions: dates = entries.compactMap(\.time)
+        case .ingestions, .amounts: dates = entries.compactMap(\.time)
         case .gaps: return []
         }
 
@@ -419,9 +520,13 @@ struct StatsRecords {
     }
 
     func chartDomain(covering buckets: [Bucket]) -> ClosedRange<Date>? {
-        guard let first = buckets.first, let last = buckets.last else { return nil }
-        let start = range.start == .distantPast ? first.interval.start : min(first.interval.start, range.start)
-        let end = range.end == .distantFuture ? last.interval.end : max(last.interval.end, range.end)
+        chartDomain(covering: buckets.map(\.interval))
+    }
+
+    func chartDomain(covering intervals: [DateInterval]) -> ClosedRange<Date>? {
+        guard let first = intervals.first, let last = intervals.last else { return nil }
+        let start = range.start == .distantPast ? first.start : min(first.start, range.start)
+        let end = range.end == .distantFuture ? last.end : max(last.end, range.end)
         return start...end
     }
 
@@ -430,7 +535,11 @@ struct StatsRecords {
     }
 
     func selecting(_ selectedInterval: DateInterval, for metric: StatsMetric) -> Self {
-        guard let interval = range.intersection(with: selectedInterval) else {
+        // An experience bucket can carry follow-up ingestions beyond its first matching date.
+        let dates = entries.compactMap(\.time)
+        let start = min(range.start, dates.min() ?? range.start)
+        let end = max(range.end, dates.max()?.addingTimeInterval(0.001) ?? range.end)
+        guard let interval = DateInterval(start: start, end: end).intersection(with: selectedInterval) else {
             return Self(entries: [], range: selectedInterval, calendar: calendar)
         }
         if metric == .experiences {
@@ -453,9 +562,13 @@ struct StatsPeriodControls: View {
     @Binding var period: StatsPeriod
     @Binding var start: Date
     @Binding var end: Date
+    @Binding var step: Int
 
     var body: some View {
-        Picker("Period", selection: $period) {
+        Picker("Period", selection: Binding(
+            get: { period },
+            set: { period = $0; step = 0 }
+        )) {
             ForEach(StatsPeriod.allCases, id: \.self) { period in
                 Text(period.title).tag(period)
             }
@@ -480,6 +593,38 @@ struct StatsPeriodControls: View {
                     }
                 }
             ), in: ...now, displayedComponents: .date)
+        } else if period != .allTime {
+            let now = Date.now
+            var selection: StatsSelection {
+                var selection = StatsSelection(period: period)
+                selection.periodStep = step
+                return selection
+            }
+            HStack {
+                Button {
+                    step -= 1
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Previous Period")
+                .disabled(step <= -1_000)
+
+                Text(statsRangeLabel(selection.dateRange(now: now)))
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
+                    .multilineTextAlignment(.center)
+
+                Button {
+                    step += 1
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Next Period")
+                .disabled(step == 0)
+            }
+            .buttonStyle(.borderless)
         }
     }
 }
