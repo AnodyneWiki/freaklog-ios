@@ -50,105 +50,62 @@ enum SubcutaneousSite: String, CaseIterable, Identifiable {
     var id: Self { self }
 }
 
-struct NostrilPicker: View {
-    @Binding var selection: Nostril?
-
-    var body: some View {
-        Picker("Nostril", selection: $selection) {
-            Text("Select Nostril...").tag(Optional<Nostril>.none)
-            ForEach(Nostril.allCases) { option in
-                Text(option.rawValue).tag(Optional(option))
-            }
-        }
-    }
-}
-
-struct VeinPicker: View {
-    @Binding var selection: Vein?
-
-    var body: some View {
-        Picker("Injection Vein", selection: $selection) {
-            Text("Select Vein...").tag(Optional<Vein>.none)
-            ForEach(Vein.allCases) { option in
-                Text(option.rawValue).tag(Optional(option))
-            }
-        }
-    }
-}
-
-struct MusclePicker: View {
-    @Binding var selection: Muscle?
-
-    var body: some View {
-        Picker("Injection Muscle", selection: $selection) {
-            Text("Select Muscle...").tag(Optional<Muscle>.none)
-            ForEach(Muscle.allCases) { option in
-                Text(option.rawValue).tag(Optional(option))
-            }
-        }
-    }
-}
-
-struct SubQSitePicker: View {
-    @Binding var selection: SubcutaneousSite?
-
-    var body: some View {
-        Picker("Injection Site", selection: $selection) {
-            Text("Select Site...").tag(Optional<SubcutaneousSite>.none)
-            ForEach(SubcutaneousSite.allCases) { option in
-                Text(option.rawValue).tag(Optional(option))
-            }
-        }
-    }
-}
-
-// The site picked for routes that have one. Stored on Ingestion.administrationSite as the picked case's raw value.
+// Preserve labels read from imports, including labels outside the picker.
 struct AdministrationSiteSelection {
-    var nostril: Nostril?
-    var vein: Vein?
-    var muscle: Muscle?
-    var subQSite: SubcutaneousSite?
+    private var sites: [AdministrationRoute: String] = [:]
 
     init() {}
 
     init(route: AdministrationRoute, storedSite: String) {
-        switch route {
-        case .insufflated: nostril = Nostril(rawValue: storedSite)
-        case .intravenous: vein = Vein(rawValue: storedSite)
-        case .intramuscular: muscle = Muscle(rawValue: storedSite)
-        case .subcutaneous: subQSite = SubcutaneousSite(rawValue: storedSite)
-        default: break
-        }
+        self[route] = storedSite
+    }
+
+    subscript(route: AdministrationRoute) -> String {
+        get { sites[route] ?? "" }
+        set { sites[route] = newValue.isEmpty ? nil : newValue }
     }
 
     func siteString(for route: AdministrationRoute) -> String {
-        switch route {
-        case .insufflated: nostril?.rawValue ?? ""
-        case .intravenous: vein?.rawValue ?? ""
-        case .intramuscular: muscle?.rawValue ?? ""
-        case .subcutaneous: subQSite?.rawValue ?? ""
-        default: ""
-        }
+        self[route]
     }
 }
 
-// Picker for the route's site, or nothing for routes without one
 struct AdministrationSitePicker: View {
     let route: AdministrationRoute
     @Binding var selection: AdministrationSiteSelection
 
     var body: some View {
+        if let options {
+            let storedSite = selection[route]
+            Picker(title, selection: Binding(get: { selection[route] }, set: { selection[route] = $0 })) {
+                Text("No Site").tag("")
+                if !storedSite.isEmpty, !options.contains(storedSite) {
+                    Text(storedSite).tag(storedSite)
+                }
+                ForEach(options, id: \.self) { site in
+                    Text(site).tag(site)
+                }
+            }
+            .pickerStyle(.menu)
+        }
+    }
+
+    private var title: LocalizedStringKey {
         switch route {
-        case .insufflated:
-            NostrilPicker(selection: $selection.nostril).pickerStyle(.menu)
-        case .intravenous:
-            VeinPicker(selection: $selection.vein).pickerStyle(.menu)
-        case .intramuscular:
-            MusclePicker(selection: $selection.muscle).pickerStyle(.menu)
-        case .subcutaneous:
-            SubQSitePicker(selection: $selection.subQSite).pickerStyle(.menu)
-        default:
-            EmptyView()
+        case .insufflated: "Nostril"
+        case .intravenous: "Injection Vein"
+        case .intramuscular: "Injection Muscle"
+        default: "Injection Site"
+        }
+    }
+
+    private var options: [String]? {
+        switch route {
+        case .insufflated: Nostril.allCases.map(\.rawValue)
+        case .intravenous: Vein.allCases.map(\.rawValue)
+        case .intramuscular: Muscle.allCases.map(\.rawValue)
+        case .subcutaneous: SubcutaneousSite.allCases.map(\.rawValue)
+        default: nil
         }
     }
 }
