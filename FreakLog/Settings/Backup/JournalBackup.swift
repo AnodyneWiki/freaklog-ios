@@ -160,6 +160,7 @@ enum JournalBackupError: LocalizedError, Equatable {
   case unrecognizedFormat
   case newerFormat(Int)
   case unsupportedFormat(Int)
+  case invalidAssistantSettings
   case unknownEntity(String)
   case missingEntity(String)
   case unknownProperty(entity: String, name: String)
@@ -178,6 +179,8 @@ enum JournalBackupError: LocalizedError, Equatable {
       "This backup is from a newer version of FreakLog. Update the app to import it."
     case .unsupportedFormat(let version):
       "Backups of format version \(version) can't be read."
+    case .invalidAssistantSettings:
+      "This backup contains invalid Assistant provider settings."
     case .unknownEntity(let name):
       "The backup contains unknown data (\(name))."
     case .missingEntity(let name):
@@ -355,6 +358,7 @@ extension JournalBackup {
     var backup = try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
     // The early bare JSON backups can omit properties and use the model’s defaults.
     backup.requiresCompleteRecords = wrapped || (version > 1 && !legacyVersion2)
+    _ = try backup.assistantSettings()
     return backup
   }
 
@@ -404,6 +408,7 @@ extension JournalBackup {
   // Replaces everything in the context with the backup's objects. Nothing is changed for good until the caller saves,
   // so on an error the context can be thrown away with the journal untouched.
   func restore(into context: NSManagedObjectContext) throws {
+    _ = try assistantSettings()
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
     try validateCompleteness(in: model)
     for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
@@ -490,12 +495,29 @@ extension JournalBackup {
         defaults.removeObject(forKey: key)
       }
     }
-    if let profiles = settings[PersistenceController.assistantProfilesKey] {
+    if let assistant = try? assistantSettings() {
       AssistantProfileStore.restore(
-        profilesFrom: profiles.propertyList as? Data,
-        activeID: settings[PersistenceController.assistantActiveProfileKey]?.string,
+        profilesFrom: assistant.profiles,
+        activeID: assistant.activeID,
         to: defaults)
     }
+  }
+
+  private func assistantSettings() throws -> (profiles: Data?, activeID: String?)? {
+    guard let field = settings[PersistenceController.assistantProfilesKey] else { return nil }
+    if field == .null { return (nil, nil) }
+    guard let data = field.propertyList as? Data,
+          let profiles = try? JSONDecoder().decode([AssistantProfile].self, from: data),
+          Set(profiles.map(\.id)).count == profiles.count
+    else { throw JournalBackupError.invalidAssistantSettings }
+    let active = settings[PersistenceController.assistantActiveProfileKey]
+    if let active, active != .null {
+      guard let id = active.string, UUID(uuidString: id) != nil else {
+        throw JournalBackupError.invalidAssistantSettings
+      }
+      return (data, id)
+    }
+    return (data, nil)
   }
 
   private static func replacing(_ key: String, with value: JSONValue, in json: JSONValue) throws -> JSONValue {

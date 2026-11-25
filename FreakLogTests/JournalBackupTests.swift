@@ -112,6 +112,27 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertNil(restored.string(forKey: PersistenceController.assistantActiveProfileKey))
   }
 
+  func testMalformedAssistantProfilesDoNotReplaceSettings() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let defaults = Self.emptyDefaults()
+    let profile = AssistantProfile(preset: .onDevice)
+    let profiles = try JSONEncoder().encode([profile])
+    defaults.set(profiles, forKey: PersistenceController.assistantProfilesKey)
+    defaults.set(profile.id.uuidString, forKey: PersistenceController.assistantActiveProfileKey)
+    var backup = try JournalBackup(context: context, defaults: defaults, appVersion: "1")
+    backup.settings[PersistenceController.assistantProfilesKey] = .string("invalid")
+
+    XCTAssertThrowsError(try JournalBackup.read(backup.data())) {
+      XCTAssertEqual($0 as? JournalBackupError, .invalidAssistantSettings)
+    }
+    XCTAssertThrowsError(try backup.restore(into: context)) {
+      XCTAssertEqual($0 as? JournalBackupError, .invalidAssistantSettings)
+    }
+    backup.restoreSettings(to: defaults)
+    XCTAssertEqual(defaults.data(forKey: PersistenceController.assistantProfilesKey), profiles)
+    XCTAssertEqual(defaults.string(forKey: PersistenceController.assistantActiveProfileKey), profile.id.uuidString)
+  }
+
   func testRestoringModelConfigurationKeepsKeysWithTheirServer() throws {
     var local = AssistantProfile(preset: .customOpenAI)
     local.baseURL = "https://example.com/v1"
