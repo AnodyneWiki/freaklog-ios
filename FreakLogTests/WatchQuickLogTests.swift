@@ -3,6 +3,75 @@ import XCTest
 @testable import FreakLog
 
 final class WatchQuickLogTests: XCTestCase {
+  @MainActor
+  func testTakenFromWatchAndWidgetUsesOneOccurrenceAcrossRetries() throws {
+    let (persistence, calendar, now, record) = try makeRoutine()
+    let snapshot = try RoutineQuickLogging.snapshot(in: persistence, at: now, calendar: calendar)
+    let action = try XCTUnwrap(snapshot.next(at: now)?.action)
+    let widgetRequest = RoutineTakenRequest(action: action, recordedAt: now)
+    let watchRequest = RoutineTakenRequest(action: action, recordedAt: now.addingTimeInterval(60))
+    let message = try WatchRequest.routineTaken(watchRequest).message()
+    XCTAssertEqual(WatchRequest(kind: .routineTaken, payload: message[WatchQuickLog.routineTakenKey]), .routineTaken(watchRequest))
+    XCTAssertEqual(widgetRequest.id, watchRequest.id)
+
+    let ids = try RoutineQuickLogging.save(widgetRequest, in: persistence, now: now, calendar: calendar)
+    XCTAssertEqual(ids.count, 1)
+    let context = persistence.viewContext
+    let saved = try XCTUnwrap(context.existingObject(with: XCTUnwrap(ids.first)) as? Ingestion)
+    XCTAssertEqual(saved.routineOccurrence?.key, action.slot.id)
+    XCTAssertEqual(saved.routineOccurrence?.routine, record)
+    XCTAssertEqual(saved.customUnit, record.customUnit)
+    XCTAssertEqual(saved.dose, 1)
+    let retry = try RoutineQuickLogging.save(watchRequest, in: persistence, now: watchRequest.recordedAt, calendar: calendar)
+    XCTAssertTrue(retry.isEmpty)
+    XCTAssertEqual(try context.count(for: Ingestion.fetchRequest()), 1)
+
+    // A delayed Watch retry cannot recreate a log the user has intentionally deleted.
+    context.delete(saved)
+    try context.save()
+    XCTAssertTrue(try RoutineQuickLogging.save(watchRequest, in: persistence, now: watchRequest.recordedAt, calendar: calendar).isEmpty)
+    XCTAssertEqual(try context.count(for: Ingestion.fetchRequest()), 0)
+  }
+
+  @MainActor
+  func testTakenRejectsAChangedProductWithoutWritingAnything() throws {
+    let (persistence, calendar, now, record) = try makeRoutine()
+    let snapshot = try RoutineQuickLogging.snapshot(in: persistence, at: now, calendar: calendar)
+    let action = try XCTUnwrap(snapshot.next(at: now)?.action)
+    record.customUnit?.dose = 50
+    try persistence.viewContext.save()
+
+    let request = RoutineTakenRequest(action: action, recordedAt: now)
+    XCTAssertThrowsError(try RoutineQuickLogging.save(request, in: persistence, now: now, calendar: calendar))
+    XCTAssertEqual(try persistence.viewContext.count(for: Ingestion.fetchRequest()), 0)
+    XCTAssertEqual(try persistence.viewContext.count(for: RoutineOccurrence.fetchRequest()), 0)
+    XCTAssertEqual(try persistence.viewContext.count(for: WatchLogReceipt.fetchRequest()), 0)
+  }
+
+  @MainActor
+  private func makeRoutine() throws -> (PersistenceController, Calendar, Date, RoutineRecord) {
+    let persistence = PersistenceController(inMemory: true)
+    let context = persistence.viewContext
+    var calendar = Calendar(identifier: .gregorian)
+    calendar.timeZone = try XCTUnwrap(TimeZone(secondsFromGMT: 0))
+    let date = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25, hour: 9)))
+    let schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1)
+    let record = RoutineRecord(context: context)
+    record.id = schedule.id
+    record.scheduleData = try JSONEncoder().encode(schedule)
+    let unit = CustomUnit(context: context)
+    unit.name = "Saved Product"
+    unit.substanceName = "Caffeine"
+    unit.administrationRoute = "oral"
+    unit.unit = "Capsule"
+    unit.originalUnit = "mg"
+    unit.dose = 25
+    record.customUnit = unit
+    try context.save()
+    return (persistence, calendar, date, record)
+  }
+
   func testDoseStepTakesAboutTwentyTurns() {
     XCTAssertEqual(WatchQuickLog.doseStep(around: 100), 5)
     XCTAssertEqual(WatchQuickLog.doseStep(around: 250), 10)

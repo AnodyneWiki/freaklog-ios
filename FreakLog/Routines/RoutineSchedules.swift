@@ -173,18 +173,6 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     }
 }
 
-struct RoutineOccurrenceSlot: Identifiable {
-    let id: String
-    let scheduleID: UUID
-    let scheduledAt: Date
-
-    var timeID: UUID? {
-        let parts = id.split(separator: ".")
-        guard parts.count == 3 else { return nil }
-        return UUID(uuidString: String(parts[2]))
-    }
-}
-
 struct RoutineNotificationResponse: Sendable {
     static let category = "RoutineReminder"
     enum Action: String, Sendable {

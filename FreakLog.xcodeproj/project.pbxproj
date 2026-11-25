@@ -134,6 +134,8 @@
 		EA085DCE29607229001638AC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA085DCD29607229001638AC /* WidgetKit.framework */; };
 		EA085DD029607229001638AC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EA085DCF29607229001638AC /* SwiftUI.framework */; };
 		EA085DD329607229001638AC /* TimelineWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DD229607229001638AC /* TimelineWidgetBundle.swift */; };
+		E0836E6D400434431FA961FC /* RoutineQuickAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D91B56F85E4E2DAC1BB8874 /* RoutineQuickAction.swift */; };
+		27611487AAEAC6A58C1A7B2E /* NextRoutineWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF4F0EFAE17F72D09D44C79B /* NextRoutineWidget.swift */; };
 		EA085DD529607229001638AC /* TimelineWidgetLiveActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA085DD429607229001638AC /* TimelineWidgetLiveActivity.swift */; };
 		EA085DD929607229001638AC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EA085DD829607229001638AC /* Assets.xcassets */; };
 		EA085DDD29607229001638AC /* LiveActivityExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = EA085DCC29607229001638AC /* LiveActivityExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -424,6 +426,8 @@
 		EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */; };
 		0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */; };
 		1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */; };
+		9CB595762FB3236A9B129DE9 /* RoutineQuickLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5345318FA6062D873371E6F8 /* RoutineQuickLogging.swift */; };
+		A9B0BED3795DB004DC407C65 /* RoutineQuickAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D91B56F85E4E2DAC1BB8874 /* RoutineQuickAction.swift */; };
 		EAE471DE26CBA664009FB0EC /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
 		EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
 		B036711FE910690B423658E0 /* Binding-Inverted.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482A8D26F5057F423238EFB4 /* Binding-Inverted.swift */; };
@@ -458,6 +462,7 @@
 		6C0D45895A8997D665B4CA94 /* WatchQuickLogging.swift in Sources */ = {isa = PBXBuildFile; fileRef = 25BF8A66807AEF9736FA7182 /* WatchQuickLogging.swift */; };
 		90EBB3E84448056D791CED40 /* PhoneWatchSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11B9CCF97055AAF8DFFD75C /* PhoneWatchSession.swift */; };
 		A3E105CA24A6D53BD1D13520 /* WatchQuickLog.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5303B77620D50AE2EF5B98DC /* WatchQuickLog.swift */; };
+		D1824AE53F881816637CF1EE /* RoutineQuickAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D91B56F85E4E2DAC1BB8874 /* RoutineQuickAction.swift */; };
 		ADF58E9E9FCCDE9D83866F30 /* Double-asRoundedReadableString.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA29DC392B8DCB4A002DAD70 /* Double-asRoundedReadableString.swift */; };
 		AC07660D71E2A34B75CFF96E /* FreakLogWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 90977124578F063FA0B94D3B /* FreakLogWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B543170B220BA83D90DBCC89 /* WatchQuickLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15176E649D041308FC844ACB /* WatchQuickLogTests.swift */; };
@@ -649,6 +654,7 @@
 		EA085DCD29607229001638AC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		EA085DCF29607229001638AC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		EA085DD229607229001638AC /* TimelineWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineWidgetBundle.swift; sourceTree = "<group>"; };
+		DF4F0EFAE17F72D09D44C79B /* NextRoutineWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextRoutineWidget.swift; sourceTree = "<group>"; };
 		EA085DD429607229001638AC /* TimelineWidgetLiveActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineWidgetLiveActivity.swift; sourceTree = "<group>"; };
 		EA085DD829607229001638AC /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		EA085DDA29607229001638AC /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -910,6 +916,8 @@
 		EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
 		0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutinesScreen.swift"; sourceTree = "<group>"; };
 		45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutineSchedules.swift"; sourceTree = "<group>"; };
+		5345318FA6062D873371E6F8 /* RoutineQuickLogging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutineQuickLogging.swift"; sourceTree = "<group>"; };
+		6D91B56F85E4E2DAC1BB8874 /* RoutineQuickAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutineQuickAction.swift"; sourceTree = "<group>"; };
 		EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Goya.xcdatamodel; sourceTree = "<group>"; };
 		EAE4715926CBA664009FB0EC /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Sequence-Uniqued.swift"; sourceTree = "<group>"; };
@@ -1204,6 +1212,7 @@
 			isa = PBXGroup;
 			children = (
 				EA085DD229607229001638AC /* TimelineWidgetBundle.swift */,
+				DF4F0EFAE17F72D09D44C79B /* NextRoutineWidget.swift */,
 				EA085DD429607229001638AC /* TimelineWidgetLiveActivity.swift */,
 				EA085DE329616E45001638AC /* TimelineWidgetAttributes.swift */,
 				EA085DD829607229001638AC /* Assets.xcassets */,
@@ -1807,6 +1816,8 @@
 				EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */,
 				0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */,
 				45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */,
+				5345318FA6062D873371E6F8 /* RoutineQuickLogging.swift */,
+				6D91B56F85E4E2DAC1BB8874 /* RoutineQuickAction.swift */,
 				6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */,
 				4945BF062A782A1202689601 /* MedicationReference.swift */,
 				5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */,
@@ -2218,6 +2229,11 @@
 				TargetAttributes = {
 					EA085DCB29607229001638AC = {
 						CreatedOnToolsVersion = 14.2;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					EACB6E3927D09C8800940291 = {
 						CreatedOnToolsVersion = 13.2.1;
@@ -2225,6 +2241,11 @@
 					};
 					EAE4710226CBA57F009FB0EC = {
 						CreatedOnToolsVersion = 12.5.1;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 					1F25DA26D471BD5021630698 = {
 						CreatedOnToolsVersion = 26.2;
@@ -2343,6 +2364,8 @@
 				EA085DD529607229001638AC /* TimelineWidgetLiveActivity.swift in Sources */,
 				EA085E0629619F85001638AC /* Roa.swift in Sources */,
 				EA085DD329607229001638AC /* TimelineWidgetBundle.swift in Sources */,
+				E0836E6D400434431FA961FC /* RoutineQuickAction.swift in Sources */,
+				27611487AAEAC6A58C1A7B2E /* NextRoutineWidget.swift in Sources */,
 				EA085E0829619F85001638AC /* Category.swift in Sources */,
 				EA085E142961A200001638AC /* StrokeStyle-Timeline.swift in Sources */,
 				EAB794702D017B1200ED37C8 /* TimeRangeDrawable.swift in Sources */,
@@ -2531,6 +2554,8 @@
 				EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */,
 				0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */,
 				1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */,
+				9CB595762FB3236A9B129DE9 /* RoutineQuickLogging.swift in Sources */,
+				A9B0BED3795DB004DC407C65 /* RoutineQuickAction.swift in Sources */,
 				1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */,
 				B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */,
 				616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */,
@@ -2763,6 +2788,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A3E105CA24A6D53BD1D13520 /* WatchQuickLog.swift in Sources */,
+				D1824AE53F881816637CF1EE /* RoutineQuickAction.swift in Sources */,
 				ADF58E9E9FCCDE9D83866F30 /* Double-asRoundedReadableString.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -2794,8 +2820,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = TimelineWidget/TimelineWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				FREAKLOG_ROUTINE_APP_GROUP = "group.woof.freaklog-debug";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
@@ -2821,8 +2849,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CODE_SIGN_ENTITLEMENTS = TimelineWidget/TimelineWidget.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				FREAKLOG_ROUTINE_APP_GROUP = "group.woof.freaklog";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TimelineWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = LiveActivity;
@@ -3022,6 +3052,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FREAKLOG_ROUTINE_APP_GROUP = "group.woof.freaklog-debug";
 				INFOPLIST_FILE = FreakLog/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
@@ -3048,6 +3079,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				FREAKLOG_ROUTINE_APP_GROUP = "group.woof.freaklog";
 				INFOPLIST_FILE = FreakLog/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = FreakLog;
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;

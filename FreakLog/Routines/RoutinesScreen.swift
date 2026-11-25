@@ -712,18 +712,8 @@ private struct RoutineLogSheet: View {
     }
 
     private var arguments: [FinishIngestionScreenArguments] {
-        guard let record, let amount, amount.isFinite, amount > 0 else { return [] }
-        if let unit = record.customUnit, !unit.isArchived {
-            return [FinishIngestionScreenArguments(
-                substanceName: unit.substanceNameUnwrapped,
-                administrationRoute: unit.administrationRouteUnwrapped,
-                dose: amount,
-                units: unit.originalUnitUnwrapped,
-                isEstimate: false,
-                estimatedDoseStandardDeviation: nil,
-                customUnit: unit)]
-        }
-        return record.formulation?.ingestionArguments(amount: amount) ?? []
+        guard let amount else { return [] }
+        return record?.ingestionArguments(amount: amount) ?? []
     }
 }
 

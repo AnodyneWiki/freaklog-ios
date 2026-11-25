@@ -7,6 +7,7 @@ struct TimelineWidgetBundle: WidgetBundle {
         TimelineWidgetLiveActivity()
         JournalLauncherWidget<ContinueJournal>()
         JournalLauncherWidget<DueToday>()
+        NextRoutineWidget()
     }
 }
 

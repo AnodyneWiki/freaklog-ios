@@ -12,6 +12,8 @@ enum WatchQuickLog {
   static let logKey = "log"
   // Message or user info: an encoded WatchUndoRequest (older watches send an array of UUID strings)
   static let undoKey = "undo"
+  static let routineTakenKey = "routineTaken"
+  static let routineSnapshotKey = "routineSnapshot"
   static let requestIDKey = "requestID"
   static let acknowledgementKey = "acknowledgement"
   // Message asking for the current suggestions; the reply carries them under suggestionsKey
@@ -222,11 +224,13 @@ struct WatchUndoRequest: Codable, Equatable, Identifiable {
 enum WatchRequestKind: String, Codable {
   case log
   case undo
+  case routineTaken
 
   var messageKey: String {
     switch self {
     case .log: WatchQuickLog.logKey
     case .undo: WatchQuickLog.undoKey
+    case .routineTaken: WatchQuickLog.routineTakenKey
     }
   }
 }
@@ -234,11 +238,13 @@ enum WatchRequestKind: String, Codable {
 enum WatchRequest: Codable, Equatable, Identifiable {
   case log(WatchLogRequest)
   case undo(WatchUndoRequest)
+  case routineTaken(RoutineTakenRequest)
 
   var id: UUID {
     switch self {
     case .log(let request): request.id
     case .undo(let request): request.id
+    case .routineTaken(let request): request.id
     }
   }
 
@@ -246,6 +252,7 @@ enum WatchRequest: Codable, Equatable, Identifiable {
     switch self {
     case .log: .log
     case .undo: .undo
+    case .routineTaken: .routineTaken
     }
   }
 
@@ -259,6 +266,9 @@ enum WatchRequest: Codable, Equatable, Identifiable {
         ?? (payload as? [String]).flatMap(WatchUndoRequest.init(legacyIdentifiers:))
       guard let request else { return nil }
       self = .undo(request)
+    case .routineTaken:
+      guard let request = WatchQuickLog.decode(RoutineTakenRequest.self, from: payload) else { return nil }
+      self = .routineTaken(request)
     }
   }
 
@@ -266,6 +276,7 @@ enum WatchRequest: Codable, Equatable, Identifiable {
     let payload = switch self {
     case .log(let request): try WatchQuickLog.encode(request)
     case .undo(let request): try WatchQuickLog.encode(request)
+    case .routineTaken(let request): try WatchQuickLog.encode(request)
     }
     return [kind.messageKey: payload, WatchQuickLog.requestIDKey: id.uuidString]
   }
@@ -330,7 +341,7 @@ struct WatchRequestOutbox {
     case .retry:
       return false
     case .saved:
-      guard request.kind == .log else { return false }
+      guard request.kind != .undo else { return false }
     case .undone:
       break
     case .rejected:

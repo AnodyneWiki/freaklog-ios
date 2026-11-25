@@ -45,6 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNoti
         endCloudKitBackgroundTask()
         if isJournalReady {
             PhoneWatchSession.shared.retryPendingUndos()
+            RoutineQuickLogging.refresh()
             retryPendingRemoteDeletions()
         } else {
             prepareJournal()
@@ -62,6 +63,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNoti
             }
             isJournalReady = true
             PhoneWatchSession.shared.activate()
+            RoutineQuickLogging.observeChanges()
             retryPendingRemoteDeletions()
         } catch {
             print("Could not open journal: \(error)")

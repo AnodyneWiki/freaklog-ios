@@ -17,5 +17,9 @@
 	<array>
 		<string>CloudKit</string>
 	</array>
+	<key>com.apple.security.application-groups</key>
+	<array>
+		<string>$(FREAKLOG_ROUTINE_APP_GROUP)</string>
+	</array>
 </dict>
 </plist>
