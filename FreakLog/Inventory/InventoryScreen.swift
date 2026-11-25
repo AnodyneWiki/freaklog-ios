@@ -309,6 +309,40 @@ private struct StockChangeDetail: View {
 }
 
 private struct StockContainerEditor: View {
+    private enum ProductEditor: String, Identifiable {
+        case customUnit, formulation
+
+        var id: Self { self }
+        var title: LocalizedStringKey { self == .customUnit ? "Custom Unit" : "Formulation" }
+        var symbol: String { self == .customUnit ? "ruler" : "list.bullet" }
+    }
+
+    private enum ProductDraft {
+        case customUnit(CustomUnitCodable)
+        case formulation(FormulationCodable)
+
+        var editor: ProductEditor {
+            switch self {
+            case .customUnit: .customUnit
+            case .formulation: .formulation
+            }
+        }
+
+        var name: String {
+            switch self {
+            case .customUnit(let draft): draft.name
+            case .formulation(let draft): draft.name
+            }
+        }
+
+        @MainActor var unit: String {
+            switch self {
+            case .customUnit(let draft): draft.unit
+            case .formulation: Inventory.Use.formulationUnit
+            }
+        }
+    }
+
     @Environment(\.dismiss) private var dismiss
     @FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest())
     private var customUnits: FetchedResults<CustomUnit>
@@ -317,8 +351,8 @@ private struct StockContainerEditor: View {
 
     let container: StockContainer?
     @State private var productID: NSManagedObjectID?
-    @State private var formulationDraft: FormulationCodable?
-    @State private var editingFormulationDraft = false
+    @State private var productDraft: ProductDraft?
+    @State private var productEditor: ProductEditor?
     @State private var name: String
     @State private var productName: String
     @State private var location: String
@@ -347,7 +381,7 @@ private struct StockContainerEditor: View {
 
     private var chosenProductName: String? {
         chosenCustomUnit?.nameUnwrapped ?? chosenFormulation?.nameUnwrapped
-            ?? formulationDraft?.name ?? productName.nonemptyTrimmed
+            ?? productDraft?.name ?? productName.nonemptyTrimmed
     }
 
     private var containerName: String {
@@ -357,7 +391,8 @@ private struct StockContainerEditor: View {
     private var chosenUnit: String {
         if container != nil { return unit }
         if let chosenCustomUnit { return chosenCustomUnit.unitUnwrapped }
-        if chosenFormulation != nil || formulationDraft != nil { return Inventory.Use.formulationUnit }
+        if chosenFormulation != nil { return Inventory.Use.formulationUnit }
+        if let productDraft { return productDraft.unit }
         if productID != nil { return "" }
         return unit.trimmed
     }
@@ -366,10 +401,10 @@ private struct StockContainerEditor: View {
         Form {
             if container == nil {
                 Section("Product") {
-                    if let formulationDraft {
-                        LabeledContent("New Formulation", value: formulationDraft.name)
-                        Button("Edit Formulation") { editingFormulationDraft = true }
-                        Button("Remove Draft", role: .destructive) { self.formulationDraft = nil }
+                    if let productDraft {
+                        LabeledContent { Text(productDraft.name) } label: { Text(productDraft.editor.title) }
+                        Button("Edit Product") { productEditor = productDraft.editor }
+                        Button("Remove Draft", role: .destructive) { self.productDraft = nil }
                     } else {
                         if !customUnits.isEmpty || !formulations.isEmpty {
                             Picker("Linked Product", selection: $productID) {
@@ -385,10 +420,11 @@ private struct StockContainerEditor: View {
                         if productID == nil {
                             TextField("Product Name (Optional)", text: $productName)
                             PackageLabelDraftButton { productName = $0 }
-                            Button {
-                                editingFormulationDraft = true
+                            Menu {
+                                createProductButton(.customUnit)
+                                createProductButton(.formulation)
                             } label: {
-                                Label("Create Formulation", systemImage: "plus.circle")
+                                Label("Create Product", systemImage: "plus.circle")
                             }
                         }
                     }
@@ -404,7 +440,7 @@ private struct StockContainerEditor: View {
             }
             Section("Stock") {
                 if container == nil {
-                    if productID == nil, formulationDraft == nil {
+                    if productID == nil, productDraft == nil {
                         TextField("Counting Unit", text: $unit)
                     } else {
                         LabeledContent("Counting Unit", value: chosenUnit)
@@ -429,12 +465,44 @@ private struct StockContainerEditor: View {
                 Button("Save", action: save).disabled(containerName.isEmpty || chosenUnit.isEmpty)
             }
         }
-        .sheet(isPresented: $editingFormulationDraft) {
-            EditFormulationScreen(draft: formulationDraft ?? FormulationCodable(
-                name: productName.trimmed, note: "", creationDate: .now, components: []
-            )) { draft in
-                formulationDraft = draft
+        .sheet(item: $productEditor) { editor in
+            switch editor {
+            case .customUnit:
+                if case .customUnit(let draft) = productDraft {
+                    NavigationStack {
+                        FinishCustomUnitsScreen(
+                            arguments: SubstanceAndRoute(
+                                substance: AddIngestionSubstance(storedName: draft.substanceName, units: draft.originalUnit),
+                                administrationRoute: draft.administrationRoute
+                            ),
+                            cancel: { productEditor = nil },
+                            draft: draft
+                        ) { edited in
+                            productDraft = .customUnit(edited)
+                            productEditor = nil
+                        }
+                    }
+                } else {
+                    CustomUnitsChooseSubstanceScreen(draftName: productName.trimmed) {
+                        productDraft = .customUnit($0)
+                    }
+                }
+            case .formulation:
+                let draft: FormulationCodable = if case .formulation(let existing) = productDraft {
+                    existing
+                } else {
+                    FormulationCodable(name: productName.trimmed, note: "", creationDate: .now, components: [])
+                }
+                EditFormulationScreen(draft: draft) { productDraft = .formulation($0) }
             }
+        }
+    }
+
+    private func createProductButton(_ editor: ProductEditor) -> some View {
+        Button {
+            productEditor = editor
+        } label: {
+            Label(editor.title, systemImage: editor.symbol)
         }
     }
 
@@ -455,7 +523,14 @@ private struct StockContainerEditor: View {
                     record = StockContainer(context: context)
                     record.customUnit = try chosenCustomUnit.map { try PersistenceController.journalObject($0, in: context) }
                     record.formulation = try chosenFormulation.map { try PersistenceController.journalObject($0, in: context) }
-                        ?? formulationDraft?.insert(into: context)
+                    switch productDraft {
+                    case .customUnit(let draft):
+                        record.customUnit = draft.insert(into: context)
+                    case .formulation(let draft):
+                        record.formulation = draft.insert(into: context)
+                    case nil:
+                        break
+                    }
                     record.productName = chosenProductName
                     record.unit = chosenUnit
                     try Inventory.stage(.opening, quantity: initial, in: record)

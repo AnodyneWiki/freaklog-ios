@@ -11,7 +11,45 @@ struct FinishCustomUnitsScreen: View {
 
     let arguments: SubstanceAndRoute
     let cancel: () -> Void
-    let onAdded: (CustomUnit) -> Void
+    private let completion: Completion
+    private let draft: CustomUnitCodable?
+
+    private enum Completion {
+        case save((CustomUnit) -> Void)
+        case draft((CustomUnitCodable) -> Void)
+    }
+
+    init(arguments: SubstanceAndRoute, cancel: @escaping () -> Void, onAdded: @escaping (CustomUnit) -> Void) {
+        self.init(arguments: arguments, cancel: cancel, name: "", draft: nil, completion: .save(onAdded))
+    }
+
+    init(
+        arguments: SubstanceAndRoute,
+        cancel: @escaping () -> Void,
+        name: String = "",
+        draft: CustomUnitCodable? = nil,
+        onDraft: @escaping (CustomUnitCodable) -> Void
+    ) {
+        self.init(arguments: arguments, cancel: cancel, name: name, draft: draft, completion: .draft(onDraft))
+    }
+
+    private init(
+        arguments: SubstanceAndRoute, cancel: @escaping () -> Void,
+        name: String, draft: CustomUnitCodable?, completion: Completion
+    ) {
+        self.arguments = arguments
+        self.cancel = cancel
+        self.draft = draft
+        self.completion = completion
+        _name = State(initialValue: draft?.name ?? name)
+        _unit = State(initialValue: draft?.unit ?? "")
+        _unitPlural = State(initialValue: draft?.unitPlural ?? "")
+        _originalUnit = State(initialValue: draft?.originalUnit ?? "")
+        _dosePerUnit = State(initialValue: draft?.dose)
+        _isEstimate = State(initialValue: draft?.isEstimate ?? false)
+        _estimatedDoseStandardDeviation = State(initialValue: draft?.estimatedDoseStandardDeviation)
+        _note = State(initialValue: draft?.note ?? "")
+    }
 
     struct Prompt {
         let name: String
@@ -169,10 +207,12 @@ struct FinishCustomUnitsScreen: View {
                 }
             }
         }
-        .navigationTitle("Add Custom Unit")
-        .onAppear {
+        .navigationTitle(draft == nil ? "Add Custom Unit" : "Edit Custom Unit")
+        .onFirstAppear {
             focusedField = .name
-            originalUnit = arguments.substance.customSubstanceUnits ?? roaDose?.units ?? "mg"
+            if draft == nil {
+                originalUnit = arguments.substance.customSubstanceUnits ?? roaDose?.units ?? "mg"
+            }
         }
         .scrollDismissesKeyboard(.interactively)
         .toolbar {
@@ -181,19 +221,19 @@ struct FinishCustomUnitsScreen: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 DoneButton(action: onDoneTap)
-                    .disabled(unit.isEmpty || name.isEmpty)
+                    .disabled(trimmed(unit).isEmpty || trimmed(name).isEmpty)
             }
         }
     }
 
-    @State private var name = ""
-    @State private var unit = ""
-    @State private var unitPlural = ""
-    @State private var originalUnit = ""
+    @State private var name: String
+    @State private var unit: String
+    @State private var unitPlural: String
+    @State private var originalUnit: String
     @State private var dosePerUnit: Double?
-    @State private var isEstimate = false
+    @State private var isEstimate: Bool
     @State private var estimatedDoseStandardDeviation: Double?
-    @State private var note = ""
+    @State private var note: String
 
     @FocusState private var focusedField: Field?
 
@@ -210,24 +250,35 @@ struct FinishCustomUnitsScreen: View {
     }
 
 
+    private func trimmed(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private func onDoneTap() {
-        let context = PersistenceController.shared.viewContext
-        let newCustomUnit = CustomUnit(context: context)
-        newCustomUnit.name = name
-        newCustomUnit.creationDate = Date()
-        newCustomUnit.administrationRoute = arguments.administrationRoute.rawValue
-        newCustomUnit.dose = dosePerUnit ?? 0
-        newCustomUnit.note = note
-        newCustomUnit.originalUnit = originalUnit
-        newCustomUnit.substanceName = arguments.substance.name
-        newCustomUnit.unit = unit
-        newCustomUnit.unitPlural = unitPlural
-        newCustomUnit.isEstimate = isEstimate
-        newCustomUnit.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
-        newCustomUnit.isArchived = false
-        newCustomUnit.idForAndroid = Int32.random(in: Int32.min..<Int32.max)
-        try? context.save()
-        onAdded(newCustomUnit)
+        let value = CustomUnitCodable(
+            id: draft?.id ?? Int32.random(in: Int32.min..<Int32.max),
+            substanceName: arguments.substance.name,
+            name: trimmed(name),
+            creationDate: draft?.creationDate ?? .now,
+            administrationRoute: arguments.administrationRoute,
+            dose: dosePerUnit,
+            estimatedDoseStandardDeviation: estimatedDoseStandardDeviation,
+            isEstimate: isEstimate,
+            isArchived: false,
+            unit: trimmed(unit),
+            unitPlural: trimmed(unitPlural),
+            originalUnit: originalUnit,
+            note: note
+        )
+        switch completion {
+        case .draft(let onDraft):
+            onDraft(value)
+        case .save(let onAdded):
+            let context = PersistenceController.shared.viewContext
+            let newCustomUnit = value.insert(into: context)
+            try? context.save()
+            onAdded(newCustomUnit)
+        }
     }
 }
 
