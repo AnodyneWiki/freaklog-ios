@@ -90,6 +90,7 @@
 		A15CA2FF2EFB73E100D90023 /* JournalViewOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */; };
 		A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */; };
 		C1956B6251662DDF29B7C70C /* AnodyneSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */; };
+		7FE79E2AC22C42119D50342D /* AppIconSettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 409D9B8181544A7BAB076E6F /* AppIconSettingsScreen.swift */; };
 		B5672A334625484DBBE8AC3D /* LeaderboardPayloads.swift in Sources */ = {isa = PBXBuildFile; fileRef = B76A692DCC474D7C81BB255B /* LeaderboardPayloads.swift */; };
 		CB11B0B7985B41CD973C133B /* LeaderboardSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F76C3410801D4B9BA7EFF787 /* LeaderboardSyncManager.swift */; };
 		E7C29FF07CC94365960904B9 /* LeaderboardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A554F3D3C12E4021B1E4F7E1 /* LeaderboardClient.swift */; };
@@ -564,6 +565,7 @@
 		A15CA2FE2EFB73E100D90023 /* JournalViewOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalViewOption.swift; sourceTree = "<group>"; };
 		A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalSettingsScreen.swift; sourceTree = "<group>"; };
 		D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnodyneSettingsScreen.swift; sourceTree = "<group>"; };
+		409D9B8181544A7BAB076E6F /* AppIconSettingsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIconSettingsScreen.swift; sourceTree = "<group>"; };
 		A554F3D3C12E4021B1E4F7E1 /* LeaderboardClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardClient.swift; sourceTree = "<group>"; };
 		A80DA1B239DA4FD485E2B623 /* LeaderboardServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardServer.swift; sourceTree = "<group>"; };
 		B76A692DCC474D7C81BB255B /* LeaderboardPayloads.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardPayloads.swift; sourceTree = "<group>"; };
@@ -1715,6 +1717,7 @@
 				548887993659BF20F29ECA17 /* Backup */,
 				A15CA3002EFB784600D90023 /* JournalSettingsScreen.swift */,
 				D512DA6518623C9D275254D1 /* AnodyneSettingsScreen.swift */,
+				409D9B8181544A7BAB076E6F /* AppIconSettingsScreen.swift */,
 				EA460D202763790C002EF80B /* FAQ */,
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
@@ -2575,6 +2578,7 @@
 				EA1F77512D4CCB7700E7F483 /* FullRangeTimeline.swift in Sources */,
 				A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */,
 				C1956B6251662DDF29B7C70C /* AnodyneSettingsScreen.swift in Sources */,
+				7FE79E2AC22C42119D50342D /* AppIconSettingsScreen.swift in Sources */,
 				EA968AFD2962C9B000779DD9 /* ActivityManager.swift in Sources */,
 				EAD1D0022B52709500EC0D70 /* CustomUnitsArchiveScreen.swift in Sources */,
 				EA41C6172956C683000DA021 /* InteractionChecker.swift in Sources */,
@@ -2872,6 +2876,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIconDebug;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconPsyLog;
 				CODE_SIGN_ENTITLEMENTS = FreakLog/FreakLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
@@ -2897,6 +2902,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = NO;
+				ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES = AppIconPsyLog;
 				CODE_SIGN_ENTITLEMENTS = FreakLog/FreakLog.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;

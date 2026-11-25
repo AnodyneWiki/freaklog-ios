@@ -1,6 +1,7 @@
 import AlertToast
 import SwiftUI
 import AppIntents
+import UIKit
 
 struct SettingsScreen: View {
     @StateObject private var viewModel = ViewModel()
@@ -53,16 +54,23 @@ struct SettingsContent: View {
                     }
                 })).tint(Color.accentColor)
             }
-            if isEyeOpen {
+            if UIApplication.shared.supportsAlternateIcons || isEyeOpen {
                 Section("Appearance") {
-                    NavigationLink(value: GlobalNavigationDestination.journalSettings) {
-                        Label("Journal", systemImage: "list.dash.header.rectangle")
+                    if UIApplication.shared.supportsAlternateIcons {
+                        NavigationLink(value: GlobalNavigationDestination.appIconSettings) {
+                            Label("App Icon", systemImage: "app")
+                        }
                     }
-                    NavigationLink(value: GlobalNavigationDestination.editColors) {
-                        Label("Edit Substance Colors", systemImage: "paintpalette")
-                    }
-                    NavigationLink(value: GlobalNavigationDestination.tabSettings) {
-                        Label("Customize Tabs", systemImage: "rectangle.stack")
+                    if isEyeOpen {
+                        NavigationLink(value: GlobalNavigationDestination.journalSettings) {
+                            Label("Journal", systemImage: "list.dash.header.rectangle")
+                        }
+                        NavigationLink(value: GlobalNavigationDestination.editColors) {
+                            Label("Edit Substance Colors", systemImage: "paintpalette")
+                        }
+                        NavigationLink(value: GlobalNavigationDestination.tabSettings) {
+                            Label("Customize Tabs", systemImage: "rectangle.stack")
+                        }
                     }
                 }
             }
