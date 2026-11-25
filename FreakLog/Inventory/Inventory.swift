@@ -50,6 +50,22 @@ extension StockContainer {
         storageLocation ?? String(localized: "No Location")
     }
 
+    var knownCapacity: Double? {
+        guard let capacity = capacity?.doubleValue, capacity.isFinite, capacity > 0 else { return nil }
+        return capacity
+    }
+
+    var capacityFraction: Double? {
+        let remaining = remaining
+        guard let knownCapacity, !needsReview, remaining <= knownCapacity else { return nil }
+        return remaining / knownCapacity
+    }
+
+    var isExpired: Bool {
+        guard let expiresAt else { return false }
+        return Calendar.current.compare(expiresAt, to: .now, toGranularity: .day) == .orderedAscending
+    }
+
     var stockChanges: [StockChange] {
         changes?.allObjects as? [StockChange] ?? []
     }

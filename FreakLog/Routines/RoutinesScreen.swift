@@ -34,7 +34,7 @@ struct RoutinesScreen: View {
                             } label: {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(schedule.name).foregroundStyle(.primary)
-                                    Text(scheduleSummary(schedule))
+                                    Text(schedule.summary)
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
@@ -100,16 +100,18 @@ struct RoutinesScreen: View {
             if phase == .active { Task { await store.refresh() } }
         }
     }
+}
 
-    private func scheduleSummary(_ schedule: RoutineSchedule) -> String {
+extension RoutineSchedule {
+    @MainActor var summary: String {
         let calendar = RoutineSchedules.calendar
-        let times = schedule.times.sorted { $0.minuteOfDay < $1.minuteOfDay }
+        let times = times.sorted { $0.minuteOfDay < $1.minuteOfDay }
         let formattedTime = times.compactMap { $0.date(in: calendar)?.formatted(date: .omitted, time: .shortened) }
             .formatted(.list(type: .and))
-        if let interval = schedule.intervalDays {
+        if let interval = intervalDays {
             return String(localized: "Every \(interval) days at \(formattedTime)")
         }
-        if let weekdays = schedule.weekdays {
+        if let weekdays {
             let symbols = calendar.shortWeekdaySymbols
             let days = calendar.orderedWeekdays.filter(weekdays.contains).map { symbols[$0 - 1] }
             return String(localized: "\(days.formatted(.list(type: .and))) at \(formattedTime)")
@@ -135,8 +137,12 @@ struct RoutineScheduleEditor: View {
     @State private var showsDeleteConfirmation = false
     @State private var error: String?
     let isNew: Bool
+    let showsProductLink: Bool
 
-    init(schedule: RoutineSchedule, isNew: Bool, store: RoutineSchedules, initialProductID: NSManagedObjectID? = nil) {
+    init(
+        schedule: RoutineSchedule, isNew: Bool, store: RoutineSchedules, initialProductID: NSManagedObjectID? = nil,
+        showsProductLink: Bool = true
+    ) {
         _schedule = State(initialValue: schedule)
         _productID = State(initialValue: initialProductID)
         _time = State(initialValue: Calendar.current.nextDate(
@@ -146,6 +152,7 @@ struct RoutineScheduleEditor: View {
         ) ?? .now)
         self.isNew = isNew
         self.store = store
+        self.showsProductLink = showsProductLink
     }
 
     var body: some View {
@@ -214,6 +221,13 @@ struct RoutineScheduleEditor: View {
                         }
                     }
                     if let productID {
+                        if showsProductLink, let product = selectedProduct {
+                            NavigationLink {
+                                ProductDetailScreen(product: product)
+                            } label: {
+                                Label("View Product", systemImage: "shippingbox")
+                            }
+                        }
                         LabeledContent("Amount") {
                             TextField("Amount", value: $schedule.productAmount, format: .number)
                                 .multilineTextAlignment(.trailing)
@@ -266,6 +280,11 @@ struct RoutineScheduleEditor: View {
             else { return }
             productID = record.customUnit?.objectID ?? record.formulation?.objectID
         }
+    }
+
+    private var selectedProduct: JournalPresetProduct? {
+        if let unit = customUnits.first(where: { $0.objectID == productID }) { return .customUnit(unit) }
+        return formulations.first(where: { $0.objectID == productID }).map(JournalPresetProduct.formulation)
     }
 
     private var frequency: Binding<Frequency> {

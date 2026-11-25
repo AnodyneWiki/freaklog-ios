@@ -27,8 +27,8 @@ struct JournalBackup: Codable {
   static let format = "FreakLog Backup"
   private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
   private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
-  static let formatVersion = 3
-  static let dataModelVersion = "FreakLog Version 14"
+  static let formatVersion = 4
+  static let dataModelVersion = "FreakLog Version 15"
   static let localOperationEntities: Set<String> = ["WatchLogReceipt", "WebhookDeletion"]
 
   // Settings that belong to the journal. Ones about this device (iCloud sync, the last unlock, the welcome screen,
@@ -103,6 +103,12 @@ struct JournalBackup: Codable {
       }
       backup = try replacing("entities", with: .object(entities), in: backup)
       backup = try replacing("dataModel", with: .string("FreakLog Version 14"), in: backup)
+    },
+    3: { backup in
+      updateRecordFields(of: "StockContainer", in: &backup) { attributes in
+        attributes["capacity"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("FreakLog Version 15"), in: backup)
     },
   ]
 

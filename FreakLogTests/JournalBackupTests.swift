@@ -167,6 +167,46 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(ingestion.stomachFullness, "halfFull")
   }
 
+  func testContainerCapacityRoundTripsAndOldBackupsKeepItUnknown() throws {
+    let original = PersistenceController(inMemory: true).viewContext
+    let container = StockContainer(context: original)
+    container.name = "Bottle"
+    container.unit = "mL"
+    try Inventory.stage(.opening, quantity: 4, in: container)
+    XCTAssertNil(container.capacityFraction)
+
+    container.capacity = 10
+    XCTAssertEqual(container.capacityFraction, 0.4)
+    try Inventory.stage(.restock, quantity: 8, in: container)
+    XCTAssertEqual(container.remaining, 12)
+    XCTAssertNil(container.capacityFraction)
+    try original.save()
+    let backup = try JournalBackup(context: original, defaults: Self.emptyDefaults(), appVersion: "1")
+    XCTAssertEqual(backup.formatVersion, 4)
+
+    func restoredValues(from backup: JournalBackup) throws -> (capacity: Double?, remaining: Double, fraction: Double?) {
+      let read = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+      let destination = PersistenceController(inMemory: true).viewContext
+      try read.restore(into: destination)
+      let restored = try XCTUnwrap(destination.fetch(StockContainer.allRequest()).first)
+      return (restored.knownCapacity, restored.remaining, restored.capacityFraction)
+    }
+
+    let restored = try restoredValues(from: backup)
+    XCTAssertEqual(restored.capacity, 10)
+    XCTAssertEqual(restored.remaining, 12)
+    XCTAssertNil(restored.fraction)
+
+    var version3 = backup
+    version3.formatVersion = 3
+    version3.dataModel = "FreakLog Version 14"
+    version3.entities["StockContainer"]?[0].attributes.removeValue(forKey: "capacity")
+    let migrated = try restoredValues(from: version3)
+    XCTAssertNil(migrated.capacity)
+    XCTAssertEqual(migrated.remaining, 12)
+    XCTAssertNil(migrated.fraction)
+  }
+
   func testValidationUsesTheRestoreAndLeavesTheJournalUntouched() throws {
     let context = PersistenceController(inMemory: true).viewContext
     let original = Experience(context: context)

@@ -12,17 +12,19 @@ struct FinishFormulationArguments: Hashable {
 // Chooses how much of a formulation was taken, e.g. 1.5 pills, which scales the dose of every substance in it
 struct FormulationDoseScreen: View {
 
-  init(formulation: Formulation, dismiss: @escaping () -> Void) {
-    let values = FormulationCodable(formulation)
+  init(formulation: Formulation, dismiss: @escaping () -> Void, showsProductLink: Bool = true) {
     self.formulation = formulation
-    self.values = values
     self.dismiss = dismiss
-    interactions = ExperienceLogic.interactions(between: values.substanceNames)
+    self.showsProductLink = showsProductLink
   }
 
   let dismiss: () -> Void
+  let showsProductLink: Bool
+  @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
   var body: some View {
+    let values = FormulationCodable(formulation)
+    let interactions = ExperienceLogic.interactions(between: values.substanceNames)
     Form {
       Section {
         HStack {
@@ -57,6 +59,15 @@ struct FormulationDoseScreen: View {
           Text(values.note)
         }
       }
+      if isEyeOpen, showsProductLink {
+        Section {
+          NavigationLink {
+            ProductDetailScreen(product: .formulation(formulation), allowsLogging: false)
+          } label: {
+            Label("View Product", systemImage: "shippingbox")
+          }
+        }
+      }
     }
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(values.name)
@@ -75,9 +86,7 @@ struct FormulationDoseScreen: View {
 
   @State private var amount: Double? = 1
 
-  private let formulation: Formulation
-  private let values: FormulationCodable
-  private let interactions: [Interaction]
+  @ObservedObject private var formulation: Formulation
 
   private var validAmount: Double? {
     guard let amount, amount > 0 else { return nil }

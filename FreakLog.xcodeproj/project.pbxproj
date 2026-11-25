@@ -10,6 +10,8 @@
 		5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */; };
 		EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */; };
 		1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */; };
+		616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */; };
+		FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
 		FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */; };
 		CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E586B999611F07C489BD07AC /* StatsDetailScreen.swift */; };
@@ -503,6 +505,8 @@
 		7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsScreen.swift; sourceTree = "<group>"; };
 		7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageLabelDraftButton.swift; path = "../Inventory/PackageLabelDraftButton.swift"; sourceTree = "<group>"; };
 		6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryScreen.swift; path = "../Inventory/InventoryScreen.swift"; sourceTree = "<group>"; };
+		5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductDetailScreen.swift; path = "../Inventory/ProductDetailScreen.swift"; sourceTree = "<group>"; };
+		E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StockLevelViews.swift; path = "../Inventory/StockLevelViews.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
 		C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelectionTests.swift; sourceTree = "<group>"; };
 		E586B999611F07C489BD07AC /* StatsDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDetailScreen.swift; sourceTree = "<group>"; };
@@ -515,6 +519,7 @@
 		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
+		A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 15.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
@@ -1777,6 +1782,8 @@
 				0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */,
 				45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */,
 				6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */,
+				5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */,
+				E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */,
 				7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */,
 				F34E1B0857C8764C9DFAEA88 /* Inventory.swift */,
 				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
@@ -2485,6 +2492,8 @@
 				0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */,
 				1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */,
 				1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */,
+				616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */,
+				FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */,
 				EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */,
 				85348E582B036476DE61B10B /* Inventory.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,
@@ -3182,6 +3191,7 @@
 			children = (
 				8465BDFDBAAD424484E05932 /* PW Version 13.xcdatamodel */,
 				B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */,
+				A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */,
 				7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */,
 				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
@@ -3196,7 +3206,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */;
+			currentVersion = A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

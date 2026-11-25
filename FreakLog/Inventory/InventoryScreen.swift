@@ -2,6 +2,18 @@ import CoreData
 import SwiftUI
 
 struct InventoryScreen: View {
+    private enum GroupKey: Hashable {
+        case product(NSManagedObjectID)
+        case title(String)
+
+        var sortID: String {
+            switch self {
+            case .product(let id): id.uriRepresentation().absoluteString
+            case .title(let title): title
+            }
+        }
+    }
+
     private enum Grouping: String, CaseIterable, Identifiable {
         case product = "Product"
         case location = "Storage Location"
@@ -42,12 +54,22 @@ struct InventoryScreen: View {
                         rows(needsAttention)
                     }
                 } else {
-                    let groups = Dictionary(grouping: active) {
-                        grouping == .location ? $0.storageLabel : ($0.productName ?? $0.displayName)
-                    }
-                    ForEach(groups.keys.sorted(by: { $0.localizedStandardCompare($1) == .orderedAscending }), id: \.self) { title in
-                        Section(header: Text(title)) {
-                            rows(groups[title] ?? [])
+                    let groups = Dictionary(grouping: active, by: groupKey)
+                    ForEach(groups.keys.sorted { lhs, rhs in
+                        let order = groupTitle(groups[lhs] ?? []).localizedStandardCompare(groupTitle(groups[rhs] ?? []))
+                        return order == .orderedSame ? lhs.sortID < rhs.sortID : order == .orderedAscending
+                    }, id: \.self) { key in
+                        let group = groups[key] ?? []
+                        Section(header: Text(groupTitle(group))) {
+                            if grouping == .product, let product = group.first?.inventoryProduct {
+                                NavigationLink {
+                                    ProductDetailScreen(product: product)
+                                } label: {
+                                    Label("Product Details", systemImage: "shippingbox")
+                                }
+                                .accessibilityLabel(Text("Details for \(product.name)"))
+                            }
+                            rows(group)
                         }
                     }
                 }
@@ -73,82 +95,41 @@ struct InventoryScreen: View {
         }
     }
 
+    private func groupKey(_ container: StockContainer) -> GroupKey {
+        if grouping == .location { return .title(container.storageLabel) }
+        if let product = container.inventoryProduct { return .product(product.object.objectID) }
+        return .title(container.productName ?? container.displayName)
+    }
+
+    private func groupTitle(_ containers: [StockContainer]) -> String {
+        guard let container = containers.first else { return "" }
+        if grouping == .location { return container.storageLabel }
+        return container.inventoryProduct?.name ?? container.productName ?? container.displayName
+    }
+
     private func rows(_ containers: [StockContainer]) -> some View {
         ForEach(containers, id: \.objectID) { container in
             NavigationLink {
                 StockContainerDetail(container: container)
             } label: {
-                StockContainerRow(container: container, showLocation: grouping != .location)
+                InventorySupplyRow(container: container, showLocation: grouping != .location)
             }
         }
-    }
-}
-
-private struct StockContainerRow: View {
-    @ObservedObject var container: StockContainer
-    let showLocation: Bool
-
-    var body: some View {
-        HStack {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(container.displayName)
-                if showLocation, let location = container.storageLocation {
-                    Text(location).font(.subheadline).foregroundStyle(.secondary)
-                }
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 3) {
-                Text(container.quantityLabel(container.remaining)).monospacedDigit()
-                if container.needsReview {
-                    Text("Check count")
-                        .font(.footnote)
-                        .foregroundStyle(.orange)
-                } else if container.isExpired {
-                    Text("Past expiry")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else if container.isLow {
-                    Text(container.remaining == 0 ? "Empty" : "Low stock")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-private extension StockContainer {
-    var isExpired: Bool {
-        guard let expiresAt else { return false }
-        return Calendar.current.compare(expiresAt, to: .now, toGranularity: .day) == .orderedAscending
     }
 }
 
 struct StockContainerDetail: View {
     @ObservedObject var container: StockContainer
     @State private var editingContainer = false
-    @State private var addingRoutine = false
     @State private var adjustment: StockAdjustment?
     @State private var errorMessage: String?
-
-    private var routineProductID: NSManagedObjectID? {
-        if let unit = container.customUnit, !unit.isArchived {
-            return unit.objectID
-        }
-        guard let formulation = container.formulation, !formulation.componentsSorted.isEmpty else { return nil }
-        return formulation.objectID
-    }
-
-    private var presetProduct: JournalPresetProduct? {
-        if let unit = container.customUnit { return .customUnit(unit) }
-        return container.formulation.map(JournalPresetProduct.formulation)
-    }
+    var showsProductLink = true
 
     var body: some View {
         List {
             Section {
                 LabeledContent("Remaining", value: container.quantityLabel(container.remaining))
+                StockLevelBar(container: container)
                 if let product = container.productName {
                     LabeledContent("Product", value: product)
                 }
@@ -196,16 +177,13 @@ struct StockContainerDetail: View {
                 }
             }
 
-            if let presetProduct {
+            if showsProductLink, let product = container.inventoryProduct {
                 Section("Linked Product") {
-                    if !container.isArchived, routineProductID != nil {
-                        Button {
-                            addingRoutine = true
-                        } label: {
-                            Label("Add Routine", systemImage: "calendar.badge.plus")
-                        }
+                    NavigationLink {
+                        ProductDetailScreen(product: product)
+                    } label: {
+                        Label(product.name, systemImage: "shippingbox")
                     }
-                    JournalPresetShareLink(product: presetProduct)
                 }
             }
 
@@ -242,19 +220,6 @@ struct StockContainerDetail: View {
         }
         .sheet(isPresented: $editingContainer) {
             NavigationStack { StockContainerEditor(container: container) }
-        }
-        .sheet(isPresented: $addingRoutine) {
-            if let productID = routineProductID {
-                RoutineScheduleEditor(
-                    schedule: .draft(
-                        named: container.customUnit?.nameUnwrapped ?? container.formulation?.nameUnwrapped ?? "",
-                        calendar: RoutineSchedules.calendar
-                    ),
-                    isNew: true,
-                    store: RoutineSchedules.shared,
-                    initialProductID: productID
-                )
-            }
         }
         .sheet(item: $adjustment) { action in
             NavigationStack { StockAdjustmentEditor(container: container, action: action) }
@@ -316,7 +281,7 @@ private struct StockChangeDetail: View {
     }
 }
 
-private struct StockContainerEditor: View {
+struct StockContainerEditor: View {
     private enum ProductEditor: String, Identifiable {
         case customUnit, formulation
 
@@ -367,18 +332,22 @@ private struct StockContainerEditor: View {
     @State private var location: String
     @State private var unit: String
     @State private var opening = ""
+    @State private var capacity: String
     @State private var lowThreshold: String
     @State private var hasExpiry: Bool
     @State private var expiresAt: Date
     @State private var errorMessage: String?
 
-    init(container: StockContainer? = nil) {
+    init(container: StockContainer? = nil, initialProductID: NSManagedObjectID? = nil) {
         self.container = container
-        _productID = State(initialValue: container?.customUnit?.objectID ?? container?.formulation?.objectID)
+        _productID = State(initialValue: container?.customUnit?.objectID ?? container?.formulation?.objectID ?? initialProductID)
         _name = State(initialValue: container?.name ?? "")
         _productName = State(initialValue: container?.productName ?? "")
         _location = State(initialValue: container?.storageLocation ?? "")
         _unit = State(initialValue: container?.unit ?? "")
+        _capacity = State(initialValue: container?.knownCapacity?.formatted(
+            .number.grouping(.never).precision(.fractionLength(0...8))
+        ) ?? "")
         let low = container?.lowThreshold ?? 0
         _lowThreshold = State(initialValue: low > 0 ? low.formatted(.number.grouping(.never).precision(.fractionLength(0...8))) : "")
         _hasExpiry = State(initialValue: container?.expiresAt != nil)
@@ -464,6 +433,8 @@ private struct StockContainerEditor: View {
                     TextField("Opening Quantity", text: $opening)
                         .keyboardType(.decimalPad)
                 }
+                TextField("Capacity (Optional)", text: $capacity)
+                    .keyboardType(.decimalPad)
                 TextField("Low-Stock Threshold (Optional)", text: $lowThreshold)
                     .keyboardType(.decimalPad)
             }
@@ -527,6 +498,12 @@ private struct StockContainerEditor: View {
 
     private func save() {
         guard !containerName.isEmpty, !chosenUnit.isEmpty else { return }
+        let enteredCapacity = capacity.trimmed
+        let knownCapacity = enteredCapacity.stockQuantity
+        guard enteredCapacity.isEmpty || knownCapacity.map({ $0 > 0 }) == true else {
+            errorMessage = "Enter a capacity greater than zero, or leave it blank."
+            return
+        }
         guard let initial = opening.isEmpty ? 0 : opening.stockQuantity,
               let threshold = lowThreshold.isEmpty ? 0 : lowThreshold.stockQuantity else {
             errorMessage = InventoryError.invalidQuantity.localizedDescription
@@ -556,6 +533,7 @@ private struct StockContainerEditor: View {
                 }
                 record.name = containerName
                 record.storageLocation = location.nonemptyTrimmed
+                record.capacity = knownCapacity.map(NSNumber.init(value:))
                 record.lowThreshold = threshold
                 record.expiresAt = hasExpiry ? expiresAt : nil
                 try PersistenceController.saveJournalChanges(in: context)
@@ -567,7 +545,7 @@ private struct StockContainerEditor: View {
     }
 }
 
-private enum StockAdjustment: String, Identifiable {
+enum StockAdjustment: String, Identifiable {
     case restock, correction, discard, transfer
     var id: Self { self }
     var title: LocalizedStringKey {
@@ -580,7 +558,7 @@ private enum StockAdjustment: String, Identifiable {
     }
 }
 
-private struct StockAdjustmentEditor: View {
+struct StockAdjustmentEditor: View {
     @Environment(\.dismiss) private var dismiss
     @FetchRequest(fetchRequest: StockContainer.allRequest())
     private var containers: FetchedResults<StockContainer>
@@ -662,40 +640,6 @@ private struct StockAdjustmentEditor: View {
             dismiss()
         } catch {
             errorMessage = (error as? LocalizedError)?.errorDescription ?? "Couldn’t update stock."
-        }
-    }
-}
-
-struct InventorySourcePicker: View {
-    let use: Inventory.Use
-    @Binding var selection: NSManagedObjectID?
-    @FetchRequest(fetchRequest: StockContainer.allRequest())
-    private var containers: FetchedResults<StockContainer>
-
-    private var matching: [StockContainer] {
-        containers.filter(use.matches)
-    }
-
-    var body: some View {
-        if !matching.isEmpty || selection != nil {
-            Section {
-                Picker("Draw From", selection: $selection) {
-                    Text("None").tag(Optional<NSManagedObjectID>.none)
-                    ForEach(matching, id: \.objectID) { container in
-                        Text("\(container.displayName) · \(container.quantityLabel(container.remaining))")
-                            .tag(Optional(container.objectID))
-                    }
-                    if let selection, !matching.contains(where: { $0.objectID == selection }) {
-                        Text("Unavailable Container").tag(Optional(selection))
-                    }
-                }
-            } header: {
-                Text("Inventory")
-            } footer: {
-                if let container = matching.first(where: { $0.objectID == selection }) {
-                    Text("This log will draw \(container.quantityLabel(use.quantity)) from this container.")
-                }
-            }
         }
     }
 }
