@@ -37,7 +37,7 @@ final class FormulationTests: XCTestCase {
   func testExportedFormulationsImportTheSameData() throws {
     let source = PersistenceController(inMemory: true).viewContext
     let formulation = sample.insert(into: source)
-    let file = JournalFile(experiences: [], customSubstances: [], customUnits: [], formulations: [formulation])
+    let file = try JournalFile(experiences: [], customSubstances: [], customUnits: [], formulations: [formulation])
     let decoded = try JSONDecoder().decode(JournalFile.self, from: JSONEncoder().encode(file))
     let target = PersistenceController(inMemory: true).viewContext
     decoded.insert(into: target)
@@ -108,7 +108,7 @@ final class FormulationTests: XCTestCase {
     ingestion.formulation = formulation
     ingestion.formulationAmount = 2
     ingestion.experience = experience
-    let file = JournalFile(experiences: [experience], customSubstances: [], customUnits: [], formulations: [other, formulation])
+    let file = try JournalFile(experiences: [experience], customSubstances: [], customUnits: [], formulations: [other, formulation])
     let decoded = try JSONDecoder().decode(JournalFile.self, from: JSONEncoder().encode(file))
     let target = PersistenceController(inMemory: true).viewContext
     decoded.insert(into: target)

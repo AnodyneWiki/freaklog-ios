@@ -2,15 +2,38 @@ import CoreData
 import SwiftUI
 import UniformTypeIdentifiers
 
+enum JournalFileError: LocalizedError, Equatable {
+    case duplicateCustomUnit(Int32)
+    case duplicateFormulation(String)
+    case missingCustomUnit(String)
+    case missingFormulation(String)
+    case tooManyCustomUnits
+
+    var errorDescription: String? {
+        switch self {
+        case .duplicateCustomUnit(let id):
+            "The journal contains duplicate custom-unit ID \(id)."
+        case .duplicateFormulation(let id):
+            "The journal contains duplicate formulation ID \(id)."
+        case .missingCustomUnit(let id):
+            "An ingestion refers to a missing custom unit (\(id))."
+        case .missingFormulation(let id):
+            "An ingestion refers to a missing formulation (\(id))."
+        case .tooManyCustomUnits:
+            "The journal contains too many custom units to export."
+        }
+    }
+}
+
 struct JournalFile: FileDocument, Codable {
     static let readableContentTypes = [UTType.json]
     static let writableContentTypes = [UTType.json]
-    var experiences: [ExperienceCodable]
-    var substanceCompanions: [CompanionCodable]
-    var customSubstances: [CustomSubstanceCodable]
-    var customUnits: [CustomUnitCodable]
-    var substanceDataOverrides: [SubstanceDataOverrideCodable]
-    var formulations: [FormulationCodable]
+    let experiences: [ExperienceCodable]
+    let substanceCompanions: [CompanionCodable]
+    let customSubstances: [CustomSubstanceCodable]
+    let customUnits: [CustomUnitCodable]
+    let substanceDataOverrides: [SubstanceDataOverrideCodable]
+    let formulations: [FormulationCodable]
 
     init(
         experiences: [Experience],
@@ -19,9 +42,22 @@ struct JournalFile: FileDocument, Codable {
         substanceOverrideRoas: [CustomRoa] = [],
         substanceOverrides: [SubstanceOverride] = [],
         formulations: [Formulation] = []
-    ) {
-        let formulationIds = Dictionary(formulations.map { ($0.objectID, UUID().uuidString) }, uniquingKeysWith: { first, _ in first })
-        self.experiences = experiences.map { ExperienceCodable($0, formulationIds: formulationIds) }
+    ) throws {
+        let customUnitIds = try Self.exportCustomUnitIds(customUnits)
+        var formulationIds: [NSManagedObjectID: String] = [:]
+        self.formulations = try formulations.map { formulation in
+            if let id = formulationIds[formulation.objectID] {
+                throw JournalFileError.duplicateFormulation(id)
+            }
+            let id = UUID().uuidString
+            formulationIds[formulation.objectID] = id
+            var record = FormulationCodable(formulation)
+            record.id = id
+            return record
+        }
+        self.experiences = try experiences.map {
+            try ExperienceCodable($0, customUnitIds: customUnitIds, formulationIds: formulationIds)
+        }
         // One color for each substance that was taken
         var substanceNames = Set<String>()
         substanceCompanions = experiences.flatMap(\.ingestionsSorted).compactMap { ingestion in
@@ -29,12 +65,54 @@ struct JournalFile: FileDocument, Codable {
             return CompanionCodable(substanceName: ingestion.substanceNameUnwrapped, color: ingestion.substanceColor)
         }
         self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
-        self.customUnits = customUnits.map(CustomUnitCodable.init)
+        self.customUnits = try customUnits.map { unit in
+            guard let id = customUnitIds[unit.objectID] else {
+                throw JournalFileError.missingCustomUnit(String(unit.idForAndroid))
+            }
+            return CustomUnitCodable(unit, id: id)
+        }
         substanceDataOverrides = SubstanceDataOverrideCodable.grouped(substanceOverrideRoas, overrides: substanceOverrides)
-        self.formulations = formulations.map { formulation in
-            var record = FormulationCodable(formulation)
-            record.id = formulationIds[formulation.objectID]
-            return record
+        try validateReferences()
+    }
+
+    private static func exportCustomUnitIds(_ units: [CustomUnit]) throws -> [NSManagedObjectID: Int32] {
+        var reserved = Set(units.map(\.idForAndroid))
+        var claimed = Set<Int32>()
+        var ids: [NSManagedObjectID: Int32] = [:]
+        var candidate: Int32 = 1
+        for unit in units {
+            let preferred = unit.idForAndroid
+            guard ids[unit.objectID] == nil else { throw JournalFileError.duplicateCustomUnit(preferred) }
+            if claimed.insert(preferred).inserted {
+                ids[unit.objectID] = preferred
+            } else {
+                // Reserve existing IDs before assigning replacements so subsequent units can keep theirs.
+                while !reserved.insert(candidate).inserted {
+                    candidate = candidate &+ 1
+                    guard candidate != 1 else { throw JournalFileError.tooManyCustomUnits }
+                }
+                ids[unit.objectID] = candidate
+            }
+        }
+        return ids
+    }
+
+    private func validateReferences() throws {
+        var unitIds = Set<Int32>()
+        for unit in customUnits where !unitIds.insert(unit.id).inserted {
+            throw JournalFileError.duplicateCustomUnit(unit.id)
+        }
+        var formulationIds = Set<String>()
+        for id in formulations.compactMap(\.id) where !formulationIds.insert(id).inserted {
+            throw JournalFileError.duplicateFormulation(id)
+        }
+        for ingestion in experiences.lazy.flatMap(\.ingestions) {
+            if let id = ingestion.customUnitId, !unitIds.contains(id) {
+                throw JournalFileError.missingCustomUnit(String(id))
+            }
+            if let id = ingestion.formulationId, !formulationIds.contains(id) {
+                throw JournalFileError.missingFormulation(id)
+            }
         }
     }
 
@@ -158,10 +236,7 @@ struct JournalFile: FileDocument, Codable {
             || !substanceDataOverrides.isEmpty || !formulations.isEmpty else {
             throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "The file has no journal data"))
         }
-        let ids = formulations.compactMap(\.id)
-        guard Set(ids).count == ids.count else {
-            throw DecodingError.dataCorruptedError(forKey: .formulations, in: values, debugDescription: "Duplicate formulation IDs")
-        }
+        try validateReferences()
     }
 }
 

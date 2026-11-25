@@ -123,7 +123,16 @@ struct IngestionCodable: Codable {
 
 // Export and import mapping. The importer links companions, custom units, formulations and the experience.
 extension IngestionCodable {
-    init(_ ingestion: Ingestion) {
+    init(
+        _ ingestion: Ingestion,
+        customUnitIds: [NSManagedObjectID: Int32],
+        formulationIds: [NSManagedObjectID: String]
+    ) throws {
+        let unit = ingestion.customUnit
+        let customUnitId = unit.flatMap { customUnitIds[$0.objectID] }
+        if let unit, customUnitId == nil {
+            throw JournalFileError.missingCustomUnit(String(unit.idForAndroid))
+        }
         self.init(
             substanceName: ingestion.substanceNameUnwrapped,
             time: ingestion.timeUnwrapped,
@@ -136,11 +145,15 @@ extension IngestionCodable {
             units: ingestion.unitsUnwrapped,
             notes: ingestion.noteUnwrapped,
             consumerName: ingestion.consumerName,
-            customUnitId: ingestion.customUnit?.idForAndroid,
+            customUnitId: customUnitId,
             administrationSite: ingestion.administrationSite,
             location: ingestion.location.map(LocationCodable.init)
         )
         if let formulation = ingestion.formulation {
+            guard let id = formulationIds[formulation.objectID] else {
+                throw JournalFileError.missingFormulation(formulation.nameUnwrapped)
+            }
+            formulationId = id
             formulationName = formulation.nameUnwrapped
             formulationAmount = ingestion.formulationAmount
         }

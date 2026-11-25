@@ -80,17 +80,19 @@ struct ExperienceCodable: Codable {
 }
 
 extension ExperienceCodable {
-    init(_ experience: Experience, formulationIds: [NSManagedObjectID: String]) {
-        self.init(
+    init(
+        _ experience: Experience,
+        customUnitIds: [NSManagedObjectID: Int32],
+        formulationIds: [NSManagedObjectID: String]
+    ) throws {
+        try self.init(
             title: experience.titleUnwrapped,
             text: experience.textUnwrapped,
             creationDate: experience.creationDateUnwrapped,
             sortDate: experience.sortDate,
             isFavorite: experience.isFavorite,
             ingestions: experience.ingestionsSorted.map { ingestion in
-                var record = IngestionCodable(ingestion)
-                record.formulationId = ingestion.formulation.flatMap { formulationIds[$0.objectID] }
-                return record
+                try IngestionCodable(ingestion, customUnitIds: customUnitIds, formulationIds: formulationIds)
             },
             ratings: experience.ratingsUnwrapped.map(RatingCodable.init),
             timedNotes: experience.timedNotesSorted.map(TimedNoteCodable.init),

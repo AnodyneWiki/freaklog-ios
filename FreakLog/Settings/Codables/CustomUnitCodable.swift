@@ -103,9 +103,9 @@ struct CustomUnitCodable: Codable {
 }
 
 extension CustomUnitCodable {
-    init(_ customUnit: CustomUnit) {
+    init(_ customUnit: CustomUnit, id: Int32) {
         self.init(
-            id: customUnit.idForAndroid,
+            id: id,
             substanceName: customUnit.substanceNameUnwrapped,
             name: customUnit.nameUnwrapped,
             creationDate: customUnit.creationDateUnwrapped,

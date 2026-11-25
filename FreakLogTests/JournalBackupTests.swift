@@ -255,7 +255,7 @@ final class JournalBackupTests: XCTestCase {
   }
 
   func testOtherFilesAreNotBackups() throws {
-    let journalFile = JournalFile(experiences: [], customSubstances: [], customUnits: [])
+    let journalFile = try JournalFile(experiences: [], customSubstances: [], customUnits: [])
     XCTAssertNil(try JournalBackup.read(JSONEncoder().encode(journalFile)))
     XCTAssertNil(try JournalBackup.read(Data("not json".utf8)))
   }
