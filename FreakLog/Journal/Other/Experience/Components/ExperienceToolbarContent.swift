@@ -34,6 +34,11 @@ struct ExperienceToolbarContent: View {
                 Label("Add", systemImage: "plus")
             }
             Menu {
+                Button {
+                    sheetToShow = .shareExperience
+                } label: {
+                    Label("Share Experience", systemImage: "square.and.arrow.up")
+                }
                 if isAssistantEnabled {
                     Section {
                         Button {

@@ -32,6 +32,7 @@
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
 		5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */ = {isa = PBXBuildFile; fileRef = B0DFAA759F8B4CF783A9B54A /* Backup v2.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
+		3BEC4D74945B10FCA70D92A3 /* ExperienceReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */; };
 		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
 		2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */; };
 		60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = B302BDA5F741381059AE6948 /* ExportedFile.swift */; };
@@ -262,6 +263,7 @@
 		EA4B8A292AA12630009918DE /* TimelineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A282AA12630009918DE /* TimelineSection.swift */; };
 		8E800FDA18791553DD1D74D4 /* EventTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */; };
 		EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */; };
+		2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */; };
 		EA4B8A2F2AA6E231009918DE /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
 		EA4B8A312AA6FF02009918DE /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
 		EA50E4E4294B70A400B8D1FC /* EditIngestionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA50E4E3294B70A400B8D1FC /* EditIngestionScreen.swift */; };
@@ -504,6 +506,7 @@
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
 		B0DFAA759F8B4CF783A9B54A /* Backup v2.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v2.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
+		4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceReportTests.swift"; sourceTree = "<group>"; };
 		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
 		8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackup.swift; sourceTree = "<group>"; };
 		B302BDA5F741381059AE6948 /* ExportedFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportedFile.swift; sourceTree = "<group>"; };
@@ -708,6 +711,7 @@
 		EA4B8A282AA12630009918DE /* TimelineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSection.swift; sourceTree = "<group>"; };
 		E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeText.swift; sourceTree = "<group>"; };
 		EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceToolbarContent.swift; sourceTree = "<group>"; };
+		DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceReportScreen.swift"; sourceTree = "<group>"; };
 		EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedNoteCodable.swift; sourceTree = "<group>"; };
 		EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockTimeOption.swift; sourceTree = "<group>"; };
 		EA50E4E3294B70A400B8D1FC /* EditIngestionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditIngestionScreen.swift; sourceTree = "<group>"; };
@@ -1737,6 +1741,7 @@
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
+				4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */,
 				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
 				57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */,
 				082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */,
@@ -1970,6 +1975,7 @@
 				EA4B8A282AA12630009918DE /* TimelineSection.swift */,
 				E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */,
 				EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */,
+				DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */,
 				EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */,
 				EA48F8A329E991C6007DA8C5 /* DateDifference.swift */,
 			);
@@ -2250,6 +2256,7 @@
 				5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */,
 				A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */,
 				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
+				3BEC4D74945B10FCA70D92A3 /* ExperienceReportTests.swift in Sources */,
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
@@ -2422,6 +2429,7 @@
 				EAE4720B26CBA664009FB0EC /* ExperienceScreen.swift in Sources */,
 				EA302E482B381C2F007F113F /* FinishIngestionScreenArguments.swift in Sources */,
 				EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */,
+				2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */,
 				EA4189FD2966DA4500DEA663 /* MDMAOptimalDoseSection.swift in Sources */,
 				EA55CEB92A3F290900FE1A44 /* DotRows.swift in Sources */,
 				EA4B8A192A9B2A89009918DE /* TimedNoteRow.swift in Sources */,
