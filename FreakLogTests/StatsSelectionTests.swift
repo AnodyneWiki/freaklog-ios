@@ -169,7 +169,31 @@ final class StatsSelectionTests: XCTestCase {
         XCTAssertEqual(amount.experienceCount, 2)
         XCTAssertEqual(amount.experienceAverage, 3)
         XCTAssertEqual(records.bucketComponent, .month)
-        XCTAssertEqual(records.amountBuckets(for: amount.key).map(\.total), [6])
+        XCTAssertEqual(records.amountTrends[amount.key]?.map(\.total), [6])
+    }
+
+    func testAmountTrendsKeepUnitsAndSubstancesSeparate() {
+        let context = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: now, in: context)
+        let mass = makeIngestion(in: experience, at: now, context: context)
+        mass.dose = 10
+        mass.units = "mg"
+        let volume = makeIngestion(in: experience, at: now, context: context)
+        volume.dose = 3
+        volume.units = "mL"
+        let otherSubstance = makeIngestion(in: experience, at: now, context: context)
+        otherSubstance.dose = 7
+        otherSubstance.units = "mg"
+        otherSubstance.substanceName = "Other"
+        let records = StatsRecords(
+            entries: [mass, volume, otherSubstance], selection: StatsSelection(), now: now, calendar: calendar
+        )
+
+        let trends = records.amountTrends
+        XCTAssertEqual(trends.count, 3)
+        XCTAssertEqual(trends[.init(mass)]?.map(\.total), [10])
+        XCTAssertEqual(trends[.init(volume)]?.map(\.total), [3])
+        XCTAssertEqual(trends[.init(otherSubstance)]?.map(\.total), [7])
     }
 
     func testPinnedBucketSurvivesRollingPeriodAdvancingAndFiltersNarrowIt() throws {

@@ -531,14 +531,17 @@ struct StatsRecords {
         }
     }
 
-    func amountBuckets(for key: Amount.Key) -> [AmountBucket] {
-        let totals = entries.reduce(into: [DateInterval: Double]()) { totals, entry in
-            guard Amount.Key(entry) == key, let value = key.value(for: entry), let date = entry.time,
+    var amountTrends: [Amount.Key: [AmountBucket]] {
+        let totals = entries.reduce(into: [Amount.Key: [DateInterval: Double]]()) { totals, entry in
+            let key = Amount.Key(entry)
+            guard let value = key.value(for: entry), let date = entry.time,
                   let interval = journalDay.interval(of: bucketComponent, containing: date) else { return }
-            totals[interval, default: 0] += value
+            totals[key, default: [:]][interval, default: 0] += value
         }
-        return totals.filter { $0.value.isFinite }.map { AmountBucket(interval: $0.key, total: $0.value) }
-            .sorted { $0.id < $1.id }
+        return totals.mapValues { buckets in
+            buckets.filter { $0.value.isFinite }.map { AmountBucket(interval: $0.key, total: $0.value) }
+                .sorted { $0.id < $1.id }
+        }
     }
 
     var gapsBetweenLogs: [Gap] {

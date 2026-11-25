@@ -8,7 +8,8 @@ struct StatsDetailScreen: View {
     @State private var selectedInterval: DateInterval?
     @State private var showsAmounts: Bool
     @State private var isShowingFilters = false
-    @State private var amountKey: StatsRecords.Amount.Key?
+    @State private var selectedAmountKey: StatsRecords.Amount.Key?
+    @State private var expandedAmounts: Set<StatsRecords.Amount.Key> = []
     @State private var substanceOrder = StatsSubstanceOrder.count
     @State private var shareSelection: StatsRecords?
     @State private var isNamingView = false
@@ -17,6 +18,7 @@ struct StatsDetailScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @AppStorage(StatsPreferences.pinnedViewsKey) private var pinnedStatsData = Data()
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     init(metric: StatsMetric, selection: StatsSelection, isSubstanceHistory: Bool = false) {
         self.metric = metric == .amounts ? .ingestions : metric
@@ -44,8 +46,7 @@ struct StatsDetailScreen: View {
 
                 if metric != .gaps {
                     if showsAmounts {
-                        amountChartSection(records, focused: focused, selection: scopedSelection)
-                        amountsSection(focused)
+                        amountsSection(records, focused: focused, selection: scopedSelection)
                     } else {
                         chartSection(records: records, buckets: buckets, focused: focused, selection: scopedSelection, tags: tags)
                     }
@@ -137,7 +138,7 @@ struct StatsDetailScreen: View {
         .onChange(of: selection.customStart) { _ in clearFocusedPeriod() }
         .onChange(of: selection.customEnd) { _ in clearFocusedPeriod() }
         .onChange(of: selection.periodStep) { _ in clearFocusedPeriod() }
-        .onChange(of: selection.substances) { _ in selectedInterval = nil }
+        .onChange(of: selection.entryFilter) { _ in selectedInterval = nil }
         .onChange(of: dayStartHour) { _ in selectedInterval = nil }
         .onChange(of: showsAmounts) { _ in selectedInterval = nil }
         .onChange(of: isEyeOpen) { _ in clearHiddenRoute() }
@@ -292,6 +293,7 @@ struct StatsDetailScreen: View {
                         }
                     )
                 )
+
                 if selection.groupsByPrimaryTag {
                     let visible = contributions.filter { selectedBucket == nil || $0.id.date == selectedBucket?.id }
                     let series = Dictionary(grouping: visible, by: \.id.substance).mapValues {
@@ -455,106 +457,144 @@ struct StatsDetailScreen: View {
         return result
     }
 
-    @ViewBuilder
-    private func amountChartSection(_ records: StatsRecords, focused: StatsRecords, selection scoped: StatsSelection) -> some View {
+    private func amountsSection(_ records: StatsRecords, focused: StatsRecords, selection scoped: StatsSelection) -> some View {
         let amounts = records.amounts
-        let available = amounts.first { $0.key == amountKey } ?? amounts.first
-        Section {
-            chartMetricPicker
-            if let available {
-                if amounts.count > 1 {
-                    Picker("Chart Amount", selection: Binding(
-                        get: { available.key },
-                        set: { amountKey = $0; selectedInterval = nil }
-                    )) {
-                        ForEach(amounts) { amount in
-                            Text(amountLabel(amount)).tag(amount.key)
+        let trends = records.amountTrends
+        let domain = records.chartDomain(covering: records.buckets(for: .ingestions))
+        let colors = Dictionary(records.entries.map {
+            ($0.substanceNameUnwrapped, $0.substanceColor.swiftUIColor)
+        }, uniquingKeysWith: { first, _ in first })
+
+        return Group {
+            Section {
+                chartMetricPicker
+            }
+
+            Section {
+                if amounts.isEmpty {
+                    Text("No amounts were recorded for these ingestions.")
+                        .foregroundStyle(.secondary)
+                }
+                ForEach(amounts) { amount in
+                    let isSelected = selectedAmountKey == amount.key && selectedInterval != nil
+                    let summary = isSelected ? focused.amounts.first { $0.key == amount.key } ?? amount : amount
+                    let buckets = trends[amount.key] ?? []
+                    let color = colors[amount.key.substance] ?? .accentColor
+
+                    if amounts.count == 1 {
+                        amountTotal(summary, prominent: true)
+                        amountChart(amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color)
+                        matchingAmountsLink(summary, selection: isSelected ? scoped : effectiveSelection)
+                        DisclosureGroup("Amount Details") {
+                            amountDetails(summary)
+                        }
+                    } else {
+                        DisclosureGroup(isExpanded: amountExpansion(for: amount.key)) {
+                            amountChart(amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color)
+                            matchingAmountsLink(summary, selection: isSelected ? scoped : effectiveSelection)
+                            amountDetails(summary)
+                        } label: {
+                            HStack(spacing: 12) {
+                                amountTotal(summary)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                if !expandedAmounts.contains(amount.key), !dynamicTypeSize.isAccessibilitySize, let domain {
+                                    StatsAmountTrendPreview(
+                                        buckets: buckets, component: records.bucketComponent, domain: domain,
+                                        journalDay: records.journalDay, color: color
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-                let amountBuckets = records.amountBuckets(for: available.key)
-                let buckets = amountBuckets.map { StatsRecords.Bucket(interval: $0.interval, count: 0) }
-                let selectedAmount = focused.amounts.first { $0.key == available.key }
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(formattedAmount(selectedAmount?.total ?? 0, unit: available.key.unit))
-                        .font(.largeTitle.weight(.semibold).monospacedDigit())
-                        .accessibilityLabel("Recorded Total")
-                        .accessibilityValue(Text(formattedAmount(selectedAmount?.total ?? 0, unit: available.key.unit)))
-                    Text(amountLabel(available))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    if selectedInterval != nil {
-                        Text(statsRangeLabel(focused.range, journalDay: records.journalDay))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+            } header: {
+                Text("Recorded Amounts")
+            } footer: {
+                if !amounts.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Amounts were recorded for \(records.entries.count - records.unknownAmountCount) of \(records.entries.count) ingestions.")
+                        Text("Each chart has its own scale. Mass is shown in milligrams, and custom units stay separate.")
                     }
                 }
-                if let domain = records.chartDomain(covering: buckets) {
-                    let values = Dictionary(uniqueKeysWithValues: amountBuckets.map { ($0.id, $0.total) })
-                    StatsPeriodChart(
-                        buckets: buckets, component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
-                        contributions: [], colors: [:], labels: [:], amounts: values, amountUnit: available.key.unit,
-                        selection: Binding(
-                            get: { selectedInterval?.start },
-                            set: { id in selectedInterval = buckets.first { $0.id == id }?.interval }
-                        )
-                    )
-                }
-                NavigationLink {
-                    StatsSelectedEntriesScreen(metric: .ingestions, selection: scoped, amountKey: available.key)
-                } label: {
-                    LabeledContent("Matching Ingestions", value: (selectedAmount?.count ?? 0).formatted())
-                }
-                .disabled(selectedAmount == nil)
-            }
-        } footer: {
-            if available != nil {
-                Text("Each chart shows one substance and compatible units. Mass values use milligrams. Custom units stay separate.")
             }
         }
     }
 
-    private func amountLabel(_ amount: StatsRecords.Amount) -> String {
+    private func amountExpansion(for key: StatsRecords.Amount.Key) -> Binding<Bool> {
+        Binding {
+            expandedAmounts.contains(key)
+        } set: { isExpanded in
+            if isExpanded {
+                expandedAmounts.insert(key)
+            } else {
+                expandedAmounts.remove(key)
+                if selectedAmountKey == key { selectedInterval = nil }
+            }
+        }
+    }
+
+    private func amountTotal(_ amount: StatsRecords.Amount, prominent: Bool = false) -> some View {
         let name = PersistenceController.shared.displayName(for: amount.key.substance)
-        let unit = amount.customUnitName ?? amount.key.unit
-        return unit.isEmpty ? name : "\(name) (\(unit))"
+        return VStack(alignment: .leading, spacing: 4) {
+            if let customUnitName = amount.customUnitName {
+                Text("\(name) (\(customUnitName))")
+            } else {
+                Text(name)
+            }
+            Text(formattedAmount(amount.total, unit: amount.key.unit))
+                .font(prominent ? .largeTitle.weight(.semibold) : .subheadline)
+                .monospacedDigit()
+                .foregroundStyle(prominent ? .primary : .secondary)
+        }
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
-    private func amountsSection(_ records: StatsRecords) -> some View {
-        let amounts = records.amounts
-        let missingCount = records.unknownAmountCount
-        Section {
-            if amounts.isEmpty {
-                Text("No amounts were recorded for these ingestions.")
-                    .foregroundStyle(.secondary)
-            }
-            ForEach(amounts) { amount in
-                DisclosureGroup {
-                    LabeledContent("Ingestions", value: amount.count.formatted())
-                    LabeledContent("Average per Ingestion", value: formattedAmount(amount.average, unit: amount.key.unit))
-                    LabeledContent("Median per Ingestion", value: formattedAmount(amount.median, unit: amount.key.unit))
-                    LabeledContent("Lowest", value: formattedAmount(amount.minimum, unit: amount.key.unit))
-                    LabeledContent("Highest", value: formattedAmount(amount.maximum, unit: amount.key.unit))
-                    if let average = amount.experienceAverage {
-                        LabeledContent("Experiences with Amounts", value: amount.experienceCount.formatted())
-                        LabeledContent("Average per Experience", value: formattedAmount(average, unit: amount.key.unit))
+    private func amountChart(
+        _ amount: StatsRecords.Amount, buckets: [StatsRecords.AmountBucket], domain: ClosedRange<Date>?,
+        records: StatsRecords, focused: StatsRecords, color: Color
+    ) -> some View {
+        if selectedAmountKey == amount.key, selectedInterval != nil {
+            Text(statsRangeLabel(focused.range, journalDay: records.journalDay))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        if let domain, !buckets.isEmpty {
+            StatsPeriodChart(
+                buckets: buckets.map { StatsRecords.Bucket(interval: $0.interval, count: 0) },
+                component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
+                contributions: [], colors: [:], labels: [:],
+                amounts: Dictionary(uniqueKeysWithValues: buckets.map { ($0.id, $0.total) }),
+                amountUnit: amount.key.unit, amountColor: color,
+                selection: Binding(
+                    get: { selectedAmountKey == amount.key ? selectedInterval?.start : nil },
+                    set: { id in
+                        selectedAmountKey = amount.key
+                        selectedInterval = buckets.first { $0.id == id }?.interval
                     }
-                } label: {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text(amountLabel(amount))
-                        Text(formattedAmount(amount.total, unit: amount.key.unit))
-                            .font(.subheadline.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
-        } header: {
-            Text("Recorded Amounts")
-        } footer: {
-            if !amounts.isEmpty {
-                Text("Amounts were recorded for \(records.entries.count - missingCount) of \(records.entries.count) ingestions.")
-            }
+                )
+            )
+
+        }
+    }
+
+    private func matchingAmountsLink(_ amount: StatsRecords.Amount, selection: StatsSelection) -> some View {
+        NavigationLink {
+            StatsSelectedEntriesScreen(metric: .ingestions, selection: selection, amountKey: amount.key)
+        } label: {
+            LabeledContent("Matching Ingestions", value: amount.count.formatted())
+        }
+    }
+
+    @ViewBuilder
+    private func amountDetails(_ amount: StatsRecords.Amount) -> some View {
+        LabeledContent("Average per Ingestion", value: formattedAmount(amount.average, unit: amount.key.unit))
+        LabeledContent("Median per Ingestion", value: formattedAmount(amount.median, unit: amount.key.unit))
+        LabeledContent("Lowest", value: formattedAmount(amount.minimum, unit: amount.key.unit))
+        LabeledContent("Highest", value: formattedAmount(amount.maximum, unit: amount.key.unit))
+        if let average = amount.experienceAverage {
+            LabeledContent("Experiences with Amounts", value: amount.experienceCount.formatted())
+            LabeledContent("Average per Experience", value: formattedAmount(average, unit: amount.key.unit))
         }
     }
 
@@ -794,6 +834,29 @@ func statsRangeLabel(_ interval: DateInterval, journalDay: JournalDay) -> String
     return (start..<end).formatted(.interval.year().month(.abbreviated).day())
 }
 
+private struct StatsAmountTrendPreview: View {
+    let buckets: [StatsRecords.AmountBucket]
+    let component: Calendar.Component
+    let domain: ClosedRange<Date>
+    let journalDay: JournalDay
+    let color: Color
+
+    var body: some View {
+        Chart(buckets) { bucket in
+            BarMark(
+                x: .value("Period", journalDay.label(for: bucket.id), unit: component),
+                y: .value("Amount", bucket.total)
+            )
+            .foregroundStyle(color)
+        }
+        .chartXScale(domain: domain)
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .frame(width: 64, height: 26)
+        .accessibilityHidden(true)
+    }
+}
+
 private struct StatsPeriodChart: View {
     let buckets: [StatsRecords.Bucket]
     let component: Calendar.Component
@@ -804,6 +867,7 @@ private struct StatsPeriodChart: View {
     let labels: [String: String]
     var amounts: [Date: Double]? = nil
     var amountUnit = ""
+    var amountColor: Color = .accentColor
     @Binding var selection: Date?
 
     var body: some View {
@@ -815,7 +879,7 @@ private struct StatsPeriodChart: View {
                             x: .value("Period", journalDay.label(for: bucket.id), unit: component),
                             y: .value("Amount", amount)
                         )
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(amountColor)
                         .opacity(opacity(for: bucket.id))
                         .accessibilityLabel(Text(statsRangeLabel(bucket.interval, journalDay: journalDay)))
                         .accessibilityValue(Text(amountValue(amount)))
