@@ -10,9 +10,16 @@ class Navigator: ObservableObject {
     @Published var saferTabPath = NavigationPath()
     @Published var settingsTabPath = NavigationPath()
 
-    @Published var isShowingAddIngestionSheet = false
+    @Published var isShowingAddIngestionSheet = false {
+        didSet {
+            if !isShowingAddIngestionSheet {
+                ingestionPrefill = nil
+            }
+        }
+    }
     // The time a new ingestion starts at, handed to the add ingestion screens; nil is now
     @Published private(set) var addIngestionStartTime: Date?
+    @Published private(set) var ingestionPrefill: IngestionPrefill?
 
     @Published var selectedTab: Tab = .journal
 
@@ -111,8 +118,20 @@ class Navigator: ObservableObject {
     }
 
     func showAddIngestionFullScreenCover(startingAt startTime: Date? = nil) {
+        guard !isShowingAddIngestionSheet else { return }
+        ingestionPrefill = nil
         addIngestionStartTime = startTime
-        isShowingAddIngestionSheet.toggle()
+        isShowingAddIngestionSheet = true
+    }
+
+    func prefillIngestion(_ prefill: IngestionPrefill) -> Bool {
+        guard !isShowingAddIngestionSheet else { return false }
+        selectedTab = .journal
+        journalTabPath.removeLast(journalTabPath.count)
+        ingestionPrefill = prefill
+        addIngestionStartTime = prefill.time
+        isShowingAddIngestionSheet = true
+        return true
     }
 }
 
@@ -120,9 +139,18 @@ private struct AddIngestionStartTimeKey: EnvironmentKey {
     static let defaultValue: Date? = nil
 }
 
+private struct IngestionPrefillNoteKey: EnvironmentKey {
+    static let defaultValue: String? = nil
+}
+
 extension EnvironmentValues {
     var addIngestionStartTime: Date? {
         get { self[AddIngestionStartTimeKey.self] }
         set { self[AddIngestionStartTimeKey.self] = newValue }
+    }
+
+    var ingestionPrefillNote: String? {
+        get { self[IngestionPrefillNoteKey.self] }
+        set { self[IngestionPrefillNoteKey.self] = newValue }
     }
 }

@@ -31,12 +31,14 @@ struct FinishIngestionScreen: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
+    @Environment(\.ingestionPrefillNote) private var prefillNote
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedEndTime = Date().addingTimeInterval(30*60)
     @State private var enteredNote = ""
+    @State private var showsMoreDetails = false
     @State private var enteredTitle = ""
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
@@ -152,7 +154,7 @@ struct FinishIngestionScreen: View {
                 }
             }
             Section {
-                DisclosureGroup("More Details") {
+                DisclosureGroup("More Details", isExpanded: $showsMoreDetails) {
                     TextField("Enter Note", text: $enteredNote, axis: .vertical)
                         .textInputAutocapitalization(.sentences)
                     ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
@@ -216,6 +218,10 @@ struct FinishIngestionScreen: View {
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
             wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
+            if let prefillNote, !prefillNote.isEmpty {
+                enteredNote = prefillNote
+                showsMoreDetails = true
+            }
             if let startTime {
                 selectedTime = startTime
                 selectedEndTime = startTime.addingTimeInterval(30*60)

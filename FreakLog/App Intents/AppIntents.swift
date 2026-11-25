@@ -40,6 +40,30 @@ struct AddIngestionIntent: AppIntent {
     static let openAppWhenRun: Bool = true
 }
 
+struct PrefillIngestionIntent: AppIntent {
+    static let title: LocalizedStringResource = "Prefill Ingestion"
+    static let description = IntentDescription("Open an ingestion draft in FreakLog for review.")
+    static let openAppWhenRun = true
+
+    @Parameter(title: "Substance") var substance: String?
+    @Parameter(title: "Route") var route: String?
+    @Parameter(title: "Amount") var amount: Double?
+    @Parameter(title: "Unit") var unit: String?
+    @Parameter(title: "Time") var time: Date?
+    @Parameter(title: "Note") var note: String?
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ProvidesDialog {
+        let opened = Navigator.shared.prefillIngestion(
+            IngestionPrefill(substance: substance, route: route, amount: amount, unit: unit, time: time, note: note)
+        )
+        let dialog: IntentDialog = opened
+            ? "Review the ingestion in FreakLog."
+            : "Finish or cancel your open ingestion draft before starting another."
+        return .result(dialog: dialog)
+    }
+}
+
 
 struct JournalAutoShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {

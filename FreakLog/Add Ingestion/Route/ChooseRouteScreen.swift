@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ChooseRouteScreen: View {
     let substance: AddIngestionSubstance
+    var shortcutRoute: AdministrationRoute? = nil
     let dismiss: () -> Void
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
@@ -18,9 +19,15 @@ struct ChooseRouteScreen: View {
     var screen: some View {
         VStack(alignment: .center) {
             VStack(alignment: .leading) {
-                let documentedRoutes = substance.documentedRoutes
+                if let shortcutRoute {
+                    Text("From Shortcut")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    getRouteBoxWithNavigation(route: shortcutRoute)
+                }
+                let documentedRoutes = substance.documentedRoutes.filter { $0 != shortcutRoute }
                 let otherRoutes = AdministrationRoute.allCases.filter { route in
-                    !documentedRoutes.contains(route)
+                    route != shortcutRoute && !documentedRoutes.contains(route)
                 }
                 if documentedRoutes.isEmpty {
                     getGroupOfRoutes(routes: otherRoutes)
