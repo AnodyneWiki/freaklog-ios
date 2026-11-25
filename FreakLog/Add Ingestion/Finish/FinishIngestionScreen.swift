@@ -171,7 +171,7 @@ struct FinishIngestionScreen: View {
                 }
             }
         }
-        .onChange(of: selectedTime) { _ in
+        .onChange(of: selectedTimeRange) { _ in
             selectExperienceBasedOnCurrentTime()
         }
         .onAppear {
@@ -386,14 +386,19 @@ struct FinishIngestionScreen: View {
     }
 
     func selectExperienceBasedOnCurrentTime() {
-        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: selectedTime)
+        let dates = selectedTimeRange
+        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: dates)
         if hasSelectedExperience {
             if let selectedExperience, !experiencesWithinLargerRange.contains(selectedExperience) {
                 experiencesWithinLargerRange.insert(selectedExperience, at: 0)
             }
         } else {
-            selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: selectedTime)
+            selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: dates)
         }
+    }
+
+    private var selectedTimeRange: ClosedRange<Date> {
+        selectedTime...((selectedTimePickerOption == .timeRange) ? max(selectedTime, selectedEndTime) : selectedTime)
     }
 
     private var substanceNames: [String] {
