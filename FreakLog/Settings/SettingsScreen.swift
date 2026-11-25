@@ -97,11 +97,15 @@ struct SettingsContent: View {
                     }
                 }
             }
+            Section {
+                NavigationLink {
+                    JournalHelpScreen(isEyeOpen: isEyeOpen)
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+            }
             if isEyeOpen {
                 Section("Communication") {
-                    NavigationLink(value: GlobalNavigationDestination.faq) {
-                        Label("Frequently Asked Questions", systemImage: "questionmark.square")
-                    }
                     Link(destination: URL(string: repoUrl)!) {
                         Label("Source Code", systemImage: "doc.text.magnifyingglass")
                     }
@@ -147,6 +151,27 @@ struct SettingsContent: View {
         isEyeOpen.toggle()
         NotificationCenter.default.post(name: Notification.eyeName, object: nil)
         playHapticFeedback()
+    }
+}
+
+private struct JournalHelpScreen: View {
+    let isEyeOpen: Bool
+
+    var body: some View {
+        List {
+            Section("Privacy") {
+                Text("Your journal is stored on this device by default. You can turn on iCloud Sync in Settings.")
+            }
+            Section("Backups") {
+                Text("Open Journal Data in Settings to export a backup or restore from a file.")
+            }
+            if isEyeOpen {
+                NavigationLink(value: GlobalNavigationDestination.faq) {
+                    Label("Frequently Asked Questions", systemImage: "questionmark.circle")
+                }
+            }
+        }
+        .navigationTitle("Help")
     }
 }
 
