@@ -113,6 +113,7 @@ final class WebhookManager {
     // MARK: - Sending Webhooks
 
     func sendWebhooks(for ingestion: Ingestion, presetObjectIDs: [NSManagedObjectID]) {
+        guard !ingestion.isUnconfirmed else { return }
         let content = WebhookService.content(for: WebhookDataSnapshot(ingestion: ingestion), settings: .current)
         send(content, about: ingestion.objectID, to: presetObjectIDs)
     }
@@ -200,6 +201,7 @@ final class WebhookManager {
     // MARK: - Editing Webhooks
 
     func editWebhookMessages(for ingestion: Ingestion) {
+        guard !ingestion.isUnconfirmed else { return }
         let content = WebhookService.content(for: WebhookDataSnapshot(ingestion: ingestion), settings: .current)
         edit(about: ingestion.objectID, to: content)
     }

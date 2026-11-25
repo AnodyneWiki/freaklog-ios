@@ -15,6 +15,7 @@ struct AllIngestionsView: View {
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var sheetToShow: SheetOption?
+    @State private var pendingIngestionDeletion: Ingestion?
 
     var body: some View {
         List {
@@ -65,6 +66,23 @@ struct AllIngestionsView: View {
                 EditIngestionScreen(ingestion: ingestion)
             case .editTimedNote(let timedNote, let experience):
                 EditTimedNoteScreen(timedNote: timedNote, experience: experience)
+            }
+        }
+        .confirmationDialog("Delete Ingestion?", isPresented: Binding(
+            get: { pendingIngestionDeletion != nil },
+            set: { if !$0 { pendingIngestionDeletion = nil } }
+        ), titleVisibility: .visible, presenting: pendingIngestionDeletion) { ingestion in
+            let count = ingestion.pendingConfirmationEntries.count
+            let title = count > 1 ? "Delete \(count) Entries" : ingestion.stockChange == nil ? "Delete Entry" : "Delete Entry, Keep Stock Use"
+            Button(title, role: .destructive) { viewModel.delete(ingestion) }
+            if ingestion.stockChange?.canReverseUse == true {
+                Button("Delete Entry and Return Stock", role: .destructive) {
+                    Task { await IngestionDeletion.delete(ingestions: [ingestion], returningStock: true) }
+                }
+            }
+        } message: { ingestion in
+            if ingestion.pendingConfirmationEntries.count > 1 {
+                Text("All entries in this unconfirmed batch will be removed.")
             }
         }
         .onChange(of: searchText) { newValue in
@@ -211,14 +229,28 @@ private extension AllIngestionsView {
                 openExperienceButton(experience)
             }
 
+            if isEyeOpen {
+                Button {
+                    Navigator.shared.openInCurrentTab(.substanceHistory(name: ingestion.substanceNameUnwrapped))
+                } label: {
+                    Label("Substance History", systemImage: "chart.bar")
+                }
+            }
+
             Button {
                 sheetToShow = .editIngestion(ingestion)
             } label: {
-                Label("Edit", systemImage: "pencil")
+                Label(ingestion.isUnconfirmed ? "Review Unconfirmed Entry" : "Edit", systemImage: "pencil")
+            }
+
+            Button {
+                Navigator.shared.showAddIngestionFullScreenCover(startingAt: ingestion.time, endingAt: ingestion.endTime)
+            } label: {
+                Label("Add Ingestion at Same Time", systemImage: "plus")
             }
 
             Button(role: .destructive) {
-                viewModel.delete(ingestion)
+                pendingIngestionDeletion = ingestion
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -273,7 +305,7 @@ private extension AllIngestionsView {
 
     func delete(_ item: IngestionSection.Item) {
         switch item {
-        case .ingestion(let ingestion): viewModel.delete(ingestion)
+        case .ingestion(let ingestion): pendingIngestionDeletion = ingestion
         case .timedNote(let timedNote): viewModel.delete(timedNote)
         }
     }

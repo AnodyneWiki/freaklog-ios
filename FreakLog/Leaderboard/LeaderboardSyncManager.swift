@@ -181,6 +181,7 @@ final class LeaderboardSyncManager: ObservableObject {
     do {
       context = try persistence.journalEditContext()
       ingestions = try PersistenceController.getPersonalIngestions(from: server.startsAt, to: server.expiresAt, in: context)
+        .filter { !$0.isUnconfirmed }
     } catch {
       reportSyncError(server, "Could not read journal entries. \(error.localizedDescription)")
       return

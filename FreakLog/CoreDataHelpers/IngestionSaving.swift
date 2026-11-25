@@ -19,7 +19,9 @@ enum IngestionSaving {
     }
 
     static func didSave(_ ingestions: [Ingestion], newIngestions: [Ingestion], sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) {
-        for ingestion in ingestions {
+        let confirmed = ingestions.filter { !$0.isUnconfirmed }
+        guard !confirmed.isEmpty else { return }
+        for ingestion in confirmed {
             if newIngestions.contains(ingestion) {
                 if !presetObjectIDs.isEmpty {
                     WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
@@ -30,6 +32,47 @@ enum IngestionSaving {
         }
         Task {
             await LeaderboardSyncManager.shared.syncAll()
+        }
+        if confirmed.contains(where: { $0.routineOccurrence != nil }) {
+            Task { await RoutineSchedules.shared.refresh() }
+        }
+    }
+
+    static func stageConfirmation(
+        for ingestion: Ingestion,
+        stockContainerID: NSManagedObjectID?,
+        in context: NSManagedObjectContext
+    ) throws -> [Ingestion] {
+        let pending = ingestion.pendingConfirmationEntries
+        guard !pending.isEmpty else { throw ConfirmationError.alreadyConfirmed }
+        let pendingSet = Set(pending)
+        for occurrence in Set(pending.compactMap(\.routineOccurrence)) {
+            let linked = occurrence.ingestions?.allObjects as? [Ingestion] ?? []
+            guard !occurrence.isSkipped, !linked.contains(where: { !pendingSet.contains($0) && !$0.isUnconfirmed }) else {
+                throw ConfirmationError.routineChanged
+            }
+            occurrence.snoozedUntil = nil
+        }
+        if let stockContainerID {
+            guard let use = Inventory.Use(pending.map(\.inventoryArguments)) else { throw InventoryError.sourceChanged }
+            try use.stage(using: stockContainerID, for: pending, at: ingestion.timeUnwrapped, in: context)
+        }
+        for entry in pending {
+            entry.isUnconfirmed = false
+            entry.confirmationBatchID = nil
+        }
+        return pending
+    }
+
+    private enum ConfirmationError: LocalizedError {
+        case alreadyConfirmed
+        case routineChanged
+
+        var errorDescription: String? {
+            switch self {
+            case .alreadyConfirmed: String(localized: "This ingestion has already been confirmed.")
+            case .routineChanged: String(localized: "The linked routine was skipped or already logged.")
+            }
         }
     }
 }

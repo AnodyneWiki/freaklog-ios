@@ -14,12 +14,14 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(tabs.hiddenTabs, [.stats])
     XCTAssertTrue(tabs.enabledTabs.contains(.tools))
 
-    tabs.toggleVisibility(for: .tools)
+    tabs.setVisibility(for: .tools, isVisible: false)
     XCTAssertEqual(TabManager(defaults: defaults).hiddenTabs, [.stats, .tools])
 
-    defaults.set("[\"substances\",\"tools\",\"safer\"]", forKey: PersistenceController.hiddenTabsKey)
+    defaults.set("[\"substances\",\"tools\",\"safer\",\"journal\",\"settings\"]", forKey: PersistenceController.hiddenTabsKey)
     tabs.reload()
     XCTAssertEqual(tabs.hiddenTabs, [.substances, .tools])
+    XCTAssertTrue(tabs.enabledTabs.contains(.journal))
+    XCTAssertTrue(tabs.enabledTabs.contains(.settings))
   }
 
   // Backups of every format version must keep importing. Never edit a fixture; add one for each new version.
@@ -182,7 +184,7 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertNil(container.capacityFraction)
     try original.save()
     let backup = try JournalBackup(context: original, defaults: Self.emptyDefaults(), appVersion: "1")
-    XCTAssertEqual(backup.formatVersion, 4)
+    XCTAssertEqual(backup.formatVersion, 5)
 
     func restoredValues(from backup: JournalBackup) throws -> (capacity: Double?, remaining: Double, fraction: Double?) {
       let read = try XCTUnwrap(JournalBackup.read(backup.fileData()))
@@ -221,6 +223,84 @@ final class JournalBackupTests: XCTestCase {
       XCTAssertEqual(error as? JournalBackupError, .unknownObject("missing-experience"))
     }
     XCTAssertEqual(try context.fetch(Experience.fetchRequest()), [original])
+  }
+
+  func testUnconfirmedBackupRoundTripAndVersionFourDefaults() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let experience = Experience.create(at: .now, title: "Unconfirmed", in: source)
+    let item = Ingestion(context: source)
+    item.experience = experience
+    item.time = .now
+    item.isUnconfirmed = true
+    let batchID = UUID()
+    item.confirmationBatchID = batchID
+    try source.save()
+
+    let current = try JournalBackup(context: source, defaults: Self.emptyDefaults(), appVersion: "1.6.0")
+    func restore(_ backup: JournalBackup) throws -> (Bool, UUID?) {
+      let decoded = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+      let target = PersistenceController(inMemory: true).viewContext
+      try decoded.restore(into: target)
+      let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
+      return (imported.isUnconfirmed, imported.confirmationBatchID)
+    }
+    let latest = try restore(current)
+    XCTAssertTrue(latest.0)
+    XCTAssertEqual(latest.1, batchID)
+
+    var old = current
+    old.formatVersion = 4
+    old.dataModel = "FreakLog Version 15"
+    old.entities["Ingestion"]?[0].attributes.removeValue(forKey: "isUnconfirmed")
+    old.entities["Ingestion"]?[0].attributes.removeValue(forKey: "confirmationBatchID")
+    let migrated = try restore(old)
+    XCTAssertFalse(migrated.0)
+    XCTAssertNil(migrated.1)
+  }
+
+  func testImportsVersionFiveBackupFixture() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v5", withExtension: "json"))
+    let backup = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let context = PersistenceController(inMemory: true).viewContext
+    try backup.restore(into: context)
+    let item = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertTrue(item.isUnconfirmed)
+    XCTAssertEqual(item.confirmationBatchID, UUID(uuidString: "01234567-89AB-4CDE-8F01-23456789ABCD"))
+  }
+
+  func testConfirmingBatchKeepsTimesAndRecordsStockOnlyOnce() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let time = Date(timeIntervalSince1970: 1_700_000_000)
+    let experience = Experience.create(at: time, title: "Batch", in: context)
+    let formulation = Formulation(context: context)
+    formulation.name = "Blend"
+    let container = StockContainer(context: context)
+    container.formulation = formulation
+    container.unit = Inventory.Use.formulationUnit
+    try Inventory.stage(.opening, quantity: 10, in: container)
+    let id = UUID()
+    let batch = (0..<2).map { index in
+      let ingestion = Ingestion(context: context)
+      ingestion.experience = experience
+      ingestion.formulation = formulation
+      ingestion.formulationAmount = 2
+      ingestion.isUnconfirmed = true
+      ingestion.confirmationBatchID = id
+      ingestion.time = time.addingTimeInterval(Double(index))
+      return ingestion
+    }
+    try context.save()
+
+    XCTAssertEqual(container.remaining, 10)
+    let confirmed = try IngestionSaving.stageConfirmation(for: batch[0], stockContainerID: container.objectID, in: context)
+    XCTAssertEqual(Set(confirmed), Set(batch))
+    XCTAssertEqual(container.remaining, 8)
+    XCTAssertEqual(batch[0].stockChange, batch[1].stockChange)
+    XCTAssertEqual(batch[0].stockChange?.date, time)
+    XCTAssertEqual(batch.map(\.time), [time, time.addingTimeInterval(1)])
+    XCTAssertTrue(batch.allSatisfy { !$0.isUnconfirmed && $0.confirmationBatchID == nil })
+    XCTAssertThrowsError(try IngestionSaving.stageConfirmation(for: batch[1], stockContainerID: container.objectID, in: context))
+    XCTAssertEqual(container.remaining, 8)
   }
 
   func testProtectedBackupsUseTheSameValidationAsPlainBackups() throws {

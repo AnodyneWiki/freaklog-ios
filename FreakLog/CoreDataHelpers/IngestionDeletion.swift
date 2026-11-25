@@ -31,7 +31,13 @@ enum IngestionDeletion {
         do {
             let context = try PersistenceController.shared.journalEditContext()
             let identifiers = try PersistenceController.withJournalStoreWrite {
-                let rootObjects = try objects.filter { !$0.isDeleted }.map { try PersistenceController.journalObject($0, in: context) }
+                let rootObjects = try objects.filter { !$0.isDeleted }.flatMap { object -> [NSManagedObject] in
+                    let stored = try PersistenceController.journalObject(object, in: context)
+                    if let ingestion = stored as? Ingestion, ingestion.isUnconfirmed {
+                        return ingestion.pendingConfirmationEntries
+                    }
+                    return [stored]
+                }.uniqued()
                 var ingestions: [Ingestion] = []
                 var notes: [TimedNote] = []
                 for object in rootObjects {
@@ -49,7 +55,7 @@ enum IngestionDeletion {
                         break
                     }
                 }
-                let identifiers = ingestions.compactMap(\.identifier)
+                let identifiers = ingestions.filter { !$0.isUnconfirmed }.compactMap(\.identifier)
                 if returningStock {
                     guard rootObjects.count == 1, let ingestion = rootObjects.first as? Ingestion else {
                         throw InventoryError.cannotReverseUse
@@ -75,10 +81,12 @@ enum IngestionDeletion {
         Task {
             async let webhooks = WebhookManager.shared.retryPendingDeletions()
             async let leaderboards: Void = LeaderboardSyncManager.shared.retryPendingDeletions()
+            async let routines: Void = RoutineSchedules.shared.refresh()
             if !(await webhooks) {
                 NotificationCenter.default.post(name: failureNotification, object: "Webhook cleanup will retry")
             }
             await leaderboards
+            await routines
         }
     }
 }

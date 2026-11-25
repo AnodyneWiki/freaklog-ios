@@ -63,6 +63,11 @@ private struct IngestionRowContent<Content: View>: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.primary)
+                if ingestion.isUnconfirmed {
+                    Label("Unconfirmed", systemImage: "questionmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 doseRow
                 Group {
                     if !ingestion.noteUnwrapped.isEmpty {

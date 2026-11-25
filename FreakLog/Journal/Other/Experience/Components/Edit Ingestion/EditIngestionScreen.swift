@@ -4,7 +4,7 @@ import SwiftUI
 // MARK: - EditIngestionScreen
 
 struct EditIngestionScreen: View {
-    let ingestion: Ingestion
+    @ObservedObject var ingestion: Ingestion
     @State private var isHidden = false
     @State private var time = Date()
     @State private var endTime = Date().addingTimeInterval(30*60)
@@ -17,16 +17,28 @@ struct EditIngestionScreen: View {
     @State private var selectedCustomUnit: CustomUnit? = nil
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var siteSelection = AdministrationSiteSelection()
+    @State private var correctedSubstance: AddIngestionSubstance?
+    @State private var correctedRoute: AdministrationRoute?
+    @State private var stockContainerID: NSManagedObjectID?
+    @State private var sendConfirmationWebhooks = false
+    @State private var correctionRequest: EditRequest?
+
+    private enum EditRequest: String, Identifiable {
+        case save, confirm
+        var id: Self { self }
+    }
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
     @EnvironmentObject private var toastViewModel: ToastViewModel
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
     @State private var sheetToShow: SheetOption?
 
     enum SheetOption: Identifiable {
         case editLocation
         case editConsumer
+        case correctSubstance
 
         var id: Self {
             self
@@ -35,15 +47,23 @@ struct EditIngestionScreen: View {
 
     @FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest())
     var customUnits: FetchedResults<CustomUnit>
+    @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest())
+    private var webhookPresets: FetchedResults<WebhookPreset>
+
+    private var substanceName: String { correctedSubstance?.name ?? ingestion.substanceNameUnwrapped }
+    private var route: AdministrationRoute { correctedRoute ?? ingestion.administrationRouteUnwrapped }
+    private var correctsIdentity: Bool {
+        substanceName != ingestion.substanceNameUnwrapped || route != ingestion.administrationRouteUnwrapped
+    }
 
     private var filteredCustomUnit: [CustomUnit] {
         customUnits.filter { unit in
-            unit.substanceNameUnwrapped == ingestion.substanceNameUnwrapped && unit.administrationRouteUnwrapped == ingestion.administrationRouteUnwrapped
+            unit.substanceNameUnwrapped == substanceName && unit.administrationRouteUnwrapped == route
         }
     }
 
     private var roaDose: RoaDose? {
-        ingestion.roaDose
+        PersistenceController.shared.resolvedDose(for: substanceName, route: route)
     }
 
     @State private var experiencesWithinLargerRange: [Experience] = []
@@ -61,7 +81,7 @@ struct EditIngestionScreen: View {
             roaDose: roaDose,
             customUnit: $selectedCustomUnit,
             otherUnits: filteredCustomUnit,
-            route: ingestion.administrationRouteUnwrapped,
+            route: route,
             selectedTimePickerOption: $selectedTimePickerOption,
             time: $time,
             endTime: $endTime,
@@ -72,7 +92,7 @@ struct EditIngestionScreen: View {
             note: $note,
             consumerName: $consumerName,
             siteSelection: $siteSelection,
-            save: save,
+            save: { request(.save) },
             delete: delete,
             deleteWebhookMessage: WebhookManager.shared.deleteMessage,
             isHidden: $isHidden,
@@ -80,7 +100,11 @@ struct EditIngestionScreen: View {
             wantsToForceNewExperience: $wantsToForceNewExperience,
             experiencesWithinLargerRange: experiencesWithinLargerRange,
             sheetToShow: $sheetToShow
-        ).onFirstAppear {
+        ) {
+            identitySection
+            if ingestion.isUnconfirmed { confirmationSection }
+        }
+        .onFirstAppear {
             locationManager.selectLocation(ingestion.location?.asLocation)
             time = ingestion.timeUnwrapped
             if let eTime = ingestion.endTime {
@@ -107,53 +131,248 @@ struct EditIngestionScreen: View {
         .onChange(of: time) { _ in
             setExperiencesBasedOnTime()
         }
+        .confirmationDialog("Save Correction?", isPresented: Binding(
+            get: { correctionRequest != nil },
+            set: { if !$0 { correctionRequest = nil } }
+        ), titleVisibility: .visible, presenting: correctionRequest) { request in
+            Button(ingestion.stockChange != nil ? "Keep Stock History" : "Save Correction") {
+                save(request)
+            }
+            if ingestion.stockChange?.canReverseUse == true {
+                Button("Save and Return Stock") { save(request, returningStock: true) }
+            }
+        } message: { _ in
+            Text(correctionImpact.joined(separator: "\n"))
+        }
         .sheet(item: $sheetToShow, content: { sheet in
             switch sheet {
             case .editLocation:
                 ChooseLocationScreen(locationManager: locationManager, onDone: { })
             case .editConsumer:
                 EditConsumerScreen(consumerName: $consumerName)
+            case .correctSubstance:
+                NavigationStack {
+                    SubstancePickerList { $0 }
+                        .navigationDestination(for: AddIngestionSubstance.self) { candidate in
+                            List {
+                                Button("Use \(candidate.displayName)") {
+                                    correctedSubstance = candidate
+                                    updateIdentity()
+                                    sheetToShow = nil
+                                }
+                            }
+                            .navigationTitle(candidate.displayName)
+                        }
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Cancel") { sheetToShow = nil }
+                            }
+                        }
+                }
             }
         })
     }
 
-    private func save() {
+    private var correctionImpact: [String] {
+        guard correctsIdentity || splitsBatch else { return [] }
+        var impact: [String] = []
+        if ingestion.pendingConfirmationEntries.count > 1 {
+            impact.append(String(localized: "The unconfirmed batch will be detached from its product and routine"))
+        }
+        if ingestion.stockChange != nil {
+            impact.append(String(localized: "The corrected entry will be detached from its stock use"))
+        }
+        if ingestion.routineOccurrence != nil {
+            impact.append(String(localized: "The corrected entry will be detached from its routine occurrence"))
+        }
+        if ingestion.formulation != nil {
+            impact.append(String(localized: "The corrected entry will be detached from its formulation"))
+        }
+        return impact
+    }
+
+    private var identitySection: some View {
+        Section {
+            Button {
+                sheetToShow = .correctSubstance
+            } label: {
+                LabeledContent("Change Substance", value: PersistenceController.shared.displayName(for: substanceName))
+            }
+            Picker("Route", selection: Binding(
+                get: { route },
+                set: {
+                    correctedRoute = $0
+                    updateIdentity()
+                }
+            )) {
+                ForEach(AdministrationRoute.allCases) { route in
+                    Text(route.rawValue.localizedCapitalized).tag(route)
+                }
+            }
+            if isEyeOpen, !correctsIdentity {
+                NavigationLink {
+                    SubstanceHistoryScreen(substanceName: substanceName)
+                } label: {
+                    Label("Substance History", systemImage: "chart.bar")
+                }
+            }
+        } header: {
+            Text("Substance")
+        } footer: {
+            if correctsIdentity {
+                Text("Check the amount and units again before saving.")
+            }
+        }
+    }
+
+    private var movesExperience: Bool {
+        wantsToForceNewExperience || selectedExperience?.objectID != ingestion.experience?.objectID
+    }
+
+    private var splitsBatch: Bool { movesExperience && ingestion.pendingConfirmationEntries.count > 1 }
+
+    private var confirmationInventoryUse: Inventory.Use? {
+        guard ingestion.isUnconfirmed, !correctsIdentity, !movesExperience else { return nil }
+        let arguments = ingestion.pendingConfirmationEntries.map { entry in
+            guard entry.objectID == ingestion.objectID else { return entry.inventoryArguments }
+            return FinishIngestionScreenArguments(
+                substanceName: substanceName, administrationRoute: route, dose: dose,
+                units: selectedCustomUnit?.unitUnwrapped ?? roaDose?.units ?? units,
+                isEstimate: isEstimate, estimatedDoseStandardDeviation: estimatedDoseStandardDeviation,
+                customUnit: selectedCustomUnit, formulation: entry.formulation, formulationAmount: entry.formulationAmount
+            )
+        }
+        return Inventory.Use(arguments)
+    }
+
+    @ViewBuilder
+    private var confirmationSection: some View {
+        let count = movesExperience ? 1 : ingestion.pendingConfirmationEntries.count
+        Section {
+            Button(count > 1 ? "Confirm \(count) Ingestions" : "Confirm Ingestion") {
+                request(.confirm)
+            }
+            if !webhookPresets.isEmpty {
+                Toggle("Send Webhooks on Confirmation", isOn: $sendConfirmationWebhooks)
+                if sendConfirmationWebhooks {
+                    LabeledContent("Recipients", value: webhookPresets.map(\.displayName).formatted(.list(type: .and)))
+                }
+            }
+        } header: {
+            Text("Unconfirmed")
+        } footer: {
+            Text("Confirmation includes these entries in totals and keeps their recorded times.")
+        }
+        if let confirmationInventoryUse {
+            InventorySourcePicker(use: confirmationInventoryUse, selection: $stockContainerID)
+        }
+    }
+
+    private func updateIdentity() {
+        selectedCustomUnit = correctsIdentity ? nil : ingestion.customUnit
+        units = correctedSubstance?.customSubstanceUnits ?? roaDose?.units ?? (correctsIdentity ? "" : ingestion.unitsUnwrapped)
+        dose = correctsIdentity ? nil : ingestion.doseUnwrapped
+        isEstimate = !correctsIdentity && ingestion.isEstimate
+        estimatedDoseStandardDeviation = correctsIdentity ? nil : ingestion.estimatedDoseStandardDeviationUnwrapped
+        siteSelection = AdministrationSiteSelection(route: route, storedSite: correctsIdentity ? "" : ingestion.administrationSiteUnwrapped)
+        stockContainerID = nil
+    }
+
+    private func request(_ request: EditRequest) {
+        if correctionImpact.isEmpty {
+            save(request)
+        } else {
+            correctionRequest = request
+        }
+    }
+
+    private func save(_ request: EditRequest, returningStock: Bool = false) {
         do {
             let context = try PersistenceController.shared.journalEditContext()
             let ingestion = try PersistenceController.journalObject(self.ingestion, in: context)
-            ingestion.time = time
-            if selectedTimePickerOption == .timeRange {
-                ingestion.endTime = endTime
-            } else {
-                ingestion.endTime = nil
+            let saved = try PersistenceController.withJournalStoreWrite {
+                try stageEdits(to: ingestion, returningStock: returningStock, in: context)
+                let saved = try request == .confirm
+                    ? IngestionSaving.stageConfirmation(for: ingestion, stockContainerID: confirmationInventoryUse == nil ? nil : stockContainerID, in: context)
+                    : [ingestion]
+                try PersistenceController.saveJournalChanges(in: context)
+                return saved
             }
-            ingestion.dose = dose ?? 0
-            if let selectedCustomUnit {
-                ingestion.customUnit = try PersistenceController.journalObject(selectedCustomUnit, in: context)
-                ingestion.units = selectedCustomUnit.unitUnwrapped
-            } else {
-                ingestion.units = roaDose?.units ?? units
-                ingestion.customUnit = nil
-            }
-            ingestion.isEstimate = isEstimate
-            ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
-            ingestion.note = note
-            ingestion.isHiddenInTimeline = isHidden
-            ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
-            let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
-            ingestion.administrationSite = site.isEmpty ? nil : site
-
-            ingestion.setLocation(locationManager.selectedLocation)
-
-            if wantsToForceNewExperience || selectedExperience == nil {
-                ingestion.experience = Experience.create(at: time, in: context)
-            } else {
-                ingestion.experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
-            }
-            try IngestionSaving.save(ingestion)
+            let confirmed = request == .confirm ? saved : []
+            let recipients = sendConfirmationWebhooks ? webhookPresets.map(\.objectID) : []
+            IngestionSaving.didSave(saved, newIngestions: confirmed, sendingWebhooksTo: recipients)
             dismiss()
         } catch {
-            toastViewModel.showErrorToast(message: "Failed to save ingestion")
+            toastViewModel.showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Failed to save ingestion")
+        }
+    }
+
+    private func stageEdits(to ingestion: Ingestion, returningStock: Bool, in context: NSManagedObjectContext) throws {
+        if correctsIdentity || splitsBatch {
+            for member in ingestion.pendingConfirmationEntries where member != ingestion {
+                member.routineOccurrence = nil
+                member.formulation = nil
+                member.formulationAmount = 0
+            }
+        }
+        if correctsIdentity {
+            if returningStock { try Inventory.stageUsageReversal(for: ingestion) }
+            ingestion.stockChange = nil
+            ingestion.routineOccurrence = nil
+            ingestion.formulation = nil
+            ingestion.formulationAmount = 0
+            if ingestion.substanceNameUnwrapped != substanceName {
+                let request = SubstanceCompanion.fetchRequest()
+                request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+                request.fetchLimit = 1
+                let existing = try context.fetch(request).first
+                let companion = existing ?? SubstanceCompanion(context: context)
+                if existing == nil {
+                    companion.substanceName = substanceName
+                    companion.colorAsText = SubstanceColor.suggested(
+                        avoiding: PersistenceController.shared.getSubstanceCompanions().map(\.color)
+                    ).rawValue
+                }
+                ingestion.substanceCompanion = companion
+                ingestion.color = companion.colorAsText
+            }
+            ingestion.substanceName = substanceName
+            ingestion.administrationRoute = route.rawValue
+        }
+        if splitsBatch {
+            ingestion.routineOccurrence = nil
+            ingestion.formulation = nil
+            ingestion.formulationAmount = 0
+            ingestion.confirmationBatchID = nil
+        }
+        ingestion.time = time
+        if selectedTimePickerOption == .timeRange {
+            ingestion.endTime = endTime
+        } else {
+            ingestion.endTime = nil
+        }
+        ingestion.dose = dose ?? 0
+        if let selectedCustomUnit {
+            ingestion.customUnit = try PersistenceController.journalObject(selectedCustomUnit, in: context)
+            ingestion.units = selectedCustomUnit.unitUnwrapped
+        } else {
+            ingestion.units = roaDose?.units ?? units
+            ingestion.customUnit = nil
+        }
+        ingestion.isEstimate = isEstimate
+        ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
+        ingestion.note = note
+        ingestion.isHiddenInTimeline = isHidden
+        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
+        let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
+        ingestion.administrationSite = site.isEmpty ? nil : site
+
+        ingestion.setLocation(locationManager.selectedLocation)
+
+        if wantsToForceNewExperience || selectedExperience == nil {
+            ingestion.experience = Experience.create(at: time, in: context)
+        } else {
+            ingestion.experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
         }
     }
 
@@ -168,7 +387,7 @@ struct EditIngestionScreen: View {
 
 // MARK: - EditIngestionContent
 
-struct EditIngestionContent: View {
+struct EditIngestionContent<HeaderContent: View>: View {
     @ObservedObject var ingestion: Ingestion
     let roaDose: RoaDose?
     @Binding var customUnit: CustomUnit?
@@ -192,6 +411,7 @@ struct EditIngestionContent: View {
     @Binding var wantsToForceNewExperience: Bool
     let experiencesWithinLargerRange: [Experience]
     @Binding var sheetToShow: EditIngestionScreen.SheetOption?
+    @ViewBuilder var headerContent: HeaderContent
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
@@ -200,6 +420,7 @@ struct EditIngestionContent: View {
     var body: some View {
         NavigationStack {
             Form {
+                headerContent
                 Section("\(route.rawValue.localizedCapitalized) Dose") {
                     VStack(alignment: .leading, spacing: 8) {
                         if let roaDose {
@@ -301,11 +522,7 @@ struct EditIngestionContent: View {
                         Label("Add ingestion at same time", systemImage: "plus")
                     }
                     Button {
-                        if ingestion.stockChange == nil {
-                            delete(false)
-                        } else {
-                            confirmsDeletionWithStock = true
-                        }
+                        confirmsDeletionWithStock = true
                     } label: {
                         Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
                     }
@@ -353,15 +570,19 @@ struct EditIngestionContent: View {
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Ingestion")
             .confirmationDialog("Delete Ingestion?", isPresented: $confirmsDeletionWithStock, titleVisibility: .visible) {
-                Button("Delete Entry, Keep Stock Use", role: .destructive) { delete(false) }
+                let count = ingestion.pendingConfirmationEntries.count
+                let title = count > 1 ? "Delete \(count) Entries" : ingestion.stockChange == nil ? "Delete Entry" : "Delete Entry, Keep Stock Use"
+                Button(title, role: .destructive) { delete(false) }
                 if ingestion.stockChange?.canReverseUse == true {
                     Button("Delete Entry and Return Stock", role: .destructive) { delete(true) }
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                if ingestion.stockChange?.canReverseUse == true {
+                if ingestion.pendingConfirmationEntries.count > 1 {
+                    Text("All entries in this unconfirmed batch will be removed.")
+                } else if ingestion.stockChange?.canReverseUse == true {
                     Text("Return the stock if this entry was logged by mistake.")
-                } else {
+                } else if ingestion.stockChange != nil {
                     Text("The container’s stock history will still show the original amount used.")
                 }
             }
@@ -369,7 +590,9 @@ struct EditIngestionContent: View {
     }
 
     private func addIngestionAtSameTime() {
-        Navigator.shared.showAddIngestionFullScreenCover(startingAt: time)
+        Navigator.shared.showAddIngestionFullScreenCover(
+            startingAt: time, endingAt: selectedTimePickerOption == .timeRange ? endTime : nil
+        )
     }
 }
 
@@ -400,7 +623,7 @@ struct EditIngestionContent: View {
         wantsToForceNewExperience: .constant(false),
         experiencesWithinLargerRange: [],
         sheetToShow: .constant(nil)
-    ).environmentObject(LocationManager())
+    ) { EmptyView() }.environmentObject(LocationManager())
 }
 
 #Preview("Edit custom unit ingestion") {
@@ -428,6 +651,6 @@ struct EditIngestionContent: View {
         wantsToForceNewExperience: .constant(false),
         experiencesWithinLargerRange: [],
         sheetToShow: .constant(nil)
-    ).environmentObject(LocationManager())
+    ) { EmptyView() }.environmentObject(LocationManager())
 }
 

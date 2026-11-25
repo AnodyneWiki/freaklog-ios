@@ -37,6 +37,7 @@ struct FinishIngestionScreen: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
+    @Environment(\.addIngestionEndTime) private var endTime
     @Environment(\.ingestionPrefillNote) private var prefillNote
     @Environment(\.routineOccurrenceSlot) private var routineSlot
     @State private var sheetToShow: SheetOption?
@@ -60,6 +61,7 @@ struct FinishIngestionScreen: View {
     @State private var isSettingUpLoggedRoutine = false
     @State private var stockContainerID: NSManagedObjectID?
     @State private var wantsToStartLiveActivity = true
+    @State private var isUnconfirmed = false
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
@@ -79,7 +81,7 @@ struct FinishIngestionScreen: View {
     }
 
     var doneButton: some View {
-        Button("Log", action: save)
+        Button(isUnconfirmed ? "Save Unconfirmed" : "Log", action: save)
             .font(.headline)
             .disabled(isSettingUpLoggedRoutine)
     }
@@ -135,14 +137,25 @@ struct FinishIngestionScreen: View {
                     .padding(.vertical, 3)
                     .accessibilityElement(children: .combine)
                 }
+                Toggle("Unconfirmed", isOn: $isUnconfirmed)
+                if isUnconfirmed {
+                    Text("Confirm this entry in your journal to include it in totals and use stock or send webhooks.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
-            if sendWebhooks.wrappedValue, !enabledWebhookPresets.isEmpty {
+            if !isUnconfirmed, sendWebhooks.wrappedValue, !enabledWebhookPresets.isEmpty {
                 Section {
                     LabeledContent("Webhook Recipients", value: webhookRecipients)
                 }
             }
-            if let inventoryUse = Inventory.Use(ingestions) {
+            if !isUnconfirmed, let inventoryUse = Inventory.Use(ingestions) {
                 InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
+            }
+            if !isUnconfirmed {
+                ForEach(substanceNames, id: \.self) { name in
+                    StatsGoalLoggingSection(substanceName: name, at: selectedTime)
+                }
             }
             Section("When") {
                 TimePointOrRangePicker(
@@ -178,7 +191,7 @@ struct FinishIngestionScreen: View {
                     }
                     if #available(iOS 16.2, *) {
                         let isTimeRecentOrFuture = selectedTime > Date().addingTimeInterval(-12 * 60 * 60)
-                        if LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive, isTimeRecentOrFuture {
+                        if !isUnconfirmed, LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive, isTimeRecentOrFuture {
                             Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity).tint(.accentColor)
                         }
                     }
@@ -207,7 +220,7 @@ struct FinishIngestionScreen: View {
                     }
                 }
             }
-            if !enabledWebhookPresets.isEmpty {
+            if !isUnconfirmed, !enabledWebhookPresets.isEmpty {
                 Section("Webhooks") {
                     Toggle("Send Webhooks", isOn: sendWebhooks.animation())
                         .tint(.accentColor)
@@ -221,7 +234,7 @@ struct FinishIngestionScreen: View {
                 }
             }
             Section {
-                if let routineDraft {
+                if !isUnconfirmed, let routineDraft {
                     Button("Log and Save as Routine…") { save(then: routineDraft) }
                 }
                 Button("Cancel Logging", role: .cancel, action: dismiss)
@@ -267,7 +280,12 @@ struct FinishIngestionScreen: View {
             }
             if let startTime {
                 selectedTime = startTime
-                selectedEndTime = startTime.addingTimeInterval(30*60)
+                if let endTime, endTime > startTime {
+                    selectedTimePickerOption = .timeRange
+                    selectedEndTime = endTime
+                } else {
+                    selectedEndTime = startTime.addingTimeInterval(30*60)
+                }
             }
             selectExperienceBasedOnCurrentTime()
             locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
@@ -378,7 +396,9 @@ struct FinishIngestionScreen: View {
         let context = try persistence.journalEditContext()
         let occurrence: RoutineOccurrence?
         if let routineSlot {
-            guard let pending = try RoutineSchedules.stageLog(for: routineSlot, in: context) else { return }
+            guard let pending = try RoutineSchedules.stageLog(for: routineSlot, in: context) else {
+                throw RoutineSchedules.StorageError.alreadyLogged
+            }
             occurrence = pending
         } else {
             occurrence = nil
@@ -398,22 +418,29 @@ struct FinishIngestionScreen: View {
                 location: selectedLocationValue,
                 and: context)
         }
+        if isUnconfirmed {
+            let confirmationBatchID = newIngestions.count > 1 ? UUID() : nil
+            for ingestion in newIngestions {
+                ingestion.isUnconfirmed = true
+                ingestion.confirmationBatchID = confirmationBatchID
+            }
+        }
         if let occurrence {
             for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
         }
-        if let stockContainerID {
+        if !isUnconfirmed, let stockContainerID {
             guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
             try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
         }
         try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
         let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
-        if let savedExperience {
+        if !isUnconfirmed, let savedExperience {
             startLiveActivityIfWanted(for: savedExperience, isNewExperience: isNewExperience)
         }
     }
 
     private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
-        guard sendWebhooks.wrappedValue else { return [] }
+        guard !isUnconfirmed, sendWebhooks.wrappedValue else { return [] }
         return enabledWebhookPresets
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.objectID)

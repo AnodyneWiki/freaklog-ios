@@ -24,6 +24,7 @@
 		7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */; };
 		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
+		6910749D78B0A25B9AA3B861 /* Backup v5.json in Resources */ = {isa = PBXBuildFile; fileRef = B0B61C9313915160D6512438 /* Backup v5.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
@@ -521,6 +522,7 @@
 		90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupProtection.swift; sourceTree = "<group>"; };
 		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
+		B0B61C9313915160D6512438 /* Backup v5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v5.json"; sourceTree = "<group>"; };
 		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
 		A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 15.xcdatamodel"; sourceTree = "<group>"; };
 		DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16.xcdatamodel"; sourceTree = "<group>"; };
@@ -1807,6 +1809,7 @@
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
 				050CB115A621D9CF84A3F1BC /* Backup v3.json */,
+				B0B61C9313915160D6512438 /* Backup v5.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				A0A1564B8642BDA2188908CB /* UnifiedSearchTests.swift */,
 				6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */,
@@ -2249,6 +2252,7 @@
 				9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */,
 				5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */,
 				A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */,
+				6910749D78B0A25B9AA3B861 /* Backup v5.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
