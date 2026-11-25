@@ -46,8 +46,8 @@ struct AssistantSettingsScreen: View {
           Text("You can also switch providers in a chat.")
         }
       }
-      webAccessSection
       Section {
+        Toggle("Web Access", isOn: $isWebAccessEnabled)
         Toggle("Look Up Substances on AnodyneWiki", isOn: $isAnodyneWikiEnabled)
         if isAnodyneWikiEnabled {
           NavigationLink(value: GlobalNavigationDestination.anodyneSettings) {
@@ -55,7 +55,7 @@ struct AssistantSettingsScreen: View {
           }
         }
       } header: {
-        Text("Substance Lookups")
+        Text("Online Lookups")
       } footer: {
         Text(
           "Lets the assistant read dose tiers, interactions and warnings on AnodyneWiki when the app's data isn't enough. Only the titles of AnodyneWiki's own pages are requested, never the names of your custom substances.")
@@ -69,14 +69,6 @@ struct AssistantSettingsScreen: View {
   @AppStorage(PersistenceController.isAssistantAnodyneWikiEnabledKey) private var isAnodyneWikiEnabled = true
   @AppStorage(PersistenceController.assistantProfilesKey) private var profilesData = Data()
   @AppStorage(PersistenceController.assistantActiveProfileKey) private var activeProfileID = ""
-  private var webAccessSection: some View {
-    Section {
-      Toggle("Web Access", isOn: $isWebAccessEnabled)
-    } footer: {
-      Text("Uses the web search tool from supported OpenAI, Anthropic, and OpenRouter providers. Search queries are sent to the selected provider. The API key already saved for that provider is used.")
-    }
-  }
-
   private var profiles: [AssistantProfile] {
     AssistantProfileStore.profiles(from: profilesData)
   }
