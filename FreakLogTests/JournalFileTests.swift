@@ -4,6 +4,41 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testJournalImportRequiresAnExperiencesArray() throws {
+        let decoder = JSONDecoder()
+        for json in ["{}", #"{"customUnits":[]}"#, #"{"experiences":null}"#, #"{"experiences":{}}"#] {
+            XCTAssertThrowsError(try decoder.decode(JournalFile.self, from: Data(json.utf8)), json)
+        }
+        let emptyJournal = try decoder.decode(JournalFile.self, from: Data(#"{"experiences":[]}"#.utf8))
+        XCTAssertTrue(emptyJournal.experiences.isEmpty)
+    }
+
+    func testFailedJournalReplacementKeepsSavedEntries() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let savedContext = persistence.viewContext
+        _ = Experience.create(at: .now, title: "Original", in: savedContext)
+        try savedContext.save()
+
+        let importContext = FailingImportContext(concurrencyType: .mainQueueConcurrencyType)
+        importContext.persistentStoreCoordinator = persistence.container.persistentStoreCoordinator
+        let sourceContext = PersistenceController(inMemory: true).viewContext
+        let replacement = Experience.create(at: .now, title: "Replacement", in: sourceContext)
+        let journal = JournalFile(experiences: [replacement], customSubstances: [], customUnits: [])
+
+        XCTAssertThrowsError(try journal.replaceJournal(in: importContext))
+        XCTAssertFalse(importContext.hasChanges)
+        XCTAssertEqual(try importContext.fetch(Experience.fetchRequest()).map(\.title), ["Original"])
+    }
+
+    private final class FailingImportContext: NSManagedObjectContext, @unchecked Sendable {
+        override func save() throws {
+            if !insertedObjects.isEmpty {
+                throw CocoaError(.fileWriteOutOfSpace)
+            }
+            try super.save()
+        }
+    }
+
     func testDatesAreWrittenAsWholeMilliseconds() throws {
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(
             TimedNoteCodable(

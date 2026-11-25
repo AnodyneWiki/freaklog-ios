@@ -33,7 +33,20 @@ struct JournalFile: FileDocument, Codable {
         self.formulations = formulations.map(FormulationCodable.init)
     }
 
-    // Inserts everything in the file. The caller clears the journal before and saves after.
+    // Replaces the journal in a dedicated context so a failed save leaves the old journal intact.
+    func replaceJournal(in context: NSManagedObjectContext) throws {
+        do {
+            try PersistenceController.stageJournalDeletion(in: context)
+            insert(into: context)
+            try context.save()
+        } catch {
+            context.rollback()
+            throw error
+        }
+        PersistenceController.purgeLocalHistory(in: context)
+    }
+
+    // Inserts everything in the file without saving.
     func insert(into context: NSManagedObjectContext) {
         var companions: [String: SubstanceCompanion] = [:]
         for companionCodable in substanceCompanions where companions[companionCodable.substanceName] == nil {
@@ -99,7 +112,7 @@ struct JournalFile: FileDocument, Codable {
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        experiences = try values.decodeIfPresent([ExperienceCodable].self, forKey: .experiences) ?? []
+        experiences = try values.decode([ExperienceCodable].self, forKey: .experiences)
         substanceCompanions = try values.decodeIfPresent([CompanionCodable].self, forKey: .substanceCompanions) ?? []
         customSubstances = try values.decodeIfPresent([CustomSubstanceCodable].self, forKey: .customSubstances) ?? []
         customUnits = try values.decodeIfPresent([CustomUnitCodable].self, forKey: .customUnits) ?? []

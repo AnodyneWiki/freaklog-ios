@@ -200,8 +200,13 @@ struct PersistenceController {
         viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
     }
 
-    func deleteEverything(blockContext: NSManagedObjectContext? = nil) throws {
-        let context = blockContext ?? viewContext
+    func deleteEverything() throws {
+        try Self.stageJournalDeletion(in: viewContext)
+        try viewContext.save()
+        Self.purgeLocalHistory(in: viewContext)
+    }
+
+    static func stageJournalDeletion(in context: NSManagedObjectContext) throws {
         // Entities not reached via cascade delete rules are listed explicitly
         let entityNames = [
             "Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa",
@@ -212,16 +217,12 @@ struct PersistenceController {
             request.includesPropertyValues = false
             try context.fetch(request).forEach(context.delete)
         }
-        try context.save()
+    }
 
-        let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
-        if !isICloudSyncEnabled {
-            let purgeHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
-            do {
-                try context.execute(purgeHistoryRequest)
-            } catch {
-            }
-        }
+    static func purgeLocalHistory(in context: NSManagedObjectContext) {
+        guard !UserDefaults.standard.bool(forKey: isICloudSyncEnabledKey) else { return }
+        let request = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
+        _ = try? context.execute(request)
     }
 
     // One-off data fixes, each run once and remembered under its key, in order

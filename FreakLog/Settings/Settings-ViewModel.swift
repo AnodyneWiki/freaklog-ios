@@ -7,6 +7,7 @@ extension SettingsScreen {
         @Published var isExporting = false
         @Published var exportedFile = ExportedFile()
         weak var toastViewModel: ToastViewModel?
+        private var isImportingData = false
 
         // The journal in the format the Android app reads
         func exportData() {
@@ -79,7 +80,13 @@ extension SettingsScreen {
 
         // swiftlint:disable cyclomatic_complexity function_body_length
         func importData(data: Data) {
+            guard !isImportingData else {
+                showErrorToast(message: "An Import Is Already in Progress")
+                return
+            }
+            isImportingData = true
             Task {
+                defer { isImportingData = false }
                 do {
                     let container = PersistenceController.shared.container
 
@@ -96,33 +103,14 @@ extension SettingsScreen {
                         try JSONDecoder().decode(JournalFile.self, from: Self.tryConvertFile(data))
                     }.value
                     
-                    await container.performBackgroundTask { context in
+                    try await container.performBackgroundTask { context in
                         context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                        
-                        do {
-                            // First delete everything in this background context
-                            try PersistenceController.shared.deleteEverything(blockContext: context)
-                            
-                            file.insert(into: context)
-                            if context.hasChanges {
-                                try context.save()
-                            }
-
-                            Task { @MainActor in
-                                self.showSuccessToast(message: "Import Successful")
-                            }
-                        } catch {
-                            print("Background import failed: \(error)")
-                            Task { @MainActor in
-                                self.showErrorToast(message: "Import Failed")
-                            }
-                        }
+                        try file.replaceJournal(in: context)
                     }
+                    showSuccessToast(message: "Import Successful")
                 } catch {
-                    print("Decoding failed: \(error)")
-                    await MainActor.run {
-                        self.showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
-                    }
+                    print("Import failed: \(error)")
+                    showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
                 }
             }
         }
