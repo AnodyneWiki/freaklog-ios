@@ -4,10 +4,16 @@ import SwiftUI
 // swiftlint:disable type_body_length function_body_length file_length
 
 struct FinishIngestionScreen: View {
-    enum SheetOption: Identifiable {
+    struct RoutineDraft: Hashable {
+        let schedule: RoutineSchedule
+        let productID: NSManagedObjectID
+    }
+
+    enum SheetOption: Identifiable, Hashable {
         case editTitle
         case editLocation
         case editConsumer
+        case setUpRoutine(RoutineDraft)
 
         var id: Self {
             self
@@ -32,6 +38,7 @@ struct FinishIngestionScreen: View {
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
     @Environment(\.ingestionPrefillNote) private var prefillNote
+    @Environment(\.routineOccurrenceSlot) private var routineSlot
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
@@ -50,13 +57,15 @@ struct FinishIngestionScreen: View {
     @State private var wantsToForceNewExperience = false
     @State private var hasSelectedExperience = false
     @State private var saveError: String?
+    @State private var isSettingUpLoggedRoutine = false
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
 
-    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
+    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var defaultSendWebhooks: Bool = false
+    @State private var sendRoutineWebhooks = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
     @State private var hasInitializedWebhooks = false
 
@@ -71,14 +80,25 @@ struct FinishIngestionScreen: View {
     var doneButton: some View {
         Button("Log", action: save)
             .font(.headline)
+            .disabled(isSettingUpLoggedRoutine)
     }
 
     private func save() {
+        save(then: nil)
+    }
+
+    private func save(then routine: RoutineDraft?) {
+        guard !isSettingUpLoggedRoutine else { return }
         do {
             try addIngestionWithExperience()
-            toastViewModel.showSuccessToast()
             generateSuccessHaptic()
-            dismiss()
+            if let routine {
+                isSettingUpLoggedRoutine = true
+                sheetToShow = .setUpRoutine(routine)
+            } else {
+                toastViewModel.showSuccessToast()
+                dismiss()
+            }
         } catch {
             saveError = (error as? LocalizedError)?.errorDescription ?? "Your ingestion couldn’t be saved. Your details are still here."
             generateFailedHaptic()
@@ -91,6 +111,13 @@ struct FinishIngestionScreen: View {
                 Section {
                     Label(saveError, systemImage: "exclamationmark.circle")
                     Button("Try Again", action: save)
+                }
+            }
+            if let routineSlot {
+                Section("Routine") {
+                    LabeledContent("Scheduled") {
+                        Text(routineSlot.scheduledAt, format: .dateTime.month().day().hour().minute())
+                    }
                 }
             }
             Section("Ingestion") {
@@ -108,7 +135,7 @@ struct FinishIngestionScreen: View {
                     .accessibilityElement(children: .combine)
                 }
             }
-            if isWebhookSectionExpanded, !enabledWebhookPresets.isEmpty {
+            if sendWebhooks.wrappedValue, !enabledWebhookPresets.isEmpty {
                 Section {
                     LabeledContent("Webhook Recipients", value: webhookRecipients)
                 }
@@ -178,10 +205,10 @@ struct FinishIngestionScreen: View {
             }
             if !enabledWebhookPresets.isEmpty {
                 Section("Webhooks") {
-                    Toggle("Send Webhooks", isOn: $isWebhookSectionExpanded.animation())
+                    Toggle("Send Webhooks", isOn: sendWebhooks.animation())
                         .tint(.accentColor)
 
-                    if isWebhookSectionExpanded {
+                    if sendWebhooks.wrappedValue {
                         ForEach(enabledWebhookPresets, id: \.objectID) { preset in
                             Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
                                 .tint(.accentColor)
@@ -190,6 +217,9 @@ struct FinishIngestionScreen: View {
                 }
             }
             Section {
+                if let routineDraft {
+                    Button("Log and Save as Routine…") { save(then: routineDraft) }
+                }
                 Button("Cancel Logging", role: .cancel, action: dismiss)
             }
         }
@@ -206,7 +236,9 @@ struct FinishIngestionScreen: View {
         }
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $sheetToShow, content: { sheet in
+        .sheet(item: $sheetToShow, onDismiss: {
+            if isSettingUpLoggedRoutine { dismiss() }
+        }, content: { sheet in
             switch sheet {
             case .editTitle:
                 ExperienceTitleScreen(title: $enteredTitle)
@@ -214,10 +246,17 @@ struct FinishIngestionScreen: View {
                 ChooseLocationScreen(locationManager: locationManager, onDone: { })
             case .editConsumer:
                 EditConsumerScreen(consumerName: $consumerName)
+            case .setUpRoutine(let draft):
+                RoutineScheduleEditor(
+                    schedule: draft.schedule, isNew: true, store: .shared, initialProductID: draft.productID)
             }
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
-            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
+            wantsToStartLiveActivity = routineSlot == nil && shouldAutomaticallyStartLiveActivity
+            if routineSlot != nil {
+                hasSelectedExperience = true
+                wantsToForceNewExperience = true
+            }
             if let prefillNote, !prefillNote.isEmpty {
                 enteredNote = prefillNote
                 showsMoreDetails = true
@@ -227,7 +266,7 @@ struct FinishIngestionScreen: View {
                 selectedEndTime = startTime.addingTimeInterval(30*60)
             }
             selectExperienceBasedOnCurrentTime()
-            locationManager.selectLocation(locationManager.currentLocation)
+            locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
             initializeColorCompanionAndNote()
         }
     }
@@ -241,6 +280,35 @@ struct FinishIngestionScreen: View {
         )
     }
 
+    private var routineDraft: RoutineDraft? {
+        guard routineSlot == nil, let first = ingestions.first else { return nil }
+        let product: NSManagedObject
+        let name: String
+        let kind: RoutineSchedule.ProductKind
+        let amount: Double
+        if let formulation = first.formulation, let formulationAmount = first.formulationAmount,
+           ingestions.allSatisfy({ $0.formulation == formulation && $0.formulationAmount == formulationAmount }) {
+            product = formulation
+            name = formulation.nameUnwrapped
+            kind = .formulation
+            amount = formulationAmount
+        } else if ingestions.count == 1, let unit = first.customUnit, let dose = first.dose {
+            product = unit
+            name = unit.nameUnwrapped
+            kind = .customUnit
+            amount = dose
+        } else {
+            return nil
+        }
+        guard !product.isDeleted, !product.objectID.isTemporaryID, amount.isFinite, amount > 0 else { return nil }
+        let calendar = RoutineSchedules.calendar
+        let time = calendar.dateComponents([.hour, .minute], from: selectedTime)
+        let schedule = RoutineSchedule(
+            name: name, hour: time.hour ?? 0, minute: time.minute ?? 0,
+            productKind: kind, productAmount: amount, anchorDay: .init(.now, calendar: calendar))
+        return RoutineDraft(schedule: schedule, productID: product.objectID)
+    }
+
     private func initializeWebhooks(with availableIDs: [UUID]) {
         guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
         selectedWebhookPresetIDs = Set(availableIDs)
@@ -252,6 +320,10 @@ struct FinishIngestionScreen: View {
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.displayName)
         return names.isEmpty ? "None" : names.formatted(.list(type: .and))
+    }
+
+    private var sendWebhooks: Binding<Bool> {
+        routineSlot == nil ? $defaultSendWebhooks : $sendRoutineWebhooks
     }
 
     func selectExperienceBasedOnCurrentTime() {
@@ -300,6 +372,13 @@ struct FinishIngestionScreen: View {
     func addIngestionWithExperience() throws {
         let persistence = PersistenceController.shared
         let context = try persistence.journalEditContext()
+        let occurrence: RoutineOccurrence?
+        if let routineSlot {
+            guard let pending = try RoutineSchedules.stageLog(for: routineSlot, in: context) else { return }
+            occurrence = pending
+        } else {
+            occurrence = nil
+        }
         let selectedLocationValue = locationManager.selectedLocation
         let isNewExperience = selectedExperience == nil
         let experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
@@ -315,6 +394,9 @@ struct FinishIngestionScreen: View {
                 location: selectedLocationValue,
                 and: context)
         }
+        if let occurrence {
+            for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
+        }
         try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
         let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
         if let savedExperience {
@@ -323,7 +405,7 @@ struct FinishIngestionScreen: View {
     }
 
     private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
-        guard isWebhookSectionExpanded else { return [] }
+        guard sendWebhooks.wrappedValue else { return [] }
         return enabledWebhookPresets
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.objectID)

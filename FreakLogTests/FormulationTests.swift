@@ -168,3 +168,92 @@ extension FormulationCodable.Component {
     return copy
   }
 }
+
+@MainActor
+final class RoutineOccurrenceTests: XCTestCase {
+  private var calendar: Calendar {
+    var result = Calendar(identifier: .gregorian)
+    result.timeZone = TimeZone(secondsFromGMT: 0)!
+    return result
+  }
+
+  func testLegacyRoutineStillSchedulesAndTimeEditRetainsOccurrenceIdentity() throws {
+    let data = Data(#"{"id":"37E9A223-1E5B-4191-A16A-7785D8A196AC","name":"Routine","hour":9,"minute":0,"reminds":false}"#.utf8)
+    var schedule = try JSONDecoder().decode(RoutineSchedule.self, from: data)
+    XCTAssertTrue(schedule.isValid)
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let initial = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    XCTAssertNil(schedule.productKind)
+    schedule.hour = 10
+    let changed = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    XCTAssertEqual(initial.id, changed.id)
+    XCTAssertNotEqual(initial.scheduledAt, changed.scheduledAt)
+  }
+
+  func testRoutineAndProductLinksSurviveBackupAndDuplicateLogIsRejected() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let schedule = RoutineSchedule(name: "Routine", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1)
+    let record = RoutineRecord(context: source)
+    record.id = schedule.id
+    record.scheduleData = try JSONEncoder().encode(schedule)
+    let unit = CustomUnit(context: source)
+    unit.name = "Saved Product"
+    record.customUnit = unit
+
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let slot = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    let occurrence = try XCTUnwrap(RoutineSchedules.stageLog(for: slot, in: source))
+    let ingestion = Ingestion(context: source)
+    ingestion.time = slot.scheduledAt.addingTimeInterval(60)
+    ingestion.experience = Experience.create(at: try XCTUnwrap(ingestion.time), title: "Example", in: source)
+    ingestion.customUnit = unit
+    ingestion.routineOccurrence = occurrence
+    try source.save()
+
+    let data = try JournalBackup(context: source, appVersion: "test").fileData()
+    let target = PersistenceController(inMemory: true).viewContext
+    try XCTUnwrap(JournalBackup.read(data)).restore(into: target)
+    let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertEqual(imported.routineOccurrence?.scheduledAt, slot.scheduledAt)
+    XCTAssertEqual(imported.routineOccurrence?.loggedExperience?.title, "Example")
+    XCTAssertEqual(imported.routineOccurrence?.routine?.schedule, schedule)
+    XCTAssertEqual(imported.routineOccurrence?.routine?.customUnit, imported.customUnit)
+    XCTAssertNil(try RoutineSchedules.stageLog(for: slot, in: target))
+    XCTAssertEqual(try target.count(for: RoutineOccurrence.fetchRequest()), 1)
+
+    target.delete(imported)
+    try target.save()
+    XCTAssertNotNil(try RoutineSchedules.stageLog(for: slot, in: target))
+  }
+
+  func testFixedIntervalsUseCalendarDaysAcrossDaylightSaving() throws {
+    var calendar = self.calendar
+    calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+    let anchor = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 3, day: 7)))
+    let schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, intervalDays: 2, anchorDay: .init(anchor, calendar: calendar))
+    XCTAssertTrue(schedule.isValid)
+    let first = try XCTUnwrap(schedule.slot(on: anchor, calendar: calendar))
+    let skippedDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: anchor))
+    XCTAssertNil(schedule.slot(on: skippedDay, calendar: calendar))
+    let second = try XCTUnwrap(schedule.nextIntervalSlots(after: first.scheduledAt, calendar: calendar, limit: 1).first)
+    XCTAssertEqual(calendar.component(.day, from: second.scheduledAt), 9)
+    XCTAssertEqual(calendar.component(.hour, from: second.scheduledAt), 9)
+    XCTAssertEqual(second.scheduledAt.timeIntervalSince(first.scheduledAt), 47 * 60 * 60)
+  }
+
+  func testAdditionalTimesHaveStableIndependentOccurrences() throws {
+    var schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, additionalTimes: [.init(hour: 18, minute: 0)])
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let original = schedule.slots(on: day, calendar: calendar)
+    XCTAssertEqual(original.count, 2)
+    XCTAssertNotEqual(original[0].id, original[1].id)
+    schedule.additionalTimes?[0].hour = 19
+    let edited = schedule.slots(on: day, calendar: calendar)
+    XCTAssertEqual(original.map(\.id), edited.map(\.id))
+    XCTAssertNotEqual(original[1].scheduledAt, edited[1].scheduledAt)
+    schedule.additionalTimes?[0].hour = 9
+    XCTAssertFalse(schedule.isValid)
+  }
+}

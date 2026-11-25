@@ -18,6 +18,9 @@ struct JournalScreen: View {
     @State private var experienceSearchText = ""
     @State private var isAddingTimedNote = false
     @State private var isShowingAssistant = false
+    @State private var isShowingRoutines = false
+    @ObservedObject private var routines = RoutineSchedules.shared
+    @AppStorage(PersistenceController.showsDueTodayKey) private var showsDueToday = false
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
     // Without the switcher there is no way to change tabs, so the default tab is shown
@@ -77,6 +80,17 @@ struct JournalScreen: View {
                     }
                     .padding(.horizontal, 16)
                     .background(.bar)
+                } else if isEyeOpen, showsDueToday, !routines.schedules.isEmpty {
+                    Button { isShowingRoutines = true } label: {
+                        HStack {
+                            Label("Due Today", systemImage: "calendar.badge.clock")
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption)
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 44)
+                    }
+                    .background(.bar)
                 }
             }
             .task(id: searchText) {
@@ -111,6 +125,9 @@ struct JournalScreen: View {
         }
         .sheet(isPresented: $isShowingAssistant) {
             AssistantScreen(experience: nil, suggestsCurrentSessionSummary: selectedTab == .allIngestions)
+        }
+        .navigationDestination(isPresented: $isShowingRoutines) {
+            RoutineDayScreen()
         }
         .toolbar {
             if !isHidingJournalTabSwitcher {
@@ -149,6 +166,11 @@ struct JournalScreen: View {
                 Navigator.shared.openInCurrentTab(.calendar)
             } label: {
                 Label("Calendar", systemImage: "calendar")
+            }
+            if isEyeOpen, !routines.schedules.isEmpty {
+                Button { isShowingRoutines = true } label: {
+                    Label("Due Today", systemImage: "calendar.badge.clock")
+                }
             }
             favoriteButton
             timeDisplayMenu

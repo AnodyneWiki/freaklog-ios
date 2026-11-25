@@ -3,12 +3,17 @@ import SwiftUI
 import AppIntents
 
 struct ChooseSubstanceScreen: View {
+    private let usesShortcutPrefill: Bool
     @StateObject private var viewModel = ViewModel()
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var locationManager: LocationManager
 
+    init(usesShortcutPrefill: Bool = true) {
+        self.usesShortcutPrefill = usesShortcutPrefill
+    }
+
     var body: some View {
-        let prefill = Navigator.shared.ingestionPrefill
+        let prefill = usesShortcutPrefill ? Navigator.shared.ingestionPrefill : nil
         let matchedSubstance = prefill?.matchSubstance(in: viewModel.customSubstanceModels, isEyeOpen: viewModel.isEyeOpen)
         ChooseSubstanceContent(
             searchText: $viewModel.searchText,

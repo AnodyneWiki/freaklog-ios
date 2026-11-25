@@ -161,6 +161,7 @@ struct PersistenceController {
     static func endJournalOperation() {
         isJournalOperationInProgress = false
         LeaderboardSyncManager.shared.journalOperationDidEnd()
+        Task { await RoutineSchedules.shared.refresh() }
     }
 
     @MainActor
