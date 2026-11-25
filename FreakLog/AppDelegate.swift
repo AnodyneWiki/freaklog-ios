@@ -1,15 +1,33 @@
 import UIKit
 import CoreData
 import Combine
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
+class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNotificationCenterDelegate {
     @Published private(set) var isJournalReady = false
     private var cloudKitBackgroundTaskID: UIBackgroundTaskIdentifier = .invalid
 
     func application(_ app: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        let notifications = UNUserNotificationCenter.current()
+        notifications.delegate = self
+        notifications.getNotificationCategories { categories in
+            let otherCategories = categories.filter { $0.identifier != RoutineNotificationResponse.category }
+            notifications.setNotificationCategories(Set(otherCategories).union([RoutineNotificationResponse.notificationCategory]))
+        }
         setupCloudKitBackgroundTaskHandling()
         prepareJournal()
         return true
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard let action = RoutineNotificationResponse(response) else { return }
+        await RoutineSchedules.shared.handleNotification(action)
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        notification.request.content.categoryIdentifier == RoutineNotificationResponse.category ? [.banner, .sound] : []
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {

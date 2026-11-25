@@ -7,7 +7,9 @@ struct RoutinesScreen: View {
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: RoutineSchedule?
+    @State private var copiedProductID: NSManagedObjectID?
     @AppStorage(PersistenceController.showsDueTodayKey) private var showsDueToday = false
+    @FetchRequest(sortDescriptors: []) private var records: FetchedResults<RoutineRecord>
 
     var body: some View {
         List {
@@ -24,24 +26,32 @@ struct RoutinesScreen: View {
                     }
                     ForEach(store.schedules) { schedule in
                         Button {
+                            copiedProductID = nil
                             selection = schedule
                         } label: {
-                            LabeledContent {
-                                Image(systemName: "chevron.right")
-                                    .font(.footnote.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                                    .accessibilityHidden(true)
-                            } label: {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(schedule.name).foregroundStyle(.primary)
-                                    Text(schedule.summary)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(schedule.name).foregroundStyle(.primary)
+                                Text(schedule.summary(unit: records.first(where: { $0.id == schedule.id })?.productUnit))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        .accessibilityHint("Edits the routine")
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                let record = try? RoutineSchedules.record(
+                                    for: schedule.id, in: PersistenceController.shared.viewContext
+                                )
+                                copiedProductID = record?.customUnit?.objectID ?? record?.formulation?.objectID
+                                selection = schedule.duplicate(calendar: RoutineSchedules.calendar)
+                            } label: {
+                                Label("Duplicate", systemImage: "plus.square.on.square")
+                            }
+                            .tint(.accentColor)
+                        }
                     }
                 }
 
@@ -81,6 +91,7 @@ struct RoutinesScreen: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
+                    copiedProductID = nil
                     selection = .draft(calendar: RoutineSchedules.calendar)
                 } label: {
                     Label("Add Routine", systemImage: "plus")
@@ -92,7 +103,7 @@ struct RoutinesScreen: View {
             RoutineScheduleEditor(
                 schedule: schedule,
                 isNew: !store.schedules.contains(where: { $0.id == schedule.id }),
-                store: store
+                store: store, initialProductID: copiedProductID
             )
         }
         .task { await store.refresh() }
@@ -103,20 +114,53 @@ struct RoutinesScreen: View {
 }
 
 extension RoutineSchedule {
-    @MainActor var summary: String {
+    @MainActor func summary(unit: String?) -> String {
         let calendar = RoutineSchedules.calendar
         let times = times.sorted { $0.minuteOfDay < $1.minuteOfDay }
-        let formattedTime = times.compactMap { $0.date(in: calendar)?.formatted(date: .omitted, time: .shortened) }
-            .formatted(.list(type: .and))
-        if let interval = intervalDays {
-            return String(localized: "Every \(interval) days at \(formattedTime)")
+        let formattedTime = times.compactMap { time -> String? in
+            guard let date = time.date(in: calendar) else { return nil }
+            let label = date.formatted(date: .omitted, time: .shortened)
+            guard let unit else { return label }
+            guard let amount = time.productAmount ?? productAmount else {
+                return String(localized: "\(label) (amount at logging)")
+            }
+            return String(localized: "\(label) (\(amount.formatted(routineAmountFormat)) \(unit))")
         }
-        if let weekdays {
+            .formatted(.list(type: .and))
+        var parts = [String]()
+        if let interval = intervalDays {
+            parts.append(String(localized: "Every \(interval) days at \(formattedTime)"))
+        } else if let weekdays {
             let symbols = calendar.shortWeekdaySymbols
             let days = calendar.orderedWeekdays.filter(weekdays.contains).map { symbols[$0 - 1] }
-            return String(localized: "\(days.formatted(.list(type: .and))) at \(formattedTime)")
+            parts.append(String(localized: "\(days.formatted(.list(type: .and))) at \(formattedTime)"))
+        } else {
+            parts.append(String(localized: "Every day at \(formattedTime)"))
         }
-        return String(localized: "Every day at \(formattedTime)")
+        if isPaused { parts.append(String(localized: "Paused")) }
+        if let end = endDay?.date(in: calendar) {
+            parts.append(String(localized: "Through \(end.formatted(date: .abbreviated, time: .omitted))"))
+        }
+        return parts.joined(separator: " · ")
+    }
+}
+
+private let routineAmountFormat = FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0...8))
+
+extension JournalPresetProduct {
+    @MainActor var routineUnit: String {
+        switch self {
+        case .customUnit(let unit): unit.unitUnwrapped
+        case .formulation: Inventory.Use.formulationUnit
+        }
+    }
+}
+
+private extension RoutineRecord {
+    @MainActor var productUnit: String? {
+        if let customUnit { return JournalPresetProduct.customUnit(customUnit).routineUnit }
+        if let formulation { return JournalPresetProduct.formulation(formulation).routineUnit }
+        return nil
     }
 }
 
@@ -169,19 +213,45 @@ struct RoutineScheduleEditor: View {
                         .textInputAutocapitalization(.sentences)
                 }
 
-                Section("Schedule") {
-                    DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
-                    ForEach(schedule.additionalTimes ?? []) { entry in
-                        HStack {
-                            DatePicker("Time", selection: timeBinding(for: entry), displayedComponents: .hourAndMinute)
-                            Button(role: .destructive) {
-                                schedule.additionalTimes?.removeAll { $0.id == entry.id }
-                            } label: {
-                                Label("Remove Time", systemImage: "minus.circle")
-                                    .labelStyle(.iconOnly)
-                            }
-                            .buttonStyle(.borderless)
+                Section("Saved Product") {
+                    NavigationLink {
+                        SavedProductPicker(selection: changingProduct, emptyTitle: "Choose When Logging")
+                    } label: {
+                        if let selectedProduct {
+                            SavedProductRow(product: selectedProduct)
+                        } else {
+                            LabeledContent("Product", value: "Choose When Logging")
                         }
+                    }
+                    if let product = selectedProduct {
+                        if showsProductLink {
+                            NavigationLink {
+                                ProductDetailScreen(product: product)
+                            } label: {
+                                Label("View Product", systemImage: "shippingbox")
+                            }
+                        }
+                    } else if schedule.productKind != nil {
+                        Text("The saved product is unavailable. Choose another product or choose when logging.")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section("Schedule") {
+                    VStack(spacing: 8) {
+                        DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
+                        if let unit = selectedProduct?.routineUnit {
+                            LabeledContent("Default Amount") {
+                                TextField("Choose When Logging", value: $schedule.productAmount, format: routineAmountFormat)
+                                    .multilineTextAlignment(.trailing)
+                                    .keyboardType(.decimalPad)
+                                    .accessibilityLabel("Default Amount")
+                                Text(unit).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    ForEach(schedule.additionalTimes ?? []) { entry in
+                        additionalTimeRow(entry)
                     }
                     Button(action: addTime) {
                         Label("Add Time", systemImage: "plus.circle")
@@ -206,45 +276,18 @@ struct RoutineScheduleEditor: View {
                         ) {
                             Text("Every \(schedule.intervalDays ?? 2) days")
                         }
-                        DatePicker("First Day", selection: firstDay, displayedComponents: .date)
                     }
-                }
-
-                Section("Saved Product") {
-                    Picker("Product", selection: $productID) {
-                        Text("Choose When Logging").tag(nil as NSManagedObjectID?)
-                        ForEach(customUnits) { unit in
-                            Text(unit.nameUnwrapped).tag(Optional(unit.objectID))
-                        }
-                        ForEach(formulations) { formulation in
-                            Text(formulation.nameUnwrapped).tag(Optional(formulation.objectID))
-                        }
-                    }
-                    if let productID {
-                        if showsProductLink, let product = selectedProduct {
-                            NavigationLink {
-                                ProductDetailScreen(product: product)
-                            } label: {
-                                Label("View Product", systemImage: "shippingbox")
-                            }
-                        }
-                        LabeledContent("Amount") {
-                            TextField("Amount", value: $schedule.productAmount, format: .number)
-                                .multilineTextAlignment(.trailing)
-                                .keyboardType(.decimalPad)
-                            if let unit = customUnits.first(where: { $0.objectID == productID })?.unitUnwrapped {
-                                Text(unit).foregroundStyle(.secondary)
-                            } else if formulations.contains(where: { $0.objectID == productID }) {
-                                Text(Inventory.Use.formulationUnit).foregroundStyle(.secondary)
-                            }
-                        }
-                    } else if schedule.productKind != nil {
-                        Text("The saved product is unavailable. Choose another product or choose when logging.")
-                            .foregroundStyle(.secondary)
+                    DatePicker("First Day", selection: firstDay, displayedComponents: .date)
+                    Toggle("Ends on a Date", isOn: hasEndDay)
+                    if schedule.endDay != nil {
+                        DatePicker("Last Day", selection: lastDay, in: firstDay.wrappedValue..., displayedComponents: .date)
                     }
                 }
 
                 Section {
+                    Toggle("Paused", isOn: Binding(
+                        get: { schedule.isPaused }, set: { schedule.setPaused($0) }
+                    ))
                     Toggle("Remind Me", isOn: $schedule.reminds)
                 } footer: {
                     Text("Reminders omit the routine name.")
@@ -287,6 +330,24 @@ struct RoutineScheduleEditor: View {
         return formulations.first(where: { $0.objectID == productID }).map(JournalPresetProduct.formulation)
     }
 
+    private var changingProduct: Binding<NSManagedObjectID?> {
+        Binding(
+            get: { productID },
+            set: { newProduct in
+                guard productID != newProduct else { return }
+                productID = newProduct
+                schedule.productAmount = nil
+                if let times = schedule.additionalTimes {
+                    schedule.additionalTimes = times.map { time in
+                        var changed = time
+                        changed.productAmount = nil
+                        return changed
+                    }
+                }
+            }
+        )
+    }
+
     private var frequency: Binding<Frequency> {
         Binding(
             get: {
@@ -309,8 +370,28 @@ struct RoutineScheduleEditor: View {
 
     private var firstDay: Binding<Date> {
         Binding(
-            get: { schedule.anchorDay?.date(in: RoutineSchedules.calendar) ?? .now },
-            set: { schedule.anchorDay = .init($0, calendar: RoutineSchedules.calendar) }
+            get: { schedule.anchorDay?.date(in: RoutineSchedules.calendar) ?? RoutineSchedules.calendar.startOfDay(for: .now) },
+            set: {
+                let calendar = RoutineSchedules.calendar
+                schedule.anchorDay = .init($0, calendar: calendar)
+                if let end = schedule.endDay?.date(in: calendar), end < calendar.startOfDay(for: $0) {
+                    schedule.endDay = schedule.anchorDay
+                }
+            }
+        )
+    }
+
+    private var hasEndDay: Binding<Bool> {
+        Binding(
+            get: { schedule.endDay != nil },
+            set: { schedule.endDay = $0 ? .init(max(firstDay.wrappedValue, .now), calendar: RoutineSchedules.calendar) : nil }
+        )
+    }
+
+    private var lastDay: Binding<Date> {
+        Binding(
+            get: { schedule.endDay?.date(in: RoutineSchedules.calendar) ?? firstDay.wrappedValue },
+            set: { schedule.endDay = .init($0, calendar: RoutineSchedules.calendar) }
         )
     }
 
@@ -340,6 +421,45 @@ struct RoutineScheduleEditor: View {
                 schedule.additionalTimes?[index].minute = calendar.component(.minute, from: date)
             }
         )
+    }
+
+    private func amountBinding(for entry: RoutineSchedule.ClockTime) -> Binding<Double?> {
+        Binding(
+            get: { schedule.additionalTimes?.first(where: { $0.id == entry.id })?.productAmount },
+            set: { amount in
+                guard let index = schedule.additionalTimes?.firstIndex(where: { $0.id == entry.id }) else { return }
+                schedule.additionalTimes?[index].productAmount = amount
+            }
+        )
+    }
+
+    private func additionalTimeRow(_ entry: RoutineSchedule.ClockTime) -> some View {
+        VStack(spacing: 8) {
+            HStack {
+                DatePicker("Time", selection: timeBinding(for: entry), displayedComponents: .hourAndMinute)
+                Button(role: .destructive) {
+                    schedule.additionalTimes?.removeAll { $0.id == entry.id }
+                } label: {
+                    Label("Remove Time", systemImage: "minus.circle")
+                        .labelStyle(.iconOnly)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel(Text("Remove \(timeBinding(for: entry).wrappedValue.formatted(date: .omitted, time: .shortened))"))
+                .buttonStyle(.borderless)
+            }
+            if let unit = selectedProduct?.routineUnit {
+                let defaultAmount = schedule.productAmount.map {
+                    String(localized: "Default (\($0.formatted(routineAmountFormat)))")
+                } ?? String(localized: "Choose When Logging")
+                LabeledContent("Amount") {
+                    TextField(defaultAmount, value: amountBinding(for: entry), format: routineAmountFormat)
+                        .multilineTextAlignment(.trailing)
+                        .keyboardType(.decimalPad)
+                        .accessibilityLabel(Text("Amount at \(timeBinding(for: entry).wrappedValue.formatted(date: .omitted, time: .shortened))"))
+                    Text(unit).foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private func addTime() {
@@ -401,6 +521,7 @@ struct RoutineDayScreen: View {
     @State private var selectedDay = Date()
     @State private var logging: RoutineOccurrenceSlot?
     @State private var error: String?
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         List {
@@ -413,7 +534,7 @@ struct RoutineDayScreen: View {
             }
             ForEach(slots) { slot in
                 if let record = records.first(where: { $0.id == slot.scheduleID }), let schedule = record.schedule {
-                    row(for: slot, schedule: schedule)
+                    row(for: slot, schedule: schedule, unit: record.productUnit)
                 }
             }
         }
@@ -422,6 +543,7 @@ struct RoutineDayScreen: View {
         .sheet(item: $logging, onDismiss: { Task { await store.refresh() } }) { slot in
             RoutineLogSheet(
                 record: records.first(where: { $0.id == slot.scheduleID }),
+                slot: slot,
                 dismiss: { logging = nil }
             )
             .environment(\.routineOccurrenceSlot, slot)
@@ -445,40 +567,63 @@ struct RoutineDayScreen: View {
     }
 
     @ViewBuilder
-    private func row(for slot: RoutineOccurrenceSlot, schedule: RoutineSchedule) -> some View {
+    private func row(for slot: RoutineOccurrenceSlot, schedule: RoutineSchedule, unit: String?) -> some View {
         let matches = occurrences.filter { $0.key == slot.id }
         let logged = matches.compactMap(\.loggedExperience).first
+        let unconfirmed = matches.compactMap(\.unconfirmedExperience).first
         let occurrence = matches.first
         if let logged {
             NavigationLink(value: GlobalNavigationDestination.experience(experience: logged)) {
                 routineLabel(schedule.name, slot: slot, status: "Logged")
             }
+        } else if let unconfirmed {
+            NavigationLink(value: GlobalNavigationDestination.experience(experience: unconfirmed)) {
+                routineLabel(schedule.name, slot: slot, status: "Unconfirmed")
+            }
         } else {
-            HStack {
-                routineLabel(schedule.name, slot: slot, status: status(for: occurrence))
-                Spacer()
-                if occurrence?.isSkipped == true {
-                    Button("Reopen") { update(.reopen, slot: slot) }
-                        .buttonStyle(.borderless)
-                        .disabled(store.isUpdating)
-                } else {
-                    Button("Log") { logging = slot }
-                        .buttonStyle(.borderless)
-                    Menu {
-                        Button("Skip") { update(.skip, slot: slot) }
-                        if RoutineSchedules.calendar.isDateInToday(selectedDay), slot.scheduledAt <= .now {
-                            Button("Snooze 15 Minutes") { update(.snooze, slot: slot) }
+            let layout = dynamicTypeSize.isAccessibilitySize
+                ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
+                : AnyLayout(HStackLayout())
+            layout {
+                routineLabel(
+                    schedule.name, slot: slot, status: status(for: occurrence),
+                    amount: schedule.amount(for: slot), unit: unit
+                )
+                if !dynamicTypeSize.isAccessibilitySize { Spacer() }
+                HStack(spacing: 12) {
+                    if occurrence?.isSkipped == true {
+                        Button { update(.reopen, slot: slot) } label: {
+                            Text("Reopen").frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
                         }
-                    } label: {
-                        Label("Routine Actions", systemImage: "ellipsis.circle").labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(Text("Reopen \(schedule.name) at \(slot.scheduledAt.formatted(date: .omitted, time: .shortened))"))
+                    } else {
+                        Button { logging = slot } label: {
+                            Text("Log").frame(minWidth: 44, minHeight: 44).contentShape(Rectangle())
+                        }
+                            .buttonStyle(.borderless)
+                            .accessibilityLabel(Text("Log \(schedule.name) at \(slot.scheduledAt.formatted(date: .omitted, time: .shortened))"))
+                        Menu {
+                            Button("Skip") { update(.skip, slot: slot) }
+                            if RoutineSchedules.calendar.isDateInToday(selectedDay), slot.scheduledAt <= .now {
+                                Button("Snooze 15 Minutes") { update(.snooze, slot: slot) }
+                            }
+                        } label: {
+                            Label("Routine Actions", systemImage: "ellipsis.circle")
+                                .labelStyle(.iconOnly)
+                                .frame(minWidth: 44, minHeight: 44)
+                        }
+                        .accessibilityLabel(Text("Actions for \(schedule.name) at \(slot.scheduledAt.formatted(date: .omitted, time: .shortened))"))
                     }
-                    .disabled(store.isUpdating)
                 }
+                .disabled(store.isUpdating)
             }
         }
     }
 
-    private func routineLabel(_ name: String, slot: RoutineOccurrenceSlot, status: String?) -> some View {
+    private func routineLabel(
+        _ name: String, slot: RoutineOccurrenceSlot, status: String?, amount: Double? = nil, unit: String? = nil
+    ) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(name)
             if let status {
@@ -486,6 +631,10 @@ struct RoutineDayScreen: View {
                     .font(.subheadline).foregroundStyle(.secondary)
             } else {
                 Text(slot.scheduledAt, format: .dateTime.hour().minute())
+                    .font(.subheadline).foregroundStyle(.secondary)
+            }
+            if let amount, let unit {
+                Text("\(amount.formatted(routineAmountFormat)) \(unit)")
                     .font(.subheadline).foregroundStyle(.secondary)
             }
         }
@@ -514,6 +663,7 @@ struct RoutineDayScreen: View {
 
 private struct RoutineLogSheet: View {
     let record: RoutineRecord?
+    let slot: RoutineOccurrenceSlot
     let dismiss: () -> Void
     @State private var amount: Double?
     @State private var isReviewing = false
@@ -533,6 +683,8 @@ private struct RoutineLogSheet: View {
                                     .keyboardType(.decimalPad)
                                 if let unit = record?.customUnit?.unitUnwrapped {
                                     Text(unit).foregroundStyle(.secondary)
+                                } else if record?.formulation != nil {
+                                    Text(Inventory.Use.formulationUnit).foregroundStyle(.secondary)
                                 }
                             }
                         }
@@ -554,7 +706,7 @@ private struct RoutineLogSheet: View {
                 .navigationDestination(isPresented: $isReviewing) {
                     FinishIngestionScreen(ingestions: arguments, dismiss: dismiss)
                 }
-                .onFirstAppear { amount = record?.schedule?.productAmount }
+                .onFirstAppear { amount = record?.schedule?.amount(for: slot) }
             }
         }
     }
@@ -572,6 +724,41 @@ private struct RoutineLogSheet: View {
                 customUnit: unit)]
         }
         return record.formulation?.ingestionArguments(amount: amount) ?? []
+    }
+}
+
+struct RoutineNotificationReview: ViewModifier {
+    @ObservedObject private var store = RoutineSchedules.shared
+    @Environment(\.managedObjectContext) private var context
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+
+    private var review: Binding<RoutineOccurrenceSlot?> {
+        Binding(
+            get: { isEyeOpen ? store.notificationReview : nil },
+            set: { store.notificationReview = $0 }
+        )
+    }
+
+    func body(content: Content) -> some View {
+        content
+            .fullScreenCover(item: review, onDismiss: { Task { await store.refresh() } }) { slot in
+                RoutineLogSheet(
+                    record: try? RoutineSchedules.record(for: slot.scheduleID, in: context),
+                    slot: slot,
+                    dismiss: { store.notificationReview = nil }
+                )
+                .environment(\.routineOccurrenceSlot, slot)
+                .environment(\.addIngestionStartTime,
+                              RoutineSchedules.calendar.isDateInToday(slot.scheduledAt) ? nil : slot.scheduledAt)
+            }
+            .alert("Routine Reminder", isPresented: Binding(
+                get: { store.notificationError != nil },
+                set: { if !$0 { store.notificationError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(store.notificationError ?? "")
+            }
     }
 }
 

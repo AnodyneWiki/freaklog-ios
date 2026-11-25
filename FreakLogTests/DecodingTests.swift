@@ -48,6 +48,12 @@ class DecodingTests: XCTestCase {
         XCTAssertNil(PharmacyPackageMatches.productID(for: code, in: context, defaults: defaults))
     }
 
+    func testPregabalinPackageCode() {
+        // The PZN assigned to Heumann's Pregabin 25 mg 14-capsule package.
+        XCTAssertEqual(PharmacyPackageCode.barcode("-10785692", symbology: .code39)?.digits, "10785692")
+        XCTAssertEqual(PharmacyPackageCode.printed(in: "PZN 10785692")?.digits, "10785692")
+    }
+
     func testRoaDecoding() async throws {
         let data = getInitialData()
         let decoder = JSONDecoder()

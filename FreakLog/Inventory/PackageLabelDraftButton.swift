@@ -100,6 +100,20 @@ enum PharmacyPackageMatches {
         defaults.set(matches, forKey: key)
     }
 
+    static func codes(for productID: NSManagedObjectID, defaults: UserDefaults = .standard) -> [PharmacyPackageCode] {
+        let address = productID.uriRepresentation().absoluteString
+        return (defaults.dictionary(forKey: key) ?? [:]).compactMap { code, match in
+            guard (match as? [String])?.first == address else { return nil }
+            return PharmacyPackageCode(code)
+        }.sorted { $0.digits < $1.digits }
+    }
+
+    static func forget(_ code: PharmacyPackageCode, defaults: UserDefaults = .standard) {
+        var matches = defaults.dictionary(forKey: key) ?? [:]
+        matches.removeValue(forKey: code.digits)
+        defaults.set(matches, forKey: key)
+    }
+
     private static func signature(of product: NSManagedObject) -> [String]? {
         guard !product.isDeleted else { return nil }
         if let unit = product as? CustomUnit, !unit.isArchived {
@@ -120,28 +134,38 @@ struct PackageLabelDraftButton: View {
     let usePackage: (String?, PharmacyPackageCode?) -> Void
 
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var choosingPhoto = false
     @State private var draft: PackageLabelDraft?
     @State private var errorMessage: LocalizedStringKey?
     @State private var scanning = false
     @State private var cameraCode: PharmacyPackageCode?
+    @State private var unsupportedBarcode = false
 
     var body: some View {
-        if DataScannerViewController.isSupported {
-            Button {
-                Task { await openCamera() }
-            } label: {
-                Label("Scan Package Barcode", systemImage: "barcode.viewfinder")
+        Menu {
+            if DataScannerViewController.isSupported {
+                Button {
+                    Task { await openCamera() }
+                } label: {
+                    Label("Use Camera", systemImage: "camera")
+                }
             }
+            Button {
+                choosingPhoto = true
+            } label: {
+                Label("Choose Photo", systemImage: "photo")
+            }
+            Button { draft = PackageLabelDraft() } label: {
+                Label("Enter PZN", systemImage: "number")
+            }
+        } label: {
+            Label("Scan Package", systemImage: "barcode.viewfinder")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
         }
-        PhotosPicker(selection: $selectedPhoto, matching: .images) {
-            Label("Read Package Photo", systemImage: "text.viewfinder")
-        }
-        .accessibilityHint("Choose a photo of the package.")
         .disabled(selectedPhoto != nil)
+        .photosPicker(isPresented: $choosingPhoto, selection: $selectedPhoto, matching: .images)
         .task(id: selectedPhoto) { await readSelectedPhoto() }
-        Button { draft = PackageLabelDraft() } label: {
-            Label("Enter PZN", systemImage: "number")
-        }
         .sheet(item: $draft) { draft in
             PackageLabelReview(draft: draft, usePackage: usePackage)
         }
@@ -152,9 +176,29 @@ struct PackageLabelDraftButton: View {
             }
         }) {
             NavigationStack {
-                LivePackageScanner { code in
-                    cameraCode = code
-                    scanning = false
+                VStack(spacing: 0) {
+                    LivePackageScanner { code in
+                        cameraCode = code
+                        scanning = false
+                    } onUnsupportedBarcode: {
+                        unsupportedBarcode = true
+                        UIAccessibility.post(
+                            notification: .announcement,
+                            argument: String(localized: "No valid PZN in this barcode.")
+                        )
+                    }
+                    VStack(alignment: .leading, spacing: 4) {
+                        if unsupportedBarcode {
+                            Label("No Valid PZN in This Barcode", systemImage: "exclamationmark.circle")
+                                .font(.subheadline.weight(.semibold))
+                        }
+                        Text("Find the barcode near the printed PZN and tap it when highlighted.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .background(.regularMaterial)
                 }
                 .navigationTitle("Scan Package Barcode")
                 .navigationBarTitleDisplayMode(.inline)
@@ -175,6 +219,7 @@ struct PackageLabelDraftButton: View {
 
     private func openCamera() async {
         errorMessage = nil
+        unsupportedBarcode = false
         guard await AVCaptureDevice.requestAccess(for: .video), DataScannerViewController.isAvailable else {
             errorMessage = "Camera scanning is unavailable. Choose a photo or enter the PZN."
             return
@@ -230,6 +275,7 @@ private struct PackageLabelReview: View {
     @State private var name = ""
     @State private var pzn: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.managedObjectContext) private var context
 
     init(draft: PackageLabelDraft, usePackage: @escaping (String?, PharmacyPackageCode?) -> Void) {
         self.draft = draft
@@ -238,6 +284,13 @@ private struct PackageLabelReview: View {
     }
 
     private var code: PharmacyPackageCode? { PharmacyPackageCode(pzn) }
+
+    private var rememberedName: String? {
+        guard let code, let id = PharmacyPackageMatches.productID(for: code, in: context),
+              let product = try? context.existingObject(with: id) else { return nil }
+        if let unit = product as? CustomUnit { return unit.nameUnwrapped }
+        return (product as? Formulation)?.nameUnwrapped
+    }
 
     var body: some View {
         NavigationStack {
@@ -249,6 +302,9 @@ private struct PackageLabelReview: View {
                     if !pzn.isEmpty, code == nil {
                         Text("Enter the eight-digit PZN printed on the package.")
                             .foregroundStyle(.secondary)
+                    }
+                    if let rememberedName {
+                        LabeledContent("Saved Product", value: rememberedName)
                     }
                 } footer: {
                     Text("Check the PZN and product name against the package.")
@@ -272,6 +328,9 @@ private struct PackageLabelReview: View {
                         }
                     }
                 }
+                Section("Medication References") {
+                    PackageReferenceLinks(name: name, pzn: code?.digits)
+                }
             }
             .navigationTitle("Review Package Label")
             .navigationBarTitleDisplayMode(.inline)
@@ -294,8 +353,11 @@ private struct PackageLabelReview: View {
 
 private struct LivePackageScanner: UIViewControllerRepresentable {
     let onCode: (PharmacyPackageCode) -> Void
+    let onUnsupportedBarcode: () -> Void
 
-    func makeCoordinator() -> Coordinator { Coordinator(onCode: onCode) }
+    func makeCoordinator() -> Coordinator {
+        Coordinator(onCode: onCode, onUnsupportedBarcode: onUnsupportedBarcode)
+    }
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
         let scanner = DataScannerViewController(
@@ -319,13 +381,20 @@ private struct LivePackageScanner: UIViewControllerRepresentable {
 
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
         let onCode: (PharmacyPackageCode) -> Void
+        let onUnsupportedBarcode: () -> Void
 
-        init(onCode: @escaping (PharmacyPackageCode) -> Void) { self.onCode = onCode }
+        init(onCode: @escaping (PharmacyPackageCode) -> Void, onUnsupportedBarcode: @escaping () -> Void) {
+            self.onCode = onCode
+            self.onUnsupportedBarcode = onUnsupportedBarcode
+        }
 
         func dataScanner(_ scanner: DataScannerViewController, didTapOn item: RecognizedItem) {
             guard case .barcode(let barcode) = item, let payload = barcode.payloadStringValue,
                   let code = PharmacyPackageCode.barcode(payload, symbology: barcode.observation.symbology)
-            else { return }
+            else {
+                onUnsupportedBarcode()
+                return
+            }
             scanner.stopScanning()
             onCode(code)
         }

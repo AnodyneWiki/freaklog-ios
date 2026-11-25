@@ -32,6 +32,89 @@ extension StockContainer {
     }
 }
 
+struct SavedProductRow: View {
+    let product: JournalPresetProduct
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(product.name).foregroundStyle(.primary)
+            Text(product.pickerSubtitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
+struct SavedProductPicker: View {
+    @Binding var selection: NSManagedObjectID?
+    let emptyTitle: LocalizedStringKey
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var searchText = ""
+    @FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest())
+    private var customUnits: FetchedResults<CustomUnit>
+    @FetchRequest(fetchRequest: PersistenceController.formulationsRequest())
+    private var formulations: FetchedResults<Formulation>
+
+    private var products: [JournalPresetProduct] {
+        let all = customUnits.map(JournalPresetProduct.customUnit) + formulations.map(JournalPresetProduct.formulation)
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return all.filter { product in
+            product.isAvailableForLogging && (query.isEmpty || (product.name + " " + product.pickerSubtitle).localizedStandardContains(query))
+        }.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    var body: some View {
+        List {
+            Section {
+                choice(nil) { Text(emptyTitle) }
+            }
+            Section {
+                if products.isEmpty {
+                    Text(searchText.isEmpty ? "No saved products" : "No matching products").foregroundStyle(.secondary)
+                }
+                ForEach(products, id: \.object.objectID) { product in
+                    choice(product.object.objectID) { SavedProductRow(product: product) }
+                }
+            }
+        }
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always), prompt: "Product, substance, or unit")
+        .navigationTitle("Choose Product")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func choice<Row: View>(_ id: NSManagedObjectID?, @ViewBuilder row: () -> Row) -> some View {
+        Button {
+            selection = id
+            dismiss()
+        } label: {
+            HStack {
+                row()
+                Spacer()
+                if selection == id {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                        .accessibilityHidden(true)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .accessibilityAddTraits(selection == id ? .isSelected : [])
+    }
+}
+
+private extension JournalPresetProduct {
+    var pickerSubtitle: String {
+        switch self {
+        case .customUnit(let unit):
+            String(localized: "Custom Unit · \(unit.substanceNameUnwrapped) · \(unit.doseOfOneUnitDescription) per \(unit.unitUnwrapped)")
+        case .formulation(let formulation):
+            String(localized: "Formulation · \(formulation.componentsDescription) per serving")
+        }
+    }
+}
+
 struct ProductDetailScreen: View {
     let product: JournalPresetProduct
     let allowsLogging: Bool
@@ -44,6 +127,8 @@ struct ProductDetailScreen: View {
     @State private var editor: Editor?
     @State private var choosingRestockContainer = false
     @State private var logging = false
+    @State private var savedPackageCodes: [PharmacyPackageCode] = []
+    @State private var packageToForget: PharmacyPackageCode?
 
     init(product: JournalPresetProduct, allowsLogging: Bool = true) {
         self.product = product
@@ -84,6 +169,7 @@ struct ProductDetailScreen: View {
                 Text("This product is unavailable.").foregroundStyle(.secondary)
             } else {
                 definition
+                savedPackages
                 actions
                 stock
                 schedule
@@ -103,7 +189,7 @@ struct ProductDetailScreen: View {
                 }
             }
         }
-        .sheet(item: $editor) { editor in
+        .sheet(item: $editor, onDismiss: refreshSavedPackages) { editor in
             switch editor {
             case .container:
                 NavigationStack { StockContainerEditor(initialProductID: productObject.objectID) }
@@ -120,6 +206,18 @@ struct ProductDetailScreen: View {
                 EditFormulationScreen(formulation: formulation)
             }
         }
+        .confirmationDialog("Forget Package Match?", isPresented: Binding(
+            get: { packageToForget != nil },
+            set: { if !$0 { packageToForget = nil } }
+        ), titleVisibility: .visible, presenting: packageToForget) { code in
+            Button("Forget", role: .destructive) {
+                PharmacyPackageMatches.forget(code)
+                refreshSavedPackages()
+            }
+        } message: { code in
+            Text("PZN \(code.digits) will need to be matched again the next time you scan it.")
+        }
+        .onAppear(perform: refreshSavedPackages)
         .fullScreenCover(isPresented: $logging) {
             AuthenticatorWrapper(authenticator: authenticator) {
                 ProductLogScreen(product: product)
@@ -131,6 +229,36 @@ struct ProductDetailScreen: View {
             }
         }
         .task { await routines.refresh() }
+    }
+
+    @ViewBuilder
+    private var savedPackages: some View {
+        if !savedPackageCodes.isEmpty {
+            Section("Saved Package Matches") {
+                ForEach(savedPackageCodes) { code in
+                    Menu {
+                        Button(role: .destructive) {
+                            packageToForget = code
+                        } label: {
+                            Label("Forget Match", systemImage: "trash")
+                        }
+                    } label: {
+                        VStack(alignment: .leading, spacing: 4) {
+                            LabeledContent("PZN", value: code.digits)
+                            if let context = productObject.managedObjectContext,
+                               PharmacyPackageMatches.productID(for: code, in: context) == nil {
+                                Text("Review Required").font(.caption).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .accessibilityHint("Options for this package match")
+                }
+            }
+        }
+    }
+
+    private func refreshSavedPackages() {
+        savedPackageCodes = PharmacyPackageMatches.codes(for: productObject.objectID)
     }
 
     @ViewBuilder
@@ -236,7 +364,7 @@ struct ProductDetailScreen: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(schedule.name).foregroundStyle(.primary)
-                        Text(schedule.summary)
+                        Text(schedule.summary(unit: product.routineUnit))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }

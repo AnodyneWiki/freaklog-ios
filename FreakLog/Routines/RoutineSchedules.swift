@@ -30,12 +30,22 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
         var id = UUID()
         var hour: Int
         var minute: Int
+        var productAmount: Double?
 
         var isValid: Bool { (0..<24).contains(hour) && (0..<60).contains(minute) }
         var minuteOfDay: Int { hour * 60 + minute }
 
         func date(in calendar: Calendar) -> Date? {
             calendar.nextDate(after: .now, matching: DateComponents(hour: hour, minute: minute), matchingPolicy: .strict)
+        }
+    }
+
+    struct PausePeriod: Codable, Hashable {
+        let startedAt: Date
+        var endedAt: Date?
+
+        func contains(_ date: Date) -> Bool {
+            date >= startedAt && (endedAt.map { date < $0 } ?? true)
         }
     }
 
@@ -51,6 +61,8 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     var intervalDays: Int?
     var anchorDay: AnchorDay?
     var additionalTimes: [ClockTime]?
+    var endDay: AnchorDay?
+    var pauses: [PausePeriod]?
 
     static func draft(named name: String = "", at date: Date = .now, calendar: Calendar) -> Self {
         Self(
@@ -72,7 +84,42 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
             && Set(times.map(\.minuteOfDay)).count == times.count
             && weekdays.map { !$0.isEmpty && $0.allSatisfy { (1...7).contains($0) } } != false
             && (productKind == nil || productAmount.map { $0.isFinite && $0 > 0 } == true)
+            && times.allSatisfy { $0.productAmount.map { $0.isFinite && $0 > 0 } != false }
             && (intervalDays.map { (2...365).contains($0) && weekdays == nil && anchorDay != nil } ?? true)
+    }
+
+    var isPaused: Bool { pauses?.last.map { $0.endedAt == nil } ?? false }
+
+    func isAvailable(forRemindersAfter date: Date, calendar: Calendar) -> Bool {
+        !isPaused && endDay?.date(in: calendar).map { $0 >= calendar.startOfDay(for: date) } != false
+    }
+
+    mutating func setPaused(_ paused: Bool, at date: Date = .now) {
+        guard paused != isPaused else { return }
+        var periods = pauses ?? []
+        if paused {
+            periods.append(PausePeriod(startedAt: date))
+        } else if let last = periods.indices.last {
+            periods[last].endedAt = max(periods[last].startedAt, date)
+        }
+        pauses = periods
+    }
+
+    func duplicate(at date: Date = .now, calendar: Calendar) -> Self {
+        var copy = self
+        copy.id = UUID()
+        copy.name = String(localized: "Copy of \(name)")
+        copy.additionalTimes = additionalTimes?.map {
+            ClockTime(hour: $0.hour, minute: $0.minute, productAmount: $0.productAmount)
+        }
+        copy.pauses = nil
+        if isPastEnd(on: date, calendar: calendar) { copy.endDay = nil }
+        return copy
+    }
+
+    func amount(for slot: RoutineOccurrenceSlot) -> Double? {
+        let timeID = slot.timeID
+        return additionalTimes?.first { $0.id == timeID }?.productAmount ?? productAmount
     }
 
     func reminderDays() -> [Int?] {
@@ -83,10 +130,12 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     func slot(on day: Date, calendar: Calendar, time: ClockTime? = nil) -> RoutineOccurrenceSlot? {
         let time = time ?? ClockTime(id: id, hour: hour, minute: minute)
         let components = calendar.dateComponents([.year, .month, .day, .weekday], from: day)
-        guard weekdays == nil || components.weekday.map({ weekdays?.contains($0) == true }) == true,
+        guard !isPastEnd(on: day, calendar: calendar),
+              weekdays == nil || components.weekday.map({ weekdays?.contains($0) == true }) == true,
               let year = components.year, let month = components.month, let dayNumber = components.day,
               let scheduledAt = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: day),
-              calendar.isDate(day, inSameDayAs: scheduledAt)
+              calendar.isDate(day, inSameDayAs: scheduledAt),
+              pauses?.contains(where: { $0.contains(scheduledAt) }) != true
         else { return nil }
         if anchorDay != nil {
             guard let offset = offsetFromAnchor(on: day, calendar: calendar), offset >= 0 else { return nil }
@@ -99,12 +148,17 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
         return RoutineOccurrenceSlot(id: key, scheduleID: id, scheduledAt: scheduledAt)
     }
 
+    private func isPastEnd(on date: Date, calendar: Calendar) -> Bool {
+        endDay?.date(in: calendar).map { calendar.startOfDay(for: date) > $0 } ?? false
+    }
+
     func slots(on day: Date, calendar: Calendar) -> [RoutineOccurrenceSlot] {
         times.sorted { $0.minuteOfDay < $1.minuteOfDay }.compactMap { slot(on: day, calendar: calendar, time: $0) }
     }
 
     func nextIntervalSlots(after date: Date, calendar: Calendar, limit: Int) -> [RoutineOccurrenceSlot] {
-        guard let intervalDays, let anchor = anchorDay?.date(in: calendar),
+        guard isAvailable(forRemindersAfter: date, calendar: calendar),
+              limit > 0, let intervalDays, let anchor = anchorDay?.date(in: calendar),
               let offset = offsetFromAnchor(on: date, calendar: calendar) else { return [] }
         let nextOffset = offset < 0 ? 0 : (offset / intervalDays) * intervalDays
         let days = (0...limit).compactMap { index in
@@ -123,6 +177,60 @@ struct RoutineOccurrenceSlot: Identifiable {
     let id: String
     let scheduleID: UUID
     let scheduledAt: Date
+
+    var timeID: UUID? {
+        let parts = id.split(separator: ".")
+        guard parts.count == 3 else { return nil }
+        return UUID(uuidString: String(parts[2]))
+    }
+}
+
+struct RoutineNotificationResponse: Sendable {
+    static let category = "RoutineReminder"
+    enum Action: String, Sendable {
+        case log = "RoutineLog"
+        case skip = "RoutineSkip"
+        case snooze = "RoutineSnooze"
+    }
+
+    let action: Action
+    let scheduleID: UUID
+    let timeID: UUID
+    let hour: Int
+    let minute: Int
+    let occurredAt: Date?
+    let deliveredAt: Date
+
+    init?(_ response: UNNotificationResponse) {
+        let notification = response.notification
+        let content = notification.request.content
+        guard content.categoryIdentifier == Self.category,
+              let action = (response.actionIdentifier == UNNotificationDefaultActionIdentifier
+                            ? .log : Action(rawValue: response.actionIdentifier)),
+              let schedule = content.userInfo["schedule"] as? String, let scheduleID = UUID(uuidString: schedule),
+              let time = content.userInfo["time"] as? String, let timeID = UUID(uuidString: time),
+              let hour = content.userInfo["hour"] as? Int, let minute = content.userInfo["minute"] as? Int
+        else { return nil }
+        self.action = action
+        self.scheduleID = scheduleID
+        self.timeID = timeID
+        self.hour = hour
+        self.minute = minute
+        occurredAt = (content.userInfo["occurrenceDate"] as? Double).map(Date.init(timeIntervalSinceReferenceDate:))
+        deliveredAt = notification.date
+    }
+
+    static var notificationCategory: UNNotificationCategory {
+        let actions = [
+            UNNotificationAction(identifier: Action.log.rawValue, title: String(localized: "Log"),
+                                 options: [.foreground, .authenticationRequired]),
+            UNNotificationAction(identifier: Action.snooze.rawValue, title: String(localized: "Snooze 15 Minutes"),
+                                 options: [.authenticationRequired]),
+            UNNotificationAction(identifier: Action.skip.rawValue, title: String(localized: "Skip"),
+                                 options: [.authenticationRequired]),
+        ]
+        return UNNotificationCategory(identifier: category, actions: actions, intentIdentifiers: [], options: [])
+    }
 }
 
 extension RoutineRecord {
@@ -137,8 +245,17 @@ extension RoutineRecord {
 
 extension RoutineOccurrence {
     var loggedExperience: Experience? {
+        experience(isUnconfirmed: false)
+    }
+
+    var unconfirmedExperience: Experience? {
+        experience(isUnconfirmed: true)
+    }
+
+    private func experience(isUnconfirmed: Bool) -> Experience? {
         let ingestions = ingestions?.allObjects as? [Ingestion] ?? []
-        return ingestions.sorted { $0.timeUnwrapped < $1.timeUnwrapped }.compactMap(\.experience).first
+        return ingestions.filter { $0.isUnconfirmed == isUnconfirmed }
+            .sorted { $0.timeUnwrapped < $1.timeUnwrapped }.compactMap(\.experience).first
     }
 }
 
@@ -152,6 +269,8 @@ final class RoutineSchedules: ObservableObject {
     @Published private(set) var loadError: String?
     @Published private(set) var reminderError: String?
     @Published private(set) var authorization: UNAuthorizationStatus = .notDetermined
+    @Published var notificationReview: RoutineOccurrenceSlot?
+    @Published var notificationError: String?
 
     static var calendar: Calendar {
         var calendar = Calendar(identifier: .gregorian)
@@ -233,6 +352,8 @@ final class RoutineSchedules: ObservableObject {
             occurrence.isSkipped = true
             occurrence.snoozedUntil = nil
         case .snooze:
+            guard !occurrence.isSkipped else { throw StorageError.skipped }
+            if let until = occurrence.snoozedUntil, until > .now { return }
             occurrence.isSkipped = false
             occurrence.snoozedUntil = Date().addingTimeInterval(15 * 60)
         case .reopen:
@@ -253,6 +374,42 @@ final class RoutineSchedules: ObservableObject {
         request.predicate = NSPredicate(format: "id == %@", id as CVarArg)
         request.fetchLimit = 1
         return try context.fetch(request).first
+    }
+
+    func handleNotification(_ response: RoutineNotificationResponse) async {
+        // Foregrounding may have started a refresh before the notification delegate runs.
+        for _ in 0..<20 where isUpdating || PersistenceController.isJournalOperationInProgress {
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+        do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let calendar = Self.calendar
+            guard !isUpdating, let schedule = try Self.record(for: response.scheduleID, in: context)?.schedule,
+                  schedule.isAvailable(forRemindersAfter: .now, calendar: calendar),
+                  let clock = schedule.times.first(where: { $0.id == response.timeID }),
+                  clock.hour == response.hour, clock.minute == response.minute
+            else { throw StorageError.missingRoutine }
+
+            let date = response.occurredAt ?? response.deliveredAt
+            guard let slot = schedule.slot(on: date, calendar: calendar, time: clock),
+                  response.deliveredAt >= slot.scheduledAt.addingTimeInterval(-60),
+                  response.occurredAt.map({ $0 == slot.scheduledAt }) != false
+            else { throw StorageError.missingRoutine }
+
+            switch response.action {
+            case .log:
+                let occurrence = try Self.occurrence(for: slot, in: context)
+                guard occurrence.ingestions?.count ?? 0 == 0 else { throw StorageError.alreadyLogged }
+                guard !occurrence.isSkipped else { throw StorageError.skipped }
+                notificationReview = slot
+            case .skip:
+                try await setDisposition(.skip, for: slot)
+            case .snooze:
+                try await setDisposition(.snooze, for: slot)
+            }
+        } catch {
+            notificationError = error.localizedDescription
+        }
     }
 
     static func occurrence(for slot: RoutineOccurrenceSlot, in context: NSManagedObjectContext) throws -> RoutineOccurrence {
@@ -352,7 +509,10 @@ final class RoutineSchedules: ObservableObject {
         for request in desired {
             let old = existing[request.identifier]?.trigger as? UNCalendarNotificationTrigger
             let new = request.trigger as? UNCalendarNotificationTrigger
-            if let old, let new, old.dateComponents == new.dateComponents, old.repeats == new.repeats { continue }
+            if let old, let new, let oldContent = existing[request.identifier]?.content,
+               old.dateComponents == new.dateComponents, old.repeats == new.repeats,
+               oldContent.categoryIdentifier == request.content.categoryIdentifier,
+               NSDictionary(dictionary: oldContent.userInfo).isEqual(to: request.content.userInfo) { continue }
             do {
                 try await center.add(request)
             } catch {
@@ -378,57 +538,80 @@ final class RoutineSchedules: ObservableObject {
         let suppressed = Set(records.filter {
             $0.isSkipped || ($0.ingestions?.count ?? 0) > 0 || ($0.snoozedUntil ?? .distantPast) > now
         }.compactMap(\.key))
-        var repeating: [UNNotificationRequest] = []
-        var oneTime: [(id: String, date: Date)] = records.compactMap { occurrence in
-            guard let id = occurrence.key, let alert = occurrence.snoozedUntil, alert > now,
+        var reminders: [UNNotificationRequest] = records.compactMap { occurrence in
+            guard let schedule = occurrence.routine?.schedule,
+                  schedule.isAvailable(forRemindersAfter: now, calendar: calendar),
+                  let id = occurrence.key, let scheduledAt = occurrence.scheduledAt,
+                  let alert = occurrence.snoozedUntil, alert > now,
                   !occurrence.isSkipped, (occurrence.ingestions?.count ?? 0) == 0 else { return nil }
-            return (id + ".snoozed", alert)
+            let slot = RoutineOccurrenceSlot(id: id, scheduleID: schedule.id, scheduledAt: scheduledAt)
+            guard let clock = schedule.times.first(where: { $0.id == (slot.timeID ?? schedule.id) }),
+                  schedule.slot(on: scheduledAt, calendar: calendar, time: clock)?.scheduledAt == scheduledAt
+            else { return nil }
+            return reminder(id: id + ".snoozed", schedule: schedule, time: clock, slot: slot,
+                            date: calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: alert))
         }
-        for schedule in schedules where schedule.reminds {
+        for schedule in schedules where schedule.reminds && schedule.isAvailable(forRemindersAfter: now, calendar: calendar) {
+            func add(_ slot: RoutineOccurrenceSlot, time: RoutineSchedule.ClockTime) {
+                guard !suppressed.contains(slot.id) else { return }
+                let date = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: slot.scheduledAt)
+                reminders.append(reminder(id: slot.id, schedule: schedule, time: time, slot: slot, date: date))
+            }
             if schedule.intervalDays != nil {
-                oneTime += schedule.nextIntervalSlots(after: now, calendar: calendar, limit: 12)
-                    .filter { !suppressed.contains($0.id) }
-                    .map { ($0.id + ".interval", $0.scheduledAt) }
+                for slot in schedule.nextIntervalSlots(after: now, calendar: calendar, limit: 24) {
+                    if let time = schedule.times.first(where: { $0.id == (slot.timeID ?? schedule.id) }) {
+                        add(slot, time: time)
+                    }
+                }
                 continue
             }
             for time in schedule.times {
                 for weekday in schedule.reminderDays() {
                     let date = DateComponents(hour: time.hour, minute: time.minute, weekday: weekday)
-                    let id = time.id.uuidString + "." + (weekday.map(String.init) ?? "daily")
-                    if let next = calendar.nextDate(after: now, matching: date, matchingPolicy: .nextTime),
-                       let slot = schedule.slot(on: next, calendar: calendar, time: time), suppressed.contains(slot.id) {
-                        // A calendar repeat can't omit one day. Queue upcoming dates without that occurrence.
-                        var previous = next
-                        for _ in 0..<12 {
-                            guard let following = calendar.nextDate(after: previous, matching: date, matchingPolicy: .nextTime),
-                                  let followingSlot = schedule.slot(on: following, calendar: calendar, time: time) else { break }
-                            if !suppressed.contains(followingSlot.id) {
-                                oneTime.append((followingSlot.id + ".regular", following))
-                            }
-                            previous = following
-                        }
-                    } else {
-                        repeating.append(reminder(id: id, date: date, repeats: true))
+                    let firstDay = schedule.anchorDay?.date(in: calendar) ?? now
+                    var cursor = max(now, firstDay.addingTimeInterval(-1))
+                    if schedule.endDay == nil, cursor == now,
+                       let next = calendar.nextDate(after: cursor, matching: date, matchingPolicy: .nextTime),
+                       let slot = schedule.slot(on: next, calendar: calendar, time: time),
+                       !suppressed.contains(slot.id) {
+                        let id = time.id.uuidString + "." + (weekday.map(String.init) ?? "daily")
+                        reminders.append(reminder(id: id, schedule: schedule, time: time, date: date))
+                        continue
+                    }
+                    // Calendar repeats cannot omit a date or obey an end date.
+                    for _ in 0..<12 {
+                        guard let next = calendar.nextDate(after: cursor, matching: date, matchingPolicy: .nextTime),
+                              let slot = schedule.slot(on: next, calendar: calendar, time: time) else { break }
+                        add(slot, time: time)
+                        cursor = next
                     }
                 }
             }
         }
-        // Keep the nearest dates when many routines compete for the system's pending requests.
-        let available = max(0, 64 - existingOtherRequests - repeating.count)
-        return repeating + oneTime.sorted { $0.date < $1.date }.prefix(available).map { entry in
-            let date = calendar.dateComponents([.year, .month, .day, .hour, .minute, .second], from: entry.date)
-            return reminder(id: entry.id, date: date, repeats: false)
-        }
+        let available = max(0, 64 - existingOtherRequests)
+        let upcoming = reminders.compactMap { reminder in
+            (reminder.trigger as? UNCalendarNotificationTrigger)?.nextTriggerDate().map { ($0, reminder) }
+        }.sorted { ($0.0, $0.1.identifier) < ($1.0, $1.1.identifier) }
+        return upcoming.prefix(available).map { $0.1 }
     }
 
-    private func reminder(id: String, date: DateComponents, repeats: Bool) -> UNNotificationRequest {
+    private func reminder(
+        id: String, schedule: RoutineSchedule, time: RoutineSchedule.ClockTime,
+        slot: RoutineOccurrenceSlot? = nil, date: DateComponents
+    ) -> UNNotificationRequest {
         let content = UNMutableNotificationContent()
         content.title = String(localized: "Routine Reminder")
         content.body = String(localized: "A scheduled routine is due.")
         content.sound = .default
+        content.categoryIdentifier = RoutineNotificationResponse.category
+        content.userInfo = [
+            "schedule": schedule.id.uuidString, "time": time.id.uuidString,
+            "hour": time.hour, "minute": time.minute,
+        ]
+        if let slot { content.userInfo["occurrenceDate"] = slot.scheduledAt.timeIntervalSinceReferenceDate }
         return UNNotificationRequest(
             identifier: Self.reminderPrefix + id, content: content,
-            trigger: UNCalendarNotificationTrigger(dateMatching: date, repeats: repeats))
+            trigger: UNCalendarNotificationTrigger(dateMatching: date, repeats: slot == nil))
     }
 
     enum StorageError: LocalizedError {

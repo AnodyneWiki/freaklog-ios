@@ -325,4 +325,31 @@ final class RoutineOccurrenceTests: XCTestCase {
     schedule.additionalTimes?[0].hour = 9
     XCTAssertFalse(schedule.isValid)
   }
+
+  func testRoutinePauseEndDateAndSlotAmounts() throws {
+    let firstDay = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let lastDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: firstDay))
+    let afterEnd = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: lastDay))
+    var schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1,
+      additionalTimes: [.init(hour: 18, minute: 0, productAmount: 2)],
+      endDay: .init(lastDay, calendar: calendar))
+    let first = schedule.slots(on: firstDay, calendar: calendar)
+    XCTAssertEqual(first.map(schedule.amount(for:)), [1, 2])
+    XCTAssertEqual(schedule.slots(on: lastDay, calendar: calendar).count, 2)
+    XCTAssertTrue(schedule.slots(on: afterEnd, calendar: calendar).isEmpty)
+
+    let noon = try XCTUnwrap(calendar.date(bySettingHour: 12, minute: 0, second: 0, of: firstDay))
+    schedule.setPaused(true, at: noon)
+    XCTAssertEqual(schedule.slots(on: firstDay, calendar: calendar).map(\.id), [first[0].id])
+    XCTAssertTrue(schedule.slots(on: lastDay, calendar: calendar).isEmpty)
+    schedule.setPaused(false, at: lastDay)
+    XCTAssertEqual(schedule.slots(on: firstDay, calendar: calendar).map(\.id), [first[0].id])
+    XCTAssertEqual(schedule.slots(on: lastDay, calendar: calendar).count, 2)
+
+    let copy = schedule.duplicate(at: firstDay, calendar: calendar)
+    XCTAssertNotEqual(copy.id, schedule.id)
+    XCTAssertNotEqual(copy.additionalTimes?.first?.id, schedule.additionalTimes?.first?.id)
+    XCTAssertEqual(copy.slots(on: firstDay, calendar: calendar).map(copy.amount(for:)), [1, 2])
+  }
 }

@@ -17,7 +17,6 @@ struct InventoryScreen: View {
     private enum Grouping: String, CaseIterable, Identifiable {
         case product = "Product"
         case location = "Storage Location"
-        case low = "Needs Attention"
         var id: Self { self }
         var title: LocalizedStringKey { LocalizedStringKey(rawValue) }
     }
@@ -26,6 +25,7 @@ struct InventoryScreen: View {
     private var containers: FetchedResults<StockContainer>
     @State private var grouping: Grouping = .product
     @State private var addingContainer = false
+    @State private var onlyNeedsAttention = false
 
     var body: some View {
         List {
@@ -33,7 +33,6 @@ struct InventoryScreen: View {
                 Section {
                     Label("No containers yet", systemImage: "archivebox")
                         .foregroundStyle(.secondary)
-                    Button("Add Container") { addingContainer = true }
                 }
             } else {
                 Section {
@@ -44,45 +43,49 @@ struct InventoryScreen: View {
                     }
                 }
 
-                let active = containers.filter { !$0.isArchived }
-                if grouping == .low {
-                    let needsAttention = active.filter { $0.isLow || $0.needsReview || $0.isExpired }
+                let active = containers.filter {
+                    !$0.isArchived && (!onlyNeedsAttention || $0.isLow || $0.needsReview || $0.isExpired)
+                }
+                if onlyNeedsAttention, active.isEmpty {
+                    Text("No containers need attention.").foregroundStyle(.secondary)
+                }
+                let groups = Dictionary(grouping: active, by: groupKey)
+                ForEach(groups.keys.sorted { lhs, rhs in
+                    let order = groupTitle(groups[lhs] ?? []).localizedStandardCompare(groupTitle(groups[rhs] ?? []))
+                    return order == .orderedSame ? lhs.sortID < rhs.sortID : order == .orderedAscending
+                }, id: \.self) { key in
+                    let group = groups[key] ?? []
+                    let product = grouping == .product ? group.first?.inventoryProduct : nil
                     Section {
-                        if needsAttention.isEmpty {
-                            Text("No containers need attention.").foregroundStyle(.secondary)
-                        }
-                        rows(needsAttention)
-                    }
-                } else {
-                    let groups = Dictionary(grouping: active, by: groupKey)
-                    ForEach(groups.keys.sorted { lhs, rhs in
-                        let order = groupTitle(groups[lhs] ?? []).localizedStandardCompare(groupTitle(groups[rhs] ?? []))
-                        return order == .orderedSame ? lhs.sortID < rhs.sortID : order == .orderedAscending
-                    }, id: \.self) { key in
-                        let group = groups[key] ?? []
-                        Section(header: Text(groupTitle(group))) {
-                            if grouping == .product, let product = group.first?.inventoryProduct {
-                                NavigationLink {
-                                    ProductDetailScreen(product: product)
-                                } label: {
-                                    Label("Product Details", systemImage: "shippingbox")
-                                }
-                                .accessibilityLabel(Text("Details for \(product.name)"))
+                        if let product {
+                            NavigationLink {
+                                ProductDetailScreen(product: product)
+                            } label: {
+                                SavedProductRow(product: product)
                             }
-                            rows(group)
                         }
+                        rows(group)
+                    } header: {
+                        if product == nil { Text(groupTitle(group)) }
                     }
                 }
 
                 let archived = containers.filter(\.isArchived)
-                if !archived.isEmpty {
+                if !onlyNeedsAttention, !archived.isEmpty {
                     Section("Archived") { rows(archived) }
                 }
             }
         }
         .navigationTitle("Inventory")
         .toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Menu {
+                    Toggle("Needs Attention", isOn: $onlyNeedsAttention)
+                } label: {
+                    Label("Filter Inventory", systemImage: onlyNeedsAttention
+                          ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                }
+                .disabled(containers.isEmpty)
                 Button {
                     addingContainer = true
                 } label: {
@@ -128,7 +131,7 @@ struct StockContainerDetail: View {
     var body: some View {
         List {
             Section {
-                LabeledContent("Remaining", value: container.quantityLabel(container.remaining))
+                LabeledContent("Remaining", value: container.stockBalanceLabel)
                 StockLevelBar(container: container)
                 if let product = container.productName {
                     LabeledContent("Product", value: product)
@@ -358,6 +361,9 @@ struct StockContainerEditor: View {
 
     private var chosenCustomUnit: CustomUnit? { customUnits.first { $0.objectID == productID } }
     private var chosenFormulation: Formulation? { formulations.first { $0.objectID == productID } }
+    private var selectedProduct: JournalPresetProduct? {
+        chosenCustomUnit.map(JournalPresetProduct.customUnit) ?? chosenFormulation.map(JournalPresetProduct.formulation)
+    }
 
     private var chosenProductName: String? {
         chosenCustomUnit?.nameUnwrapped ?? chosenFormulation?.nameUnwrapped
@@ -392,14 +398,14 @@ struct StockContainerEditor: View {
                         Button("Edit Product") { productEditor = productDraft.editor }
                         Button("Remove Draft", role: .destructive) { self.productDraft = nil }
                     } else {
-                        if !customUnits.isEmpty || !formulations.isEmpty {
-                            Picker("Linked Product", selection: $productID) {
-                                Text("None").tag(Optional<NSManagedObjectID>.none)
-                                ForEach(customUnits, id: \.objectID) { product in
-                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
-                                }
-                                ForEach(formulations, id: \.objectID) { product in
-                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
+                        if productID != nil || !customUnits.isEmpty || !formulations.isEmpty {
+                            NavigationLink {
+                                SavedProductPicker(selection: $productID, emptyTitle: "No Linked Product")
+                            } label: {
+                                if let selectedProduct {
+                                    SavedProductRow(product: selectedProduct)
+                                } else {
+                                    Text("Link Saved Product")
                                 }
                             }
                         }
@@ -424,9 +430,9 @@ struct StockContainerEditor: View {
                         }
                     }
                     if let match = pendingPackageMatch {
-                        Text("PZN \(match.code.digits) is linked to a different product.")
+                        Text("PZN \(match.code.digits) is linked to \(productName(for: match.productID)). This container is linked to \(chosenProductName ?? String(localized: "another product")).")
                             .foregroundStyle(.secondary)
-                        Button("Use Matched Product") {
+                        Button("Use \(productName(for: match.productID))") {
                             productID = match.productID
                             packageCode = match.code
                             pendingPackageMatch = nil
@@ -435,20 +441,16 @@ struct StockContainerEditor: View {
                     } else if let packageCode {
                         LabeledContent("PZN", value: packageCode.digits)
                         if let conflictingPackageProductID {
-                            Text("This PZN is already linked to another product.")
+                            Text("This PZN is linked to \(productName(for: conflictingPackageProductID)).")
                                 .foregroundStyle(.secondary)
-                            Button("Use Matched Product") { productID = conflictingPackageProductID }
+                            Button("Use \(productName(for: conflictingPackageProductID))") { productID = conflictingPackageProductID }
                         }
                         Button("Clear PZN") { self.packageCode = nil }
                     }
                 }
             }
-            if container == nil, (productID == nil && productDraft == nil) || packageCode != nil {
-                MedicationReferenceSection(
-                    suggestedName: chosenProductName ?? "",
-                    pzn: packageCode?.digits,
-                    allowsNameSuggestions: productID == nil && productDraft == nil
-                ) { medication in
+            if container == nil, productID == nil, productDraft == nil {
+                MedicationReferenceSection(suggestedName: chosenProductName ?? "") { medication in
                     productName = medication.name
                 }
             }
@@ -532,6 +534,12 @@ struct StockContainerEditor: View {
               customUnits.contains(where: { $0.objectID == id }) || formulations.contains(where: { $0.objectID == id })
         else { return nil }
         return id
+    }
+
+    private func productName(for id: NSManagedObjectID) -> String {
+        customUnits.first { $0.objectID == id }?.nameUnwrapped
+            ?? formulations.first { $0.objectID == id }?.nameUnwrapped
+            ?? String(localized: "another product")
     }
 
     private func applyPackageLabel(name: String?, code: PharmacyPackageCode?) {

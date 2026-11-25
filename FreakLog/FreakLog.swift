@@ -23,6 +23,7 @@ struct FreakLog: App {
             if appDelegate.isJournalReady {
                 AuthenticatorWrapper(authenticator: authenticator) {
                     ContentView()
+                        .modifier(RoutineNotificationReview())
                         .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
                         .environmentObject(toastViewModel)
                         .environmentObject(authenticator)

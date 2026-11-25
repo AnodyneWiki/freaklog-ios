@@ -3,38 +3,42 @@ import UIKit
 
 struct MedicationReferenceSection: View {
     let suggestedName: String
-    let pzn: String?
-    var allowsNameSuggestions = true
     let onPick: (GermanMedication) -> Void
 
     @State private var selectedMedication: GermanMedication?
 
     var body: some View {
         Section("Medication Reference") {
-            if allowsNameSuggestions, let medication = selectedMedication, medication.name == suggestedName {
+            if let medication = selectedMedication, medication.name == suggestedName {
                 LabeledContent("Active Ingredients", value: medication.ingredients)
                 if !medication.route.isEmpty {
                     LabeledContent("Route", value: medication.route)
                 }
             }
-            if allowsNameSuggestions {
-                NavigationLink {
-                    GermanMedicationSearch(initialName: suggestedName) { medication in
-                        selectedMedication = medication
-                        onPick(medication)
-                    }
-                } label: {
-                    Label("Search Medication Suggestions", systemImage: "magnifyingglass")
+            NavigationLink {
+                GermanMedicationSearch(initialName: suggestedName) { medication in
+                    selectedMedication = medication
+                    onPick(medication)
                 }
+            } label: {
+                Label("Search Medication Suggestions", systemImage: "magnifyingglass")
             }
-            if let url = Self.gelbeListeURL(name: suggestedName, pzn: pzn) {
-                Link(destination: url) {
-                    Label("Open in Gelbe Liste", systemImage: "arrow.up.right.square")
-                }
+        }
+    }
+}
+
+struct PackageReferenceLinks: View {
+    let name: String
+    let pzn: String?
+
+    var body: some View {
+        if let url = Self.gelbeListeURL(name: name, pzn: pzn) {
+            Link(destination: url) {
+                Label("Open in Gelbe Liste", systemImage: "arrow.up.right.square")
             }
-            Link(destination: Self.pharmNetURL) {
-                Label("Open PharmNet.Bund", systemImage: "arrow.up.right.square")
-            }
+        }
+        Link(destination: Self.pharmNetURL) {
+            Label("Open PharmNet.Bund", systemImage: "arrow.up.right.square")
         }
     }
 

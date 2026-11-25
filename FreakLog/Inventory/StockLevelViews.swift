@@ -5,17 +5,19 @@ struct StockLevelBar: View {
     @ObservedObject var container: StockContainer
 
     var body: some View {
-        if let fraction = container.capacityFraction, let capacity = container.knownCapacity {
-            ProgressView(value: fraction) {
-                Text("Capacity")
-            } currentValueLabel: {
-                Text(container.quantityLabel(capacity))
-            }
-            .tint(container.isLow ? Color.orange : Color.accentColor)
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityValue(Text("\(container.quantityLabel(container.remaining)) of \(container.quantityLabel(capacity))"))
+        if let fraction = container.capacityFraction {
+            ProgressView(value: fraction)
+                .tint(container.isLow ? Color.orange : Color.accentColor)
+                .accessibilityHidden(true)
         }
+    }
+}
+
+extension StockContainer {
+    var stockBalanceLabel: String {
+        guard capacityFraction != nil, let capacity = knownCapacity else { return quantityLabel(remaining) }
+        let amount = remaining.formatted(.number.precision(.fractionLength(0...8)))
+        return String(localized: "\(amount) of \(quantityLabel(capacity))")
     }
 }
 
@@ -26,7 +28,7 @@ struct InventorySupplyRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             LabeledContent {
-                Text(container.quantityLabel(container.remaining)).monospacedDigit()
+                Text(container.stockBalanceLabel).monospacedDigit()
             } label: {
                 Text(container.displayName)
                 if showLocation, let location = container.storageLocation {
@@ -85,8 +87,14 @@ struct InventorySourcePicker: View {
                 Text("Inventory")
             } footer: {
                 if let selected = matching.first(where: { $0.objectID == selection }) {
-                    if use.quantity <= selected.remaining {
+                    if selected.needsReview {
+                        Text("Check the count for this container or choose a different one.")
+                    } else if use.quantity <= selected.remaining {
                         Text("This log will draw \(selected.quantityLabel(use.quantity)) from this container.")
+                        if selected.isExpired, let expiry = selected.expiresAt {
+                            Label("Past recorded expiry of \(expiry.formatted(date: .abbreviated, time: .omitted)).",
+                                  systemImage: "calendar.badge.exclamationmark")
+                        }
                     } else {
                         Text("Choose a container with at least \(selected.quantityLabel(use.quantity)), or log without drawing from inventory.")
                     }
@@ -102,6 +110,10 @@ private struct InventorySourceList: View {
     @Binding var selection: NSManagedObjectID?
     @Environment(\.dismiss) private var dismiss
 
+    private func canDraw(from container: StockContainer) -> Bool {
+        !container.needsReview && container.remaining >= quantity
+    }
+
     var body: some View {
         List {
             Section {
@@ -110,11 +122,29 @@ private struct InventorySourceList: View {
                 }
             }
             Section("Available Containers") {
-                ForEach(matching, id: \.objectID) { container in
+                let available = matching.filter(canDraw)
+                if available.isEmpty {
+                    Text("No containers can supply this amount.").foregroundStyle(.secondary)
+                }
+                ForEach(available, id: \.objectID) { container in
                     choice(container.objectID) {
                         InventorySupplyRow(container: container)
                     }
-                    .disabled(container.needsReview || container.remaining < quantity)
+                }
+            }
+            let unavailable = matching.filter { !canDraw(from: $0) }
+            if !unavailable.isEmpty {
+                Section("Unavailable Containers") {
+                    ForEach(unavailable, id: \.objectID) { container in
+                        VStack(alignment: .leading, spacing: 4) {
+                            InventorySupplyRow(container: container)
+                            if !container.needsReview {
+                                Text("\(container.quantityLabel(quantity)) needed")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -133,7 +163,9 @@ private struct InventorySourceList: View {
                 label()
                 Spacer()
                 if selection == id {
-                    Image(systemName: "checkmark").foregroundStyle(Color.accentColor)
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Color.accentColor)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
