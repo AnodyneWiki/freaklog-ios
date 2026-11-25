@@ -371,7 +371,7 @@ final class LeaderboardSyncManager: ObservableObject {
       EstimatedDoseStandardDeviation: ingestion.pureSubstanceEstimatedDoseStandardDeviation ?? 0,
       Units: ingestion.pureUnits,
       Notes: ingestion.noteUnwrapped,
-      StomachFullness: ingestion.stomachFullness ?? "",
+      StomachFullness: "",
       Category: category
     )
     return LeaderboardEntryPayload(
