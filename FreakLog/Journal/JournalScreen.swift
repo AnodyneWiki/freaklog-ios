@@ -4,7 +4,7 @@ struct JournalScreen: View {
 
     @Binding var isFavoriteFilterEnabled: Bool
 
-
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
@@ -66,26 +66,39 @@ struct JournalScreen: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .safeAreaInset(edge: .top, spacing: 0) {
-                if isFavoriteFilterEnabled {
-                    HStack {
-                        favoriteButton
-                            .labelStyle(.titleAndIcon)
-                            .frame(minHeight: 44)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 16)
-                    .background(.bar)
-                } else if isEyeOpen, showsDueToday, !routines.schedules.isEmpty {
-                    Button { isShowingRoutines = true } label: {
+                VStack(spacing: 0) {
+                    if !isHidingJournalTabSwitcher, dynamicTypeSize.isAccessibilitySize {
                         HStack {
-                            Label("Due Today", systemImage: "calendar.badge.clock")
+                            viewPicker.pickerStyle(.menu)
                             Spacer()
-                            Image(systemName: "chevron.right").font(.caption)
                         }
                         .padding(.horizontal, 16)
                         .frame(minHeight: 44)
+                        .background(.bar)
                     }
-                    .background(.bar)
+                    if isFavoriteFilterEnabled {
+                        HStack {
+                            favoriteButton
+                                .labelStyle(.titleAndIcon)
+                                .frame(minHeight: 44)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .background(.bar)
+                    } else if isEyeOpen, showsDueToday, !routines.schedules.isEmpty {
+                        Button { isShowingRoutines = true } label: {
+                            HStack {
+                                Label("Due Today", systemImage: "calendar.badge.clock")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .accessibilityHidden(true)
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 44)
+                        }
+                        .background(.bar)
+                    }
                 }
             }
         }
@@ -103,15 +116,11 @@ struct JournalScreen: View {
             RoutineDayScreen()
         }
         .toolbar {
-            if !isHidingJournalTabSwitcher {
+            if !isHidingJournalTabSwitcher, !dynamicTypeSize.isAccessibilitySize {
                 ToolbarItem(placement: .principal) {
-                    Picker("View", selection: selectedTabBinding) {
-                        ForEach(JournalViewOption.allCases) { option in
-                            Text(option.text).tag(option)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 220)
+                    viewPicker
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 220)
                 }
             }
 
@@ -122,6 +131,14 @@ struct JournalScreen: View {
             }
             ToolbarItem(placement: .navigationBarTrailing) {
                 moreMenu
+            }
+        }
+    }
+
+    private var viewPicker: some View {
+        Picker("Journal View", selection: selectedTabBinding) {
+            ForEach(JournalViewOption.allCases) { option in
+                Text(option.text).tag(option)
             }
         }
     }

@@ -10,6 +10,8 @@ struct JournalCalendarScreen: View {
 
     @State private var isFirstAppear = true
     @State private var selectedDay = Calendar.current.startOfDay(for: .now)
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @ScaledMetric(relativeTo: .title2) private var monthHeaderAllowance = 104.0
 
     private let substanceName: String?
 
@@ -38,61 +40,24 @@ struct JournalCalendarScreen: View {
         // Grouped once here instead of a fetch request per visible day cell
         let ingestionsByDay = Dictionary(grouping: ingestions) { calendar.startOfDay(for: $0.timeUnwrapped) }
         GeometryReader { geometry in
-            VStack(spacing: 0) {
-                CalendarViewRepresentable(
-                    calendar: calendar,
-                    visibleDateRange: historyDateRange,
-                    monthsLayout: monthsLayout,
-                    dataDependency: (ingestions, selectedDay),
-                    proxy: calendarViewProxy)
-                .interMonthSpacing(24)
-                .verticalDayMargin(8)
-                .horizontalDayMargin(8)
-                .monthHeaders { month in
-                    let monthHeaderText = monthDateFormatter.string(from: calendar.date(from: month.components)!)
-                    HStack {
-                        Text(monthHeaderText)
-                            .font(.title2)
-                        Spacer()
-                    }
-                    .padding()
-                    .accessibilityAddTraits(.isHeader)
-                }
+            let size = geometry.size
+            let sideBySide = size.width >= 740
+                || (size.width >= 610 && size.height < 430 && !dynamicTypeSize.isAccessibilitySize)
+            let layout = sideBySide ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
+            let calendarWidth = min(sideBySide ? size.width * 0.47 : size.width, 460)
+            let dayMargin: CGFloat = calendarWidth < 345 ? 2 : 6
+            let dayAspectRatio: CGFloat = dynamicTypeSize.isAccessibilitySize ? 1.3 : 1
+            let dayWidth = max(0, calendarWidth - 6 * dayMargin) / 7
+            let monthHeight = 6 * dayWidth * dayAspectRatio + 5 * 8 + monthHeaderAllowance
 
-                .days { dayComponents in
-                    if let date = calendar.date(from: dayComponents.components) {
-                        let day = calendar.startOfDay(for: date)
-                        DayView(date: day, ingestions: ingestionsByDay[day] ?? [], isSelected: day == selectedDay) {
-                            selectedDay = day
-                        }
-                    }
-                }
-                .frame(maxWidth: 375)
-                .frame(height: geometry.size.height / 2)
-                .task {
-                    guard isFirstAppear else { return }
-                    if substanceName != nil, let latest = ingestions.first?.time {
-                        selectedDay = calendar.startOfDay(for: latest)
-                    }
-                    await Task.yield()
-                    guard !Task.isCancelled else { return }
-                    calendarViewProxy.scrollToDay(containing: selectedDay, scrollPosition: .centered, animated: false)
-                    isFirstAppear = false
-                }
-                List {
-                    Section {
-                        let entries = ingestionsByDay[selectedDay] ?? []
-                        if entries.isEmpty {
-                            Text("No ingestions").foregroundStyle(.secondary)
-                        }
-                        ForEach(entries) { ingestion in
-                            JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.hour().minute())
-                        }
-                    } header: {
-                        Text(selectedDay, format: .dateTime.weekday(.wide).month().day().year())
-                    }
-                }
-                .listStyle(.insetGrouped)
+            layout {
+                calendarPanel(ingestionsByDay, dayMargin: dayMargin, dayAspectRatio: dayAspectRatio)
+                    .frame(
+                        width: calendarWidth,
+                        height: sideBySide ? nil : min(monthHeight, size.height * 0.6)
+                    )
+                Divider()
+                dayEntries(ingestionsByDay[selectedDay] ?? [])
             }
         }
         .navigationTitle("Calendar")
@@ -108,6 +73,67 @@ struct JournalCalendarScreen: View {
                 }
             }
         }
+    }
+
+    private func calendarPanel(
+        _ ingestionsByDay: [Date: [Ingestion]],
+        dayMargin: CGFloat,
+        dayAspectRatio: CGFloat
+    ) -> some View {
+        CalendarViewRepresentable(
+            calendar: calendar,
+            visibleDateRange: historyDateRange,
+            monthsLayout: monthsLayout,
+            dataDependency: (ingestions, selectedDay),
+            proxy: calendarViewProxy
+        )
+        .interMonthSpacing(24)
+        .verticalDayMargin(8)
+        .horizontalDayMargin(dayMargin)
+        .dayAspectRatio(dayAspectRatio)
+        .monthHeaders { month in
+            if let date = calendar.date(from: month.components) {
+                Text(monthDateFormatter.string(from: date))
+                    .font(.title2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding()
+                    .accessibilityAddTraits(.isHeader)
+            }
+        }
+        .days { dayComponents in
+            if let date = calendar.date(from: dayComponents.components) {
+                let day = calendar.startOfDay(for: date)
+                DayView(date: day, ingestions: ingestionsByDay[day] ?? [], isSelected: day == selectedDay) {
+                    selectedDay = day
+                }
+            }
+        }
+        .task {
+            guard isFirstAppear else { return }
+            if substanceName != nil, let latest = ingestions.first?.time {
+                selectedDay = calendar.startOfDay(for: latest)
+            }
+            await Task.yield()
+            guard !Task.isCancelled else { return }
+            calendarViewProxy.scrollToDay(containing: selectedDay, scrollPosition: .centered, animated: false)
+            isFirstAppear = false
+        }
+    }
+
+    private func dayEntries(_ entries: [Ingestion]) -> some View {
+        List {
+            Section {
+                if entries.isEmpty {
+                    Text("No ingestions").foregroundStyle(.secondary)
+                }
+                ForEach(entries) { ingestion in
+                    JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.hour().minute())
+                }
+            } header: {
+                Text(selectedDay, format: .dateTime.weekday(.wide).month().day().year())
+            }
+        }
+        .listStyle(.insetGrouped)
     }
 
     // MARK: Private
