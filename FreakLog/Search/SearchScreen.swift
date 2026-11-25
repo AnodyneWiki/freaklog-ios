@@ -56,6 +56,7 @@ struct SearchScreen: View {
     @State private var isShowingFilters = false
     @State private var isShowingAddCustomSubstance = false
     @State private var ingestionToEdit: Ingestion?
+    @State private var noteToEdit: TimedNote?
     @State private var appliedText = ""
     @State private var resultLimit = 50
 
@@ -102,6 +103,11 @@ struct SearchScreen: View {
             }
             .sheet(item: $ingestionToEdit) { ingestion in
                 EditIngestionScreen(ingestion: ingestion)
+            }
+            .sheet(item: $noteToEdit) { note in
+                if let experience = note.experience {
+                    EditTimedNoteScreen(timedNote: note, experience: experience)
+                }
             }
             .task(id: searchText) {
                 if !terms.isEmpty {
@@ -241,6 +247,11 @@ struct SearchScreen: View {
                     }
                 } else if appliedText != searchText {
                     ProgressView().frame(maxWidth: .infinity)
+                } else if filters.journalType == .notes {
+                    UnifiedTimedNoteResults(
+                        terms: terms, details: filters.noteDetails, favoritesOnly: favoritesOnly,
+                        limit: resultLimit, edit: { noteToEdit = $0 }, showMore: { resultLimit += 50 }
+                    )
                 } else {
                     UnifiedJournalResults(
                         terms: terms, customSubstances: Array(customSubstances), type: filters.journalType,
@@ -374,7 +385,16 @@ struct SearchScreen: View {
         if visibleScope.includesJournal {
             if favoritesOnly { labels.append(String(localized: "Favorites")) }
             if filters.journalType != .all { labels.append(filters.journalType.title) }
-            if filters.ingestionKind != .any { labels.append(filters.ingestionKind.title) }
+            if filters.journalType == .notes {
+                if let mood = filters.noteDetails.mood {
+                    labels.append(String(localized: "Mood \(mood.title)"))
+                }
+                if let energy = filters.noteDetails.energy {
+                    labels.append(String(localized: "Energy \(energy.title)"))
+                }
+            } else if filters.ingestionKind != .any {
+                labels.append(filters.ingestionKind.title)
+            }
         }
         if visibleScope.includesLibrary {
             if filters.libraryType != .all { labels.append(filters.libraryType.title) }
@@ -387,11 +407,51 @@ struct SearchScreen: View {
 
     private func clearVisibleFilters() {
         if visibleScope.includesJournal {
-            filters.journalType = .all
-            filters.ingestionKind = .any
+            filters.clearJournal()
             favoritesOnly = false
         }
         if visibleScope.includesLibrary { filters.clearLibrary() }
+    }
+}
+
+private struct UnifiedTimedNoteResults: View {
+    let limit: Int
+    let edit: (TimedNote) -> Void
+    let showMore: () -> Void
+
+    @FetchRequest private var notes: FetchedResults<TimedNote>
+
+    init(
+        terms: [String], details: TimedNoteDetails, favoritesOnly: Bool, limit: Int,
+        edit: @escaping (TimedNote) -> Void, showMore: @escaping () -> Void
+    ) {
+        self.limit = limit
+        self.edit = edit
+        self.showMore = showMore
+        let query = UnifiedJournalQuery(terms: terms, customSubstances: [], favoritesOnly: favoritesOnly)
+        _notes = FetchRequest(fetchRequest: query.timedNotesRequest(limit: limit + 1, details: details))
+    }
+
+    var body: some View {
+        Section("Timed Notes") {
+            if notes.isEmpty {
+                Text("No matching notes").foregroundStyle(.secondary)
+            }
+            ForEach(notes.prefix(limit)) { note in
+                Button {
+                    edit(note)
+                } label: {
+                    TimedNoteRow(timedNote: note) {
+                        Text(note.timeUnwrapped.formatted(date: .abbreviated, time: .shortened))
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(note.experience == nil)
+            }
+            if notes.count > limit {
+                Button("Show More Timed Notes", action: showMore)
+            }
+        }
     }
 }
 

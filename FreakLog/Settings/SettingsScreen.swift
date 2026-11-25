@@ -700,9 +700,11 @@ struct JournalExportReview: View {
                     if isAndroidTransfer {
                         Text("Unconfirmed entries, individual ingestion locations and timeline visibility")
                         Text("Formulation definitions and links, custom route overrides and advanced substance profiles")
+                        Text("Mood and energy recorded on timed notes")
                     } else if let pwJournalVersion {
                         Text("Individual ingestion locations and administration sites")
                         Text("Formulations, route overrides and exact custom colors")
+                        Text("Mood and energy recorded on timed notes")
                         if pwJournalVersion == .current {
                             Text("Standalone custom substance definitions and confirmation groups")
                             Text("Default routes on custom units")

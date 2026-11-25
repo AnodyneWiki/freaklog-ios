@@ -4,6 +4,30 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testNativeJournalJSONPreservesNoteDetailsAndTransfersKeepOnlyNoteText() throws {
+        let fixture = #"""
+          {"experiences":[{
+            "title":"Example","text":"","creationDate":1700000000000,
+            "timedNotes":[{"creationDate":1700000000000,"time":1700000000000,
+              "note":"A note","isPartOfTimeline":true,"color":"BLUE","mood":"neutral","energy":"veryLow"}]
+          }]}
+          """#
+        let journal = try JournalFile.read(Data(fixture.utf8))
+        let native = try JournalFile.read(JSONEncoder().encode(journal))
+        XCTAssertEqual(native.experiences.first?.timedNotes.first?.details, TimedNoteDetails(mood: .neutral, energy: .veryLow))
+
+        let transfers = try [journal.androidTransferData(), journal.pwJournalTransferData(.legacy),
+                             journal.pwJournalTransferData(.current)]
+        for data in transfers {
+            let fields = try JSONDecoder().decode(JSONValue.self, from: data)
+            let notes = fields["experiences"]?.array?.first?["timedNotes"]?.array
+            let note = try XCTUnwrap(notes?.first)
+            XCTAssertEqual(note["note"], .string("A note"))
+            XCTAssertNil(note["mood"])
+            XCTAssertNil(note["energy"])
+        }
+    }
+
     func testAndroid1136HeaderlessTransferAndPortableExport() throws {
         // Shape follows Android JournalExport, AdaptiveColorSerializer and InstantSerializer
         // at ae3419d. The example uses the Kotlin serializer's omitted default fields.

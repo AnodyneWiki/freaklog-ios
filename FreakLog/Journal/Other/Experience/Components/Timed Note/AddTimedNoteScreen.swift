@@ -10,6 +10,7 @@ struct AddTimedNoteScreen: View {
     @Environment(\.dismiss) private var dismiss
     @State private var time: Date
     @State private var note = ""
+    @State private var details = TimedNoteDetails()
     @State private var color = SubstanceColor.blue
     @State private var isPartOfTimeline = false
     @State private var usedColors: [SubstanceColor] = []
@@ -30,6 +31,7 @@ struct AddTimedNoteScreen: View {
             TimedNoteScreenContent(
                 time: $time,
                 note: $note,
+                details: $details,
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
@@ -79,10 +81,12 @@ struct AddTimedNoteScreen: View {
         newNote.creationDate = Date()
         newNote.time = time
         newNote.note = note
+        newNote.details = details
         newNote.colorAsText = color.rawValue
         newNote.isPartOfTimeline = isPartOfTimeline
         newNote.experience = try targetExperience(at: time).map { try PersistenceController.journalObject($0, in: context) }
             ?? Experience.create(at: time, in: context)
-        try TimedNoteSaving.save(newNote, sendingWebhooksTo: WebhookPreset.defaultPresetObjectIDs())
+        let sendsText = !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        try TimedNoteSaving.save(newNote, sendingWebhooksTo: sendsText ? WebhookPreset.defaultPresetObjectIDs() : [])
     }
 }

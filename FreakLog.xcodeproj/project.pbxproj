@@ -26,6 +26,7 @@
 		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		6910749D78B0A25B9AA3B861 /* Backup v5.json in Resources */ = {isa = PBXBuildFile; fileRef = B0B61C9313915160D6512438 /* Backup v5.json */; };
+		DD9DF1D4B38CCB22FEE88E54 /* Backup v6.json in Resources */ = {isa = PBXBuildFile; fileRef = 6967BC902B6C53371B28C82F /* Backup v6.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
@@ -527,9 +528,11 @@
 		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		B0B61C9313915160D6512438 /* Backup v5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v5.json"; sourceTree = "<group>"; };
+		6967BC902B6C53371B28C82F /* Backup v6.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v6.json"; sourceTree = "<group>"; };
 		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
 		A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 15.xcdatamodel"; sourceTree = "<group>"; };
 		DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16.xcdatamodel"; sourceTree = "<group>"; };
+		CACEC859F16DDA5BC267C175 /* FreakLog Version 17.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 17.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
@@ -1817,6 +1820,7 @@
 				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
 				050CB115A621D9CF84A3F1BC /* Backup v3.json */,
 				B0B61C9313915160D6512438 /* Backup v5.json */,
+				6967BC902B6C53371B28C82F /* Backup v6.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				A0A1564B8642BDA2188908CB /* UnifiedSearchTests.swift */,
 				6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */,
@@ -2262,6 +2266,7 @@
 				5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */,
 				A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */,
 				6910749D78B0A25B9AA3B861 /* Backup v5.json in Resources */,
+				DD9DF1D4B38CCB22FEE88E54 /* Backup v6.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
@@ -3218,6 +3223,7 @@
 				B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */,
 				A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */,
 				DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */,
+				CACEC859F16DDA5BC267C175 /* FreakLog Version 17.xcdatamodel */,
 				7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */,
 				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
@@ -3232,7 +3238,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */;
+			currentVersion = CACEC859F16DDA5BC267C175 /* FreakLog Version 17.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

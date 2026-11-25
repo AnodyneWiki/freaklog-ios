@@ -331,6 +331,8 @@ private enum PWJournalTransfer {
             experience["timedNotes"] = .array(try rows(experience["timedNotes"]).map { original in
                 var note = original
                 note.removeValue(forKey: "colorHex")
+                note.removeValue(forKey: "mood")
+                note.removeValue(forKey: "energy")
                 if version == .legacy { try validateLegacyDates(note, keys: ["time", "creationDate"]) }
                 return .object(note)
             })
@@ -500,7 +502,12 @@ private enum AndroidJournalTransfer {
         fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"], exportedColor)
         fields["experiences"] = try rewrite(fields["experiences"]) { experience in
             var experience = experience
-            experience["timedNotes"] = try rewrite(experience["timedNotes"], exportedColor)
+            experience["timedNotes"] = try rewrite(experience["timedNotes"]) { note in
+                var note = exportedColor(note)
+                note.removeValue(forKey: "mood")
+                note.removeValue(forKey: "energy")
+                return note
+            }
             experience["ratings"] = try rewrite(experience["ratings"]) { rating in
                 var rating = rating
                 rating.removeValue(forKey: "isHiddenInTimeline")

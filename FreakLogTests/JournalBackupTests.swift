@@ -56,6 +56,7 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(experience.ratingsUnwrapped.first?.optionUnwrapped, .twoPlus)
     let note = try XCTUnwrap(experience.timedNotesSorted.first)
     XCTAssertEqual(note.webhookMessagesSorted.first?.messageId, "1300000000000000002")
+    XCTAssertEqual(note.details, TimedNoteDetails())
     let companions = try context.fetch(SubstanceCompanion.fetchRequest())
     XCTAssertEqual(companions.first { $0.substanceName == "Caffeine" }?.color, .brown)
     XCTAssertEqual(try context.fetch(Spray.fetchRequest()).first?.numSprays, 100)
@@ -184,7 +185,7 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertNil(container.capacityFraction)
     try original.save()
     let backup = try JournalBackup(context: original, defaults: Self.emptyDefaults(), appVersion: "1")
-    XCTAssertEqual(backup.formatVersion, 5)
+    XCTAssertEqual(backup.formatVersion, JournalBackup.formatVersion)
 
     func restoredValues(from backup: JournalBackup) throws -> (capacity: Double?, remaining: Double, fraction: Double?) {
       let read = try XCTUnwrap(JournalBackup.read(backup.fileData()))
@@ -266,6 +267,69 @@ final class JournalBackupTests: XCTestCase {
     let item = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
     XCTAssertTrue(item.isUnconfirmed)
     XCTAssertEqual(item.confirmationBatchID, UUID(uuidString: "01234567-89AB-4CDE-8F01-23456789ABCD"))
+  }
+
+  func testNoteDetailsRoundTripThroughVersionSixBackup() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v6", withExtension: "json"))
+    let fixture = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let original = PersistenceController(inMemory: true).viewContext
+    try fixture.restore(into: original)
+    try original.save()
+    let backup = try JournalBackup(context: original, defaults: Self.emptyDefaults(), appVersion: "1")
+    let data = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+    let destination = PersistenceController(inMemory: true).viewContext
+    try data.restore(into: destination)
+    let note = try XCTUnwrap(destination.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(note.note, "A quiet morning")
+    XCTAssertEqual(note.details, TimedNoteDetails(mood: .pleasant, energy: .low))
+
+    var versionFive = backup
+    versionFive.formatVersion = 5
+    versionFive.dataModel = "FreakLog Version 16"
+    versionFive.entities["TimedNote"]?[0].attributes.removeValue(forKey: "mood")
+    versionFive.entities["TimedNote"]?[0].attributes.removeValue(forKey: "energy")
+    let upgraded = try XCTUnwrap(JournalBackup.read(versionFive.fileData()))
+    let migrated = PersistenceController(inMemory: true).viewContext
+    try upgraded.restore(into: migrated)
+    let olderNote = try XCTUnwrap(migrated.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(olderNote.note, note.note)
+    XCTAssertTrue(olderNote.details.isEmpty)
+  }
+
+  func testVersionSixteenSQLiteNotesMigrateWithMissingDetails() throws {
+    let modelURL = try XCTUnwrap(Bundle.main.url(forResource: "Main", withExtension: "momd"))
+    let legacy = try XCTUnwrap(NSManagedObjectModel(contentsOf: modelURL.appendingPathComponent("FreakLog Version 16.mom")))
+    let current = try XCTUnwrap(NSManagedObjectModel(contentsOf: modelURL))
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let url = directory.appendingPathComponent("journal.sqlite")
+
+    do {
+      let coordinator = NSPersistentStoreCoordinator(managedObjectModel: legacy)
+      let store = try coordinator.addPersistentStore(type: .sqlite, at: url, options: nil)
+      let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+      context.persistentStoreCoordinator = coordinator
+      let original = NSEntityDescription.insertNewObject(forEntityName: "TimedNote", into: context)
+      original.setValue("Originally saved in v16", forKey: "note")
+      try context.save()
+      context.reset()
+      try coordinator.remove(store)
+    }
+
+    let coordinator = NSPersistentStoreCoordinator(managedObjectModel: current)
+    _ = try coordinator.addPersistentStore(type: .sqlite, at: url, options: [
+      NSMigratePersistentStoresAutomaticallyOption: true,
+      NSInferMappingModelAutomaticallyOption: true
+    ])
+    let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+    context.persistentStoreCoordinator = coordinator
+    let note = try XCTUnwrap(context.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(note.note, "Originally saved in v16")
+    XCTAssertTrue(note.details.isEmpty)
+    note.details = TimedNoteDetails(mood: .neutral, energy: .moderate)
+    try context.save()
+    XCTAssertEqual(note.details, TimedNoteDetails(mood: .neutral, energy: .moderate))
   }
 
   func testConfirmingBatchKeepsTimesAndRecordsStockOnlyOnce() throws {
