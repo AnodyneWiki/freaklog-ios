@@ -4,7 +4,7 @@ struct SaferScreen: View {
     var body: some View {
         List {
             Section("Research") {
-                Text("In advance research the duration, subjective effects and potential adverse effects which the substance or combination of substances are likely to produce.\nRead the info in here and also the PsychonautWiki article. It is best to cross-reference with other sources (SubstanceSearch, Tripsit, Erowid, Wikipedia, Bluelight, Reddit, etc).\nThere is no rush.")
+                Text("In advance research the duration, subjective effects and potential adverse effects which the substance or combination of substances are likely to produce.\nRead the info in here and also the PsychonautWiki article. It is best to cross-reference with other sources (Tripsit, Erowid, Wikipedia, Bluelight, Reddit, etc).\nThere is no rush.")
             }
             Section("Testing") {
                 Text("Test your substance with anonymous and free drug testing services. If those are not available in your country, use reagent testing kits. Don‘t trust your dealer to sell reliable product. Its better to have a tested stash instead of relying on a source spontaneously.")

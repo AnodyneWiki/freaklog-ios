@@ -14,7 +14,7 @@ Features:
 
 **Triple tap on the closed eye in settings to see all PW substances.** (necessary to get past App Store review)
 
-We strongly recommend using [TripSit](https://tripsit.me/) and [SubstanceSearch](https://substancesearch.com/) instead of PW to look up info on substances.
+We strongly recommend using [TripSit](https://tripsit.me/) instead of PW to look up info on substances.
 
 <p>
 <img src="README Assets/presentation.png" width="100%">
