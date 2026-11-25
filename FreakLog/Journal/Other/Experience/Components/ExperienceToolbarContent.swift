@@ -68,6 +68,13 @@ struct ExperienceToolbarContent: View {
                 } label: {
                     Label("Edit Title", systemImage: "pencil")
                 }
+                if !experience.ingestionsSorted.isEmpty {
+                    Button {
+                        sheetToShow = .moveIngestions
+                    } label: {
+                        Label("Move Ingestions", systemImage: "arrow.right")
+                    }
+                }
                 let isFavorite = experience.isFavorite
                 Button {
                     experience.isFavorite = !isFavorite

@@ -134,11 +134,13 @@ struct ExperienceScreen: View {
     @AppStorage(TimelineModel.combinesComparableRoutesKey) private var combinesRoutes = false
     @AppStorage(TimelineModel.showsQuantityDetailsKey) private var showsQuantityDetails = true
     @State private var noteReminder: JournalReminderDraft?
+    @State private var pendingIngestionMove: IngestionMove.Receipt?
     @AppStorage(PersistenceController.isOpenLastExperienceSiriTipVisibleKey) private var isSiriTipVisible = false
 
     @Environment(\.dismiss) var dismiss
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @EnvironmentObject private var locationManager: LocationManager
+    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     enum SheetOption: Identifiable, Hashable {
         case editTitle
@@ -150,6 +152,7 @@ struct ExperienceScreen: View {
         case reminder
         case editTimedNote(timedNote: TimedNote)
         case editIngestion(ingestion: Ingestion)
+        case moveIngestions
         case shareExperience
         // The assistant about this experience, asking the prompt right away if there is one
         case assistant(prompt: String?)
@@ -404,6 +407,8 @@ struct ExperienceScreen: View {
                     EditTimedNoteScreen(timedNote: timedNote, experience: experience)
                 case let .editIngestion(ingestion):
                     EditIngestionScreen(ingestion: ingestion)
+                case .moveIngestions:
+                    MoveIngestionsScreen(source: experience) { pendingIngestionMove = $0 }
                 case let .assistant(prompt):
                     AssistantScreen(experience: experience, initialPrompt: prompt)
                 case .shareExperience:
@@ -426,6 +431,9 @@ struct ExperienceScreen: View {
             NavigationStack { HiddenTimelineItemsScreen(experience: experience, includesRatings: isEyeOpen) }
         }
         .sheet(item: $noteReminder) { JournalReminderEditor(draft: $0) }
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            moveUndoBar
+        }
         .observeExperienceTimeline(experience)
         .confirmationDialog(
             "Delete Experience?",
@@ -441,6 +449,41 @@ struct ExperienceScreen: View {
                 Text("This will also delete all of its ingestions.")
             }
         )
+    }
+
+    @ViewBuilder
+    private var moveUndoBar: some View {
+        if let pendingIngestionMove {
+            HStack {
+                Text("Ingestions Moved")
+                    .font(.subheadline.weight(.medium))
+                Spacer()
+                Button("Undo") { undo(pendingIngestionMove) }
+                    .buttonStyle(.bordered)
+                Button {
+                    self.pendingIngestionMove = nil
+                } label: {
+                    Label("Dismiss", systemImage: "xmark")
+                        .labelStyle(.iconOnly)
+                }
+                .frame(minWidth: 44, minHeight: 44)
+            }
+            .padding(.leading)
+            .padding(.trailing, 6)
+            .background(.regularMaterial)
+        }
+    }
+
+    private func undo(_ receipt: IngestionMove.Receipt) {
+        do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let restored = try IngestionMove.undo(receipt, in: context)
+            IngestionSaving.didSave(restored, newIngestions: [])
+            pendingIngestionMove = nil
+            toastViewModel.showSuccessToast(message: String(localized: "Move Undone"))
+        } catch {
+            toastViewModel.showErrorToast(message: error.localizedDescription)
+        }
     }
 
     private var expandTimelineLink: some View {
