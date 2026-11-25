@@ -227,6 +227,16 @@ struct ExperienceScreen: View {
                     }
                 }
             }
+            if HeartRateWindow.isAvailable,
+               let window = HeartRateWindow.recorded(in: experience, includesRatings: isEyeOpen) {
+                let hasTimeline = timelineModel.isWorthDrawing && timelineModel.totalWidth > 0
+                HeartRateTimelineSection(
+                    window: window,
+                    domain: hasTimeline ? timelineModel.timeRange : nil,
+                    cursor: hasTimeline ? timelineTime.map(timelineModel.clampingTime) : timelineTime,
+                    selectTime: { timelineTime = $0 }
+                )
+            }
             Section {
                 if experience.ingestionsSorted.contains(where: \.isHiddenFromTimeline)
                     || (isEyeOpen && experience.ratingsWithTimeSorted.contains(where: \.isHiddenInTimeline)) {
@@ -273,16 +283,6 @@ struct ExperienceScreen: View {
             } footer: {
                 if myIngestions.contains(where: \.isUnconfirmed) {
                     Text("Estimates and totals use confirmed ingestions.")
-                }
-            }
-            if ExperienceHeartRateScreen.isAvailable,
-               let window = ExperienceHeartRateScreen.window(for: experience, includesRatings: isEyeOpen) {
-                Section("Measured Data") {
-                    NavigationLink {
-                        ExperienceHeartRateScreen(window: window)
-                    } label: {
-                        Label("Heart Rate", systemImage: "heart")
-                    }
                 }
             }
             if isEyeOpen, !myIngestions.isEmpty {

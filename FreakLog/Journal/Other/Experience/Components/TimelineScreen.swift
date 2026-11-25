@@ -137,12 +137,14 @@ private struct TimelineCursorContent: View {
         ScrollViewReader { scroll in
             List {
                 cursorSection
-                if ExperienceHeartRateScreen.isAvailable,
-                   let window = ExperienceHeartRateScreen.window(for: experience, includesRatings: showsLimitations) {
+                if HeartRateWindow.isAvailable,
+                   let window = HeartRateWindow.recorded(in: experience, includesRatings: showsLimitations) {
                     HeartRateTimelineSection(
                         window: window,
                         domain: visibleTimeRange,
-                        cursor: selectedTime
+                        cursor: selectedTime,
+                        selectTime: { selection = $0 },
+                        fullWidthPlot: true
                     )
                 }
                 if let nearest = entries.min(by: {

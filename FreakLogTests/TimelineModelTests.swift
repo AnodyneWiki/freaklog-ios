@@ -5,6 +5,34 @@ import XCTest
 final class TimelineModelTests: XCTestCase {
     private let start = Date(timeIntervalSince1970: 1_800_000_000)
 
+    func testHeartRateWindowUsesRecordedTimesAndClampsToNow() {
+        let singleEntry = HeartRateWindow(start: start, lastRecordedTime: start)
+        XCTAssertNil(singleEntry.interval(through: start))
+        XCTAssertEqual(singleEntry.interval(through: start.addingTimeInterval(900))?.duration, 900)
+        XCTAssertEqual(singleEntry.interval(through: start.addingTimeInterval(5_000))?.duration, 3_600)
+
+        let recordedEnd = start.addingTimeInterval(7_200)
+        let multipleEntries = HeartRateWindow(start: start, lastRecordedTime: recordedEnd)
+        XCTAssertEqual(multipleEntries.interval(through: recordedEnd.addingTimeInterval(600))?.end, recordedEnd)
+    }
+
+    func testHeartRateCursorRetainsGapsAndUsesOnlyVisibleSamples() {
+        let early = sample(at: 30)
+        let later = sample(at: 180)
+        let series = HeartRateSeries([later, early])
+        let window = start...start.addingTimeInterval(180)
+        XCTAssertEqual(series.visible(in: window).map(\.id), [early.id, later.id])
+        XCTAssertEqual(series.nearest(to: start.addingTimeInterval(90), in: window, within: 60)?.id, early.id)
+        XCTAssertNil(series.nearest(to: start.addingTimeInterval(105), in: window, within: 60))
+        XCTAssertNil(series.nearest(to: start.addingTimeInterval(25), in: window.lowerBound...start.addingTimeInterval(29), within: 60))
+        XCTAssertEqual(series.nearest(to: window.upperBound, in: window, within: 0)?.id, later.id)
+    }
+
+    private func sample(at seconds: TimeInterval) -> HeartRateReading {
+        HeartRateReading(id: UUID(), time: start.addingTimeInterval(seconds),
+                         beatsPerMinute: 75, source: "Test Source", wasManuallyEntered: false)
+    }
+
     func testPhaseBoundariesAndCurveScaledAmount() throws {
         let timeline = model([route(.oral)])
         let rise = start.addingTimeInterval(90)
