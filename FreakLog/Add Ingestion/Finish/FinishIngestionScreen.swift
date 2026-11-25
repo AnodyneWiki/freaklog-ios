@@ -46,6 +46,8 @@ struct FinishIngestionScreen: View {
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
+    @State private var hasSelectedExperience = false
+    @State private var saveError: String?
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
@@ -54,14 +56,10 @@ struct FinishIngestionScreen: View {
 
     @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
+    @State private var hasInitializedWebhooks = false
 
     var body: some View {
         screen.toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
             ToolbarItem(placement: .primaryAction) {
                 doneButton
             }
@@ -69,48 +67,72 @@ struct FinishIngestionScreen: View {
     }
 
     var doneButton: some View {
-        DoneButton {
-            do {
-                try addIngestionWithExperience()
-                toastViewModel.showSuccessToast()
-                generateSuccessHaptic()
-                dismiss()
-            } catch {
-                toastViewModel.showErrorToast(message: "Failed Ingestion")
-                generateFailedHaptic()
-            }
+        Button("Log", action: save)
+            .font(.headline)
+    }
+
+    private func save() {
+        do {
+            try addIngestionWithExperience()
+            toastViewModel.showSuccessToast()
+            generateSuccessHaptic()
+            dismiss()
+        } catch {
+            saveError = (error as? LocalizedError)?.errorDescription ?? "Your ingestion couldn’t be saved. Your details are still here."
+            generateFailedHaptic()
         }
     }
 
     var screen: some View {
         Form {
+            if let saveError {
+                Section {
+                    Label(saveError, systemImage: "exclamationmark.circle")
+                    Button("Try Again", action: save)
+                }
+            }
             Section("Ingestion") {
+                ForEach(ingestions.indices, id: \.self) { index in
+                    let ingestion = ingestions[index]
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
+                            .font(.headline)
+                        Text(doseDescription(for: ingestion))
+                            .monospacedDigit()
+                        Text(ingestion.administrationRoute.rawValue.capitalized)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 3)
+                    .accessibilityElement(children: .combine)
+                }
+            }
+            if isWebhookSectionExpanded, !enabledWebhookPresets.isEmpty {
+                Section {
+                    LabeledContent("Webhook Recipients", value: webhookRecipients)
+                }
+            }
+            Section("When") {
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
                     selectedTime: $selectedTime,
                     selectedEndTime: $selectedEndTime
                 )
-                ExperiencePickerRow(
-                    selectedExperience: $selectedExperience,
-                    wantsToForceNewExperience: $wantsToForceNewExperience,
-                    experiences: experiencesWithinLargerRange
-                )
-                ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
-                if let sharedRoute {
-                    AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
+            }
+            Section("Journal") {
+                if experiencesWithinLargerRange.isEmpty {
+                    LabeledContent("Experience", value: "New Experience")
+                } else {
+                    ExperiencePickerRow(
+                        selectedExperience: $selectedExperience,
+                        wantsToForceNewExperience: $wantsToForceNewExperience,
+                        experiences: experiencesWithinLargerRange,
+                        onSelection: { hasSelectedExperience = true }
+                    )
                 }
-                LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-            }
-            .listRowSeparator(.hidden)
-            .onChange(of: selectedTime) { _ in
-                selectExperienceBasedOnCurrentTime()
-            }
-            Section("Notes") {
-                TextField("Enter Note", text: $enteredNote, axis: .vertical)
-                    .autocapitalization(.sentences)
-            }
-            if selectedExperience == nil {
-                Section("New Experience") {
+                if let locationName = locationManager.selectedLocation?.name {
+                    LocationButton(locationName: locationName) { sheetToShow = .editLocation }
+                }
+                if selectedExperience == nil {
                     Button {
                         sheetToShow = .editTitle
                     } label: {
@@ -129,17 +151,24 @@ struct FinishIngestionScreen: View {
                 }
             }
             Section {
-                ForEach(substanceNames, id: \.self) { substanceName in
-                    let selectedColor = colorBinding(for: substanceName)
-                    NavigationLink {
-                        ColorPickerScreen(
-                            selectedColor: selectedColor,
-                            usedColors: usedColors)
-                    } label: {
-                        HStack {
-                            Text("\(PersistenceController.shared.displayName(for: substanceName)) Color")
-                            Spacer()
-                            Image(systemName: "circle.fill").foregroundColor(selectedColor.wrappedValue.swiftUIColor)
+                DisclosureGroup("More Details") {
+                    TextField("Enter Note", text: $enteredNote, axis: .vertical)
+                        .textInputAutocapitalization(.sentences)
+                    ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
+                    if let sharedRoute {
+                        AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
+                    }
+                    if locationManager.selectedLocation == nil {
+                        LocationButton(locationName: nil) { sheetToShow = .editLocation }
+                    }
+                    ForEach(substanceNames, id: \.self) { substanceName in
+                        let selectedColor = colorBinding(for: substanceName)
+                        NavigationLink {
+                            ColorPickerScreen(selectedColor: selectedColor, usedColors: usedColors)
+                        } label: {
+                            LabeledContent("\(PersistenceController.shared.displayName(for: substanceName)) Color") {
+                                Image(systemName: "circle.fill").foregroundStyle(selectedColor.wrappedValue.swiftUIColor)
+                            }
                         }
                     }
                 }
@@ -151,45 +180,29 @@ struct FinishIngestionScreen: View {
 
                     if isWebhookSectionExpanded {
                         ForEach(enabledWebhookPresets, id: \.objectID) { preset in
-                            HStack {
-                                Text(preset.displayName)
-                                Spacer()
-                                if selectedWebhookPresetIDs.contains(preset.idUnwrapped) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.accentColor)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                let presetId = preset.idUnwrapped
-                                if selectedWebhookPresetIDs.contains(presetId) {
-                                    selectedWebhookPresetIDs.remove(presetId)
-                                } else {
-                                    selectedWebhookPresetIDs.insert(presetId)
-                                }
-                            }
+                            Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
+                                .tint(.accentColor)
                         }
                     }
                 }
             }
+            Section {
+                Button("Cancel Logging", role: .cancel, action: dismiss)
+            }
+        }
+        .onChange(of: selectedTime) { _ in
+            selectExperienceBasedOnCurrentTime()
         }
         .onAppear {
-            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
             generator.prepare()
-            // Preserve previously selected presets; if none stored, default to all enabled
-            if selectedWebhookPresetIDs.isEmpty {
-                selectedWebhookPresetIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
-            }
+            initializeWebhooks(with: enabledWebhookPresets.map(\.idUnwrapped))
         }
-        .onChange(of: enabledWebhookPresets.count) { _ in
-            let availableIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
-            // Drop selections that no longer exist and default to all when empty
-            selectedWebhookPresetIDs = selectedWebhookPresetIDs.intersection(availableIDs)
-            if selectedWebhookPresetIDs.isEmpty {
-                selectedWebhookPresetIDs = availableIDs
-            }
+        .onChange(of: enabledWebhookPresets.map(\.idUnwrapped)) { availableIDs in
+            initializeWebhooks(with: availableIDs)
+            selectedWebhookPresetIDs.formIntersection(availableIDs)
         }
-        .navigationBarTitle("Finish Ingestion")
+        .navigationTitle("Review")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $sheetToShow, content: { sheet in
             switch sheet {
             case .editTitle:
@@ -201,6 +214,7 @@ struct FinishIngestionScreen: View {
             }
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
+            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
             if let startTime {
                 selectedTime = startTime
                 selectedEndTime = startTime.addingTimeInterval(30*60)
@@ -211,10 +225,34 @@ struct FinishIngestionScreen: View {
         }
     }
 
+    private func doseDescription(for ingestion: FinishIngestionScreenArguments) -> String {
+        guard let dose = ingestion.dose else { return "Unknown amount" }
+        return dose.doseDescription(
+            units: ingestion.customUnit?.unitUnwrapped ?? ingestion.units ?? "",
+            isEstimate: ingestion.isEstimate,
+            standardDeviation: ingestion.estimatedDoseStandardDeviation
+        )
+    }
+
+    private func initializeWebhooks(with availableIDs: [UUID]) {
+        guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
+        selectedWebhookPresetIDs = Set(availableIDs)
+        hasInitializedWebhooks = true
+    }
+
+    private var webhookRecipients: String {
+        let names = enabledWebhookPresets
+            .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
+            .map(\.displayName)
+        return names.isEmpty ? "None" : names.formatted(.list(type: .and))
+    }
+
     func selectExperienceBasedOnCurrentTime() {
         experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: selectedTime)
-        if wantsToForceNewExperience {
-            selectedExperience = nil
+        if hasSelectedExperience {
+            if let selectedExperience, !experiencesWithinLargerRange.contains(selectedExperience) {
+                experiencesWithinLargerRange.insert(selectedExperience, at: 0)
+            }
         } else {
             selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: selectedTime)
         }

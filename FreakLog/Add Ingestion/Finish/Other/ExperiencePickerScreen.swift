@@ -4,6 +4,7 @@ struct ExperiencePickerScreen: View {
     @Binding var selectedExperience: Experience?
     @Binding var wantsToForceNewExperience: Bool
     let experiences: [Experience]
+    var onSelection: () -> Void = {}
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -12,6 +13,7 @@ struct ExperiencePickerScreen: View {
                 Button {
                     selectedExperience = nil
                     wantsToForceNewExperience = true
+                    onSelection()
                     dismiss()
                 } label: {
                     let label = "Create New Experience"
@@ -31,6 +33,7 @@ struct ExperiencePickerScreen: View {
                     Button {
                         selectedExperience = exp
                         wantsToForceNewExperience = false
+                        onSelection()
                         dismiss()
                     } label: {
                         if selectedExperience == exp {

@@ -6,6 +6,7 @@ struct ExperiencePickerRow: View {
     @Binding var selectedExperience: Experience?
     @Binding var wantsToForceNewExperience: Bool
     let experiences: [Experience]
+    var onSelection: () -> Void = {}
 
     var body: some View {
         if !experiences.isEmpty {
@@ -13,7 +14,8 @@ struct ExperiencePickerRow: View {
                 ExperiencePickerScreen(
                     selectedExperience: $selectedExperience,
                     wantsToForceNewExperience: $wantsToForceNewExperience,
-                    experiences: experiences
+                    experiences: experiences,
+                    onSelection: onSelection
                 )
             } label: {
                 HStack {
