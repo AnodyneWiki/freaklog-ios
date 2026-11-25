@@ -265,6 +265,17 @@ private struct JournalImportReview: View {
     @State private var removePublishedCopies = false
     @State private var isConfirmingReplacement = false
 
+    private var replacementImpact: LocalizedStringKey {
+        if review.isEmptyJournal {
+            return review.isBackup
+                ? "This backup will clear your journal and replace your backed-up settings."
+                : "This file will clear your journal."
+        }
+        return review.isBackup
+            ? "Restoring this backup replaces your current journal and backed-up settings."
+            : "Importing this file replaces your current journal."
+    }
+
     var body: some View {
         NavigationStack {
             Form {
@@ -274,6 +285,16 @@ private struct JournalImportReview: View {
                 }
                 Section("Incoming Journal") {
                     JournalCountsRows(counts: review.counts)
+                    LabeledContent("Date Range") {
+                        if let range = review.dateRange {
+                            Text((range.lowerBound..<range.upperBound).formatted(.interval.year().month(.abbreviated).day()))
+                        } else {
+                            Text("No dated entries")
+                        }
+                    }
+                    if review.isEmptyJournal {
+                        Label("This file contains no experiences, ingestions, or timed notes.", systemImage: "exclamationmark.triangle")
+                    }
                 }
                 Section {
                     Toggle("Remove Published Copies", isOn: $removePublishedCopies)
@@ -299,9 +320,7 @@ private struct JournalImportReview: View {
                         }
                     }
                 } footer: {
-                    Text(review.isBackup
-                         ? "Restoring this backup replaces your current journal and backed-up settings."
-                         : "Importing this file replaces your current journal.")
+                    Text(replacementImpact)
                 }
             }
             .disabled(viewModel.isApplyingImport)
@@ -316,6 +335,8 @@ private struct JournalImportReview: View {
                 Button("Replace Journal", role: .destructive) {
                     viewModel.importFile(review, removePublishedCopies: removePublishedCopies)
                 }
+            } message: {
+                Text(replacementImpact)
             }
         }
         .interactiveDismissDisabled(viewModel.isApplyingImport)

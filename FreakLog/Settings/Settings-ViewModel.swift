@@ -12,17 +12,87 @@ extension SettingsScreen {
         let id = UUID()
         let filename: String
         let contents: Contents
+        let counts: JournalCounts
+        let dateRange: ClosedRange<Date>?
+
+        init(filename: String, contents: Contents) {
+            self.filename = filename
+            self.contents = contents
+            switch contents {
+            case .backup(let backup): counts = JournalCounts(backup)
+            case .journal(let journal): counts = JournalCounts(journal)
+            }
+            dateRange = Self.dateRange(in: contents)
+        }
 
         var isBackup: Bool {
             if case .backup = contents { return true }
             return false
         }
 
-        var counts: JournalCounts {
-            switch contents {
-            case .backup(let backup): JournalCounts(backup)
-            case .journal(let journal): JournalCounts(journal)
+        var isEmptyJournal: Bool {
+            counts.experiences == 0 && counts.ingestions == 0 && counts.timedNotes == 0
+        }
+
+        private static func dateRange(in contents: Contents) -> ClosedRange<Date>? {
+            var range: ClosedRange<Date>?
+
+            func include(_ date: Date?) {
+                guard let date else { return }
+                if let previous = range {
+                    range = min(previous.lowerBound, date)...max(previous.upperBound, date)
+                } else {
+                    range = date...date
+                }
             }
+
+            switch contents {
+            case .backup(let backup):
+                var datedIngestions: Set<String> = []
+                var experiencesWithDatedIngestions: Set<String> = []
+                for record in backup.entities["Ingestion", default: []] {
+                    if let date = record.date(for: "time") {
+                        include(date)
+                        datedIngestions.insert(record.id)
+                        if let experienceID = record.relationships["experience"]?.string {
+                            experiencesWithDatedIngestions.insert(experienceID)
+                        }
+                    }
+                    include(record.date(for: "endTime"))
+                }
+                for record in backup.entities["Experience", default: []] {
+                    // Older backups may describe the relationship from just one side.
+                    let hasDatedIngestion = record.relationships["ingestions"]?.array?.contains {
+                        $0.string.map(datedIngestions.contains) ?? false
+                    } ?? false
+                    if !hasDatedIngestion && !experiencesWithDatedIngestions.contains(record.id) {
+                        include(record.date(for: "sortDate") ?? record.date(for: "creationDate"))
+                    }
+                }
+                for record in backup.entities["TimedNote", default: []] {
+                    include(record.date(for: "time"))
+                }
+                for record in backup.entities["ShulginRating", default: []] {
+                    include(record.date(for: "time"))
+                }
+            case .journal(let journal):
+                for experience in journal.experiences {
+                    if experience.ingestions.isEmpty {
+                        include(experience.sortDate ?? experience.creationDate)
+                    }
+                    for ingestion in experience.ingestions {
+                        include(ingestion.time)
+                        include(ingestion.endTime)
+                    }
+                    for note in experience.timedNotes {
+                        include(note.time)
+                    }
+                    for rating in experience.ratings {
+                        include(rating.time)
+                    }
+                }
+            }
+            return range
         }
     }
 
@@ -106,6 +176,7 @@ extension SettingsScreen {
             guard !isPreparingImport, !isApplyingImport else { return }
             importError = nil
             isPreparingImport = true
+            let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
             Task {
                 defer { isPreparingImport = false }
                 do {
@@ -115,14 +186,17 @@ extension SettingsScreen {
                         let data = try Data(contentsOf: url)
                         let contents: ImportReview.Contents
                         if let backup = try JournalBackup.read(data) {
+                            try backup.validateContents(in: model)
                             contents = .backup(backup)
                         } else {
                             contents = .journal(try JournalFile.read(data))
                         }
                         return ImportReview(filename: url.lastPathComponent, contents: contents)
                     }.value
+                } catch is DecodingError {
+                    importError = "This file couldn’t be read as a journal. It may be damaged or incomplete."
                 } catch {
-                    importError = (error as? LocalizedError)?.errorDescription ?? "The journal couldn’t be imported."
+                    importError = (error as? LocalizedError)?.errorDescription ?? "This journal file couldn’t be opened or validated."
                 }
             }
         }

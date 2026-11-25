@@ -134,6 +134,22 @@ final class JournalBackupTests: XCTestCase {
       "https://example.com/hook")
   }
 
+  func testValidationUsesTheRestoreAndLeavesTheJournalUntouched() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let original = Experience(context: context)
+    original.title = "Existing entry"
+    try context.save()
+    let model = try XCTUnwrap(context.persistentStoreCoordinator?.managedObjectModel)
+    var backup = try XCTUnwrap(JournalBackup.read(Self.version2Fixture))
+
+    try backup.validateContents(in: model)
+    backup.entities["ExperienceLocation"]?[0].relationships["legacyExperience"] = .string("missing-experience")
+    XCTAssertThrowsError(try backup.validateContents(in: model)) { error in
+      XCTAssertEqual(error as? JournalBackupError, .unknownObject("missing-experience"))
+    }
+    XCTAssertEqual(try context.fetch(Experience.fetchRequest()), [original])
+  }
+
   func testWrappedVersion1BackupsUpgradeBeforeCompletenessValidation() throws {
     var backup = try XCTUnwrap(JournalBackup.read(Self.version2Fixture))
     backup.formatVersion = 1

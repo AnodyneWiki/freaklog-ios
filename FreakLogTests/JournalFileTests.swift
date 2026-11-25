@@ -89,6 +89,31 @@ final class JournalFileTests: XCTestCase {
         }
         let emptyJournal = try decoder.decode(JournalFile.self, from: Data(#"{"experiences":[]}"#.utf8))
         XCTAssertTrue(emptyJournal.experiences.isEmpty)
+        let review = SettingsScreen.ImportReview(filename: "Journal.json", contents: .journal(emptyJournal))
+        XCTAssertTrue(review.isEmptyJournal)
+        XCTAssertNil(review.dateRange)
+        XCTAssertThrowsError(try JournalFile.read(Data("{}".utf8))) {
+            XCTAssertEqual($0 as? JournalFileError, .noJournalData)
+        }
+    }
+
+    func testImportReviewUsesLoggedTimesAndExperienceFallbackDates() throws {
+        let data = Data(#"""
+            {"experiences":[
+              {"title":"Timed","text":"","creationDate":1800000000000,"sortDate":1500000000000,
+              "ingestions":[{"substanceName":"Example","time":1700000000000,"endTime":1700003600000,
+              "administrationRoute":"ORAL","isDoseAnEstimate":false}],
+              "timedNotes":[{"time":1600000000000,"creationDate":1800000000000,"note":"Example",
+              "color":"MINT","isPartOfTimeline":true}],
+              "ratings":[{"option":"twoPlus","time":1700001800000}]},
+              {"title":"Untimed","text":"","creationDate":1800000000000,"sortDate":1750000000000}
+            ]}
+            """#.utf8)
+        let journal = try JournalFile.read(data)
+        let review = SettingsScreen.ImportReview(filename: "Journal.json", contents: .journal(journal))
+        XCTAssertFalse(review.isEmptyJournal)
+        XCTAssertEqual(review.dateRange,
+                       Date(millisecondsSince1970: 1_600_000_000_000)...Date(millisecondsSince1970: 1_750_000_000_000))
     }
 
     func testLegacyAndroidImportsCustomDataWithoutExperiencesAndOptionalFields() throws {

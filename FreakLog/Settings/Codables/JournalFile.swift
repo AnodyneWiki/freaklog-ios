@@ -3,6 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum JournalFileError: LocalizedError, Equatable {
+    case noJournalData
     case duplicateCustomUnit(Int32)
     case duplicateFormulation(String)
     case missingCustomUnit(String)
@@ -11,6 +12,8 @@ enum JournalFileError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
+        case .noJournalData:
+            "This file doesn’t contain a recognized journal."
         case .duplicateCustomUnit(let id):
             "The journal contains duplicate custom-unit ID \(id)."
         case .duplicateFormulation(let id):
@@ -234,7 +237,7 @@ struct JournalFile: FileDocument, Codable {
         formulations = try values.decodeIfPresent([FormulationCodable].self, forKey: .formulations) ?? []
         guard hasExperiences || !substanceCompanions.isEmpty || !customSubstances.isEmpty || !customUnits.isEmpty
             || !substanceDataOverrides.isEmpty || !formulations.isEmpty else {
-            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "The file has no journal data"))
+            throw JournalFileError.noJournalData
         }
         try validateReferences()
     }
