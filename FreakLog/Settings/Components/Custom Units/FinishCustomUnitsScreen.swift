@@ -208,6 +208,11 @@ struct FinishCustomUnitsScreen: View {
             }
         }
         .navigationTitle(draft == nil ? "Add Custom Unit" : "Edit Custom Unit")
+        .alert("Couldn’t Save Custom Unit", isPresented: $showsSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your changes are still here. Try again.")
+        }
         .onFirstAppear {
             focusedField = .name
             if draft == nil {
@@ -234,6 +239,7 @@ struct FinishCustomUnitsScreen: View {
     @State private var isEstimate: Bool
     @State private var estimatedDoseStandardDeviation: Double?
     @State private var note: String
+    @State private var showsSaveError = false
 
     @FocusState private var focusedField: Field?
 
@@ -274,10 +280,16 @@ struct FinishCustomUnitsScreen: View {
         case .draft(let onDraft):
             onDraft(value)
         case .save(let onAdded):
-            let context = PersistenceController.shared.viewContext
-            let newCustomUnit = value.insert(into: context)
-            try? context.save()
-            onAdded(newCustomUnit)
+            let persistence = PersistenceController.shared
+            do {
+                let context = try persistence.journalEditContext()
+                let newCustomUnit = value.insert(into: context)
+                try PersistenceController.saveJournalChanges(in: context)
+                let savedUnit = try PersistenceController.journalObject(newCustomUnit, in: persistence.viewContext)
+                onAdded(savedUnit)
+            } catch {
+                showsSaveError = true
+            }
         }
     }
 }
