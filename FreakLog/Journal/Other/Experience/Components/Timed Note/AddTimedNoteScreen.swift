@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // Adds a note to the experience, or without one to the experience a new ingestion at the note's time

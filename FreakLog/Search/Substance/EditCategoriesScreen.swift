@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // Picks the categories of a substance. They are saved as the user's own only while they differ from
