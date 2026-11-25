@@ -135,16 +135,7 @@ struct StatsDetailScreen: View {
 
     private var periodSection: some View {
         Section {
-            Picker("Period", selection: $selection.period) {
-                ForEach(StatsPeriod.allCases, id: \.self) { period in
-                    Text(period.title).tag(period)
-                }
-            }
-            if selection.period == .custom {
-                let now = Date.now
-                DatePicker("From", selection: $selection.customStart, in: ...min(selection.customEnd, now), displayedComponents: .date)
-                DatePicker("Through", selection: $selection.customEnd, in: min(selection.customStart, now)...now, displayedComponents: .date)
-            }
+            StatsPeriodControls(period: $selection.period, start: $selection.customStart, end: $selection.customEnd)
         } footer: {
             if !filterLabels.isEmpty {
                 Text(filterLabels.formatted(.list(type: .and)))
@@ -172,37 +163,47 @@ struct StatsDetailScreen: View {
         records: StatsRecords, buckets: [StatsRecords.Bucket], focused: StatsRecords, selected: StatsRecords.Bucket?
     ) -> some View {
         Section {
-            if buckets.isEmpty {
-                Text("No entries match this period and filters.")
-                    .foregroundStyle(.secondary)
-            } else {
-                Text(entryCount(records), format: .number)
-                    .font(.largeTitle.weight(.semibold).monospacedDigit())
-                    .accessibilityLabel(Text(metric.title))
-                    .accessibilityValue(Text(entryCount(records), format: .number))
+            if let domain = records.chartDomain(covering: buckets) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if metric == .ingestions, effectiveSelection.substance != nil {
+                        Text("Ingestions")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                    }
+                    Text(entryCount(focused), format: .number)
+                        .font(.largeTitle.weight(.semibold).monospacedDigit())
+                        .accessibilityLabel(Text(metric.title))
+                        .accessibilityValue(Text(entryCount(focused), format: .number))
+                    if selected != nil || selection.period == .custom {
+                        Text(rangeLabel(focused.range))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 let contributions = metric == .ingestions ? records.ingestionContributions : []
                 let colors = Dictionary(records.entries.map {
                     ($0.substanceNameUnwrapped, $0.substanceColor.swiftUIColor)
                 }, uniquingKeysWith: { first, _ in first })
                 StatsCountChart(
-                    buckets: buckets, component: records.bucketComponent,
+                    buckets: buckets, component: records.bucketComponent, domain: domain,
                     contributions: contributions, colors: colors, selection: $selectedBucket
                 )
+            } else {
+                Text("No entries match this period and filters.")
+                    .foregroundStyle(.secondary)
+            }
+            if metric == .ingestions {
+                StatsCoverageRows(records: focused)
+            }
+            if !buckets.isEmpty {
                 NavigationLink {
                     StatsSelectedEntriesScreen(metric: metric, selection: effectiveSelection, selectedBucket: selected)
                 } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        if selected == nil {
-                            Text(metric == .experiences ? "All Experiences" : "All Ingestions")
-                        } else {
-                            let count = entryCount(focused)
-                            if metric == .experiences {
-                                Text(count == 1 ? "1 Experience" : "\(count) Experiences")
-                            } else {
-                                Text(count == 1 ? "1 Ingestion" : "\(count) Ingestions")
-                            }
-                            Text(rangeLabel(focused.range)).font(.subheadline).foregroundStyle(.secondary)
-                        }
+                    if selected == nil {
+                        Text(metric == .experiences ? "All Experiences" : "All Ingestions")
+                    } else {
+                        Text(metric == .experiences ? "Experiences in Selection" : "Ingestions in Selection")
                     }
                 }
                 .disabled(entryCount(focused) == 0)
@@ -378,6 +379,7 @@ private func rangeLabel(_ interval: DateInterval) -> String {
 private struct StatsCountChart: View {
     let buckets: [StatsRecords.Bucket]
     let component: Calendar.Component
+    let domain: ClosedRange<Date>
     let contributions: [StatsRecords.Contribution]
     let colors: [String: Color]
     @Binding var selection: Date?
@@ -408,6 +410,7 @@ private struct StatsCountChart: View {
                 }
             }
         }
+        .chartXScale(domain: domain)
         .chartForegroundStyleScale(mapping: { colors[$0] ?? Color.accentColor })
         .chartLegend(.hidden)
         .frame(height: 180)
@@ -473,9 +476,20 @@ private struct StatsSelectedEntriesScreen: View {
                     ForEach(records.experiences, id: \.experience.objectID) { match in
                         ExperienceRow(experience: match.experience, timeDisplayStyle: .regular)
                     }
-                } else {
-                    ForEach(records.entries) { entry in
-                        StatsIngestionLink(ingestion: entry, timeFormat: .dateTime.month().day().year().hour().minute())
+                } else if !records.entries.isEmpty {
+                    Section {
+                        LabeledContent("Ingestions", value: records.entries.count.formatted())
+                        StatsCoverageRows(records: records)
+                    }
+                    let days = Dictionary(grouping: records.entries) { records.calendar.startOfDay(for: $0.timeUnwrapped) }
+                    ForEach(days.keys.sorted(by: >), id: \.self) { day in
+                        Section {
+                            ForEach(days[day] ?? []) { entry in
+                                StatsIngestionLink(ingestion: entry, timeFormat: .dateTime.hour().minute())
+                            }
+                        } header: {
+                            Text(day, format: .dateTime.weekday(.wide).day().month().year())
+                        }
                     }
                 }
                 if metric == .experiences ? records.experiences.isEmpty : records.entries.isEmpty {

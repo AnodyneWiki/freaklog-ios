@@ -269,6 +269,13 @@ struct StatsRecords {
             .sorted { $0.interval.start < $1.interval.start }
     }
 
+    func chartDomain(covering buckets: [Bucket]) -> ClosedRange<Date>? {
+        guard let first = buckets.first, let last = buckets.last else { return nil }
+        let start = range.start == .distantPast ? first.interval.start : min(first.interval.start, range.start)
+        let end = range.end == .distantFuture ? last.interval.end : max(last.interval.end, range.end)
+        return start...end
+    }
+
     func selecting(_ bucket: Bucket, for metric: StatsMetric) -> Self {
         guard let interval = range.intersection(with: bucket.interval) else { return self }
         if metric == .experiences {
@@ -284,6 +291,50 @@ struct StatsRecords {
     private static func recordedAmount(_ ingestion: Ingestion) -> Double? {
         guard let amount = ingestion.doseUnwrapped, amount.isFinite else { return nil }
         return amount
+    }
+}
+
+struct StatsPeriodControls: View {
+    @Binding var period: StatsPeriod
+    @Binding var start: Date
+    @Binding var end: Date
+
+    var body: some View {
+        Picker("Period", selection: $period) {
+            ForEach(StatsPeriod.allCases, id: \.self) { period in
+                Text(period.title).tag(period)
+            }
+        }
+        if period == .custom {
+            let now = Date.now
+            DatePicker("From", selection: Binding(
+                get: { min(start, now) },
+                set: { date in
+                    start = date
+                    if Calendar.current.compare(date, to: end, toGranularity: .day) == .orderedDescending {
+                        end = date
+                    }
+                }
+            ), in: ...now, displayedComponents: .date)
+            DatePicker("Through", selection: Binding(
+                get: { min(end, now) },
+                set: { date in
+                    end = date
+                    if Calendar.current.compare(date, to: start, toGranularity: .day) == .orderedAscending {
+                        start = date
+                    }
+                }
+            ), in: ...now, displayedComponents: .date)
+        }
+    }
+}
+
+struct StatsCoverageRows: View {
+    let records: StatsRecords
+
+    var body: some View {
+        LabeledContent("Experiences", value: records.experiences.count.formatted())
+        LabeledContent("Days Logged", value: records.daysLogged.formatted())
     }
 }
 

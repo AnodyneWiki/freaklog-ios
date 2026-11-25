@@ -63,6 +63,39 @@ final class StatsSelectionTests: XCTestCase {
         XCTAssertEqual(Set(focused.entries.map(\.objectID)), [firstEntry.objectID, followupEntry.objectID])
     }
 
+    func testCustomDatesIncludeTheWholeLastDayAndKeepBucketCountsInSync() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let firstDay = try XCTUnwrap(calendar.date(from: DateComponents(year: 2025, month: 1, day: 3)))
+        let lastDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 29, to: firstDay))
+        let nextDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: lastDay))
+        let experience = Experience.create(at: firstDay, in: context)
+        let first = makeIngestion(in: experience, at: firstDay, context: context)
+        let last = makeIngestion(in: experience, at: nextDay.addingTimeInterval(-1), context: context)
+        let outside = makeIngestion(in: experience, at: nextDay, context: context)
+        let records = StatsRecords(
+            entries: [first, last, outside],
+            selection: StatsSelection(period: .custom, customStart: firstDay, customEnd: lastDay),
+            now: now,
+            calendar: calendar
+        )
+
+        XCTAssertEqual(records.entries, [first, last])
+        XCTAssertEqual(records.experiences.count, 1)
+        XCTAssertEqual(records.daysLogged, 2)
+        let buckets = records.buckets(for: .ingestions)
+        XCTAssertEqual(records.chartDomain(covering: buckets), firstDay...nextDay)
+        let focused = records.selecting(try XCTUnwrap(buckets.last), for: .ingestions)
+        XCTAssertEqual(focused.entries, [last])
+        XCTAssertEqual(focused.experiences.count, 1)
+        XCTAssertEqual(focused.daysLogged, 1)
+
+        let allTime = StatsRecords(
+            entries: [first, last], selection: StatsSelection(period: .allTime), now: now, calendar: calendar
+        )
+        let year = try XCTUnwrap(calendar.dateInterval(of: .year, for: firstDay))
+        XCTAssertEqual(allTime.chartDomain(covering: allTime.buckets(for: .ingestions)), year.start...year.end)
+    }
+
     func testEditedIngestionChangesSelectionWithoutChangingTheCount() {
         let persistence = PersistenceController(inMemory: true)
         let context = persistence.viewContext

@@ -6,6 +6,10 @@ import SwiftUI
 struct StatsScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(StatsPreferences.periodKey) private var period: StatsPeriod = .last12Months
+    @AppStorage(StatsPreferences.customStartKey)
+    private var customStart = StatsSelection().customStart.timeIntervalSinceReferenceDate
+    @AppStorage(StatsPreferences.customEndKey)
+    private var customEnd = StatsSelection().customEnd.timeIntervalSinceReferenceDate
     @State private var showsAllSubstances = false
     @State private var substanceOrder = StatsSubstanceOrder.count
     @AppStorage(StatsPreferences.pinnedViewsKey) private var pinnedStatsData = Data()
@@ -14,23 +18,24 @@ struct StatsScreen: View {
 
     var body: some View {
         StatsJournal { entries, tags in
-            let selection = StatsSelection(period: period)
+            let selection = StatsSelection(
+                period: period,
+                customStart: Date(timeIntervalSinceReferenceDate: customStart),
+                customEnd: Date(timeIntervalSinceReferenceDate: customEnd)
+            )
             let records = StatsRecords(entries: entries, selection: selection, tags: tags)
             let pins = StatsPreferences.decode(pinnedStatsData)
 
             List {
                 Section {
-                    Picker("Period", selection: $period) {
-                        ForEach(StatsPeriod.allCases.filter { $0 != .custom }, id: \.self) { period in
-                            Text(period.title).tag(period)
-                        }
-                    }
+                    StatsPeriodControls(
+                        period: $period, start: dateBinding($customStart), end: dateBinding($customEnd)
+                    )
+                }
 
+                Section("Summary") {
                     ingestionOverview(records: records, selection: selection)
-                    LabeledContent("Experiences", value: records.experiences.count.formatted())
-                    LabeledContent("Days Logged", value: records.daysLogged.formatted())
-                } header: {
-                    Text("Summary")
+                    StatsCoverageRows(records: records)
                 }
 
                 let counts = Dictionary(grouping: records.entries, by: \.substanceNameUnwrapped).mapValues(\.count)
@@ -91,6 +96,13 @@ struct StatsScreen: View {
         }
     }
 
+    private func dateBinding(_ timestamp: Binding<Double>) -> Binding<Date> {
+        Binding(
+            get: { Date(timeIntervalSinceReferenceDate: timestamp.wrappedValue) },
+            set: { timestamp.wrappedValue = $0.timeIntervalSinceReferenceDate }
+        )
+    }
+
     private var colors: [String: Color] {
         Dictionary(substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
                    uniquingKeysWith: { first, _ in first })
@@ -108,15 +120,13 @@ struct StatsScreen: View {
                     .foregroundStyle(Color.accentColor)
                 Text(records.entries.count, format: .number)
                     .font(.title2.weight(.semibold).monospacedDigit())
-                if let first = buckets.first, let last = buckets.last {
-                    let start = records.range.start == .distantPast ? first.interval.start : min(first.interval.start, records.range.start)
-                    let end = max(last.interval.end, records.range.end)
+                if let domain = records.chartDomain(covering: buckets) {
                     Chart(contributions) { item in
                         BarMark(x: .value("Period", item.id.date, unit: records.bucketComponent),
                                 y: .value("Count", item.count))
                             .foregroundStyle(by: .value("Substance", item.id.substance))
                     }
-                    .chartXScale(domain: start...end)
+                    .chartXScale(domain: domain)
                     .chartForegroundStyleScale(mapping: { colors[$0] ?? Color.accentColor })
                     .chartLegend(.hidden)
                     .chartXAxis(.hidden)
@@ -226,6 +236,8 @@ struct StatsComparisonRow: View {
 
 enum StatsPreferences {
     static let periodKey = "statsSummaryPeriod"
+    static let customStartKey = "statsSummaryCustomStart"
+    static let customEndKey = "statsSummaryCustomEnd"
     static let pinnedViewsKey = "pinnedStatsViews"
 
     static func decode(_ data: Data) -> [PinnedStatsView] {
