@@ -81,9 +81,35 @@ final class AssistantToolTests: XCTestCase {
     let context = PersistenceController(inMemory: true).viewContext
     let defaultTools = AssistantToolbox(context: context, includesAnodyneWiki: false)
     let enabledTools = AssistantToolbox(
-      context: context, includesAnodyneWiki: false, webSearch: AssistantWebSearch.tool(textLimit: 800))
+      context: context, includesAnodyneWiki: false, includesWebAccess: true)
     XCTAssertFalse(defaultTools.specs.contains { $0.name == "search_web" })
     XCTAssertTrue(enabledTools.specs.contains { $0.name == "search_web" })
+    XCTAssertFalse(defaultTools.specs.contains { $0.name == "lookup_wikipedia" })
+    XCTAssertTrue(enabledTools.specs.contains { $0.name == "lookup_wikipedia" })
+  }
+
+  func testWikipediaUsesOneBoundedLookupWithSourceLinks() throws {
+    let lookup = AssistantWikipedia.requestBody(query: "Ada Lovelace", mode: .summary, language: "de")
+    XCTAssertEqual(lookup["params"]?["name"], "wikipedia_get_summary")
+    XCTAssertEqual(lookup["params"]?["arguments"], .object(["title": "Ada Lovelace", "language": "de"]))
+
+    let search = AssistantWikipedia.requestBody(query: "Lovelace", mode: .search, language: "en")
+    XCTAssertEqual(search["params"]?["name"], "wikipedia_search_articles")
+    XCTAssertEqual(search["params"]?["arguments"]?["limit"], .number(3))
+    let reply: JSONValue = .object([
+      "result": .object([
+        "structuredContent": .object([
+          "title": "Ada Lovelace",
+          "extract": "English mathematician and writer.",
+          "page_type": "standard",
+        ]),
+      ]),
+    ])
+    let summary = try AssistantWikipedia.result(from: reply, mode: .summary, language: "de", textLimit: 10)
+    XCTAssertEqual(summary["summary"], "English ma…")
+    XCTAssertEqual(summary["url"], "https://de.wikipedia.org/wiki/Ada_Lovelace")
+    XCTAssertEqual(summary["page_type"], "standard")
+    XCTAssertThrowsError(try AssistantWikipedia.result(from: .object([:]), mode: .search, language: "en", textLimit: 10))
   }
 
   func testWebSearchSendsOnlyTheQueryAndPreservesSourceLinks() throws {

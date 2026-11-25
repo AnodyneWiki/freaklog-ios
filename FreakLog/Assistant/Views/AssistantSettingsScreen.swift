@@ -58,7 +58,7 @@ struct AssistantSettingsScreen: View {
         Text("Online Lookups")
       } footer: {
         if isWebAccessEnabled {
-          Text("Web searches send the query to Exa.")
+          Text("Queries go to Exa for web search and Cyanheads for Wikipedia.")
         }
         Text(
           "Lets the assistant read dose tiers, interactions and warnings on AnodyneWiki when the app's data isn't enough. Only the titles of AnodyneWiki's own pages are requested, never the names of your custom substances.")

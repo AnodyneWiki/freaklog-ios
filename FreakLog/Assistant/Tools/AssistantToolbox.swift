@@ -3,7 +3,7 @@ import Foundation
 
 // MARK: - AssistantToolbox
 
-// The tools the model may call: journal lookups, substance data from the app, AnodyneWiki and web search. Each
+// The tools the model may call: journal lookups, substance data, AnodyneWiki, web search and Wikipedia. Each
 // tool describes itself for the model and the chat transcript, and returns a JSON object that goes back to the
 // model. Results never contain more than the question needs, because everything in them is sent to the provider.
 @MainActor
@@ -12,13 +12,16 @@ final class AssistantToolbox {
     context: NSManagedObjectContext,
     limits: Limits = .standard,
     includesAnodyneWiki: Bool,
-    webSearch: Tool? = nil)
+    includesWebAccess: Bool = false)
   {
     self.context = context
     self.limits = limits
     tools = journalTools() + substanceTools() + (includesAnodyneWiki ? anodyneTools() : [])
-    if let webSearch {
-      tools.append(webSearch)
+    if includesWebAccess {
+      tools += [
+        AssistantWebSearch.tool(textLimit: limits.maxTextCharacters),
+        AssistantWikipedia.tool(textLimit: limits.maxTextCharacters),
+      ]
     }
   }
 

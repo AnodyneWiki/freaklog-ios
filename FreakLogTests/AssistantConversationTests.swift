@@ -79,7 +79,7 @@ final class AssistantConversationTests: XCTestCase {
     XCTAssertTrue(disabled.contains("Web Access is off"))
 
     let searchable = AssistantToolbox(
-      context: toolbox.context, includesAnodyneWiki: false, webSearch: AssistantWebSearch.tool(textLimit: 800))
+      context: toolbox.context, includesAnodyneWiki: false, includesWebAccess: true)
     let enabled = AssistantInstructions.text(for: nil, toolbox: searchable)
     XCTAssertTrue(enabled.contains("This chat has web access through search_web"))
     XCTAssertTrue(enabled.contains("ask what they want you to look up"))

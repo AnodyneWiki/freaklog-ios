@@ -168,7 +168,7 @@ final class AssistantChat: ObservableObject {
       context: PersistenceController.shared.viewContext,
       limits: limits,
       includesAnodyneWiki: allowsWikiLookups,
-      webSearch: allowsWebSearch ? AssistantWebSearch.tool(textLimit: limits.maxTextCharacters) : nil)
+      includesWebAccess: allowsWebSearch)
     let instructions = AssistantInstructions.text(for: experience, toolbox: toolbox)
     if profile.standard == .onDevice {
       conversation = OnDeviceModel.conversation(instructions: instructions, toolbox: toolbox)
