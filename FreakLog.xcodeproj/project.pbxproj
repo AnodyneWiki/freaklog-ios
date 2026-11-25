@@ -71,17 +71,6 @@
 		A159D8F42FDAC57800E19083 /* CustomRoa-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D8F32FDAC57700E19083 /* CustomRoa-CoreDataHelpers.swift */; };
 		A159D8F72FDAC57800E19083 /* CustomRoa+CoreDataClass.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D8F62FDAC57800E19083 /* CustomRoa+CoreDataClass.swift */; };
 		A159D8F92FDAC57800E19083 /* CustomRoa+CoreDataProperties.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D8F82FDAC57800E19083 /* CustomRoa+CoreDataProperties.swift */; };
-		A159D9192FDAC5DC00E19083 /* Category.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D90D2FDAC5DC00E19083 /* Category.swift */; };
-		A159D91A2FDAC5DC00E19083 /* DurationRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D90E2FDAC5DC00E19083 /* DurationRange.swift */; };
-		A159D91B2FDAC5DC00E19083 /* Interactions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D90F2FDAC5DC00E19083 /* Interactions.swift */; };
-		A159D91C2FDAC5DC00E19083 /* Roa.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9102FDAC5DC00E19083 /* Roa.swift */; };
-		A159D91D2FDAC5DC00E19083 /* RoaDose.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9112FDAC5DC00E19083 /* RoaDose.swift */; };
-		A159D91E2FDAC5DC00E19083 /* RoaDuration.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9122FDAC5DC00E19083 /* RoaDuration.swift */; };
-		A159D91F2FDAC5DC00E19083 /* RoaRange.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9132FDAC5DC00E19083 /* RoaRange.swift */; };
-		A159D9202FDAC5DC00E19083 /* Substance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9142FDAC5DC00E19083 /* Substance.swift */; };
-		A159D9212FDAC5DC00E19083 /* SubstanceFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9152FDAC5DC00E19083 /* SubstanceFile.swift */; };
-		A159D9222FDAC5DC00E19083 /* SubstanceRepo.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9162FDAC5DC00E19083 /* SubstanceRepo.swift */; };
-		A159D9232FDAC5DC00E19083 /* Tolerance.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9172FDAC5DC00E19083 /* Tolerance.swift */; };
 		A159D9262FDAC71900E19083 /* SubstanceDataOverrideCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9252FDAC71900E19083 /* SubstanceDataOverrideCodable.swift */; };
 		A159D9272FDAC71900E19083 /* CustomRoaCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9242FDAC71900E19083 /* CustomRoaCodable.swift */; };
 		A159D92A2FDAC85200E19083 /* EditCustomRoaView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A159D9292FDAC85200E19083 /* EditCustomRoaView.swift */; };
@@ -554,17 +543,6 @@
 		A159D8F32FDAC57700E19083 /* CustomRoa-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CustomRoa-CoreDataHelpers.swift"; sourceTree = "<group>"; };
 		A159D8F62FDAC57800E19083 /* CustomRoa+CoreDataClass.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CustomRoa+CoreDataClass.swift"; sourceTree = "<group>"; };
 		A159D8F82FDAC57800E19083 /* CustomRoa+CoreDataProperties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CustomRoa+CoreDataProperties.swift"; sourceTree = "<group>"; };
-		A159D90D2FDAC5DC00E19083 /* Category.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Category.swift; sourceTree = "<group>"; };
-		A159D90E2FDAC5DC00E19083 /* DurationRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DurationRange.swift; sourceTree = "<group>"; };
-		A159D90F2FDAC5DC00E19083 /* Interactions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Interactions.swift; sourceTree = "<group>"; };
-		A159D9102FDAC5DC00E19083 /* Roa.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Roa.swift; sourceTree = "<group>"; };
-		A159D9112FDAC5DC00E19083 /* RoaDose.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoaDose.swift; sourceTree = "<group>"; };
-		A159D9122FDAC5DC00E19083 /* RoaDuration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoaDuration.swift; sourceTree = "<group>"; };
-		A159D9132FDAC5DC00E19083 /* RoaRange.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RoaRange.swift; sourceTree = "<group>"; };
-		A159D9142FDAC5DC00E19083 /* Substance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Substance.swift; sourceTree = "<group>"; };
-		A159D9152FDAC5DC00E19083 /* SubstanceFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceFile.swift; sourceTree = "<group>"; };
-		A159D9162FDAC5DC00E19083 /* SubstanceRepo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceRepo.swift; sourceTree = "<group>"; };
-		A159D9172FDAC5DC00E19083 /* Tolerance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tolerance.swift; sourceTree = "<group>"; };
 		A159D9242FDAC71900E19083 /* CustomRoaCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomRoaCodable.swift; sourceTree = "<group>"; };
 		A159D9252FDAC71900E19083 /* SubstanceDataOverrideCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubstanceDataOverrideCodable.swift; sourceTree = "<group>"; };
 		A159D9282FDAC7B100E19083 /* PW Version 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "PW Version 8.xcdatamodel"; sourceTree = "<group>"; };
@@ -1058,24 +1036,6 @@
 				6EBB5C00E5F24642847C8B0C /* ServerLeaderboardScreen.swift */,
 			);
 			path = UI;
-			sourceTree = "<group>";
-		};
-		A159D9182FDAC5DC00E19083 /* Decoding */ = {
-			isa = PBXGroup;
-			children = (
-				A159D90D2FDAC5DC00E19083 /* Category.swift */,
-				A159D90E2FDAC5DC00E19083 /* DurationRange.swift */,
-				A159D90F2FDAC5DC00E19083 /* Interactions.swift */,
-				A159D9102FDAC5DC00E19083 /* Roa.swift */,
-				A159D9112FDAC5DC00E19083 /* RoaDose.swift */,
-				A159D9122FDAC5DC00E19083 /* RoaDuration.swift */,
-				A159D9132FDAC5DC00E19083 /* RoaRange.swift */,
-				A159D9142FDAC5DC00E19083 /* Substance.swift */,
-				A159D9152FDAC5DC00E19083 /* SubstanceFile.swift */,
-				A159D9162FDAC5DC00E19083 /* SubstanceRepo.swift */,
-				A159D9172FDAC5DC00E19083 /* Tolerance.swift */,
-			);
-			path = Decoding;
 			sourceTree = "<group>";
 		};
 		A15CA2AA2EFAFED200D90023 /* Models */ = {
@@ -1858,7 +1818,6 @@
 				EA35ABCC2BADA220004352F2 /* PrivacyInfo.xcprivacy */,
 				EAF5D366270B3A6E00E78909 /* FreakLog.entitlements */,
 				EAE4715926CBA664009FB0EC /* Info.plist */,
-				A159D9182FDAC5DC00E19083 /* Decoding */,
 				7B0E5141764278BF896A68D6 /* Watch */,
 			);
 			path = FreakLog;
@@ -2541,17 +2500,6 @@
 				EA48F85829DB12A5007DA8C5 /* ShulginRatingOption.swift in Sources */,
 				EA47935E2B48384100685EAA /* CustomUnitBox.swift in Sources */,
 				EA26B2BF2976C0D600A1051A /* NextLabel.swift in Sources */,
-				A159D9192FDAC5DC00E19083 /* Category.swift in Sources */,
-				A159D91A2FDAC5DC00E19083 /* DurationRange.swift in Sources */,
-				A159D91B2FDAC5DC00E19083 /* Interactions.swift in Sources */,
-				A159D91C2FDAC5DC00E19083 /* Roa.swift in Sources */,
-				A159D91D2FDAC5DC00E19083 /* RoaDose.swift in Sources */,
-				A159D91E2FDAC5DC00E19083 /* RoaDuration.swift in Sources */,
-				A159D91F2FDAC5DC00E19083 /* RoaRange.swift in Sources */,
-				A159D9202FDAC5DC00E19083 /* Substance.swift in Sources */,
-				A159D9212FDAC5DC00E19083 /* SubstanceFile.swift in Sources */,
-				A159D9222FDAC5DC00E19083 /* SubstanceRepo.swift in Sources */,
-				A159D9232FDAC5DC00E19083 /* Tolerance.swift in Sources */,
 				EA4B8A092A969B0E009918DE /* FullCumulativeTimelines.swift in Sources */,
 				EA8447E727CD175000B10DD3 /* RoaDoseRow.swift in Sources */,
 				EACB0C20293FED5500C605E2 /* Interactions.swift in Sources */,

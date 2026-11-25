@@ -165,7 +165,7 @@ struct PersistenceController {
         saveViewContext()
         
         guard let store = container.persistentStoreCoordinator.persistentStores.first,
-              let url = store.url else {
+              store.url != nil else {
             return
         }
 
