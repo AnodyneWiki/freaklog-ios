@@ -5,9 +5,10 @@ import SwiftUI
 // would join, starting a new experience if there is none
 struct AddTimedNoteScreen: View {
     let experience: Experience?
+    private let startsOnTimeline: Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var time = Date.now
+    @State private var time: Date
     @State private var note = ""
     @State private var color = SubstanceColor.blue
     @State private var isPartOfTimeline = false
@@ -17,6 +18,12 @@ struct AddTimedNoteScreen: View {
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest())
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
+
+    init(experience: Experience?, initialTime: Date? = nil) {
+        self.experience = experience
+        startsOnTimeline = initialTime != nil
+        _time = State(initialValue: initialTime ?? .now)
+    }
 
     var body: some View {
         NavigationStack {
@@ -44,7 +51,7 @@ struct AddTimedNoteScreen: View {
         .onAppear {
             isTextFieldFocused = true
             let experience = targetExperience(at: time)
-            isPartOfTimeline = experience?.isCurrent ?? true
+            isPartOfTimeline = startsOnTimeline || (experience?.isCurrent ?? true)
             usedColors = experience?.timedNotesForTimeline.map(\.color) ?? []
             color = SubstanceColor.suggested(avoiding: usedColors)
         }

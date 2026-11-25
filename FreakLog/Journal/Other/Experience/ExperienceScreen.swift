@@ -81,12 +81,7 @@ struct ExperienceScreen: View {
                         Text(timelineModel.groupDrawables.contains(where: \.hasDurationInfo) ? "Estimated Effects" : "Timeline")
                         Spacer()
                         timeDisplayMenu
-                        NavigationLink(value: GlobalNavigationDestination.timeline(
-                            timelineModel: timelineModel,
-                            timeDisplayStyle: timeDisplayStyle)) {
-                            Label("Expand Timeline", systemImage: "arrow.down.left.and.arrow.up.right.square")
-                                .labelStyle(.iconOnly)
-                        }
+                        expandTimelineLink
                     }
                 }
             }
@@ -119,6 +114,9 @@ struct ExperienceScreen: View {
                     if !timelineModel.isWorthDrawing {
                         Spacer()
                         timeDisplayMenu
+                        if !myIngestions.isEmpty || !timedNotes.isEmpty || (isEyeOpen && !experience.ratingsWithTimeSorted.isEmpty) {
+                            expandTimelineLink
+                        }
                     }
                 }
             }
@@ -278,6 +276,17 @@ struct ExperienceScreen: View {
                 Text("This will also delete all of its ingestions.")
             }
         )
+    }
+
+    private var expandTimelineLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.experienceTimeline(
+            experience: experience,
+            hiddenIngestions: hiddenIngestions,
+            hiddenRatings: hiddenRatings
+        )) {
+            Label("Expand Timeline", systemImage: "arrow.down.left.and.arrow.up.right.square")
+                .labelStyle(.iconOnly)
+        }
     }
 
     private var timeDisplayMenu: some View {

@@ -7,6 +7,8 @@ struct EffectTimeline: View {
     var isShowingCurrentTime = true
     var isShowingTopLabels = true
     var spaceToLabels = 5.0
+    var cursorTime: Date?
+    var onTimeSelected: ((Date) -> Void)?
     private let lineWidth: Double = 5
     private var halfLineWidth: Double {
         lineWidth / 2
@@ -22,7 +24,7 @@ struct EffectTimeline: View {
             TimelineView(.everyMinute) { timeline in
                 let timelineDate = timeline.date
                 Canvas { context, size in
-                    let pixelsPerSec = size.width / timelineModel.totalWidth
+                    let pixelsPerSec = size.width / max(1, timelineModel.totalWidth)
                     timelineModel.groupDrawables.forEach { groupDrawable in
                         groupDrawable.draw(
                             context: context,
@@ -61,6 +63,20 @@ struct EffectTimeline: View {
                         path.move(to: CGPoint(x: currentTimeX, y: 0))
                         path.addLine(to: CGPoint(x: currentTimeX, y: size.height))
                         context.stroke(path, with: .foreground, style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                    }
+                    if let cursorTime {
+                        let elapsed = cursorTime.timeIntervalSince(timelineModel.startTime)
+                        if (0...max(0, timelineModel.totalWidth)).contains(elapsed) {
+                            let x = min(max(1, elapsed * pixelsPerSec), max(1, size.width - 1))
+                            var path = Path()
+                            path.move(to: CGPoint(x: x, y: 0))
+                            path.addLine(to: CGPoint(x: x, y: size.height))
+                            context.stroke(
+                                path,
+                                with: .color(.accentColor),
+                                style: StrokeStyle(lineWidth: 2, dash: [5, 3])
+                            )
+                        }
                     }
                     if let fingerLocation {
                         // draw vertical line
@@ -112,8 +128,25 @@ struct EffectTimeline: View {
                         })
                         .onEnded({ _ in
                             fingerLocation = nil
-                        })
+                        }),
+                    including: onTimeSelected == nil ? .all : .none
                 )
+                .overlay {
+                    if let onTimeSelected {
+                        GeometryReader { geometry in
+                            Rectangle()
+                                .fill(.clear)
+                                .contentShape(Rectangle())
+                                .gesture(SpatialTapGesture().onEnded { tap in
+                                    guard geometry.size.width > 0 else { return }
+                                    let fraction = min(1, max(0, tap.location.x / geometry.size.width))
+                                    let time = timelineModel.startTime.addingTimeInterval(fraction * timelineModel.totalWidth)
+                                    onTimeSelected(time)
+                                })
+                                .accessibilityHidden(true)
+                        }
+                    }
+                }
             }
             .padding(.vertical, spaceToLabels)
             timeLabels
@@ -139,6 +172,7 @@ struct EffectTimeline: View {
     private var timeLabels: some View {
         Canvas { context, size in
             let widthInPixels = size.width
+            guard widthInPixels > 0, timelineModel.totalWidth > 0 else { return }
             let pixelsPerSec = widthInPixels / timelineModel.totalWidth
             let fullHours = timelineModel.axisDrawable.getFullHours(
                 pixelsPerSec: pixelsPerSec,

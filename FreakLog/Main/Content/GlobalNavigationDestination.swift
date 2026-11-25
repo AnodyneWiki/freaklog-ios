@@ -23,6 +23,7 @@ enum GlobalNavigationDestination: Hashable {
     case allInteractions(substancesToCheck: [Substance])
     case toleranceTexts(substances: [SubstanceWithToleranceAndColor])
     case timeline(timelineModel: TimelineModel, timeDisplayStyle: TimeDisplayStyle)
+    case experienceTimeline(experience: Experience, hiddenIngestions: Set<ObjectIdentifier>, hiddenRatings: Set<ObjectIdentifier>)
     case explainExperience
     case dose(substance: Substance)
 

@@ -107,6 +107,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             JournalSettingsScreen()
         case let .timeline(timelineModel, timeDisplayStyle):
             TimelineScreen(timelineModel: timelineModel, timeDisplayStyle: timeDisplayStyle)
+        case let .experienceTimeline(experience, hiddenIngestions, hiddenRatings):
+            ExperienceTimelineScreen(experience: experience, hiddenIngestions: hiddenIngestions, hiddenRatings: hiddenRatings)
         case .explainExperience:
             ExplainExperienceSectionScreen()
         case let .dosageStat(substanceName):
