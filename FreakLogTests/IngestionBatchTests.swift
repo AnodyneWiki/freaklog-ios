@@ -62,6 +62,38 @@ final class IngestionBatchTests: XCTestCase {
         XCTAssertNil(saved.ingestions.last?.stockChange)
     }
 
+    func testDeletionRequestUsesEntryIdentityAndRejectsChangedBatchMembership() throws {
+        let store = PersistenceController(inMemory: true)
+        let context = store.viewContext
+        let time = Date(timeIntervalSince1970: 1_800_000_000)
+        let experience = Experience.create(at: time, in: context)
+        let batchID = UUID()
+        let entries = try (0..<3).map { index -> Ingestion in
+            let entity = try XCTUnwrap(NSEntityDescription.entity(forEntityName: "Ingestion", in: context))
+            let entry = Ingestion(entity: entity, insertInto: context)
+            entry.substanceName = "Example Product"
+            entry.time = time.addingTimeInterval(Double(index))
+            entry.experience = experience
+            entry.isUnconfirmed = index < 2
+            entry.confirmationBatchID = index < 2 ? batchID : nil
+            return entry
+        }
+        try context.save()
+
+        let single = IngestionDeletion.Request(entries[2])
+        let batch = IngestionDeletion.Request(entries[0])
+        let freshContext = try store.journalEditContext()
+        XCTAssertEqual(try single.resolve(in: freshContext).map(\.objectID), [entries[2].objectID])
+        XCTAssertEqual(Set(try batch.resolve(in: freshContext).map(\.objectID)), Set(entries.prefix(2).map(\.objectID)))
+
+        entries[2].isUnconfirmed = true
+        entries[2].confirmationBatchID = batchID
+        try context.save()
+        let changedContext = try store.journalEditContext()
+        XCTAssertThrowsError(try single.resolve(in: changedContext))
+        XCTAssertThrowsError(try batch.resolve(in: changedContext))
+    }
+
     private func productWithStock(
         _ count: Double, in context: NSManagedObjectContext
     ) throws -> (CustomUnit, StockContainer) {

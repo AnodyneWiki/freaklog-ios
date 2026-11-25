@@ -10,6 +10,7 @@ struct JournalCalendarScreen: View {
 
     @State private var isFirstAppear = true
     @State private var selectedDay: Date?
+    @State private var pendingIngestionDeletion: IngestionDeletion.Request?
     @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @Environment(\.calendar) private var calendar
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
@@ -147,14 +148,23 @@ struct JournalCalendarScreen: View {
                 if entries.isEmpty {
                     Text("No ingestions").foregroundStyle(.secondary)
                 }
-                ForEach(entries) { ingestion in
+                ForEach(entries, id: \.objectID) { ingestion in
                     JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.hour().minute())
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
+                            } label: {
+                                Label("Delete", systemImage: "trash")
+                            }
+                            .tint(.red)
+                        }
                 }
             } header: {
                 Text(day, format: .dateTime.weekday(.wide).month().day().year())
             }
         }
         .listStyle(.insetGrouped)
+        .confirmIngestionDeletion($pendingIngestionDeletion)
     }
 
     // MARK: Private

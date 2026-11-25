@@ -93,7 +93,7 @@ struct EditIngestionScreen: View {
             consumerName: $consumerName,
             siteSelection: $siteSelection,
             save: { request(.save) },
-            delete: delete,
+            onDeleted: { dismiss() },
             deleteWebhookMessage: WebhookManager.shared.deleteMessage,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
@@ -380,13 +380,6 @@ struct EditIngestionScreen: View {
         }
     }
 
-    private func delete(returningStock: Bool) {
-        Task {
-            if await IngestionDeletion.delete(ingestions: [ingestion], returningStock: returningStock) {
-                dismiss()
-            }
-        }
-    }
 }
 
 // MARK: - EditIngestionContent
@@ -408,7 +401,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
     @Binding var consumerName: String
     @Binding var siteSelection: AdministrationSiteSelection
     let save: () -> Void
-    let delete: (Bool) -> Void
+    let onDeleted: () -> Void
     let deleteWebhookMessage: (WebhookMessage) async -> Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
@@ -420,7 +413,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
-    @State private var confirmsDeletionWithStock = false
+    @State private var pendingDeletion: IngestionDeletion.Request?
     @State private var showsTimelineOptions = false
 
     var body: some View {
@@ -555,7 +548,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
                         Label("Add Ingestion at Same Time", systemImage: "plus")
                     }
                     Button(role: .destructive) {
-                        confirmsDeletionWithStock = true
+                        pendingDeletion = IngestionDeletion.Request(ingestion)
                     } label: {
                         Label("Delete Ingestion", systemImage: "trash")
                     }
@@ -576,23 +569,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Ingestion")
             .navigationBarTitleDisplayMode(.inline)
-            .confirmationDialog("Delete Ingestion?", isPresented: $confirmsDeletionWithStock, titleVisibility: .visible) {
-                let count = ingestion.pendingConfirmationEntries.count
-                let title = count > 1 ? "Delete \(count) Entries" : ingestion.stockChange == nil ? "Delete Entry" : "Delete Entry, Keep Stock Use"
-                Button(title, role: .destructive) { delete(false) }
-                if ingestion.stockChange?.canReverseUse == true {
-                    Button("Delete Entry and Return Stock", role: .destructive) { delete(true) }
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                if ingestion.pendingConfirmationEntries.count > 1 {
-                    Text("All entries in this unconfirmed batch will be removed.")
-                } else if ingestion.stockChange?.canReverseUse == true {
-                    Text("Return the stock if this entry was logged by mistake.")
-                } else if ingestion.stockChange != nil {
-                    Text("The container’s stock history will still show the original amount used.")
-                }
-            }
+            .confirmIngestionDeletion($pendingDeletion, onDeleted: onDeleted)
         }
     }
 
@@ -623,7 +600,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { _ in },
+        onDeleted: {},
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
@@ -652,7 +629,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { _ in },
+        onDeleted: {},
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),

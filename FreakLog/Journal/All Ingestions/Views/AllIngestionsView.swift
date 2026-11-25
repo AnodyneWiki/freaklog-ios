@@ -15,7 +15,7 @@ struct AllIngestionsView: View {
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var sheetToShow: SheetOption?
-    @State private var pendingIngestionDeletion: Ingestion?
+    @State private var pendingIngestionDeletion: IngestionDeletion.Request?
 
     var body: some View {
         List {
@@ -68,23 +68,7 @@ struct AllIngestionsView: View {
                 EditTimedNoteScreen(timedNote: timedNote, experience: experience)
             }
         }
-        .confirmationDialog("Delete Ingestion?", isPresented: Binding(
-            get: { pendingIngestionDeletion != nil },
-            set: { if !$0 { pendingIngestionDeletion = nil } }
-        ), titleVisibility: .visible, presenting: pendingIngestionDeletion) { ingestion in
-            let count = ingestion.pendingConfirmationEntries.count
-            let title = count > 1 ? "Delete \(count) Entries" : ingestion.stockChange == nil ? "Delete Entry" : "Delete Entry, Keep Stock Use"
-            Button(title, role: .destructive) { viewModel.delete(ingestion) }
-            if ingestion.stockChange?.canReverseUse == true {
-                Button("Delete Entry and Return Stock", role: .destructive) {
-                    Task { await IngestionDeletion.delete(ingestions: [ingestion], returningStock: true) }
-                }
-            }
-        } message: { ingestion in
-            if ingestion.pendingConfirmationEntries.count > 1 {
-                Text("All entries in this unconfirmed batch will be removed.")
-            }
-        }
+        .confirmIngestionDeletion($pendingIngestionDeletion)
         .onChange(of: searchText) { newValue in
             viewModel.searchText = newValue
         }
@@ -193,11 +177,12 @@ private extension AllIngestionsView {
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                Button(role: .destructive) {
+                Button {
                     delete(item)
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
+                .tint(.red)
             }
             .modifier(SubstanceInfoSwipeAction(substanceName: item.substanceName ?? ""))
         }
@@ -250,7 +235,7 @@ private extension AllIngestionsView {
             }
 
             Button(role: .destructive) {
-                pendingIngestionDeletion = ingestion
+                pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -305,7 +290,7 @@ private extension AllIngestionsView {
 
     func delete(_ item: IngestionSection.Item) {
         switch item {
-        case .ingestion(let ingestion): pendingIngestionDeletion = ingestion
+        case .ingestion(let ingestion): pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
         case .timedNote(let timedNote): viewModel.delete(timedNote)
         }
     }

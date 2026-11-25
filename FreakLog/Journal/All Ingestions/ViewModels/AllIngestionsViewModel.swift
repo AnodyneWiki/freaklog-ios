@@ -61,13 +61,6 @@ final class AllIngestionsViewModel: NSObject, ObservableObject {
         }
     }
 
-    /// Deletes an ingestion from Core Data.
-    func delete(_ ingestion: Ingestion) {
-        Task {
-            await IngestionDeletion.delete(ingestions: [ingestion])
-        }
-    }
-
     func delete(_ timedNote: TimedNote) {
         Task {
             await IngestionDeletion.delete(timedNote: timedNote)

@@ -144,6 +144,53 @@ struct SubstanceInfoSwipeAction: ViewModifier {
     }
 }
 
+extension View {
+    func confirmIngestionDeletion(
+        _ request: Binding<IngestionDeletion.Request?>,
+        onDeleted: @escaping () -> Void = {}
+    ) -> some View {
+        confirmationDialog("Delete Ingestion?", isPresented: Binding(
+            get: { request.wrappedValue != nil },
+            set: { if !$0 { request.wrappedValue = nil } }
+        ), titleVisibility: .visible, presenting: request.wrappedValue) { deletion in
+            Button(role: .destructive) {
+                Task {
+                    if await IngestionDeletion.delete(deletion) { onDeleted() }
+                }
+            } label: {
+                if deletion.count > 1 {
+                    Text("Delete \(deletion.count) Entries")
+                } else if deletion.hasStockUse {
+                    Text("Delete Entry, Keep Stock Use")
+                } else {
+                    Text("Delete Entry")
+                }
+            }
+            if deletion.canReturnStock {
+                Button("Delete Entry and Return Stock", role: .destructive) {
+                    Task {
+                        if await IngestionDeletion.delete(deletion, returningStock: true) { onDeleted() }
+                    }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: { deletion in
+            let time = deletion.date?.formatted(date: .abbreviated, time: .standard)
+            let details = [deletion.name, deletion.amount, time]
+                .compactMap { $0 }.joined(separator: " · ")
+            if deletion.count > 1 {
+                Text("\(details)\n\nAll \(deletion.count) entries in this unconfirmed batch will be removed.")
+            } else if deletion.canReturnStock {
+                Text("\(details)\n\nChoose whether to keep the recorded stock use.")
+            } else if deletion.hasStockUse {
+                Text("\(details)\n\nThe recorded stock use will stay in Inventory.")
+            } else {
+                Text(details)
+            }
+        }
+    }
+}
+
 #Preview {
     List {
         Section {
