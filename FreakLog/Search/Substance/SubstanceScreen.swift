@@ -159,6 +159,12 @@ struct SubstanceScreen: View {
 
 struct SubstanceJournalLinks: View {
   let substanceName: String
+  @FetchRequest private var overrides: FetchedResults<SubstanceOverride>
+
+  init(substanceName: String) {
+    self.substanceName = substanceName
+    _overrides = FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest(for: substanceName))
+  }
 
   var body: some View {
     Section("Journal") {
@@ -167,7 +173,109 @@ struct SubstanceJournalLinks: View {
       } label: {
         Label("History", systemImage: "clock.arrow.circlepath")
       }
+      NavigationLink {
+        EditPersonalTagsScreen(substanceName: substanceName)
+      } label: {
+        let tags = overrides.dropFirst().reduce(overrides.first?.personalTags ?? PersonalSubstanceTags()) {
+          $0.merged($1.personalTags)
+        }
+        LabeledContent {
+          if !tags.names.isEmpty {
+            Text(tags.names.formatted(.list(type: .and)))
+              .foregroundStyle(.secondary)
+          }
+        } label: {
+          Label("Personal Tags", systemImage: "tag")
+        }
+      }
     }
+  }
+}
+
+private struct EditPersonalTagsScreen: View {
+  let substanceName: String
+  @Environment(\.dismiss) private var dismiss
+  @FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest())
+  private var overrides: FetchedResults<SubstanceOverride>
+  @State private var tags = PersonalSubstanceTags()
+  @State private var newTag = ""
+  @State private var saveFailed = false
+
+  private var knownTags: [String] {
+    PersonalSubstanceTags(overrides.flatMap { $0.personalTags.names }.sorted()).names
+      .filter { !tags.contains($0) }
+  }
+
+  private var trimmedTag: String {
+    newTag.trimmingCharacters(in: .whitespacesAndNewlines)
+  }
+
+  var body: some View {
+    Form {
+      Section {
+        TextField("New Tag", text: $newTag)
+          .onSubmit { addTag(trimmedTag) }
+        Button("Add Tag") { addTag(trimmedTag) }
+          .disabled(trimmedTag.isEmpty || tags.contains(trimmedTag))
+        if !knownTags.isEmpty {
+          Menu("Choose Existing Tag") {
+            ForEach(knownTags, id: \.self) { name in
+              Button(name) { addTag(name) }
+            }
+          }
+        }
+      }
+      if !tags.names.isEmpty {
+        Section("Assigned Tags") {
+          ForEach(tags.names, id: \.self) { tag in
+            Text(tag)
+          }
+          .onDelete { offsets in
+            var names = tags.names
+            names.remove(atOffsets: offsets)
+            tags = PersonalSubstanceTags(names, primary: tags.primary)
+          }
+        }
+        Section {
+          Picker("Primary Tag", selection: Binding(
+            get: { tags.primary },
+            set: { tags = PersonalSubstanceTags(tags.names, primary: $0) }
+          )) {
+            Text("None").tag(nil as String?)
+            ForEach(tags.names, id: \.self) { name in
+              Text(name).tag(Optional(name))
+            }
+          }
+        } footer: {
+          Text("Stats can group this substance by its primary tag.")
+        }
+      }
+    }
+    .navigationTitle("Personal Tags")
+    .toolbar {
+      ToolbarItem(placement: .confirmationAction) {
+        Button("Save") {
+          do {
+            try PersistenceController.shared.setPersonalTags(tags, for: substanceName)
+            dismiss()
+          } catch {
+            saveFailed = true
+          }
+        }
+      }
+    }
+    .onAppear {
+      tags = PersistenceController.shared.personalTags(for: substanceName)
+    }
+    .alert("Couldn’t save tags", isPresented: $saveFailed) {
+      Button("OK", role: .cancel) {}
+    }
+  }
+
+  private func addTag(_ name: String) {
+    guard !name.isEmpty else { return }
+    tags = PersonalSubstanceTags(tags.names + [name], primary: tags.primary)
+    newTag = ""
   }
 }
 

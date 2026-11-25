@@ -15,7 +15,52 @@ extension SubstanceOverride {
   }
 
   var entry: SubstanceOverrideCache.Entry {
-    SubstanceOverrideCache.Entry(displayName: trimmedDisplayName, categories: categoryList)
+    SubstanceOverrideCache.Entry(displayName: trimmedDisplayName, categories: categoryList, tags: personalTags)
+  }
+
+  var personalTags: PersonalSubstanceTags {
+    get {
+      guard let data = personalTagsJSON?.data(using: .utf8),
+            let value = try? JSONDecoder().decode(PersonalSubstanceTags.self, from: data)
+      else { return PersonalSubstanceTags() }
+      return value
+    }
+    set {
+      personalTagsJSON = newValue.names.isEmpty
+        ? nil
+        : (try? JSONEncoder().encode(newValue)).map { String(decoding: $0, as: UTF8.self) }
+    }
+  }
+}
+
+struct PersonalSubstanceTags: Codable, Equatable {
+  let names: [String]
+  let primary: String?
+
+  init(_ names: [String] = [], primary: String? = nil) {
+    var seen = Set<String>()
+    self.names = names.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+      .filter { !$0.isEmpty && seen.insert(Self.key($0)).inserted }
+    self.primary = self.names.first { Self.key($0) == primary.map(Self.key) }
+  }
+
+  private enum CodingKeys: String, CodingKey { case names, primary }
+
+  init(from decoder: Decoder) throws {
+    let values = try decoder.container(keyedBy: CodingKeys.self)
+    try self.init(values.decode([String].self, forKey: .names), primary: values.decodeIfPresent(String.self, forKey: .primary))
+  }
+
+  static func key(_ name: String) -> String {
+    name.precomposedStringWithCanonicalMapping.lowercased()
+  }
+
+  func contains(_ tag: String) -> Bool {
+    names.contains { Self.key($0) == Self.key(tag) }
+  }
+
+  func merged(_ other: Self) -> Self {
+    Self((names + other.names).sorted(), primary: [primary, other.primary].compactMap { $0 }.max())
   }
 }
 
@@ -73,6 +118,24 @@ extension PersistenceController {
     overrideCache.entry(for: substanceName)
   }
 
+  func personalTags(for substanceName: String) -> PersonalSubstanceTags {
+    substanceOverride(for: substanceName)?.tags ?? PersonalSubstanceTags()
+  }
+
+  @MainActor
+  func setPersonalTags(_ tags: PersonalSubstanceTags, for substanceName: String) throws {
+    let context = try journalEditContext()
+    let existing = try context.fetch(Self.substanceOverridesRequest(for: substanceName))
+    let entry = existing.reduce(SubstanceOverrideCache.Entry(displayName: nil, categories: nil)) { $0.merged($1.entry) }
+    Self.applySubstanceOverride(
+      .init(displayName: entry.displayName, categories: entry.categories, tags: tags),
+      for: substanceName,
+      existing: existing,
+      in: context
+    )
+    try context.save()
+  }
+
   static func substanceOverridesRequest() -> NSFetchRequest<SubstanceOverride> {
     let r = SubstanceOverride.fetchRequest()
     r.sortDescriptors = [NSSortDescriptor(keyPath: \SubstanceOverride.substanceName, ascending: true)]
@@ -92,17 +155,35 @@ extension PersistenceController {
     let trimmedName = displayName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
     let name = trimmedName.isEmpty || trimmedName == substanceName ? nil : trimmedName
     let existing = (try? viewContext.fetch(Self.substanceOverridesRequest(for: substanceName))) ?? []
-    let isEmpty = name == nil && categories == nil
+    let tags = existing.dropFirst().reduce(existing.first?.personalTags ?? PersonalSubstanceTags()) {
+      $0.merged($1.personalTags)
+    }
+    Self.applySubstanceOverride(
+      .init(displayName: name, categories: categories, tags: tags),
+      for: substanceName,
+      existing: existing,
+      in: viewContext
+    )
+    saveViewContext()
+  }
+
+  static func applySubstanceOverride(
+    _ entry: SubstanceOverrideCache.Entry,
+    for substanceName: String,
+    existing: [SubstanceOverride],
+    in context: NSManagedObjectContext
+  ) {
+    let isEmpty = entry.displayName == nil && entry.categories == nil && entry.tags.names.isEmpty
     for row in existing.dropFirst(isEmpty ? 0 : 1) {
-      viewContext.delete(row)
+      context.delete(row)
     }
     if !isEmpty {
-      let override = existing.first ?? SubstanceOverride(context: viewContext)
+      let override = existing.first ?? SubstanceOverride(context: context)
       override.substanceName = substanceName
-      override.displayName = name
-      override.categoryList = categories
+      override.displayName = entry.displayName
+      override.categoryList = entry.categories
+      override.personalTags = entry.tags
     }
-    saveViewContext()
   }
 }
 
@@ -112,6 +193,13 @@ final class SubstanceOverrideCache: @unchecked Sendable {
   struct Entry: Equatable {
     let displayName: String?
     let categories: [String]?
+    let tags: PersonalSubstanceTags
+
+    init(displayName: String?, categories: [String]?, tags: PersonalSubstanceTags = PersonalSubstanceTags()) {
+      self.displayName = displayName
+      self.categories = categories
+      self.tags = tags
+    }
 
     // Combines two rows of one substance, e.g. made on two devices before iCloud synced them. Only the values
     // decide, because object IDs differ between devices, so every device keeps the same one: the greatest
@@ -120,7 +208,8 @@ final class SubstanceOverrideCache: @unchecked Sendable {
       let categoryLists = [categories, other.categories].compactMap { $0 }
       return Entry(
         displayName: [displayName, other.displayName].compactMap { $0 }.max(),
-        categories: categoryLists.max { $0.joined(separator: ",") < $1.joined(separator: ",") }
+        categories: categoryLists.max { $0.joined(separator: ",") < $1.joined(separator: ",") },
+        tags: tags.merged(other.tags)
       )
     }
   }

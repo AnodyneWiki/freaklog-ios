@@ -13,6 +13,7 @@ struct SearchScreen: View {
 
 
     @State private var isShowingAddCustomSubstance = false
+    @State private var selectedPersonalTag: String?
 
 
     @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
@@ -31,6 +32,15 @@ struct SearchScreen: View {
     let allCategories = [custom] + SubstanceRepo.shared.categories.map { cat in
         cat.name
     }
+
+    private var personalTags: [String] {
+        PersonalSubstanceTags(overrides.flatMap { $0.personalTags.names }.sorted()).names
+    }
+
+    private func matchesPersonalTag(_ substanceName: String) -> Bool {
+        guard let selectedPersonalTag else { return true }
+        return PersistenceController.shared.personalTags(for: substanceName).contains(selectedPersonalTag)
+    }
     
     func toggleCategory(category: String) {
         if selectedCategories.contains(category) {
@@ -46,7 +56,8 @@ struct SearchScreen: View {
     var customFilteredWithCategories: [CustomSubstance] {
         customSubstances.filter { customSubstance in
             let categories = PersistenceController.shared.categories(for: customSubstance.nameUnwrapped)
-            return selectedCategories.allSatisfy { $0 == SearchScreen.custom || categories.contains($0) }
+            return matchesPersonalTag(customSubstance.nameUnwrapped)
+                && selectedCategories.allSatisfy { $0 == SearchScreen.custom || categories.contains($0) }
         }
     }
     
@@ -65,9 +76,10 @@ struct SearchScreen: View {
     
     var substancesFilteredAndSorted: [Substance] {
         let substancesFilteredWithCategoriesOnly = SubstanceRepo.shared.substances.filter { sub in
-            selectedCategories.allSatisfy { selected in
-                PersistenceController.shared.categories(for: sub.name).contains(selected)
-            }
+            matchesPersonalTag(sub.name)
+                && selectedCategories.allSatisfy { selected in
+                    PersistenceController.shared.categories(for: sub.name).contains(selected)
+                }
         }
         let substanceNamesInOrder = ingestions.map { ing in
             ing.substanceNameUnwrapped
@@ -92,7 +104,9 @@ struct SearchScreen: View {
                 },
                 selectedCategories: selectedCategories,
                 clearCategories: clearCategories,
-                showsFilters: !isSearchingAnodyneWiki
+                showsFilters: !isSearchingAnodyneWiki,
+                personalTags: personalTags,
+                selectedPersonalTag: $selectedPersonalTag
             )
 
             Picker("Substance Source", selection: $isSearchingAnodyneWiki) {
@@ -109,6 +123,13 @@ struct SearchScreen: View {
                 SiriTipView(intent: SearchSubstancesIntent(), isVisible: $isSiriTipVisible)
                     .padding(.horizontal, 16)
                 libraryResults
+            }
+        }
+        .onChange(of: personalTags) { names in
+            if let selectedPersonalTag, !names.contains(selectedPersonalTag) {
+                self.selectedPersonalTag = names.first {
+                    PersonalSubstanceTags.key($0) == PersonalSubstanceTags.key(selectedPersonalTag)
+                }
             }
         }
     }

@@ -8,6 +8,8 @@ struct SubstanceSearchBarWithFilter: View {
     let selectedCategories: [String]
     let clearCategories: () -> Void
     var showsFilters = true
+    var personalTags: [String] = []
+    var selectedPersonalTag: Binding<String?> = .constant(nil)
 
     @Environment(\.colorScheme) var colorScheme
     private let horizontalPadding: CGFloat = 16
@@ -51,7 +53,7 @@ struct SubstanceSearchBarWithFilter: View {
                     .frame(minHeight: 44)
                 }
             }
-            if showsFilters, !selectedCategories.isEmpty {
+            if showsFilters, !selectedCategories.isEmpty || selectedPersonalTag.wrappedValue != nil {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(selectedCategories, id: \.self) { category in
@@ -65,7 +67,21 @@ struct SubstanceSearchBarWithFilter: View {
                             .accessibilityLabel("Remove \(category) filter")
                             .buttonStyle(.bordered)
                         }
-                        Button("Clear Filters", action: clearCategories)
+                        if let tag = selectedPersonalTag.wrappedValue {
+                            Button {
+                                selectedPersonalTag.wrappedValue = nil
+                            } label: {
+                                Label(tag, systemImage: "xmark")
+                                    .font(.subheadline)
+                                    .frame(minHeight: 36)
+                            }
+                            .accessibilityLabel("Remove \(tag) tag filter")
+                            .buttonStyle(.bordered)
+                        }
+                        Button("Clear Filters") {
+                            clearCategories()
+                            selectedPersonalTag.wrappedValue = nil
+                        }
                             .font(.subheadline)
                             .frame(minHeight: 44)
                     }
@@ -79,19 +95,31 @@ struct SubstanceSearchBarWithFilter: View {
 
     private var filterMenu: some View {
         Menu {
-            ForEach(allCategories, id: \.self) { category in
-                Button {
-                    toggleCategory(category)
-                } label: {
-                    if selectedCategories.contains(category) {
-                        Label(category, systemImage: "checkmark")
-                    } else {
-                        Text(category)
+            Section("Categories") {
+                ForEach(allCategories, id: \.self) { category in
+                    Button {
+                        toggleCategory(category)
+                    } label: {
+                        if selectedCategories.contains(category) {
+                            Label(category, systemImage: "checkmark")
+                        } else {
+                            Text(category)
+                        }
+                    }
+                }
+            }
+            if !personalTags.isEmpty {
+                Section("Personal Tags") {
+                    Picker("Personal Tag", selection: selectedPersonalTag) {
+                        Text("All Tags").tag(nil as String?)
+                        ForEach(personalTags, id: \.self) { tag in
+                            Text(tag).tag(Optional(tag))
+                        }
                     }
                 }
             }
         } label: {
-            Label("Filter Substances", systemImage: selectedCategories.isEmpty
+            Label("Filter Substances", systemImage: selectedCategories.isEmpty && selectedPersonalTag.wrappedValue == nil
                   ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                 .labelStyle(.iconOnly)
                 .font(.title3)

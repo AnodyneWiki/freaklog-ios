@@ -8,12 +8,17 @@ struct SubstanceDataOverrideCodable: Codable {
   let roas: [CustomRoaCodable]
   var displayName: String?
   var categories: [String]?
+  var personalTags: PersonalSubstanceTags?
 
-  init(substanceName: String, roas: [CustomRoaCodable], displayName: String? = nil, categories: [String]? = nil) {
+  init(
+    substanceName: String, roas: [CustomRoaCodable], displayName: String? = nil, categories: [String]? = nil,
+    personalTags: PersonalSubstanceTags? = nil
+  ) {
     self.substanceName = substanceName
     self.roas = roas
     self.displayName = displayName
     self.categories = categories
+    self.personalTags = personalTags
   }
 
   init(from decoder: Decoder) throws {
@@ -22,6 +27,7 @@ struct SubstanceDataOverrideCodable: Codable {
     roas = try container.decodeIfPresent([CustomRoaCodable].self, forKey: .roas) ?? []
     displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
     categories = try container.decodeIfPresent([String].self, forKey: .categories)
+    personalTags = try container.decodeIfPresent(PersonalSubstanceTags.self, forKey: .personalTags)
   }
 }
 
@@ -33,11 +39,14 @@ extension SubstanceDataOverrideCodable {
     let overridesByName = Dictionary(overrides.map { ($0.substanceName ?? "", $0.entry) }) { $0.merged($1) }
     let names = Set(roasByName.keys).union(overridesByName.keys).filter { !$0.isEmpty }
     return names.sorted().map { name in
-      SubstanceDataOverrideCodable(
+      let entry = overridesByName[name]
+      let tags = entry?.tags ?? PersonalSubstanceTags()
+      return SubstanceDataOverrideCodable(
         substanceName: name,
         roas: (roasByName[name] ?? []).map(CustomRoaCodable.init(roa:)),
-        displayName: overridesByName[name]?.displayName,
-        categories: overridesByName[name]?.categories
+        displayName: entry?.displayName,
+        categories: entry?.categories,
+        personalTags: tags.names.isEmpty ? nil : tags
       )
     }
   }
@@ -46,11 +55,12 @@ extension SubstanceDataOverrideCodable {
     for roaCodable in roas {
       _ = roaCodable.insert(into: context, substanceName: substanceName)
     }
-    if displayName != nil || categories != nil {
+    if displayName != nil || categories != nil || personalTags?.names.isEmpty == false {
       let override = SubstanceOverride(context: context)
       override.substanceName = substanceName
       override.displayName = displayName
       override.categoryList = categories
+      override.personalTags = personalTags ?? PersonalSubstanceTags()
     }
   }
 }
