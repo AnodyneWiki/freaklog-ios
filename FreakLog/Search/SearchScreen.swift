@@ -8,6 +8,7 @@ struct SearchScreen: View {
     @FocusState var isSearchFocused: Bool
     @Binding var searchText: String
     @Binding var selectedCategories: [String]
+    @Binding var isSearchingAnodyneWiki: Bool
     let clearCategories: () -> Void
 
 
@@ -90,54 +91,63 @@ struct SearchScreen: View {
                     toggleCategory(category: cat)
                 },
                 selectedCategories: selectedCategories,
-                clearCategories: {
-                    clearCategories()
-                }
+                clearCategories: clearCategories,
+                showsFilters: !isSearchingAnodyneWiki
             )
 
-            SiriTipView(intent: SearchSubstancesIntent(), isVisible: $isSiriTipVisible)
+            Picker("Substance Source", selection: $isSearchingAnodyneWiki) {
+                Text("Library").tag(false)
+                Text("AnodyneWiki").tag(true)
+            }
+                .pickerStyle(.segmented)
                 .padding(.horizontal, 16)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
 
-            List {
-                ForEach(substancesFilteredAndSorted) { sub in
-                    SearchSubstanceRow(substance: sub)
-                }
-                ForEach(customSubstancesFiltered) { cust in
-                    NavigationLink(value: GlobalNavigationDestination.customSubstance(customSubstance: cust)) {
-                        VStack(alignment: .leading) {
-                            Text(cust.nameUnwrapped).font(.headline)
-                            Spacer().frame(height: 5)
-                            WrappingHStack(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 3) {
-                                Chip(name: "custom")
-                                let categories = PersistenceController.shared.categories(for: cust.nameUnwrapped)
-                                ForEach(categories, id: \.self) { category in
-                                    Chip(name: category)
-                                }
+            if isSearchingAnodyneWiki {
+                AnodyneSearchResults(searchText: searchText)
+            } else {
+                SiriTipView(intent: SearchSubstancesIntent(), isVisible: $isSiriTipVisible)
+                    .padding(.horizontal, 16)
+                libraryResults
+            }
+        }
+    }
+
+    private var libraryResults: some View {
+        let localSubstances = substancesFilteredAndSorted
+        let custom = customSubstancesFiltered
+        return List {
+            ForEach(localSubstances) { sub in
+                SearchSubstanceRow(substance: sub)
+            }
+            ForEach(custom) { cust in
+                NavigationLink(value: GlobalNavigationDestination.customSubstance(customSubstance: cust)) {
+                    VStack(alignment: .leading) {
+                        Text(cust.nameUnwrapped).font(.headline)
+                        Spacer().frame(height: 5)
+                        WrappingHStack(alignment: .leading, horizontalSpacing: 3, verticalSpacing: 3) {
+                            Chip(name: "custom")
+                            let categories = PersistenceController.shared.categories(for: cust.nameUnwrapped)
+                            ForEach(categories, id: \.self) { category in
+                                Chip(name: category)
                             }
                         }
                     }
                 }
-                if substancesFilteredAndSorted.isEmpty && customSubstancesFiltered.isEmpty {
-                    Text("No Results")
-                        .foregroundColor(.secondary)
-                }
-                Button {
-                    isShowingAddCustomSubstance.toggle()
-                } label: {
-                    Label("New Custom Substance", systemImage: "plus.circle.fill").labelStyle(.titleAndIcon).font(.headline)
-                }
-                .sheet(isPresented: $isShowingAddCustomSubstance) {
-                    AddCustomSubstanceView(searchText: searchText, onAdded: { _ in})
-                }
-                NavigationLink(value: GlobalNavigationDestination.anodyneSearch(query: searchText)) {
-                    Label("Search AnodyneWiki", systemImage: "books.vertical")
-                        .labelStyle(.titleAndIcon)
-                        .font(.headline)
-                }
             }
-            .listStyle(.plain)
-            .scrollDismissesKeyboard(.interactively)
+            if localSubstances.isEmpty && custom.isEmpty {
+                Text("No Results").foregroundStyle(.secondary)
+            }
+            Button {
+                isShowingAddCustomSubstance = true
+            } label: {
+                Label("New Custom Substance", systemImage: "plus.circle.fill").labelStyle(.titleAndIcon).font(.headline)
+            }
+        }
+        .listStyle(.plain)
+        .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $isShowingAddCustomSubstance) {
+            AddCustomSubstanceView(searchText: searchText, onAdded: { _ in })
         }
     }
 }

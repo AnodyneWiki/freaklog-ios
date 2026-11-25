@@ -54,6 +54,9 @@ struct AnodyneSubstanceScreen: View {
     }
     .navigationTitle(model.substance?.commonName ?? title)
     .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        AnodyneSourcesMenu(model: model)
+      }
       if let substance = model.substance, existingDestination(for: substance) == nil {
         ToolbarItem(placement: .primaryAction) {
           Button("Add") {

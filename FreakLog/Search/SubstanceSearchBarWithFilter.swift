@@ -7,66 +7,97 @@ struct SubstanceSearchBarWithFilter: View {
     let toggleCategory: (String) -> Void
     let selectedCategories: [String]
     let clearCategories: () -> Void
+    var showsFilters = true
 
     @Environment(\.colorScheme) var colorScheme
     private let horizontalPadding: CGFloat = 16
 
     var body: some View {
-        HStack {
-            HStack {
-                Image(systemName: "magnifyingglass").foregroundColor(.secondary)
-                TextField("Search substances",
-                          text: $text,
-                          prompt: Text("Search substances"))
-                    .focused(isFocused)
-                    .disableAutocorrection(true)
-                    .submitLabel(.search)
-                if !text.isEmpty {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(Color(.systemGray))
-                        .onTapGesture {
-                            withAnimation {
-                                text = ""
-                            }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 4) {
+                HStack(spacing: 6) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    TextField("Search substances", text: $text)
+                        .focused(isFocused)
+                        .disableAutocorrection(true)
+                        .submitLabel(.search)
+                    if !text.isEmpty {
+                        Button {
+                            text = ""
+                        } label: {
+                            Label("Clear Search", systemImage: "xmark.circle.fill")
+                                .labelStyle(.iconOnly)
+                                .foregroundStyle(.secondary)
+                                .frame(minWidth: 44, minHeight: 44)
+                                .contentShape(Rectangle())
                         }
-                } else {
-                    Menu(content: {
-                        ForEach(allCategories, id: \.self) { cat in
-                            Button {
-                                withAnimation {
-                                    toggleCategory(cat)
-                                }
-                            } label: {
-                                if selectedCategories.contains(cat) {
-                                    Label(cat, systemImage: "checkmark")
-                                } else {
-                                    Text(cat)
-                                }
-                            }
-                        }
-                    }, label: {
-                        Label("Filter", systemImage: selectedCategories.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                            .labelStyle(.iconOnly)
-                    })
+                        .buttonStyle(.plain)
+                    }
                 }
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 7)
-            .background(backgroundColor)
-            .cornerRadius(12)
-            .padding(.leading, horizontalPadding)
-            .padding(.trailing, isFocused.wrappedValue ? 0 : horizontalPadding)
-            if isFocused.wrappedValue {
-                Button("Cancel") {
-                    withAnimation {
+                .padding(.leading, 10)
+                .padding(.trailing, text.isEmpty ? 10 : 0)
+                .frame(minHeight: 44)
+                .background(backgroundColor, in: RoundedRectangle(cornerRadius: 10))
+                if showsFilters {
+                    filterMenu
+                }
+                if isFocused.wrappedValue {
+                    Button("Cancel") {
                         text = ""
-                        clearCategories()
                         isFocused.wrappedValue = false
                     }
-                }.padding(.horizontal, horizontalPadding)
+                    .frame(minHeight: 44)
+                }
+            }
+            if showsFilters, !selectedCategories.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(selectedCategories, id: \.self) { category in
+                            Button {
+                                toggleCategory(category)
+                            } label: {
+                                Label(category, systemImage: "xmark")
+                                    .font(.subheadline)
+                                    .frame(minHeight: 36)
+                            }
+                            .accessibilityLabel("Remove \(category) filter")
+                            .buttonStyle(.bordered)
+                        }
+                        Button("Clear Filters", action: clearCategories)
+                            .font(.subheadline)
+                            .frame(minHeight: 44)
+                    }
+                    .padding(.vertical, 4)
+                }
             }
         }
+        .padding(.horizontal, horizontalPadding)
         .animation(.default, value: isFocused.wrappedValue)
+    }
+
+    private var filterMenu: some View {
+        Menu {
+            ForEach(allCategories, id: \.self) { category in
+                Button {
+                    toggleCategory(category)
+                } label: {
+                    if selectedCategories.contains(category) {
+                        Label(category, systemImage: "checkmark")
+                    } else {
+                        Text(category)
+                    }
+                }
+            }
+        } label: {
+            Label("Filter Substances", systemImage: selectedCategories.isEmpty
+                  ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+                .labelStyle(.iconOnly)
+                .font(.title3)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
     }
 
     var backgroundColor: Color {

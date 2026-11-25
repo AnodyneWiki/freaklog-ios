@@ -4,6 +4,17 @@ import WrappingHStack
 // Searches all of AnodyneWiki's substances, including the many PsychonautWiki doesn't have
 struct AnodyneSearchScreen: View {
   @State var searchText: String
+
+  var body: some View {
+    AnodyneSearchResults(searchText: searchText)
+      .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
+      .disableAutocorrection(true)
+      .navigationTitle("AnodyneWiki")
+  }
+}
+
+struct AnodyneSearchResults: View {
+  let searchText: String
   @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @State private var entries: [AnodyneIndexEntry] = []
   @State private var entriesInstance: URL?
@@ -56,9 +67,7 @@ struct AnodyneSearchScreen: View {
       }
     }
     .listStyle(.plain)
-    .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
-    .disableAutocorrection(true)
-    .navigationTitle("AnodyneWiki")
+    .scrollDismissesKeyboard(.interactively)
     .task(id: instanceURL) {
       await load()
     }
@@ -68,7 +77,7 @@ struct AnodyneSearchScreen: View {
     ([entry.title] + entry.abbreviations).contains { $0.lowercased().hasPrefix(text.lowercased()) }
   }
 
-  // Opening the screen asks for AnodyneWiki's list, so it is loaded even without automatic loading
+  // Selecting this source asks for its index once; filtering it uses the local copy
   private func load() async {
     let instance = AnodyneSubstance.baseURL
     entries = []

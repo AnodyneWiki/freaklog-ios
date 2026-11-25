@@ -54,7 +54,7 @@ private struct CustomSubstanceList: View {
         || anodyneModel.substance != nil {
         overviewSection(categories: categories)
       }
-      AnodyneLoadSection(model: anodyneModel)
+      AnodyneLoadStatus(model: anodyneModel)
       if routes.isEmpty {
         Section("Dose & Duration") {
           Text("No dose or duration data added yet. Tap Edit to add data for each route.")
@@ -95,6 +95,11 @@ private struct CustomSubstanceList: View {
     }
     .task(id: instanceURL) {
       await anodyneModel.start()
+    }
+    .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        AnodyneSourcesMenu(model: anodyneModel)
+      }
     }
   }
 

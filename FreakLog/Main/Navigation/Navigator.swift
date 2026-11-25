@@ -18,6 +18,7 @@ class Navigator: ObservableObject {
 
     @Published var isSubstanceSearchFocused = false
     @Published var substanceSearchText = ""
+    @Published var isSearchingAnodyneWiki = false
     @Published var selectedCategories: [String] = []
 
     @Published var isJournalSearchFocused = false
@@ -98,6 +99,7 @@ class Navigator: ObservableObject {
             substancesTabPath.removeLast(substancesTabPath.count)
             clearCategories()
             substanceSearchText = ""
+            isSearchingAnodyneWiki = false
             isSubstanceSearchFocused = true
         }
     }

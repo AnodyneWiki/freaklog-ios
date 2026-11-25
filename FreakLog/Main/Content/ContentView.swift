@@ -90,6 +90,7 @@ struct ContentScreen: View {
                 isSearchFocused: _isSearchFocused,
                 searchText: $navigator.substanceSearchText,
                 selectedCategories: $navigator.selectedCategories,
+                isSearchingAnodyneWiki: $navigator.isSearchingAnodyneWiki,
                 clearCategories: navigator.clearCategories)
             .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused }
             .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }

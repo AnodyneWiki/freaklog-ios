@@ -2,6 +2,7 @@ import SwiftUI
 
 struct AnodyneSettingsScreen: View {
   @AppStorage(PersistenceController.isAnodyneAutoLoadEnabledKey) private var isAutoLoadEnabled = false
+  @AppStorage(PersistenceController.showsAnodyneUserNotesKey) private var showsUserNotes = true
   // Empty for the default instance
   @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @State private var draftInstanceURL = ""
@@ -24,10 +25,16 @@ struct AnodyneSettingsScreen: View {
           .tint(.accentColor)
       } footer: {
         Text(
-          "Substance pages then load AnodyneWiki's data as they open. Otherwise it is only loaded when you tap "
-            + "More from AnodyneWiki. Each load tells \(host) which substance you looked at; "
+          "Substance pages then load AnodyneWiki's data as they open. You can also load it from the Sources menu. "
+            + "Each load tells \(host) which substance you looked at; "
             + "loaded data is kept on this device for a week."
         )
+      }
+      Section {
+        Toggle("Show Public User Notes", isOn: $showsUserNotes)
+          .tint(.accentColor)
+      } footer: {
+        Text("Show and download notes from AnodyneWiki userpages. This setting applies to notes on substance pages.")
       }
       Section {
         TextField(AnodyneSubstance.defaultBaseURL.absoluteString, text: $draftInstanceURL)

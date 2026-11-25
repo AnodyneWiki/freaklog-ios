@@ -23,7 +23,7 @@ struct SubstanceScreen: View {
     let anodyne = anodyneModel.substance
     List {
       overviewSection(anodyne: anodyne)
-      AnodyneLoadSection(model: anodyneModel)
+      AnodyneLoadStatus(model: anodyneModel)
       EffectsSection(summary: substance.effectsSummary, anodyne: anodyne)
       if let anodyne {
         AnodyneReportsSection(anodyne: anodyne, userNotes: anodyneModel.userNotes)
@@ -81,7 +81,7 @@ struct SubstanceScreen: View {
     }
     .toolbar {
       ToolbarItem(placement: .topBarTrailing) {
-        NavigationLink("Article", value: GlobalNavigationDestination.webView(articleURL: substance.url))
+        AnodyneSourcesMenu(model: anodyneModel, psychonautWikiURL: substance.url)
       }
       ToolbarItem(placement: .topBarTrailing) {
         Button {
