@@ -22,15 +22,124 @@ final class StatsSelectionTests: XCTestCase {
         for metric in ["days", "amounts"] {
             var olderPin = original
             olderPin["metric"] = metric
+            var legacySelection = try XCTUnwrap(olderPin["selection"] as? [String: Any])
+            legacySelection.removeValue(forKey: "substances")
+            legacySelection.removeValue(forKey: "tags")
+            legacySelection["substance"] = "Sample"
+            legacySelection["tag"] = "Daily"
+            olderPin["selection"] = legacySelection
             let data = try JSONSerialization.data(withJSONObject: [olderPin])
             let migrated = try XCTUnwrap(StatsPreferences.decode(data).first)
             XCTAssertEqual(migrated.id, pin.id)
             XCTAssertEqual(migrated.name, pin.name)
             XCTAssertEqual(migrated.metric, .ingestions)
             XCTAssertEqual(migrated.selection.period, selection.period)
-            XCTAssertEqual(migrated.selection.substance, selection.substance)
+            XCTAssertEqual(migrated.selection.substances, selection.substances)
+            XCTAssertEqual(migrated.selection.tags, ["Daily"])
             XCTAssertEqual(migrated.selection.route, selection.route)
         }
+    }
+
+    func testPinnedBucketSurvivesRollingPeriodAdvancingAndFiltersNarrowIt() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let yesterday = now.addingTimeInterval(-86_400)
+        let experience = Experience.create(at: yesterday, in: context)
+        let first = makeIngestion(in: experience, at: yesterday, context: context)
+        let second = makeIngestion(in: experience, at: yesterday, context: context)
+        second.substanceName = "Example"
+        let today = makeIngestion(in: experience, at: now, context: context)
+        let entries = [first, second, today]
+        let selection = StatsSelection(period: .last7Days)
+        let records = StatsRecords(entries: entries, selection: selection, now: now, calendar: calendar)
+        let bucket = try XCTUnwrap(records.buckets(for: .ingestions).first)
+        let focused = records.selecting(bucket, for: .ingestions)
+        let pinned = selection.focused(on: focused.range, metric: .ingestions, within: records.range)
+        let restoredPin = try JSONDecoder().decode(StatsSelection.self, from: JSONEncoder().encode(pinned))
+        let later = now.addingTimeInterval(14 * 86_400)
+        let reopened = StatsRecords(entries: entries, selection: restoredPin, now: later, calendar: calendar)
+        let narrowed = StatsRecords(entries: entries, selection: pinned.forSubstance("Sample"), now: later, calendar: calendar)
+
+        XCTAssertEqual(reopened.entries, [first, second])
+        XCTAssertEqual(narrowed.entries, [first])
+    }
+
+    func testMultiSelectAndGoalsUseOnlyConfirmedMatchingRecords() {
+        let context = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: now, in: context)
+        let first = makeIngestion(in: experience, at: now, context: context)
+        first.dose = 2
+        let second = makeIngestion(in: experience, at: now, context: context)
+        second.substanceName = "Second"
+        let excludedTag = makeIngestion(in: experience, at: now, context: context)
+        excludedTag.substanceName = "Third"
+        let unconfirmed = makeIngestion(in: experience, at: now, context: context)
+        unconfirmed.dose = 50
+        unconfirmed.isUnconfirmed = true
+        let unknownAmount = makeIngestion(in: experience, at: now, context: context)
+        let otherUnit = makeIngestion(in: experience, at: now, context: context)
+        otherUnit.dose = 4
+        otherUnit.units = "mL"
+        let entries = [first, second, excludedTag, unconfirmed, unknownAmount, otherUnit]
+
+        var selection = StatsSelection(period: .last7Days)
+        selection.substances = ["Sample", "Second", "Third"]
+        selection.tags = ["a", "b"]
+        let tags = [
+            "Sample": PersonalSubstanceTags(["A"]),
+            "Second": PersonalSubstanceTags(["B"]),
+            "Third": PersonalSubstanceTags(["C"])
+        ]
+        let records = StatsRecords(entries: entries, selection: selection, now: now, calendar: calendar, tags: tags)
+        XCTAssertEqual(records.entries, [first, second, unknownAmount, otherUnit])
+
+        let goal = StatsGoal(substance: "Sample", metric: .amount, target: 10, unit: "mg")
+        let progress = goal.progress(in: entries, endingAt: now, calendar: calendar)
+        XCTAssertEqual(progress.value, 2)
+        XCTAssertEqual(progress.entries, [first])
+        XCTAssertEqual(progress.unknown, [unknownAmount])
+        XCTAssertEqual(progress.otherUnits, [otherUnit])
+    }
+
+    func testExperienceDrillDownKeepsTheOriginalCohortAfterChangingSubstance() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let day = calendar.startOfDay(for: now)
+        let yesterday = day.addingTimeInterval(-86_400)
+        let start = day.addingTimeInterval(600)
+        let earlierExperience = Experience.create(at: yesterday, in: context)
+        let earlierAnchor = makeIngestion(in: earlierExperience, at: yesterday, context: context)
+        let earlierFollowup = makeIngestion(in: earlierExperience, at: start, context: context)
+        earlierFollowup.substanceName = "Example"
+        let selectedExperience = Experience.create(at: start, in: context)
+        let selectedAnchor = makeIngestion(in: selectedExperience, at: start, context: context)
+        let selectedFollowup = makeIngestion(in: selectedExperience, at: start, context: context)
+        selectedFollowup.substanceName = "Example"
+        let entries = [earlierAnchor, earlierFollowup, selectedAnchor, selectedFollowup]
+        let selection = StatsSelection(period: .last7Days)
+        let records = StatsRecords(entries: entries, selection: selection, now: now, calendar: calendar)
+        let bucket = try XCTUnwrap(records.buckets(for: .experiences).last)
+        let focused = records.selecting(bucket, for: .experiences)
+        let drillDown = selection.focused(on: focused.range, metric: .experiences, within: records.range).forSubstance("Example")
+        let shown = StatsRecords(entries: entries, selection: drillDown, now: now, calendar: calendar)
+        XCTAssertEqual(shown.entries, [selectedFollowup])
+    }
+
+    func testAlongsideRequiresTheSameExperienceAndConsumer() {
+        let context = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: now, in: context)
+        let anchor = makeIngestion(in: experience, at: now, context: context)
+        let alongside = makeIngestion(in: experience, at: now, context: context)
+        alongside.substanceName = "Alongside"
+        let someoneElse = makeIngestion(in: experience, at: now, context: context)
+        someoneElse.substanceName = "Different Consumer"
+        someoneElse.consumerName = "Someone else"
+        let another = makeIngestion(in: Experience.create(at: now, in: context), at: now, context: context)
+        another.substanceName = "Another Experience"
+        var selection = StatsSelection(period: .allTime, person: .everyone)
+        selection.alongside = "Sample"
+        let records = StatsRecords(
+            entries: [anchor, alongside, someoneElse, another], selection: selection, now: now, calendar: calendar
+        )
+        XCTAssertEqual(records.entries, [alongside])
     }
 
     func testExperienceBucketsCountEachExperienceOnceAndKeepMatchingEntries() throws {

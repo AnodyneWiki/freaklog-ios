@@ -52,6 +52,7 @@ struct JournalBackup: Codable {
     StatsPreferences.customStartKey,
     StatsPreferences.customEndKey,
     StatsPreferences.pinnedViewsKey,
+    StatsPreferences.goalsKey,
     PersistenceController.sendWebhooksEnabledKey,
     PersistenceController.webhookUsernameKey,
     PersistenceController.webhookTemplateKey,

@@ -141,34 +141,16 @@ extension PersistenceController {
 
 struct SubstanceHistoryScreen: View {
     let substanceName: String
-    @FetchRequest private var ingestions: FetchedResults<Ingestion>
+    let selection: StatsSelection
 
-    init(substanceName: String) {
+    init(substanceName: String, selection: StatsSelection = StatsSelection(period: .allTime, person: .everyone)) {
         self.substanceName = substanceName
-        _ingestions = FetchRequest(fetchRequest: PersistenceController.historyIngestionsRequest(for: substanceName))
+        self.selection = selection.forSubstance(substanceName)
     }
 
     var body: some View {
-        List {
-            if ingestions.isEmpty {
-                Text("No journal entries yet").foregroundStyle(.secondary)
-            } else {
-                ForEach(ingestions) { ingestion in
-                    JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.month().day().year().hour().minute())
-                }
-            }
-        }
-        .navigationTitle(PersistenceController.shared.displayName(for: substanceName))
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                NavigationLink {
-                    JournalCalendarScreen(substanceName: substanceName)
-                } label: {
-                    Label("Calendar", systemImage: "calendar")
-                }
-            }
-        }
+        StatsDetailScreen(metric: .ingestions, selection: selection, historySubstance: substanceName)
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 
