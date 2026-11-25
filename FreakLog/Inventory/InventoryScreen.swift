@@ -343,6 +343,7 @@ private struct StockContainerEditor: View {
                     }
                     if productID == nil {
                         TextField("Product Name (Optional)", text: $productName)
+                        PackageLabelDraftButton { productName = $0 }
                         TextField("Counting Unit", text: $unit)
                     } else {
                         LabeledContent("Counting Unit", value: chosenUnit)

@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */; };
 		1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
 		FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */; };
@@ -498,6 +499,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageLabelDraftButton.swift; path = "../Inventory/PackageLabelDraftButton.swift"; sourceTree = "<group>"; };
 		6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryScreen.swift; path = "../Inventory/InventoryScreen.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
 		C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelectionTests.swift; sourceTree = "<group>"; };
@@ -1772,6 +1774,7 @@
 				0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */,
 				45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */,
 				6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */,
+				7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */,
 				F34E1B0857C8764C9DFAEA88 /* Inventory.swift */,
 				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
 				0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */,
@@ -2479,6 +2482,7 @@
 				0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */,
 				1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */,
 				1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */,
+				EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */,
 				85348E582B036476DE61B10B /* Inventory.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,
 				0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */,
