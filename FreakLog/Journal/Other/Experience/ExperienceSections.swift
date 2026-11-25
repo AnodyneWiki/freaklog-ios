@@ -70,7 +70,7 @@ struct SubstanceInfoSections<InfoFooter: View>: View {
         if !interactions.isEmpty {
             Section("Interactions") {
                 ForEach(interactions) { interaction in
-                    NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: substancesUsed)) {
+                    NavigationLink(value: GlobalNavigationDestination.interactionPair(interaction)) {
                         InteractionPairRow(
                             aName: interaction.aName,
                             bName: interaction.bName,
@@ -92,10 +92,10 @@ struct SubstanceInfoSections<InfoFooter: View>: View {
                         Label("Safer Hallucinogens", systemImage: "cross")
                     }
                 }
-                if interactions.isEmpty {
-                    NavigationLink(value: GlobalNavigationDestination.allInteractions(substancesToCheck: substancesUsed)) {
-                        Label("See Interactions", systemImage: "exclamationmark.triangle")
-                    }
+                NavigationLink(value: GlobalNavigationDestination.allInteractions(
+                    substancesToCheck: substancesUsed, detected: interactions
+                )) {
+                    Label("Browse Interactions", systemImage: "exclamationmark.triangle")
                 }
                 infoFooter()
             }
