@@ -89,20 +89,28 @@ final class AssistantToolTests: XCTestCase {
   }
 
   func testWikipediaUsesOneBoundedLookupWithSourceLinks() throws {
-    let lookup = AssistantWikipedia.requestBody(query: "Ada Lovelace", mode: .summary, language: "de")
-    XCTAssertEqual(lookup["params"]?["name"], "wikipedia_get_summary")
-    XCTAssertEqual(lookup["params"]?["arguments"], .object(["title": "Ada Lovelace", "language": "de"]))
+    let lookup = try AssistantWikipedia.requestURL(query: "Ada Lovelace", mode: .summary, language: "de", textLimit: 800)
+    XCTAssertEqual(lookup.host, "de.wikipedia.org")
+    XCTAssertEqual(lookup.path, "/w/api.php")
+    let lookupParameters = URLComponents(url: lookup, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    XCTAssertTrue(lookupParameters.contains(.init(name: "titles", value: "Ada Lovelace")))
+    XCTAssertTrue(lookupParameters.contains(.init(name: "exchars", value: "800")))
+    XCTAssertTrue(lookupParameters.contains(.init(name: "redirects", value: "1")))
+    XCTAssertThrowsError(try AssistantWikipedia.requestURL(query: "Earth|Moon", mode: .summary, language: "en", textLimit: 800))
 
-    let search = AssistantWikipedia.requestBody(query: "Lovelace", mode: .search, language: "en")
-    XCTAssertEqual(search["params"]?["name"], "wikipedia_search_articles")
-    XCTAssertEqual(search["params"]?["arguments"]?["limit"], .number(3))
+    let search = try AssistantWikipedia.requestURL(query: "C++", mode: .search, language: "en", textLimit: 800)
+    let searchParameters = URLComponents(url: search, resolvingAgainstBaseURL: false)?.queryItems ?? []
+    XCTAssertTrue(searchParameters.contains(.init(name: "generator", value: "search")))
+    XCTAssertTrue(searchParameters.contains(.init(name: "gsrlimit", value: "3")))
+    XCTAssertTrue(searchParameters.contains(.init(name: "exchars", value: "240")))
+    XCTAssertTrue(search.absoluteString.contains("C%2B%2B"))
+
     let reply: JSONValue = .object([
-      "result": .object([
-        "structuredContent": .object([
+      "query": .object([
+        "pages": .array([.object([
           "title": "Ada Lovelace",
           "extract": "English mathematician and writer.",
-          "page_type": "standard",
-        ]),
+        ])]),
       ]),
     ])
     let summary = try AssistantWikipedia.result(from: reply, mode: .summary, language: "de", textLimit: 10)
@@ -110,6 +118,22 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(summary["url"], "https://de.wikipedia.org/wiki/Ada_Lovelace")
     XCTAssertEqual(summary["page_type"], "standard")
     XCTAssertThrowsError(try AssistantWikipedia.result(from: .object([:]), mode: .search, language: "en", textLimit: 10))
+  }
+
+  func testWikipediaPreservesSearchRankAndHandlesMissingPages() throws {
+    let data = try XCTUnwrap(JSONValue(jsonText: """
+      {"query":{"pages":[
+        {"index":2,"title":"Mercury (disambiguation)","pageprops":{"disambiguation":""}},
+        {"index":1,"title":"Mercury (planet)","extract":"The first planet."},
+        {"index":3,"title":"Missing","missing":true}
+      ]}}
+      """))
+    let search = try AssistantWikipedia.result(from: data, mode: .search, language: "en", textLimit: 800)
+    XCTAssertEqual(search["results"]?.array?.map { $0["title"] }, ["Mercury (planet)", "Mercury (disambiguation)"])
+    XCTAssertEqual(search["results"]?.array?.last?["page_type"], "disambiguation")
+    let empty = try AssistantWikipedia.result(
+      from: .object(["batchcomplete": .bool(true)]), mode: .search, language: "en", textLimit: 800)
+    XCTAssertEqual(empty["results"], .array([]))
   }
 
   func testWebSearchSendsOnlyTheQueryAndPreservesSourceLinks() throws {

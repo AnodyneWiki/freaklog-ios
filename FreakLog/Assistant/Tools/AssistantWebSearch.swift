@@ -32,8 +32,14 @@ enum AssistantWebSearch {
       throw AssistantError("Use a nonempty web search query of up to 600 characters.")
     }
 
-    let reply = try await AssistantHTTP.mcpToolReply(from: endpoint, request: requestBody(query: query))
-    return try result(from: reply, textLimit: textLimit)
+    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query))
+    for try await event in events {
+      let reply = try AssistantHTTP.json(of: event)
+      if reply["id"]?.number == 1 {
+        return try result(from: reply, textLimit: textLimit)
+      }
+    }
+    throw AssistantError("The web search ended without a result.")
   }
 
   static func markdown(from result: JSONValue) -> String {
@@ -50,7 +56,15 @@ enum AssistantWebSearch {
   }
 
   static func requestBody(query: String) -> JSONValue {
-    AssistantHTTP.mcpToolRequest("web_search_exa", arguments: ["query": .string(query), "numResults": .number(3)])
+    .object([
+      "jsonrpc": "2.0",
+      "id": .number(1),
+      "method": "tools/call",
+      "params": .object([
+        "name": "web_search_exa",
+        "arguments": .object(["query": .string(query), "numResults": .number(3)]),
+      ]),
+    ])
   }
 
   @MainActor

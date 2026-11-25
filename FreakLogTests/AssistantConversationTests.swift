@@ -81,7 +81,8 @@ final class AssistantConversationTests: XCTestCase {
     let searchable = AssistantToolbox(
       context: toolbox.context, includesAnodyneWiki: false, includesWebAccess: true)
     let enabled = AssistantInstructions.text(for: nil, toolbox: searchable)
-    XCTAssertTrue(enabled.contains("This chat has web access through search_web"))
+    XCTAssertTrue(enabled.contains("Prefer lookup_wikipedia for established public facts"))
+    XCTAssertTrue(enabled.contains("Use search_web for current information"))
     XCTAssertTrue(enabled.contains("ask what they want you to look up"))
   }
 

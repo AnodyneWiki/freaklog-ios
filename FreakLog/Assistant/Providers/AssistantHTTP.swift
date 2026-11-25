@@ -170,25 +170,6 @@ enum AssistantHTTP {
     return json
   }
 
-  // Both hosted MCP servers accept a single tool call over Streamable HTTP.
-  static func mcpToolRequest(_ name: String, arguments: [String: JSONValue]) -> JSONValue {
-    .object([
-      "jsonrpc": "2.0",
-      "id": .number(1),
-      "method": "tools/call",
-      "params": .object(["name": .string(name), "arguments": .object(arguments)]),
-    ])
-  }
-
-  static func mcpToolReply(from url: URL, request: JSONValue) async throws -> JSONValue {
-    for try await event in events(from: url, headers: [:], body: request) {
-      let reply = try json(of: event)
-      // Servers can send notifications before the response to this request.
-      if reply["id"]?.number == 1 { return reply }
-    }
-    throw AssistantError("The lookup ended without a result.")
-  }
-
   // The message of an error object, which all providers put under `error.message`
   static func errorMessage(in json: JSONValue?) -> String? {
     guard let error = json?["error"] else { return nil }
