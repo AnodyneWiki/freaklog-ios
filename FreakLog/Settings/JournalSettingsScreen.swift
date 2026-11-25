@@ -68,8 +68,14 @@ struct JournalSettingsScreen: View {
                 }
             }
             .tint(.accentColor)
+
+            Section {
+                NavigationLink(value: GlobalNavigationDestination.editColors) {
+                    Label("Substance Colors", systemImage: "paintpalette")
+                }
+            }
         }
-        .navigationTitle("Journal Settings")
+        .navigationTitle("Journal & Timeline")
     }
 }
 

@@ -18,41 +18,22 @@ struct SettingsScreen: View {
 
 struct SettingsContent: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
-    @AppStorage(PersistenceController.hasToUnlockAppKey) var hasToUnlockApp: Bool = false
-    @AppStorage(PersistenceController.lockTimeOptionKey) var lockTimeOption: LockTimeOption = .after5Minutes
-    // PersistenceController reads this with bool(forKey:), so unset means off
-    @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
     @ObservedObject var viewModel: SettingsScreen.ViewModel
-    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     var body: some View {
         List {
-            Section(
-                header: Text("Privacy"),
-                footer: Text("Turn on to sync your data across your devices.")
-            ) {
-                if isFaceIDAvailable {
-                    Toggle("Require App Unlock", isOn: $hasToUnlockApp.animation()).tint(Color.accentColor)
-                } else {
-                    Text("Enable Face ID for Journal in settings to lock the app.")
+            Section {
+                NavigationLink {
+                    JournalDataSettings(viewModel: viewModel)
+                } label: {
+                    Label("Journal Data", systemImage: "externaldrive")
                 }
-                if hasToUnlockApp {
-                    Picker("Time option", selection: $lockTimeOption) {
-                        ForEach(LockTimeOption.allCases) { option in
-                            Text(option.text)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
+                NavigationLink {
+                    PrivacyLockSettings(isFaceIDAvailable: isFaceIDAvailable)
+                } label: {
+                    Label("Privacy & Lock", systemImage: "lock.shield")
                 }
-                Toggle("iCloud Sync", isOn: Binding(get: { isICloudSyncEnabled }, set: { enabled in
-                    do {
-                        try PersistenceController.shared.updateCloudKitSyncStatus(enabled)
-                    } catch {
-                        toastViewModel.showErrorToast(message: "Couldn't Change iCloud Sync")
-                    }
-                })).tint(Color.accentColor)
             }
             if UIApplication.shared.supportsAlternateIcons || isEyeOpen {
                 Section("Appearance") {
@@ -62,27 +43,17 @@ struct SettingsContent: View {
                         }
                     }
                     if isEyeOpen {
-                        NavigationLink(value: GlobalNavigationDestination.journalSettings) {
-                            Label("Journal", systemImage: "list.dash.header.rectangle")
-                        }
-                        NavigationLink(value: GlobalNavigationDestination.editColors) {
-                            Label("Edit Substance Colors", systemImage: "paintpalette")
-                        }
                         NavigationLink(value: GlobalNavigationDestination.tabSettings) {
                             Label("Customize Tabs", systemImage: "rectangle.stack")
                         }
                     }
                 }
             }
-            Section {
-                NavigationLink {
-                    JournalDataSettings(viewModel: viewModel)
-                } label: {
-                    Label("Journal Data", systemImage: "externaldrive")
-                }
-            }
             if isEyeOpen {
-                Section("Logging") {
+                Section("Journal") {
+                    NavigationLink(value: GlobalNavigationDestination.journalSettings) {
+                        Label("Journal & Timeline", systemImage: "list.dash.header.rectangle")
+                    }
                     NavigationLink {
                         RoutinesScreen()
                     } label: {
@@ -116,6 +87,16 @@ struct SettingsContent: View {
                 } label: {
                     Label("Help", systemImage: "questionmark.circle")
                 }
+                NavigationLink {
+                    WhatsNewScreen(isEyeOpen: isEyeOpen)
+                } label: {
+                    LabeledContent {
+                        Text(getCurrentAppVersion())
+                            .foregroundStyle(.secondary)
+                    } label: {
+                        Label("What’s New", systemImage: "sparkles")
+                    }
+                }
             }
             if isEyeOpen {
                 Section("Communication") {
@@ -128,14 +109,6 @@ struct SettingsContent: View {
                     Link(destination: URL(string: issuesUrl)!) {
                         Label("Report an issue", systemImage: "bubble.left.and.exclamationmark.bubble.right")
                     }
-                }
-            }
-            Section {
-                HStack {
-                    Text("Version")
-                    Spacer()
-                    Text(getCurrentAppVersion())
-                        .foregroundColor(.secondary)
                 }
             }
             eye
@@ -167,20 +140,54 @@ struct SettingsContent: View {
     }
 }
 
+private struct PrivacyLockSettings: View {
+    let isFaceIDAvailable: Bool
+    @AppStorage(PersistenceController.hasToUnlockAppKey) private var requiresUnlock = false
+    @AppStorage(PersistenceController.lockTimeOptionKey) private var lockTimeOption: LockTimeOption = .after5Minutes
+
+    var body: some View {
+        List {
+            Section {
+                if isFaceIDAvailable {
+                    Toggle("Require App Unlock", isOn: $requiresUnlock.animation())
+                        .tint(.accentColor)
+                    if requiresUnlock {
+                        Picker("Lock After", selection: $lockTimeOption) {
+                            ForEach(LockTimeOption.allCases) { option in
+                                Text(option.text).tag(option)
+                            }
+                        }
+                    }
+                } else {
+                    Text("Set up device authentication in Settings to lock FreakLog.")
+                }
+            }
+        }
+        .navigationTitle("Privacy & Lock")
+    }
+}
+
 private struct JournalHelpScreen: View {
     let isEyeOpen: Bool
 
     var body: some View {
         List {
             Section("Privacy") {
-                Text("Your journal is stored on this device by default. You can turn on iCloud Sync in Settings.")
+                Text("Your journal is stored on this device by default. You can turn on iCloud Sync in Journal Data.")
             }
             Section("Backups") {
-                Text("Open Journal Data in Settings to export a backup or restore from a file.")
+                Text("Use Journal Data to export a backup or restore from a file.")
             }
             if isEyeOpen {
-                NavigationLink(value: GlobalNavigationDestination.faq) {
-                    Label("Frequently Asked Questions", systemImage: "questionmark.circle")
+                Section {
+                    NavigationLink {
+                        SaferScreen()
+                    } label: {
+                        Label("Safer Use", systemImage: "heart.text.clipboard")
+                    }
+                    NavigationLink(value: GlobalNavigationDestination.faq) {
+                        Label("Frequently Asked Questions", systemImage: "questionmark.circle")
+                    }
                 }
             }
         }
@@ -188,13 +195,60 @@ private struct JournalHelpScreen: View {
     }
 }
 
+private struct WhatsNewScreen: View {
+    let isEyeOpen: Bool
+
+    var body: some View {
+        List {
+            Section("Version \(getCurrentAppVersion())") {
+                releaseNote("Backup Review", description: "Review a backup’s contents before restoring it.")
+                if UIApplication.shared.supportsAlternateIcons {
+                    releaseNote("App Icon", description: "Choose an alternate icon in Appearance.")
+                }
+                if isEyeOpen {
+                    releaseNote("Markdown Reports", description: "Edit your experience report before sharing it.")
+                }
+            }
+        }
+        .navigationTitle("What’s New")
+    }
+
+    private func releaseNote(_ title: LocalizedStringKey, description: LocalizedStringKey) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.headline)
+            Text(description)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 private struct JournalDataSettings: View {
     @ObservedObject var viewModel: SettingsScreen.ViewModel
     @State private var isChoosingFile = false
     @State private var isConfirmingDeletion = false
+    // PersistenceController reads this with bool(forKey:), so unset means off.
+    @AppStorage(PersistenceController.isICloudSyncEnabledKey) private var isICloudSyncEnabled = false
+    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     var body: some View {
         List {
+            Section {
+                Toggle("iCloud Sync", isOn: Binding(get: { isICloudSyncEnabled }, set: { enabled in
+                    do {
+                        try PersistenceController.shared.updateCloudKitSyncStatus(enabled)
+                    } catch {
+                        toastViewModel.showErrorToast(message: "Couldn't Change iCloud Sync")
+                    }
+                }))
+                .tint(.accentColor)
+            } header: {
+                Text("Sync")
+            } footer: {
+                Text("Sync your journal across devices using iCloud.")
+            }
             Section("Restore") {
                 if let error = viewModel.importError, viewModel.importReview == nil {
                     Label(error, systemImage: "exclamationmark.circle")
