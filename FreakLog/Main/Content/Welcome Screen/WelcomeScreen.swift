@@ -3,60 +3,85 @@ import SwiftUI
 struct WelcomeScreen: View {
     @Binding var isShowingWelcome: Bool
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var imageName: String {
         isEyeOpen ? "Eye Open" : "Eye Closed"
     }
 
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 0) {
             ScrollView {
-                Image(decorative: imageName)
-                    .resizable()
-                    .aspectRatio(contentMode: .fit)
-                    .frame(width: 130, height: 130, alignment: .center)
-                    .padding(.leading, 10)
-                    .onTapGesture(count: 3, perform: toggleEye)
-                VStack(spacing: 20) {
-                    (Text("Welcome to ") + Text(appName).foregroundColor(.accentColor))
-                        .multilineTextAlignment(.center)
-                        .font(.largeTitle.bold())
+                VStack(spacing: 30) {
+                    VStack(spacing: 14) {
+                        Image(decorative: imageName)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 96, height: 96)
+                            .padding(.leading, 10)
+                            .onTapGesture(count: 3, perform: toggleEye)
+                        Text("Welcome to \(appName)")
+                            .font(.largeTitle.bold())
+                            .multilineTextAlignment(.center)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    VStack(alignment: .leading, spacing: 22) {
+                        ForEach(features) { feature in
+                            HStack(alignment: .top, spacing: 13) {
+                                Image(systemName: feature.image)
+                                    .font(.title2)
+                                    .foregroundStyle(Color.accentColor)
+                                    .frame(minWidth: 34)
+                                    .padding(.top, 2)
+                                    .accessibilityHidden(true)
 
-                    ForEach(features) { feature in
-                        HStack {
-                            Image(systemName: feature.image)
-                                .frame(width: 44)
-                                .font(.title)
-                                .foregroundColor(.accentColor)
-                                .accessibilityHidden(true)
-
-                            VStack(alignment: .leading) {
-                                Text(feature.title)
-                                    .font(.headline)
-
-                                Text(feature.description)
-                                    .foregroundColor(.secondary)
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(feature.title)
+                                        .font(.headline)
+                                    Text(feature.description)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .accessibilityElement(children: .combine)
                             }
-                            .accessibilityElement(children: .combine)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if dynamicTypeSize.isAccessibilitySize {
+                        acknowledgement
                     }
                 }
+                .frame(maxWidth: 480)
+                .padding(.horizontal, 24)
+                .padding(.top, 32)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity)
             }
-            Text("Your data is kept locally on your device at all times")
+            if !dynamicTypeSize.isAccessibilitySize {
+                acknowledgement
+                    .frame(maxWidth: 480)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    private var acknowledgement: some View {
+        VStack(spacing: 12) {
+            Text("Your journal is stored on this device by default.")
                 .font(.footnote)
-                .foregroundColor(.secondary)
-            Button(action: {
-                isShowingWelcome.toggle()
-            }, label: {
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Button {
+                isShowingWelcome = false
+            } label: {
                 Text("I Agree")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
-            })
+            }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
         }
-        .padding()
     }
 
     private func toggleEye() {
