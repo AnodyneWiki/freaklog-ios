@@ -159,8 +159,9 @@ extension SettingsScreen {
         var isPreparingImport: Bool { preparingImportFor != nil }
         weak var toastViewModel: ToastViewModel?
 
-        func exportData(forAndroid: Bool = false) async throws -> PreparedExport {
-            try await export(contentType: .json, suffix: "") { context in
+        func exportData(forAndroid: Bool = false, pwJournalVersion: PWJournalTransferVersion? = nil) async throws -> PreparedExport {
+            let suffix = pwJournalVersion.map { " for \($0.name)" } ?? ""
+            return try await export(contentType: .json, suffix: suffix) { context in
                 let journal = try JournalFile(
                     experiences: context.fetch(PersistenceController.experiencesRequest(prefetchingIngestions: true)),
                     customSubstances: context.fetch(PersistenceController.customSubstancesRequest()),
@@ -170,6 +171,10 @@ extension SettingsScreen {
                     formulations: context.fetch(PersistenceController.formulationsRequest()))
                 if forAndroid {
                     let data = try journal.androidTransferData()
+                    return (data, JournalCounts(try JournalFile.read(data)))
+                }
+                if let pwJournalVersion {
+                    let data = try journal.pwJournalTransferData(pwJournalVersion)
                     return (data, JournalCounts(try JournalFile.read(data)))
                 }
                 return (try JSONEncoder().encode(journal), JournalCounts(journal))

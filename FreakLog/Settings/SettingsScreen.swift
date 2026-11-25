@@ -586,6 +586,7 @@ struct JournalExportReview: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let isBackup: Bool
     var isAndroidTransfer = false
+    var pwJournalVersion: PWJournalTransferVersion? = nil
     @State private var preparation = UUID()
     @State private var prepared: SettingsScreen.PreparedExport?
     @State private var exportError: String?
@@ -598,6 +599,7 @@ struct JournalExportReview: View {
     @AppStorage(SettingsScreen.ViewModel.lastBackupDateKey) private var lastBackupTime = 0.0
 
     private var formatName: String {
+        if let pwJournalVersion { return pwJournalVersion.name }
         if isAndroidTransfer { return "Android Transfer" }
         return isBackup ? "FreakLog Backup" : "Journal JSON"
     }
@@ -665,6 +667,13 @@ struct JournalExportReview: View {
                 if isAndroidTransfer {
                     Text("Experience locations")
                     Text("Custom substances and custom units")
+                } else if let pwJournalVersion {
+                    Text("Experience locations and custom units")
+                    if pwJournalVersion == .current {
+                        Text("Unconfirmed entries and timeline visibility")
+                    } else {
+                        Text("Custom substance names, units and descriptions")
+                    }
                 } else {
                     Text("Locations saved on experiences and individual ingestions")
                     Text("Custom substances, units, formulations and overrides")
@@ -691,6 +700,15 @@ struct JournalExportReview: View {
                     if isAndroidTransfer {
                         Text("Unconfirmed entries, individual ingestion locations and timeline visibility")
                         Text("Formulation definitions and links, custom route overrides and advanced substance profiles")
+                    } else if let pwJournalVersion {
+                        Text("Individual ingestion locations and administration sites")
+                        Text("Formulations, route overrides and exact custom colors")
+                        if pwJournalVersion == .current {
+                            Text("Standalone custom substance definitions and confirmation groups")
+                            Text("Default routes on custom units")
+                        } else {
+                            Text("Unconfirmed entries")
+                        }
                     }
                 }
             }
@@ -711,7 +729,8 @@ struct JournalExportReview: View {
         .task(id: preparation) {
             guard prepared == nil else { return }
             do {
-                let export = try await (isBackup ? viewModel.exportBackup() : viewModel.exportData(forAndroid: isAndroidTransfer))
+                let export = try await (isBackup ? viewModel.exportBackup() : viewModel.exportData(
+                    forAndroid: isAndroidTransfer, pwJournalVersion: pwJournalVersion))
                 if !Task.isCancelled { prepared = export }
             } catch {
                 if !Task.isCancelled {
@@ -769,7 +788,7 @@ struct JournalExportReview: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(formatName).font(.headline)
-                Text(isAndroidTransfer ? "For FreakLog Android 11.36" : isBackup ? "Restore in FreakLog" : "Portable journal data")
+                Text(formatSubtitle)
                     .foregroundStyle(.secondary)
                 if let prepared {
                     Text(prepared.file.data.count.formatted(.byteCount(style: .file)))
@@ -780,6 +799,12 @@ struct JournalExportReview: View {
         }
         .padding(.vertical, 4)
         .accessibilityElement(children: .combine)
+    }
+
+    private var formatSubtitle: String {
+        if pwJournalVersion != nil { return "Journal transfer JSON" }
+        if isAndroidTransfer { return "For FreakLog Android 11.36" }
+        return isBackup ? "Restore in FreakLog" : "Portable journal data"
     }
 }
 

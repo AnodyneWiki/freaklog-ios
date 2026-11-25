@@ -71,6 +71,93 @@ final class JournalFileTests: XCTestCase {
         XCTAssertTrue(exported.experiences.first?.ingestions.isEmpty == true)
     }
 
+    func testPW18AndLegacyTransferShapesPreserveSupportedRecords() throws {
+        let fixture = #"""
+          {
+            "experiences":[{
+              "title":"Example","text":"Journal entry","creationDate":1700000000000,"isFavorite":true,
+              "location":{"name":"Library","latitude":0},
+              "ingestions":[
+                {"substanceName":"Caffeine","time":1700000000000,"administrationRoute":"ORAL",
+                 "dose":2,"units":"cup","isDoseAnEstimate":true,"estimatedDoseStandardDeviation":0.5,
+                 "customUnitId":7,"location":{"name":"Cafe"},"administrationSite":"Other",
+                 "stomachFullness":"quarterFull","isHiddenInTimeline":true},
+                {"substanceName":"Caffeine","time":1700000001000,"administrationRoute":"ORAL",
+                 "isDoseAnEstimate":false,"isUnconfirmed":true,
+                 "confirmationBatchID":"328CF5D7-8AE2-4B7A-9172-E6E0148EBC66"}
+              ],
+              "timedNotes":[{"creationDate":1700000000000,"time":1700000000000,
+                "note":"A note","isPartOfTimeline":true,"color":"BLUE","colorHex":"#123456"}],
+              "ratings":[{"option":"twoPlus","isHiddenInTimeline":true}]
+            }],
+            "customSubstances":[{"name":"Local substance","units":"mg","description":"A description"}],
+            "substanceCompanions":[{"substanceName":"Caffeine","color":"BLUE","isHiddenInTimeline":true}],
+            "customUnits":[{"id":7,"name":"Example cup","substanceName":"Caffeine","creationDate":1700000000000,
+                "administrationRoute":"ORAL","dose":20,"isEstimate":false,"isArchived":false,
+                "unit":"cup","unitPlural":"cups","originalUnit":"mg","note":"A note"}]
+          }
+          """#
+        let source = try JournalFile.read(Data(fixture.utf8))
+
+        // Key sets come from Journal 18.0's Codable metadata and the 11.11 source at 61e91e04.
+        let modernData = try source.pwJournalTransferData(.current)
+        let modern = try JSONDecoder().decode([String: JSONValue].self, from: modernData)
+        XCTAssertEqual(Set(modern.keys), ["exportSource", "tags", "experiences", "substanceCompanions", "customUnits"])
+        XCTAssertEqual(modern["exportSource"], .string("iOS Journal 18.0"))
+        let modernUnit = try XCTUnwrap(modern["customUnits"]?.array?.first?.object)
+        XCTAssertNil(modernUnit["substanceName"])
+        XCTAssertEqual(modernUnit["doseComponents"]?.array?.first?["substanceUnit"], .string("mg"))
+        let modernExperience = try XCTUnwrap(modern["experiences"]?.array?.first?.object)
+        let modernIngestions = try XCTUnwrap(modernExperience["ingestions"]?.array)
+        XCTAssertEqual(modernExperience["location"]?["name"], .string("Library"))
+        XCTAssertNil(modernIngestions[0]["location"])
+        XCTAssertNil(modernIngestions[0]["administrationSite"])
+        XCTAssertEqual(modernIngestions[0]["stomachFullness"], .string("QUARTERFULL"))
+        XCTAssertEqual(modernIngestions[1]["isUnconfirmed"], .bool(true))
+        XCTAssertNil(modernIngestions[1]["confirmationBatchID"])
+        let modernRoundTrip = try JournalFile.read(modernData)
+        XCTAssertEqual(modernRoundTrip.customUnits.first?.originalUnit, "mg")
+        XCTAssertEqual(modernRoundTrip.customUnits.first?.dose, 20)
+        XCTAssertEqual(modernRoundTrip.experiences.first?.ingestions.first?.dose, 2)
+        XCTAssertEqual(modernRoundTrip.experiences.first?.ratings.first?.creationDate, source.experiences.first?.creationDate)
+        XCTAssertEqual(modernRoundTrip.experiences.first?.ratings.first?.isHiddenInTimeline, true)
+        XCTAssertEqual(modernRoundTrip.experiences.first?.ingestions.first?.customUnitId, modernRoundTrip.customUnits.first?.id)
+
+        let legacyData = try source.pwJournalTransferData(.legacy)
+        let legacy = try JSONDecoder().decode([String: JSONValue].self, from: legacyData)
+        XCTAssertEqual(Set(legacy.keys), ["experiences", "substanceCompanions", "customSubstances", "customUnits"])
+        XCTAssertEqual(legacy["customUnits"]?.array?.first?["id"], .number(7))
+        XCTAssertEqual(legacy["customSubstances"]?.array?.first?["name"], .string("Local substance"))
+        let legacyRoundTrip = try JournalFile.read(legacyData)
+        XCTAssertEqual(legacyRoundTrip.experiences.first?.ingestions.count, 1)
+        XCTAssertNil(legacyRoundTrip.experiences.first?.ingestions.first?.location)
+        XCTAssertEqual(legacyRoundTrip.experiences.first?.location?.name, "Library")
+        XCTAssertEqual(legacyRoundTrip.experiences.first?.ingestions.first?.estimatedDoseStandardDeviation, 0.5)
+    }
+
+    func testPW11ExportRejectsDatesItsDecoderCannotRead() throws {
+        let data = Data(#"{"experiences":[{"title":"Before 1970","text":"","creationDate":-1000}]}"#.utf8)
+        let source = try JournalFile.read(data)
+        XCTAssertThrowsError(try source.pwJournalTransferData(.legacy))
+        XCTAssertNoThrow(try source.pwJournalTransferData(.current))
+    }
+
+    func testPW18ImportUsesOnlyRouteProfileForUnusedUnit() throws {
+        let fixture = #"""
+          {"exportSource":"iOS Journal 18.0","experiences":[],"customUnits":[{
+            "id":7,"name":"Example","unit":"patch","roaInfos":[
+              {"id":7,"creationDate":1700000000000,"administrationRoute":"TRANSDERMAL",
+               "doseInfo":{"lightMin":1,"commonMin":2,"strongMin":4,"heavyMin":6}}
+            ],
+            "doseComponents":[{"substanceName":"Example substance","substanceUnit":"mg","dose":2}]
+          }]}
+          """#
+        let journal = try JournalFile.read(Data(fixture.utf8))
+        XCTAssertEqual(journal.customUnits.first?.administrationRoute, .transdermal)
+        let legacy = try JournalFile.read(journal.pwJournalTransferData(.legacy))
+        XCTAssertEqual(legacy.customUnits.first?.administrationRoute, .transdermal)
+    }
+
     func testAndroidEncryptedTransferAuthenticatesIndependentFixture() throws {
         // Generated with Java's SecretKeyFactory and Cipher using Android's v1 parameters.
         let fixture = try XCTUnwrap(Data(base64Encoded:

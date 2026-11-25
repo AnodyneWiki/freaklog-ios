@@ -25,7 +25,22 @@ struct JournalTransferCompatibilityScreen: View {
                 }
             }
             Section("PW Journal 18.0") {
-                Text("Restore Journal accepts supported PW Journal 18 exports. Journal uses experience locations. Export to PW Journal requires verification with the destination app.")
+                NavigationLink {
+                    JournalExportReview(viewModel: viewModel, isBackup: false, pwJournalVersion: .current)
+                } label: {
+                    Label("Review Journal 18.0 Transfer", systemImage: "doc.text")
+                }
+            }
+            Section {
+                NavigationLink {
+                    JournalExportReview(viewModel: viewModel, isBackup: false, pwJournalVersion: .legacy)
+                } label: {
+                    Label("Review Journal 11.11 Transfer", systemImage: "doc.text")
+                }
+            } header: {
+                Text("PW Journal 11.11")
+            } footer: {
+                Text("Use the legacy file with Journal 11.11. For recent versions of Journal, choose the 18.0 transfer.")
             }
             Section("PsyLog") {
                 Text("Export to PsyLog requires verification with the destination app.")

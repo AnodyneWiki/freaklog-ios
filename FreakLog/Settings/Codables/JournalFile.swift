@@ -249,6 +249,13 @@ struct JournalFile: FileDocument, Codable {
         return try encoder.encode(AndroidJournalTransfer.exported(fields))
     }
 
+    func pwJournalTransferData(_ version: PWJournalTransferVersion) throws -> Data {
+        let fields = try JSONDecoder().decode([String: JSONValue].self, from: JSONEncoder().encode(self))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(PWJournalTransfer.exported(fields, version: version))
+    }
+
     private static func supportsModernJournalSource(_ source: String) -> Bool {
         if source == "iOS Journal" || source == "Android Journal" { return true }
         // Recent iOS exports can append an app version to the source marker.
@@ -278,6 +285,146 @@ struct JournalFile: FileDocument, Codable {
             throw JournalFileError.noJournalData
         }
         try validateReferences()
+    }
+}
+
+enum PWJournalTransferVersion: Equatable, Sendable {
+    case current
+    case legacy
+
+    var name: String {
+        switch self {
+        case .current: "PW Journal 18.0"
+        case .legacy: "PW Journal 11.11"
+        }
+    }
+}
+
+private enum PWJournalTransfer {
+    typealias Fields = [String: JSONValue]
+
+    private enum ExportError: LocalizedError {
+        case dateBeforeUnixEpoch
+
+        var errorDescription: String? {
+            "PW Journal 11.11 only supports dates from 1970 onward. Choose another export format to keep these dates."
+        }
+    }
+
+    // PW Journal 18 coding keys follow the Swift metadata in the 18.0 build.
+    // The 11.11 decoder is available in this repository's upstream history.
+    static func exported(_ source: Fields, version: PWJournalTransferVersion) throws -> Fields {
+        let companions = rows(source["substanceCompanions"]).map { original in
+            var companion = original
+            companion.removeValue(forKey: "colorHex")
+            if version == .current {
+                companion["tags"] = .array([])
+                companion["isHiddenInTimeline"] = companion["isHiddenInTimeline"] ?? .bool(false)
+            }
+            return JSONValue.object(companion)
+        }
+        let experiences = try rows(source["experiences"]).map { original in
+            var experience = original
+            experience["ingestions"] = .array(try rows(experience["ingestions"]).compactMap { ingestion in
+                try exportedIngestion(ingestion, version: version)
+            })
+            experience["timedNotes"] = .array(try rows(experience["timedNotes"]).map { original in
+                var note = original
+                note.removeValue(forKey: "colorHex")
+                if version == .legacy { try validateLegacyDates(note, keys: ["time", "creationDate"]) }
+                return .object(note)
+            })
+            experience["ratings"] = .array(try rows(experience["ratings"]).map { original in
+                var rating = original
+                if rating["creationDate"] == nil || rating["creationDate"] == .null {
+                    rating["creationDate"] = rating["time"]?.number.map(JSONValue.number) ?? experience["creationDate"]
+                }
+                if version == .legacy { try validateLegacyDates(rating, keys: ["time", "creationDate"]) }
+                return .object(rating)
+            })
+            if version == .legacy { try validateLegacyDates(experience, keys: ["creationDate", "sortDate"]) }
+            return JSONValue.object(experience)
+        }
+        let units = rows(source["customUnits"])
+        var result: Fields = [
+            "experiences": .array(experiences),
+            "substanceCompanions": .array(companions)
+        ]
+        switch version {
+        case .current:
+            result["exportSource"] = .string("iOS Journal 18.0")
+            result["tags"] = .array([])
+            let pairs = companions.compactMap { companion -> (String, JSONValue)? in
+                guard let name = companion["substanceName"]?.string, let color = companion["color"] else { return nil }
+                return (name, color)
+            }
+            let colors = Dictionary(pairs, uniquingKeysWith: { first, _ in first })
+            result["customUnits"] = .array(units.map { modernUnit($0, colors: colors) })
+        case .legacy:
+            for unit in units { try validateLegacyDates(unit, keys: ["creationDate"]) }
+            result["customUnits"] = .array(units.map(JSONValue.object))
+            result["customSubstances"] = .array(rows(source["customSubstances"]).map { original in
+                var substance = original
+                substance.removeValue(forKey: "roas")
+                return .object(substance)
+            })
+        }
+        return result
+    }
+
+    private static func exportedIngestion(_ source: Fields, version: PWJournalTransferVersion) throws -> JSONValue? {
+        var row = source
+        for key in ["administrationSite", "location", "formulationId", "formulationName", "formulationAmount", "confirmationBatchID"] {
+            row.removeValue(forKey: key)
+        }
+        if let fullness = row["stomachFullness"]?.string {
+            let normalized = fullness.uppercased().filter(\.isLetter)
+            row["stomachFullness"] = ["EMPTY", "QUARTERFULL", "HALFFULL", "FULL", "VERYFULL"].contains(normalized)
+                ? .string(normalized) : .null
+        }
+        if version == .current {
+            row["isHiddenInTimeline"] = row["isHiddenInTimeline"] ?? .bool(false)
+            row["isUnconfirmed"] = row["isUnconfirmed"] ?? .bool(false)
+        } else {
+            guard row.removeValue(forKey: "isUnconfirmed")?.bool != true else { return nil }
+            try validateLegacyDates(row, keys: ["time", "endTime", "creationDate"])
+        }
+        return .object(row)
+    }
+
+    private static func modernUnit(_ unit: Fields, colors: [String: JSONValue]) -> JSONValue {
+        let name = unit["substanceName"]?.string ?? ""
+        let component: Fields = [
+            "id": unit["id"] ?? .number(0),
+            "creationDate": unit["creationDate"] ?? .number(0),
+            "dose": unit["dose"] ?? .null,
+            "estimatedDoseStandardDeviation": unit["estimatedDoseStandardDeviation"] ?? .null,
+            "isEstimate": unit["isEstimate"] ?? .bool(false),
+            "notes": .null,
+            "substanceName": .string(name),
+            "substanceUnit": unit["originalUnit"] ?? .string(""),
+            "customUnitId": .null,
+            "isHiddenInTimeline": .bool(false)
+        ]
+        var result = unit.filter { ["id", "name", "creationDate", "isArchived", "unit", "unitPlural", "note"].contains($0.key) }
+        result["color"] = colors[name] ?? .string(SubstanceColor.fallback.exportValue)
+        result["areTimelinesOfSubcomponentsShown"] = .bool(true)
+        result["areTolerancesOfSubcomponentsShown"] = .bool(true)
+        result["roaInfos"] = .array([])
+        result["doseComponents"] = .array([.object(component)])
+        result["tags"] = .array([])
+        result["isHiddenInTimeline"] = .bool(false)
+        return .object(result)
+    }
+
+    private static func rows(_ value: JSONValue?) -> [Fields] {
+        value?.array?.compactMap(\.object) ?? []
+    }
+
+    private static func validateLegacyDates(_ fields: Fields, keys: [String]) throws {
+        if keys.contains(where: { (fields[$0]?.number ?? 0) < 0 }) {
+            throw ExportError.dateBeforeUnixEpoch
+        }
     }
 }
 
@@ -525,7 +672,11 @@ private struct Version12Journal {
             }
             let ingredients = try resolve(id)
             let route = try Self.route(definition["administrationRoute"])
-            let defaultRoute = route ?? observedRoutes[id] ?? .oral
+            let profileRoutes = Set((definition["roaInfos"]?.array ?? []).compactMap { profile in
+                profile["administrationRoute"]?.string.flatMap { AdministrationRoute(rawValue: $0.lowercased()) }
+            })
+            let onlyProfileRoute = profileRoutes.count == 1 ? profileRoutes.first : nil
+            let defaultRoute = route ?? observedRoutes[id] ?? onlyProfileRoute ?? .oral
             let unit = definition["unit"]?.string ?? ""
             let note = definition["note"]?.string ?? ""
             let created = definition["creationDate"]?.number.flatMap(Int64.init(exactly:))
@@ -538,7 +689,8 @@ private struct Version12Journal {
                     estimatedDoseStandardDeviation: ingredient.quantity.deviation, isEstimate: ingredient.quantity.isEstimate,
                     isArchived: definition["isArchived"]?.bool ?? false, unit: unit, unitPlural: definition["unitPlural"]?.string,
                     originalUnit: ingredient.units, note: note))
-                targets[id] = .unit(id: localId, name: ingredient.name, units: unit, route: ingredient.route ?? route)
+                targets[id] = .unit(
+                    id: localId, name: ingredient.name, units: unit, route: ingredient.route ?? route ?? onlyProfileRoute)
                 if let color = definition["color"]?.string, companionNames.insert(ingredient.name).inserted {
                     companions.append(["substanceName": .string(ingredient.name), "color": .string(color)])
                 }
@@ -553,7 +705,7 @@ private struct Version12Journal {
                     name: name, note: note, creationDate: created,
                     components: ingredients.map { $0.formulationComponent(defaultRoute: defaultRoute) }, id: localId)
                 formulations.append(try JSONValue(encoding: formulation))
-                targets[id] = .formulation(id: localId, name: name, ingredients: ingredients, route: route)
+                targets[id] = .formulation(id: localId, name: name, ingredients: ingredients, route: route ?? onlyProfileRoute)
             }
         }
 
@@ -594,7 +746,8 @@ private struct Version12Journal {
                 guard let substance = component["substanceName"]?.string, !substance.isEmpty else {
                     throw ImportError.invalid("A component of \(name) is missing its substance name.")
                 }
-                let units = component["units"]?.string ?? component["unit"]?.string ?? component["originalUnit"]?.string ?? ""
+                let units = component["substanceUnit"]?.string ?? component["units"]?.string
+                    ?? component["unit"]?.string ?? component["originalUnit"]?.string ?? ""
                 ingredients.append(try Ingredient(name: substance, fields: component, units: units))
             }
         }
