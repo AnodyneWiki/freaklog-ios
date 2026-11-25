@@ -29,7 +29,8 @@ struct EditCustomUnitsScreen: View {
             estimatedDoseStandardDeviation: $estimatedDoseStandardDeviation,
             isArchived: $isArchived,
             delete: delete,
-            ingestionCount: customUnit.ingestionsUnwrapped.count
+            ingestionCount: customUnit.ingestionsUnwrapped.count,
+            savedUnit: customUnit
         )
         .onAppear {
             name = customUnit.nameUnwrapped
@@ -95,6 +96,7 @@ struct EditCustomUnitsScreenContent: View {
     @Binding var isArchived: Bool
     let delete: () -> Void
     let ingestionCount: Int
+    var savedUnit: CustomUnit?
 
     @State private var isDeleteShown = false
 
@@ -169,6 +171,12 @@ struct EditCustomUnitsScreenContent: View {
                 Toggle("Archive", isOn: $isArchived).tint(.accentColor)
             } footer: {
                 Text("Archived custom units don't show up when adding ingestions")
+            }
+
+            if let savedUnit {
+                Section {
+                    JournalPresetShareLink(product: .customUnit(savedUnit), title: "Share Saved Preset")
+                }
             }
 
             Section {

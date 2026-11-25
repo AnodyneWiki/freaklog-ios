@@ -1,4 +1,5 @@
 import CoreData
+import CoreTransferable
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -121,7 +122,8 @@ struct JournalPreset: Codable, Identifiable {
         return name
     }
 
-    func importInto(_ context: NSManagedObjectContext, as name: String, keepLocalDefinitions: Bool) throws {
+    @discardableResult
+    func importInto(_ context: NSManagedObjectContext, as name: String, keepLocalDefinitions: Bool) throws -> NSManagedObjectID {
         try PersistenceController.withJournalStoreWrite {
             let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !name.isEmpty, !((try existingNames(in: context)).contains(Self.comparisonKey(name))) else {
@@ -137,6 +139,7 @@ struct JournalPreset: Codable, Identifiable {
                 for substance in substances where newNames.contains(substance.name) {
                     _ = substance.insert(into: context)
                 }
+                let inserted: NSManagedObject
                 if let unit {
                     let units = try context.fetch(CustomUnit.fetchRequest())
                     let reserved = Set(units.map(\.idForAndroid))
@@ -145,14 +148,19 @@ struct JournalPreset: Codable, Identifiable {
                         guard id < .max else { throw ImportError.invalid }
                         id += 1
                     }
-                    let inserted = unit.insert(into: context)
-                    inserted.name = name
-                    inserted.idForAndroid = id
+                    let customUnit = unit.insert(into: context)
+                    customUnit.name = name
+                    customUnit.idForAndroid = id
+                    customUnit.isArchived = false
+                    inserted = customUnit
                 } else if var formulation {
                     formulation.name = name
-                    _ = formulation.insert(into: context)
+                    inserted = formulation.insert(into: context)
+                } else {
+                    throw ImportError.invalid
                 }
                 try context.save()
+                return inserted.objectID
             } catch {
                 context.rollback()
                 throw error
@@ -202,6 +210,82 @@ struct JournalPreset: Codable, Identifiable {
     }
 }
 
+enum JournalPresetProduct {
+    case customUnit(CustomUnit)
+    case formulation(Formulation)
+
+    var name: String {
+        switch self {
+        case .customUnit(let unit): unit.nameUnwrapped
+        case .formulation(let formulation): formulation.nameUnwrapped
+        }
+    }
+
+    func preset(in context: NSManagedObjectContext) throws -> JournalPreset {
+        switch self {
+        case .customUnit(let unit): try JournalPreset(unit: unit, in: context)
+        case .formulation(let formulation): try JournalPreset(formulation: formulation, in: context)
+        }
+    }
+}
+
+struct JournalPresetShareLink: View {
+    @Environment(\.managedObjectContext) private var context
+    let product: JournalPresetProduct
+    var title: LocalizedStringKey = "Share Preset"
+
+    var body: some View {
+        if let file = try? product.preset(in: context).exportFile() {
+            ShareLink(item: ShareablePreset(data: file.data), preview: SharePreview(product.name)) {
+                Label(title, systemImage: "square.and.arrow.up")
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+        }
+    }
+
+    private struct ShareablePreset: Transferable {
+        let data: Data
+
+        static var transferRepresentation: some TransferRepresentation {
+            DataRepresentation(exportedContentType: .json) { preset in
+                preset.data
+            }
+            .suggestedFileName("FreakLog Preset")
+        }
+    }
+}
+
+struct JournalPresetImporter: ViewModifier {
+    @Binding var isPresented: Bool
+    var onImported: (NSManagedObjectID) -> Void = { _ in }
+
+    @State private var importPreset: JournalPreset?
+    @State private var error: String?
+
+    func body(content: Content) -> some View {
+        content
+            .fileImporter(isPresented: $isPresented, allowedContentTypes: [.json]) { result in
+                do {
+                    importPreset = try JournalPreset.read(result.get())
+                } catch {
+                    self.error = error.localizedDescription
+                }
+            }
+            .sheet(item: $importPreset) { preset in
+                JournalPresetImportReview(preset: preset, onImported: onImported)
+            }
+            .alert("Couldn’t Open Preset", isPresented: Binding(
+                get: { error != nil },
+                set: { if !$0 { error = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(error ?? "")
+            }
+    }
+}
+
 struct JournalPresetTransferScreen: View {
     @Environment(\.managedObjectContext) private var context
     @FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest())
@@ -211,7 +295,6 @@ struct JournalPresetTransferScreen: View {
 
     @State private var isImporting = false
     @State private var isExporting = false
-    @State private var importPreset: JournalPreset?
     @State private var document: ExportedFile?
     @State private var error: String?
 
@@ -245,21 +328,12 @@ struct JournalPresetTransferScreen: View {
         }
         .navigationTitle("Share Presets")
         .navigationBarTitleDisplayMode(.inline)
-        .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
-            do {
-                importPreset = try JournalPreset.read(result.get())
-            } catch {
-                self.error = error.localizedDescription
-            }
-        }
+        .modifier(JournalPresetImporter(isPresented: $isImporting))
         .fileExporter(
             isPresented: $isExporting, document: document,
             contentType: .json, defaultFilename: document?.filename
         ) { result in
             if case .failure(let failure) = result { error = failure.localizedDescription }
-        }
-        .sheet(item: $importPreset) { preset in
-            JournalPresetImportReview(preset: preset)
         }
     }
 
@@ -286,6 +360,7 @@ private struct JournalPresetImportReview: View {
     @State private var error: String?
 
     let preset: JournalPreset
+    let onImported: (NSManagedObjectID) -> Void
 
     var body: some View {
         NavigationStack {
@@ -296,6 +371,34 @@ private struct JournalPresetImportReview: View {
                     TextField("Import As", text: $name)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                }
+                if let components = preset.formulation?.components {
+                    Section("Contents") {
+                        ForEach(components) { component in
+                            LabeledContent {
+                                Text(component.doseDescription()).monospacedDigit()
+                            } label: {
+                                Text(component.substanceName)
+                                Text(component.administrationRoute.rawValue.localizedCapitalized)
+                            }
+                        }
+                    }
+                } else if let unit = preset.unit {
+                    Section("Contents") {
+                        LabeledContent("Substance", value: unit.substanceName)
+                        LabeledContent("Route", value: unit.administrationRoute.rawValue.localizedCapitalized)
+                        LabeledContent("Counting Unit", value: unit.unit)
+                        LabeledContent("Amount per Unit") {
+                            if let dose = unit.dose {
+                                Text(dose.doseDescription(
+                                    units: unit.originalUnit, isEstimate: unit.isEstimate,
+                                    standardDeviation: unit.estimatedDoseStandardDeviation, rounded: true
+                                ))
+                            } else {
+                                Text("Unknown")
+                            }
+                        }
+                    }
                 }
                 if !dependencies.isEmpty {
                     Section("Ingredients") {
@@ -340,8 +443,9 @@ private struct JournalPresetImportReview: View {
     private func save() {
         do {
             let context = try PersistenceController.shared.journalEditContext()
-            try preset.importInto(context, as: name, keepLocalDefinitions: keepsLocalDefinitions)
+            let productID = try preset.importInto(context, as: name, keepLocalDefinitions: keepsLocalDefinitions)
             toast.showSuccessToast(message: "Preset Imported")
+            onImported(productID)
             dismiss()
         } catch {
             self.error = error.localizedDescription

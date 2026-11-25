@@ -140,6 +140,11 @@ struct StockContainerDetail: View {
         return formulation.objectID
     }
 
+    private var presetProduct: JournalPresetProduct? {
+        if let unit = container.customUnit { return .customUnit(unit) }
+        return container.formulation.map(JournalPresetProduct.formulation)
+    }
+
     var body: some View {
         List {
             Section {
@@ -189,15 +194,18 @@ struct StockContainerDetail: View {
                         Label("Record Disposal", systemImage: "minus.circle")
                     }
                 }
+            }
 
-                if routineProductID != nil {
-                    Section {
+            if let presetProduct {
+                Section("Linked Product") {
+                    if !container.isArchived, routineProductID != nil {
                         Button {
                             addingRoutine = true
                         } label: {
                             Label("Add Routine", systemImage: "calendar.badge.plus")
                         }
                     }
+                    JournalPresetShareLink(product: presetProduct)
                 }
             }
 
@@ -351,6 +359,7 @@ private struct StockContainerEditor: View {
 
     let container: StockContainer?
     @State private var productID: NSManagedObjectID?
+    @State private var importingPreset = false
     @State private var productDraft: ProductDraft?
     @State private var productEditor: ProductEditor?
     @State private var name: String
@@ -425,6 +434,13 @@ private struct StockContainerEditor: View {
                                 createProductButton(.formulation)
                             } label: {
                                 Label("Create Product", systemImage: "plus.circle")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .contentShape(Rectangle())
+                            }
+                            Button {
+                                importingPreset = true
+                            } label: {
+                                Label("Import Preset", systemImage: "arrow.down.doc")
                             }
                         }
                     }
@@ -496,6 +512,9 @@ private struct StockContainerEditor: View {
                 EditFormulationScreen(draft: draft) { productDraft = .formulation($0) }
             }
         }
+        .modifier(JournalPresetImporter(isPresented: $importingPreset) { importedProductID in
+            productID = importedProductID
+        })
     }
 
     private func createProductButton(_ editor: ProductEditor) -> some View {

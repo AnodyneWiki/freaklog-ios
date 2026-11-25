@@ -197,7 +197,7 @@ final class JournalFileTests: XCTestCase {
         let unit = CustomUnitCodable(
             id: 4, substanceName: ingredient.nameUnwrapped, name: "Example product",
             creationDate: .now, administrationRoute: .oral, dose: 1, estimatedDoseStandardDeviation: nil,
-            isEstimate: false, isArchived: false, unit: "unit", unitPlural: nil, originalUnit: "mg", note: ""
+            isEstimate: false, isArchived: true, unit: "unit", unitPlural: nil, originalUnit: "mg", note: ""
         )
         let preset = try JournalPreset(unit: unit.insert(into: original.viewContext), in: original.viewContext)
         let data = try preset.exportFile().data
@@ -211,7 +211,10 @@ final class JournalFileTests: XCTestCase {
         let importContext = try destination.journalEditContext()
         XCTAssertEqual(try restored.availableName(in: importContext), "Example product (Copy)")
         XCTAssertThrowsError(try restored.importInto(importContext, as: "example product", keepLocalDefinitions: false))
-        try restored.importInto(importContext, as: "Example product (Copy)", keepLocalDefinitions: false)
+        let productID = try restored.importInto(importContext, as: "Example product (Copy)", keepLocalDefinitions: false)
+        let product = try XCTUnwrap(try destination.viewContext.existingObject(with: productID) as? CustomUnit)
+        XCTAssertEqual(product.nameUnwrapped, "Example product (Copy)")
+        XCTAssertFalse(product.isArchived)
         let products = try importContext.fetch(CustomUnit.fetchRequest())
         XCTAssertEqual(Set(products.map(\.nameUnwrapped)), ["Example product", "Example product (Copy)"])
         XCTAssertEqual(Set(products.map(\.idForAndroid)).count, 2)

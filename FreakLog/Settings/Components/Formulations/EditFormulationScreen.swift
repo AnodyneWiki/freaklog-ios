@@ -126,6 +126,9 @@ struct EditFormulationScreen: View {
       }
       if let formulation {
         Section {
+          JournalPresetShareLink(product: .formulation(formulation), title: "Share Saved Preset")
+        }
+        Section {
           Button(role: .destructive) {
             isShowingDeleteConfirmation = true
           } label: {
