@@ -148,21 +148,8 @@ enum AssistantHTTP {
   }
 
   static func getJSON(from url: URL, headers: [String: String]) async throws -> JSONValue {
-    try await requestJSON(from: url, headers: headers)
-  }
-
-  static func postJSON(to url: URL, headers: [String: String], body: JSONValue) async throws -> JSONValue {
-    try await requestJSON(from: url, headers: headers, body: body)
-  }
-
-  private static func requestJSON(from url: URL, headers: [String: String], body: JSONValue? = nil) async throws -> JSONValue {
     var request = URLRequest(url: url)
     request.setValue("application/json", forHTTPHeaderField: "Accept")
-    if let body {
-      request.httpMethod = "POST"
-      request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      request.httpBody = try JSONEncoder().encode(body)
-    }
     for (field, value) in headers {
       request.setValue(value, forHTTPHeaderField: field)
     }

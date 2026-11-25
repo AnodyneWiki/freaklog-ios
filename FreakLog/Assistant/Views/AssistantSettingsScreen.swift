@@ -48,13 +48,6 @@ struct AssistantSettingsScreen: View {
       }
       Section {
         Toggle("Web Access", isOn: $isWebAccessEnabled)
-        if isWebAccessEnabled, let selected = profiles.first(where: { $0.id == activeProfile.wrappedValue }),
-           AssistantWebSearch(profile: selected, apiKey: "") == nil
-        {
-          Label("Unavailable with \(selected.name)", systemImage: "info.circle")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-        }
         Toggle("Look Up Substances on AnodyneWiki", isOn: $isAnodyneWikiEnabled)
         if isAnodyneWikiEnabled {
           NavigationLink(value: GlobalNavigationDestination.anodyneSettings) {
@@ -64,6 +57,9 @@ struct AssistantSettingsScreen: View {
       } header: {
         Text("Online Lookups")
       } footer: {
+        if isWebAccessEnabled {
+          Text("Web searches send the query to Exa.")
+        }
         Text(
           "Lets the assistant read dose tiers, interactions and warnings on AnodyneWiki when the app's data isn't enough. Only the titles of AnodyneWiki's own pages are requested, never the names of your custom substances.")
       }

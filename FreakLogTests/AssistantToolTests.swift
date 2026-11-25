@@ -77,60 +77,36 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(schema["properties"]?["names"]?["items"]?["type"], "string")
   }
 
-  func testWebSearchToolIsOptInAndChecksProvider() throws {
+  func testWebSearchToolIsOptInAndIndependentOfModelProvider() {
     let context = PersistenceController(inMemory: true).viewContext
-    let search = try XCTUnwrap(AssistantWebSearch(profile: AssistantProfile(preset: .openAI), apiKey: "fixture"))
     let defaultTools = AssistantToolbox(context: context, includesAnodyneWiki: false)
     let enabledTools = AssistantToolbox(
-      context: context, includesAnodyneWiki: false, webSearch: search.tool(textLimit: 800) { "test-model" })
+      context: context, includesAnodyneWiki: false, webSearch: AssistantWebSearch.tool(textLimit: 800))
     XCTAssertFalse(defaultTools.specs.contains { $0.name == "search_web" })
     XCTAssertTrue(enabledTools.specs.contains { $0.name == "search_web" })
-    XCTAssertNil(AssistantWebSearch(profile: AssistantProfile(preset: .gemini), apiKey: "fixture"))
-    XCTAssertNil(AssistantWebSearch(profile: AssistantProfile(preset: .onDevice), apiKey: ""))
-    var customServer = AssistantProfile(preset: .openAI)
-    customServer.baseURL = "https://api.openai.com.example.org/v1"
-    XCTAssertNil(AssistantWebSearch(profile: customServer, apiKey: "fixture"))
   }
 
-  func testWebSearchUsesEachProvidersBuiltInTool() throws {
-    for (preset, path, type) in [
-      (AssistantPreset.openAI, "/v1/responses", "web_search"),
-      (.anthropic, "/v1/messages", "web_search_20250305"),
-      (.openRouter, "/api/v1/chat/completions", "openrouter:web_search"),
-    ] {
-      let search = try XCTUnwrap(AssistantWebSearch(profile: AssistantProfile(preset: preset), apiKey: "fixture"))
-      let body = search.requestBody(query: "current weather in Berlin", model: "test-model")
-      XCTAssertEqual(search.url.path, path)
-      XCTAssertEqual(body["model"], "test-model")
-      XCTAssertEqual(body["tools"]?.array?.first?["type"], .string(type))
-      XCTAssertTrue(body.jsonText.contains("current weather in Berlin"))
-      XCTAssertFalse(body.jsonText.contains("fixture"))
-    }
-  }
+  func testWebSearchSendsOnlyTheQueryAndPreservesSourceLinks() throws {
+    let request = AssistantWebSearch.requestBody(query: "SwiftUI toolbar")
+    XCTAssertEqual(request["method"], "tools/call")
+    XCTAssertEqual(request["params"]?["name"], "web_search_exa")
+    XCTAssertEqual(request["params"]?["arguments"], .object(["query": "SwiftUI toolbar", "numResults": .number(3)]))
 
-  func testWebSearchPreservesProviderCitations() throws {
-    let examples: [(AssistantPreset, String)] = [
-      (.openAI, """
-      {"output":[{"type":"message","content":[{"type":"output_text","text":"Result","annotations":[
-        {"url":"https://example.com/article","title":"An Article"}, {"url":"freaklog://example.com","title":"Invalid"}
-      ]}]}]}
-      """),
-      (.anthropic, """
-      {"content":[{"type":"text","text":"Result","citations":[{"url":"https://example.com/article","title":"An Article"}]}]}
-      """),
-      (.openRouter, """
-      {"choices":[{"message":{"content":"Result","annotations":[
-        {"type":"url_citation","url_citation":{"url":"https://example.com/article","title":"An Article"}}
-      ]}}]}
-      """),
-    ]
-    for (preset, json) in examples {
-      let search = try XCTUnwrap(AssistantWebSearch(profile: AssistantProfile(preset: preset), apiKey: "fixture"))
-      let result = try search.result(from: XCTUnwrap(JSONValue(jsonText: json)), textLimit: 80)
-      XCTAssertEqual(result["summary"], "Result")
-      XCTAssertEqual(result["sources"], .array([.object(["url": "https://example.com/article", "title": "An Article"])]))
-      XCTAssertThrowsError(try search.result(from: .object([:]), textLimit: 80))
-    }
+    let reply: JSONValue = .object([
+      "result": .object([
+        "content": .array([.object([
+          "type": "text",
+          "text": "Title: First\nURL: https://example.com/one\nHighlights:\nFirst excerpt.\n\n---\n\nTitle: Second\nURL: https://example.com/two\nHighlights:\nSecond excerpt.",
+        ])]),
+      ]),
+    ])
+    let result = try AssistantWebSearch.result(from: reply, textLimit: 800)
+    let sources = try XCTUnwrap(result["results"]?.array?.compactMap(\.string))
+    XCTAssertEqual(sources.count, 2)
+    XCTAssertTrue(sources[0].contains("https://example.com/one"))
+    XCTAssertTrue(sources[1].contains("https://example.com/two"))
+    XCTAssertThrowsError(try AssistantWebSearch.result(
+      from: .object(["error": .object(["message": "Rate limited"])]), textLimit: 800))
   }
 
   func testArgumentsAreClamped() {
