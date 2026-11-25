@@ -180,10 +180,12 @@ struct AssistantScreen: View {
     ScrollViewReader { proxy in
       ScrollView {
         LazyVStack(alignment: .leading, spacing: 12) {
-          Text(chat.contextLabel)
-            .font(.caption)
-            .foregroundColor(.secondary)
-            .frame(maxWidth: .infinity)
+          if let contextLabel = chat.contextLabel {
+            Text(contextLabel)
+              .font(.caption)
+              .foregroundColor(.secondary)
+              .frame(maxWidth: .infinity)
+          }
           ForEach(chat.items) { item in
             switch item {
             case .message(let message):

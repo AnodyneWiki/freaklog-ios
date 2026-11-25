@@ -100,8 +100,8 @@ final class AssistantChat: ObservableObject {
   }
 
   // What the assistant knows about without looking it up
-  var contextLabel: String {
-    guard let experience else { return "About your whole journal" }
+  var contextLabel: String? {
+    guard let experience else { return nil }
     let title = experience.titleUnwrapped
     return title.isEmpty ? "About this experience" : "About “\(title)”"
   }
