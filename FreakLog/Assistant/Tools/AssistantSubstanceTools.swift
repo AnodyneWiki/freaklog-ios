@@ -156,8 +156,10 @@ extension AssistantToolbox {
     let limit = limits.maxTextCharacters
     return Self.success([
       "name": .string(persistence.displayName(for: name)),
-      "source": "PsychonautWiki data bundled with the app, with the user's own dose and duration changes",
-      "url": .string(substance.url.absoluteString),
+      "source": .string(substance.usesWikiReferences
+        ? "PsychonautWiki data bundled with the app, with the user's own dose and duration changes"
+        : substance.referenceSource.title + " identity record"),
+      "url": substance.url.map { .string($0.absoluteString) } ?? .null,
       "common_names": AssistantFormat.strings(Array(substance.commonNames.prefix(10))),
       "categories": AssistantFormat.strings(persistence.categories(for: name)),
       "summary": AssistantFormat.optionalText(substance.summary, limit: limit),

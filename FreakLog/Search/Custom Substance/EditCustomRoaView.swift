@@ -291,6 +291,7 @@ struct EditCustomRoaView: View {
   private func loadAnodyneSources() async {
     anodyneSources = []
     if pendingCopy?.isDoseOnly == true { pendingCopy = nil }
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return }
     let otherNames = customSubstance == nil ? SubstanceRepo.shared.getSubstance(name: substanceName)?.commonNames ?? [] : []
     let client = AnodyneClient.shared
     let request = await client.requestContext()

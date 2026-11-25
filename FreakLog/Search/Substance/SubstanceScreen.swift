@@ -20,11 +20,13 @@ struct SubstanceScreen: View {
 
   // Each topic shows PsychonautWiki's information, completed with AnodyneWiki's once it is loaded
   var body: some View {
-    let anodyne = anodyneModel.substance
+    let anodyne = substance.usesWikiReferences ? anodyneModel.substance : nil
     List {
       overviewSection(anodyne: anodyne)
       SubstanceJournalLinks(substanceName: substance.name)
-      AnodyneLoadStatus(model: anodyneModel)
+      if substance.usesWikiReferences {
+        AnodyneLoadStatus(model: anodyneModel)
+      }
       EffectsSection(summary: substance.effectsSummary, anodyne: anodyne)
       if let anodyne {
         AnodyneReportsSection(anodyne: anodyne, userNotes: anodyneModel.userNotes)
@@ -37,7 +39,7 @@ struct SubstanceScreen: View {
         if hasDoses || hasDurations {
           SubstanceSourceComparisonLink(
             substanceName: substance.name,
-            psychonautWiki: substance,
+            psychonautWiki: substance.usesWikiReferences ? substance : nil,
             anodyne: anodyne,
             isMissingOnAnodyne: anodyneModel.phase == .notFound
           )
@@ -80,18 +82,30 @@ struct SubstanceScreen: View {
         AnodyneLegalStatusSection(anodyne: anodyne)
         AnodynePharmacologySection(anodyne: anodyne)
       }
-      SourcesSection(
-        psychonautWikiURL: substance.url,
-        anodyne: anodyne,
-        isMissingOnAnodyne: anodyneModel.phase == .notFound
-      )
+      if substance.usesWikiReferences {
+        SourcesSection(
+          psychonautWikiURL: substance.url,
+          anodyne: anodyne,
+          isMissingOnAnodyne: anodyneModel.phase == .notFound
+        )
+      } else if let url = substance.url {
+        Section("Sources") {
+          NavigationLink(value: GlobalNavigationDestination.webView(articleURL: url)) {
+            Label(substance.referenceSource.title, systemImage: "doc.text")
+          }
+        }
+      }
     }
     .task(id: instanceURL) {
-      await anodyneModel.start()
+      if substance.usesWikiReferences {
+        await anodyneModel.start()
+      }
     }
     .toolbar {
-      ToolbarItem(placement: .topBarTrailing) {
-        AnodyneSourcesMenu(model: anodyneModel, psychonautWikiURL: substance.url)
+      if substance.usesWikiReferences {
+        ToolbarItem(placement: .topBarTrailing) {
+          AnodyneSourcesMenu(model: anodyneModel, psychonautWikiURL: substance.url)
+        }
       }
       ToolbarItem(placement: .topBarTrailing) {
         Button {
@@ -136,7 +150,7 @@ struct SubstanceScreen: View {
     } header: {
       Text("Overview")
     } footer: {
-      if !substance.isApproved {
+      if substance.hasUnapprovedWikiReference {
         Text("This information hasn't been approved by PsychonautWiki's moderators.")
       }
     }
@@ -189,10 +203,12 @@ struct SubstanceCustomizeSheet: View {
         } header: {
           Text("Override Dose & Duration")
         } footer: {
-          Text(
-            "Routes open with the PsychonautWiki data filled in. "
-              + "Your changes take priority over it in the timeline and dose display."
-          )
+          if substance.usesWikiReferences {
+            Text(
+              "Routes open with the PsychonautWiki data filled in. "
+                + "Your changes take priority over it in the timeline and dose display."
+            )
+          }
         }
       }
       .navigationTitle(substance.displayName)

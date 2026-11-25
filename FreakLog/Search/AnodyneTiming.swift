@@ -33,6 +33,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   }
 
   func dose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return nil }
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded(for: configuredInstance())
@@ -40,6 +41,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   }
 
   func duration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return nil }
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded(for: configuredInstance())
@@ -53,6 +55,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
 
   // The routes with AnodyneWiki dose tiers or users' timings
   func routesWithData(for substanceName: String) -> [AdministrationRoute] {
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return [] }
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded(for: configuredInstance())
@@ -63,6 +66,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
 
   // The routes users noted timings for; a duration of action applies to any route
   func routesWithTimings(for substanceName: String) -> [AdministrationRoute] {
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return [] }
     lock.lock()
     defer { lock.unlock() }
     loadCacheIfNeeded(for: configuredInstance())

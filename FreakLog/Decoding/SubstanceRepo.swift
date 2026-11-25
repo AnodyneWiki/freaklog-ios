@@ -7,6 +7,7 @@ struct SubstanceRepo {
     let substances: [Substance]
     let categories: [Category]
     private let substancesDict: [String: Substance]
+    private let identityOnlyNames: Set<String>
 
     init() {
         let data = SubstanceRepo.getInitialData()
@@ -23,10 +24,15 @@ struct SubstanceRepo {
                 (substance.name, substance)
             }
         )
+        identityOnlyNames = Set(substances.filter { !$0.usesWikiReferences }.map { $0.name.lowercased() })
     }
 
     func getSubstance(name: String) -> Substance? {
         substancesDict[name]
+    }
+
+    func usesWikiReferences(for name: String) -> Bool {
+        !identityOnlyNames.contains(name.lowercased())
     }
 
     func getSubstances<C: Collection>(names: C) -> [Substance] where C.Element == String {

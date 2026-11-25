@@ -123,6 +123,11 @@
       "description": "Hypnotics, or soporifics, are a class of drugs which promote and induce sleep. They are the opposite of eugeroics which promote wakefulness. They are commonly distributed in the form of pharmaceutical drugs prescribed to treat insomnia.",
       "url": "https://psychonautwiki.org/wiki/Hypnotic",
       "color": 4293455940
+    },
+    {
+      "name": "hormones",
+      "description": "Hormones and related forms that can be recorded in the journal.",
+      "color": 4287921624
     }
   ],
   "substances": [
@@ -13532,6 +13537,93 @@
       ]
     },
     {
+      "name": "Estradiol",
+      "commonNames": [
+        "Oestradiol",
+        "17β-Estradiol",
+        "E2"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/4TI98Z838E",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Benzoate",
+      "commonNames": [
+        "Oestradiol benzoate",
+        "Estradiol 3-benzoate"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/1S4CJB5ZGN",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Cypionate",
+      "commonNames": [
+        "Estradiol cipionate"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/7E1DV054LO",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Enanthate",
+      "commonNames": [
+        "Estradiol enantate",
+        "Estradiol 17-heptanoate"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/PAP315WZIA",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Hemihydrate",
+      "commonNames": [],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/CXY7B3Q98Z",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Undecylate",
+      "commonNames": [
+        "Estradiol 17-undecanoate"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/H3N3A8MFJC",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
+      "name": "Estradiol Valerate",
+      "commonNames": [
+        "Oestradiol valerate",
+        "Estradiol 17-valerate"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/OKG364O896",
+      "referenceSource": "fdaSubstanceRegistry",
+      "categories": [
+        "hormones"
+      ],
+      "roas": []
+    },
+    {
       "name": "Eszopiclone",
       "commonNames": [
         "Lunesta",
@@ -23202,63 +23294,20 @@
     },
     {
       "name": "Progesterone",
-      "commonNames": [],
-      "url": "https://psychonautwiki.org/wiki/Progesterone",
-      "isApproved": false,
-      "crossTolerances": [],
-      "toxicities": [],
+      "commonNames": [
+        "Micronized progesterone"
+      ],
+      "url": "https://precision.fda.gov/uniisearch/srs/unii/4G7DS2Q64Y",
+      "referenceSource": "fdaSubstanceRegistry",
       "categories": [
-        "depressant"
+        "hormones"
       ],
       "roas": [
         {
-          "name": "oral",
-          "dose": {
-            "units": "mg",
-            "lightMin": 100,
-            "commonMin": 200,
-            "strongMin": 400,
-            "heavyMin": 600
-          },
-          "duration": {
-            "onset": {
-              "min": 30,
-              "max": 60,
-              "units": "minutes"
-            },
-            "total": {
-              "min": 2,
-              "max": 4,
-              "units": "hours"
-            },
-            "afterglow": {
-              "min": 4,
-              "max": 6,
-              "units": "hours"
-            }
-          }
+          "name": "oral"
         },
         {
-          "name": "rectal",
-          "dose": {
-            "units": "mg",
-            "lightMin": 100,
-            "commonMin": 200,
-            "strongMin": 400,
-            "heavyMin": 600
-          },
-          "duration": {
-            "total": {
-              "min": 8,
-              "max": 12,
-              "units": "hours"
-            },
-            "afterglow": {
-              "min": 6,
-              "max": 12,
-              "units": "hours"
-            }
-          }
+          "name": "rectal"
         }
       ]
     },

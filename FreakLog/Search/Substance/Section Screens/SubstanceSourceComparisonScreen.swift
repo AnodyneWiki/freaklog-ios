@@ -90,8 +90,10 @@ private struct SubstanceSourceComparisonScreen: View {
       if let wiki = psychonautWiki {
         doseRows(wiki.getDose(for: route))
         durationRows(wiki.getDuration(for: route))
-        Link(destination: wiki.url) {
-          Label("Open PsychonautWiki", systemImage: "arrow.up.right.square")
+        if let url = wiki.url {
+          Link(destination: url) {
+            Label("Open PsychonautWiki", systemImage: "arrow.up.right.square")
+          }
         }
       } else {
         Text("No PsychonautWiki entry is linked.").foregroundStyle(.secondary)

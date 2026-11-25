@@ -84,7 +84,7 @@ struct ChooseDoseScreen: View {
   private var doseSection: some View {
     Section {
       VStack(alignment: .leading) {
-        if let substance, !substance.isApproved {
+        if substance?.hasUnapprovedWikiReference == true {
           Text("Info is not approved by the moderators of the data source.")
         }
         let remark = substance?.dosageRemark ?? customSubstanceDescription
@@ -120,7 +120,11 @@ struct ChooseDoseScreen: View {
         )
       }
     } header: {
-      Text("Pure \(administrationRoute.rawValue.capitalized) Dose")
+      if substance?.usesWikiReferences == false {
+        Text("Amount")
+      } else {
+        Text("Pure \(administrationRoute.rawValue.capitalized) Dose")
+      }
     } footer: {
       if
         let units = roaDose?.units,
@@ -230,8 +234,10 @@ struct ChooseDoseScreen: View {
             }
           }
         }
-        Section("Disclaimer") {
-          Text(Self.doseDisclaimer)
+        if substance?.usesWikiReferences != false {
+          Section("Disclaimer") {
+            Text(Self.doseDisclaimer)
+          }
         }
       }
     }

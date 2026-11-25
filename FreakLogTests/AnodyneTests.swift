@@ -171,6 +171,23 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(store.routesWithData(for: "MDMA"), [.oral, .insufflated, .rectal])
     }
 
+    func testIdentityOnlyCatalogEntryDoesNotUseWikiFallbacks() throws {
+        let instance = AnodyneSubstance.defaultBaseURL
+        let store = AnodyneFallbackStore(cacheRoot: temporaryCacheRoot(), configuredInstance: { instance })
+        let substance = try XCTUnwrap(SubstanceRepo.shared.getSubstance(name: "Progesterone"))
+        XCTAssertEqual(substance.referenceSource, .fdaSubstanceRegistry)
+        XCTAssertEqual(substance.administrationRoutesUnwrapped, [.oral, .rectal])
+        XCTAssertNil(substance.getDose(for: .oral))
+        XCTAssertNil(substance.getDuration(for: .rectal))
+
+        // A stale alias from the cache must not become the route reference.
+        let cachedReference = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
+        store.record(cachedReference, lookedUpAs: "Progesterone", from: instance)
+        XCTAssertNil(store.dose(for: "Progesterone", route: .oral))
+        XCTAssertNil(store.duration(for: "progesterone", route: .oral))
+        XCTAssertTrue(store.routesWithData(for: "Progesterone").isEmpty)
+    }
+
     func testFallbackStoreMergesTimingsNotedUnderAnyAlias() throws {
         let instance = AnodyneSubstance.defaultBaseURL
         let store = AnodyneFallbackStore(cacheRoot: temporaryCacheRoot(), configuredInstance: { instance })

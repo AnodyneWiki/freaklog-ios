@@ -61,7 +61,8 @@ struct InteractionPairDetailScreen: View {
             if !sources.isEmpty {
                 Section("Sources") {
                     ForEach(sources) { source in
-                        if let url = URL(string: "#Dangerous_interactions", relativeTo: source.url)?.absoluteURL {
+                        if let article = source.url,
+                           let url = URL(string: "#Dangerous_interactions", relativeTo: article)?.absoluteURL {
                             NavigationLink(value: GlobalNavigationDestination.webViewInteractions(
                                 substanceName: source.name, articleURL: url
                             )) {
