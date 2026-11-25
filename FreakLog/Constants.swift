@@ -16,9 +16,7 @@ let namesOfLegalSubstances = [
 ]
 
 let appName = "FreakLog"
-let supportUrl = "https://psylog.net/#support"
-let communityUrl = "https://discord.gg/psylog"
+let communityUrl = "https://discord.com/invite/DKfYmNrz6Z"
 let repoUrl = "https://woof.rip/freaklog/freaklog-ios"
-let testflightUrl = "https://testflight.apple.com/join/K3fw3bDG"
 
 let minimumDistanceForDetectingDragGesture: CGFloat = 20

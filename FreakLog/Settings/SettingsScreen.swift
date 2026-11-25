@@ -170,15 +170,16 @@ struct SettingsContent: View {
                     Link(destination: URL(string: repoUrl)!) {
                         Label("Source Code", systemImage: "doc.text.magnifyingglass")
                     }
-                    Link(destination: URL(string: testflightUrl)!) {
-                        Label("Get beta updates", systemImage: "square.and.arrow.down.on.square")
-                    }
                     Link(destination: URL(string: communityUrl)!) {
-                        Label("Join the community", systemImage: "bubble.left.and.text.bubble.right")
+                        Label("Join Community or Report Issue", systemImage: "bubble.left.and.text.bubble.right")
                     }
-                    Link(destination: URL(string: supportUrl)!) {
-                        Label("Report an issue", systemImage: "bubble.left.and.exclamationmark.bubble.right")
+                    Button {} label: {
+                        Label("Get beta updates", systemImage: "square.and.arrow.down.on.square")
+                            .foregroundStyle(Color(uiColor: .secondaryLabel))
                     }
+                    .tint(Color(uiColor: .secondaryLabel))
+                    .disabled(true)
+                    .accessibilityHint("No public beta is currently available.")
                 }
             }
             Section {

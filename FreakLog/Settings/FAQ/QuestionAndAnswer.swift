@@ -16,7 +16,7 @@ struct QuestionAndAnswer: Identifiable, Hashable {
        ),
         QuestionAndAnswer(
             question: "Why is an interaction or other info on a substance present in a data source but not in the app?",
-            answer: "This is a bug - please report it by pressing 'Report an issue' in the settings tab."
+            answer: "Please report this in Discord using “Join Community or Report Issue” in Settings."
         ),
         QuestionAndAnswer(
             question: "When does the app show an interaction warning?",
