@@ -648,9 +648,29 @@ struct StockAdjustmentEditor: View {
         containers.filter { Inventory.canTransfer(from: container, to: $0) }
     }
 
+    private var destination: StockContainer? {
+        destinations.first { $0.objectID == destinationID }
+    }
+
+    private var transferAmount: Double? {
+        guard let amount = quantity.stockQuantity, amount > 0,
+              container.remaining.isFinite, amount <= container.remaining else { return nil }
+        return amount
+    }
+
     var body: some View {
         Form {
             Section {
+                if action == .transfer {
+                    LabeledContent("From") {
+                        VStack(alignment: .trailing, spacing: 3) {
+                            Text(container.displayName)
+                            Text(containerDetails(container))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
                 LabeledContent("Current Count", value: container.quantityLabel(container.remaining))
                 TextField(action == .correction ? "Physical Count" : "Quantity", text: $quantity)
                     .keyboardType(.decimalPad)
@@ -658,15 +678,35 @@ struct StockAdjustmentEditor: View {
                     Picker("To", selection: $destinationID) {
                         Text("Choose Container").tag(Optional<NSManagedObjectID>.none)
                         ForEach(destinations, id: \.objectID) { destination in
-                            Text(destination.displayName).tag(Optional(destination.objectID))
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(destination.displayName)
+                                Text("\(containerDetails(destination)) · \(destination.quantityLabel(destination.remaining))")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(Optional(destination.objectID))
                         }
                     }
+                    .pickerStyle(.navigationLink)
+                    .disabled(destinations.isEmpty)
                     if destinations.isEmpty {
                         Text("Add another container for the same product and counting unit to transfer stock.")
                             .foregroundStyle(.secondary)
                     }
                 }
                 TextField("Note (Optional)", text: $note, axis: .vertical)
+            }
+            if action == .transfer {
+                if let amount = transferAmount, let destination {
+                    Section("After Transfer") {
+                        proposedBalance(for: container, title: "From", change: -amount)
+                        proposedBalance(for: destination, title: "To", change: amount)
+                    }
+                } else if let amount = quantity.stockQuantity, amount > container.remaining {
+                    Section {
+                        Label("The amount exceeds the current count.", systemImage: "exclamationmark.circle")
+                    }
+                }
             }
             if let errorMessage {
                 Section { Label(errorMessage, systemImage: "exclamationmark.circle") }
@@ -677,10 +717,30 @@ struct StockAdjustmentEditor: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save", action: save)
-                    .disabled(quantity.isEmpty || (action == .transfer && destinationID == nil))
+                Button(action == .transfer ? "Transfer" : "Save", action: save)
+                    .disabled(quantity.isEmpty || (action == .transfer && (transferAmount == nil || destination == nil)))
             }
         }
+    }
+
+    private func proposedBalance(for item: StockContainer, title: LocalizedStringKey, change: Double) -> some View {
+        let remaining = item.remaining
+        let updated = remaining.isFinite ? NSDecimalNumber(decimal: Decimal(remaining) + Decimal(change)).doubleValue : remaining
+        return LabeledContent {
+            Text(item.quantityLabel(updated))
+                .monospacedDigit()
+        } label: {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.caption).foregroundStyle(.secondary)
+                Text(item.displayName)
+                Text(containerDetails(item)).font(.subheadline).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private func containerDetails(_ container: StockContainer) -> String {
+        guard let expiresAt = container.expiresAt else { return container.storageLabel }
+        return String(localized: "\(container.storageLabel) · Expires \(expiresAt.formatted(date: .abbreviated, time: .omitted))")
     }
 
     private func save() {
