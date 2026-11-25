@@ -190,6 +190,14 @@ struct StockContainerDetail: View {
                 }
             }
 
+            Section {
+                InventoryLabReportManagementRows(container: container)
+            } header: {
+                Text("Lab Report")
+            } footer: {
+                Text("Attach a PDF for the current stock. The report stays on this device.")
+            }
+
             Section("History") {
                 if container.stockChanges.isEmpty {
                     Text("No stock history").foregroundStyle(.secondary)

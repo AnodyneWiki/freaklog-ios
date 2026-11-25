@@ -59,22 +59,26 @@ struct InventorySourcePicker: View {
     @Binding var selection: NSManagedObjectID?
     @FetchRequest(fetchRequest: StockContainer.allRequest())
     private var containers: FetchedResults<StockContainer>
+    @State private var attachedReport: (containerID: NSManagedObjectID, report: InventoryLabReport)?
+    @State private var preview: InventoryLabReport?
 
     private var matching: [StockContainer] {
         containers.filter(use.matches)
     }
 
     var body: some View {
-        if !matching.isEmpty || selection != nil {
+        let matchingContainers = matching
+        let selected = matchingContainers.first { $0.objectID == selection }
+        if !matchingContainers.isEmpty || selection != nil {
             Section {
                 NavigationLink {
                     InventorySourceList(
-                        matching: matching,
+                        matching: matchingContainers,
                         quantity: use.quantity,
                         selection: $selection
                     )
                 } label: {
-                    if let selected = matching.first(where: { $0.objectID == selection }) {
+                    if let selected {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Draw From").font(.subheadline).foregroundStyle(.secondary)
                             InventorySupplyRow(container: selected)
@@ -83,10 +87,26 @@ struct InventorySourcePicker: View {
                         LabeledContent("Draw From", value: selection == nil ? "No Container" : "Unavailable Container")
                     }
                 }
+                .task(id: selected?.objectID) {
+                    attachedReport = nil
+                    guard let selected else { return }
+                    let id = selected.objectID
+                    let loaded = try? await InventoryLabReportStore.load(for: selected.labReportContainerID)
+                    if let loaded, !Task.isCancelled { attachedReport = (id, loaded) }
+                }
+                if let selected, let attachedReport, attachedReport.containerID == selected.objectID,
+                   attachedReport.report.stockFingerprint == selected.labReportStockFingerprint {
+                    Button {
+                        preview = attachedReport.report
+                    } label: {
+                        InventoryLabReportLabel(filename: attachedReport.report.filename)
+                    }
+                    .sheet(item: $preview) { report in InventoryLabReportPreview(report: report) }
+                }
             } header: {
                 Text("Inventory")
             } footer: {
-                if let selected = matching.first(where: { $0.objectID == selection }) {
+                if let selected {
                     if selected.needsReview {
                         Text("Check the count for this container or choose a different one.")
                     } else if use.quantity <= selected.remaining {

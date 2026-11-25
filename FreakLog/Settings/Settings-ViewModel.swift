@@ -476,13 +476,23 @@ extension SettingsScreen {
                         }
                     }
                     IngestionDeletion.didDelete(identifiers: identifiers)
+                    var failedCleanup: [String] = []
                     do {
                         try JournalRecoveryBackups.removeAll()
-                        refreshRecoveryCopies()
-                        showSuccessToast(message: "Delete Successful")
                     } catch {
-                        refreshRecoveryCopies()
-                        showErrorToast(message: "The journal was deleted, but the recovery copies couldn’t be removed.")
+                        failedCleanup.append(String(localized: "recovery copies"))
+                    }
+                    do {
+                        try InventoryLabReportStore.local.removeAll()
+                    } catch {
+                        failedCleanup.append(String(localized: "attached lab reports"))
+                    }
+                    refreshRecoveryCopies()
+                    if failedCleanup.isEmpty {
+                        showSuccessToast(message: "Delete Successful")
+                    } else {
+                        let items = failedCleanup.formatted(.list(type: .and))
+                        showErrorToast(message: String(localized: "The journal was deleted. Couldn’t remove \(items)."))
                     }
                 } catch {
                     showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Delete Failed")

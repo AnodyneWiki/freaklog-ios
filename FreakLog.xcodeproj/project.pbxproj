@@ -13,8 +13,10 @@
 		B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4945BF062A782A1202689601 /* MedicationReference.swift */; };
 		616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */; };
 		FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */; };
+		C5066131C812FDC954A3C8FA /* InventoryLabReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3E42CBC7894677615D827B /* InventoryLabReport.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
 		FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */; };
+		D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */; };
 		D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */; };
 		CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E586B999611F07C489BD07AC /* StatsDetailScreen.swift */; };
 		83E54A437A2BAD9276A5717E /* StatsSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91546F11601A54F66F47B78A /* StatsSelection.swift */; };
@@ -524,8 +526,10 @@
 		4945BF062A782A1202689601 /* MedicationReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MedicationReference.swift; path = "../Inventory/MedicationReference.swift"; sourceTree = "<group>"; };
 		5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductDetailScreen.swift; path = "../Inventory/ProductDetailScreen.swift"; sourceTree = "<group>"; };
 		E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StockLevelViews.swift; path = "../Inventory/StockLevelViews.swift"; sourceTree = "<group>"; };
+		9C3E42CBC7894677615D827B /* InventoryLabReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryLabReport.swift; path = "../Inventory/InventoryLabReport.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
 		C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelectionTests.swift; sourceTree = "<group>"; };
+		99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryLabReportTests.swift; sourceTree = "<group>"; };
 		0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineModelTests.swift; sourceTree = "<group>"; };
 		E586B999611F07C489BD07AC /* StatsDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDetailScreen.swift; sourceTree = "<group>"; };
 		91546F11601A54F66F47B78A /* StatsSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelection.swift; sourceTree = "<group>"; };
@@ -1822,6 +1826,7 @@
 				4945BF062A782A1202689601 /* MedicationReference.swift */,
 				5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */,
 				E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */,
+				9C3E42CBC7894677615D827B /* InventoryLabReport.swift */,
 				7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */,
 				F34E1B0857C8764C9DFAEA88 /* Inventory.swift */,
 				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
@@ -1857,6 +1862,7 @@
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */,
+				99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */,
 				0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
@@ -2392,6 +2398,7 @@
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */,
+				D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */,
 				D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
@@ -2560,6 +2567,7 @@
 				B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */,
 				616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */,
 				FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */,
+				C5066131C812FDC954A3C8FA /* InventoryLabReport.swift in Sources */,
 				EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */,
 				85348E582B036476DE61B10B /* Inventory.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,

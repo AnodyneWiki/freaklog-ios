@@ -219,6 +219,7 @@ private struct WhatsNewScreen: View {
 }
 
 private struct JournalDataSettings: View {
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @ObservedObject var viewModel: SettingsScreen.ViewModel
     @State private var isChoosingFile = false
     @State private var isConfirmingDeletion = false
@@ -380,7 +381,11 @@ private struct JournalDataSettings: View {
         .confirmationDialog("Delete Journal Data?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
             Button("Delete", role: .destructive, action: viewModel.deleteEverything)
         } message: {
-            Text("This will delete your journal and its on-device recovery copies.")
+            if isEyeOpen {
+                Text("This will delete your journal, attached lab reports, and on-device recovery copies.")
+            } else {
+                Text("This will delete your journal and its on-device recovery copies.")
+            }
         }
     }
 
@@ -582,6 +587,7 @@ private struct JournalCountsRows: View {
 }
 
 struct JournalExportReview: View {
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     let viewModel: SettingsScreen.ViewModel
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let isBackup: Bool
@@ -693,6 +699,9 @@ struct JournalExportReview: View {
                 if isBackup {
                     Text("Device state, including iCloud Sync and last unlock time")
                     Text("Assistant chats and API keys, cached references and retry records")
+                    if isEyeOpen {
+                        Text("Lab report PDFs attached to inventory")
+                    }
                 } else {
                     Text("App settings, webhooks and leaderboard history")
                     Text("Routines, inventory and stock history")
