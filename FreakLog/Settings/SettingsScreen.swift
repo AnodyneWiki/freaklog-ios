@@ -83,6 +83,11 @@ struct SettingsContent: View {
             }
             if isEyeOpen {
                 Section("Logging") {
+                    NavigationLink {
+                        RoutinesScreen()
+                    } label: {
+                        Label("Routines", systemImage: "calendar.badge.clock")
+                    }
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
                     }

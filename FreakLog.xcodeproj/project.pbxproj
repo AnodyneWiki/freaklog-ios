@@ -395,6 +395,8 @@
 		EAE471B626CBA664009FB0EC /* Feature.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712226CBA663009FB0EC /* Feature.swift */; };
 		EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712926CBA663009FB0EC /* ContentView.swift */; };
 		EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */; };
+		0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */; };
+		1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */; };
 		EAE471DE26CBA664009FB0EC /* Main.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715626CBA664009FB0EC /* Main.xcdatamodeld */; };
 		EAE471E126CBA664009FB0EC /* Sequence-Uniqued.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */; };
 		B036711FE910690B423658E0 /* Binding-Inverted.swift in Sources */ = {isa = PBXBuildFile; fileRef = 482A8D26F5057F423238EFB4 /* Binding-Inverted.swift */; };
@@ -847,6 +849,8 @@
 		EAE4712226CBA663009FB0EC /* Feature.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Feature.swift; sourceTree = "<group>"; };
 		EAE4712926CBA663009FB0EC /* ContentView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SettingsScreen.swift; sourceTree = "<group>"; };
+		0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutinesScreen.swift"; sourceTree = "<group>"; };
+		45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "../Routines/RoutineSchedules.swift"; sourceTree = "<group>"; };
 		EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = Goya.xcdatamodel; sourceTree = "<group>"; };
 		EAE4715926CBA664009FB0EC /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EAE4715C26CBA664009FB0EC /* Sequence-Uniqued.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "Sequence-Uniqued.swift"; sourceTree = "<group>"; };
@@ -1731,6 +1735,8 @@
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
 				EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */,
+				0C13F736F740F9F75ECF6673 /* RoutinesScreen.swift */,
+				45B63CCEAE3890AAEB060ACA /* RoutineSchedules.swift */,
 				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
 				0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */,
 				0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */,
@@ -2422,6 +2428,8 @@
 				EA60482E2A162225005C6A4B /* String-CleanSearch.swift in Sources */,
 				EAC25BFD2955F23A0002D68F /* ReagentTestingScreen.swift in Sources */,
 				EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */,
+				0B091D15F6B1A0D5F979AEDB /* RoutinesScreen.swift in Sources */,
+				1DD0A82665504B1FBC0D5A31 /* RoutineSchedules.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,
 				0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */,
 				EAF76C9027D7A5A000945587 /* AcknowledgeInteractionsView.swift in Sources */,

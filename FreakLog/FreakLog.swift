@@ -55,6 +55,9 @@ struct FreakLog: App {
         }
         .onChange(of: scenePhase) { phase in
             authenticator.onChange(of: phase)
+            if phase == .active {
+                Task { await RoutineSchedules.shared.refresh() }
+            }
         }
     }
 }
