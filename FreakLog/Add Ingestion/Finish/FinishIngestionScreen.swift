@@ -311,8 +311,8 @@ struct FinishIngestionScreen: View {
         companion: SubstanceCompanion?,
         with experience: Experience,
         location: Location?,
-        and context: NSManagedObjectContext) -> Ingestion
-    {
+        and context: NSManagedObjectContext
+    ) throws -> Ingestion {
         let ingestion = Ingestion(context: context)
         ingestion.identifier = UUID()
         ingestion.time = selectedTime

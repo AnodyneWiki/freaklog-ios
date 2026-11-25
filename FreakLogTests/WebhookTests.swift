@@ -242,6 +242,29 @@ private final class GatedTransport {
 
 @MainActor
 final class LeaderboardSyncTests: XCTestCase {
+  func testExplicitDeletionUsesPreviouslySyncedLegacyDestination() async throws {
+    let defaultsName = "LeaderboardSyncTests.\(UUID())"
+    let defaults = try XCTUnwrap(UserDefaults(suiteName: defaultsName))
+    defer { defaults.removePersistentDomain(forName: defaultsName) }
+    let persistence = PersistenceController(inMemory: true)
+    let servers = LeaderboardServerStore(defaults: defaults)
+    let server = makeServer()
+    servers.add(server)
+    servers.markSynced(id: server.id, status: "success")
+    servers.add(LeaderboardServer(host: "never-synced.example", nickname: "Never synced", startsAt: .now))
+
+    let client = TestClient()
+    let manager = LeaderboardSyncManager(
+      client: client, serverStore: servers, persistence: { persistence }, defaults: defaults, deviceID: { _ in "original" })
+    servers.delete(id: server.id)
+    let identifier = UUID()
+    await manager.notifyDeletion(identifiers: [identifier])
+
+    XCTAssertEqual(client.deletions.map(\.endpoint), [server.endpoint])
+    XCTAssertEqual(client.deletions.first?.entry.Id, "original")
+    XCTAssertEqual(client.deletions.first?.entry.Ingestion.Id, identifier.leaderboardId)
+  }
+
   func testDeletionRetriesAtOriginalDestinationAfterServerRemoval() async throws {
     let defaultsName = "LeaderboardSyncTests.\(UUID())"
     let defaults = try XCTUnwrap(UserDefaults(suiteName: defaultsName))

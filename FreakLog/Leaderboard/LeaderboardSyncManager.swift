@@ -35,8 +35,12 @@ final class LeaderboardSyncManager: ObservableObject {
     var tracked: Set<UUID> = []
     var retained: Set<UUID> = []
     var pendingDeletions: Set<UUID> = []
+    // Earlier app versions kept the last successful sync but no per-entry publication records.
+    var mayHaveLegacyPublications: Bool?
 
-    var isEmpty: Bool { tracked.isEmpty && retained.isEmpty && pendingDeletions.isEmpty }
+    var isEmpty: Bool {
+      tracked.isEmpty && retained.isEmpty && pendingDeletions.isEmpty && mayHaveLegacyPublications != true
+    }
   }
 
   private static let publicationsKey = "leaderboardPublications"
@@ -63,7 +67,15 @@ final class LeaderboardSyncManager: ObservableObject {
     self.defaults = defaults
     self.deviceID = deviceID
 
-    guard let data = defaults.data(forKey: Self.publicationsKey) else { return }
+    guard let data = defaults.data(forKey: Self.publicationsKey) else {
+      var legacy: [Destination: PublicationRecord] = [:]
+      for server in serverStore.servers where server.lastSyncAt != nil {
+        let destination = Destination(serverID: server.id, endpoint: server.endpoint, deviceID: deviceID(server.host))
+        legacy[destination] = PublicationRecord(nickname: server.nickname, mayHaveLegacyPublications: true)
+      }
+      savePublications(legacy)
+      return
+    }
     do {
       publications = try JSONDecoder().decode([Destination: PublicationRecord].self, from: data)
       updatePendingDeletionCount()
@@ -80,13 +92,19 @@ final class LeaderboardSyncManager: ObservableObject {
   func queueDeletions(identifiers: [UUID]) {
     let identifiers = Set(identifiers)
     guard !identifiers.isEmpty else { return }
+    let unknown = publications.values.reduce(into: identifiers) { remaining, record in
+      remaining.subtract(record.tracked)
+      remaining.subtract(record.retained)
+      remaining.subtract(record.pendingDeletions)
+    }
     var updated = publications
     for (destination, var record) in updated {
       let matching = record.tracked.union(record.retained).intersection(identifiers)
-      guard !matching.isEmpty else { continue }
+      let legacy = record.mayHaveLegacyPublications == true ? unknown : []
+      guard !matching.isEmpty || !legacy.isEmpty else { continue }
       record.tracked.subtract(matching)
       record.retained.subtract(matching)
-      record.pendingDeletions.formUnion(matching)
+      record.pendingDeletions.formUnion(matching.union(legacy))
       updated[destination] = record
     }
     if updated != publications {

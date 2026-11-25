@@ -69,8 +69,6 @@ struct EditTimedNoteScreen: View {
         Task {
             if await IngestionDeletion.delete(timedNote: timedNote) {
                 dismiss()
-            } else {
-                toastViewModel.showErrorToast(message: "Failed to delete note")
             }
         }
     }

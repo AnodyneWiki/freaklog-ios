@@ -35,12 +35,13 @@ struct SettingsContent: View {
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
     @State var isImporting = false
+    @State private var removePublishedCopies = false
     @Binding var isExporting: Bool
     let exportedFile: ExportedFile
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let exportBackup: () -> Void
     let exportData: () -> Void
-    let importFile: (URL) -> Void
+    let importFile: (URL, Bool) -> Void
     let deleteEverything: () -> Void
 
     @State private var isShowingDeleteConfirmation = false
@@ -125,17 +126,22 @@ struct SettingsContent: View {
                     Label("Import Data", systemImage: "arrow.down.doc")
                 }
                 .confirmationDialog(
-                    "Are you sure?",
+                    "Replace Journal?",
                     isPresented: $isShowingImportAlert,
                     titleVisibility: .visible,
                     actions: {
-                        Button("Import", role: .destructive) {
-                            isImporting.toggle()
+                        Button("Import and Keep Published Copies", role: .destructive) {
+                            removePublishedCopies = false
+                            isImporting = true
+                        }
+                        Button("Import and Remove Discarded Copies", role: .destructive) {
+                            removePublishedCopies = true
+                            isImporting = true
                         }
                         Button("Cancel", role: .cancel) {}
                     },
                     message: {
-                        Text("Importing will delete all the data currently in the app and replace it with the imported data. A backup also replaces your settings.")
+                        Text("Import replaces your local journal. A FreakLog backup also replaces settings. Portable JSON has no publication IDs, so it can republish entries on the next leaderboard sync if you keep their old copies.")
                     }
                 )
                 Button {
@@ -189,7 +195,7 @@ struct SettingsContent: View {
             allowedContentTypes: ExportedFile.readableContentTypes
         ) { result in
             do {
-                importFile(try result.get())
+                importFile(try result.get(), removePublishedCopies)
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
             }
@@ -241,7 +247,7 @@ struct SettingsContent: View {
         exportedFile: ExportedFile(),
         exportBackup: {},
         exportData: {},
-        importFile: { _ in },
+        importFile: { _, _ in },
         deleteEverything: {}
     )
     .accentColor(Color.blue)

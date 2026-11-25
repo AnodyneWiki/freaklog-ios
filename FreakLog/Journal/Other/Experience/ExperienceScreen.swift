@@ -279,8 +279,9 @@ struct ExperienceScreen: View {
 
     private func delete() {
         Task {
-            await IngestionDeletion.delete(experience: experience)
-            dismiss()
+            if await IngestionDeletion.delete(experience: experience) {
+                dismiss()
+            }
         }
     }
 }

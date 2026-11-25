@@ -159,8 +159,6 @@ struct EditIngestionScreen: View {
         Task {
             if await IngestionDeletion.delete(ingestions: [ingestion]) {
                 dismiss()
-            } else {
-                toastViewModel.showErrorToast(message: "Failed to delete ingestion")
             }
         }
     }

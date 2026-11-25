@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import UniformTypeIdentifiers
 
 extension SettingsScreen {
     @MainActor
@@ -10,35 +11,42 @@ extension SettingsScreen {
 
         // The journal in the format the Android app reads
         func exportData() {
-            let pc = PersistenceController.shared
-            let journalFile = JournalFile(
-                experiences: pc.getAllExperiences(),
-                customSubstances: pc.getAllCustomSubstances(),
-                customUnits: pc.getAllCustomUnits(),
-                substanceOverrideRoas: pc.getAllStandaloneCustomRoas(),
-                substanceOverrides: (try? pc.viewContext.fetch(PersistenceController.substanceOverridesRequest())) ?? [],
-                formulations: pc.getAllFormulations())
-            do {
-                exportedFile = try ExportedFile(data: JSONEncoder().encode(journalFile), filename: "\(appName) \(Self.fileDate)")
-                isExporting = true
-            } catch {
-                showErrorToast(message: "Export Failed")
+            export(contentType: .json, suffix: "") { context in
+                let journal = try JournalFile(
+                    experiences: context.fetch(PersistenceController.experiencesRequest(prefetchingIngestions: true)),
+                    customSubstances: context.fetch(PersistenceController.customSubstancesRequest()),
+                    customUnits: context.fetch(CustomUnit.fetchRequest()),
+                    substanceOverrideRoas: context.fetch(PersistenceController.standaloneCustomRoasRequest()),
+                    substanceOverrides: context.fetch(PersistenceController.substanceOverridesRequest()),
+                    formulations: context.fetch(PersistenceController.formulationsRequest()))
+                return try JSONEncoder().encode(journal)
             }
         }
 
-        // Everything, to restore exactly
         func exportBackup() {
             let appVersion = getCurrentAppVersion()
+            export(contentType: .freakLogBackup, suffix: " Backup") { context in
+                try JournalBackup(context: context, appVersion: appVersion).fileData()
+            }
+        }
+
+        private func export(
+            contentType: UTType,
+            suffix: String,
+            makeData: @escaping @Sendable (NSManagedObjectContext) throws -> Data
+        ) {
             Task {
                 do {
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
                     let data = try await PersistenceController.shared.container.performBackgroundTask { context in
-                        try JournalBackup(context: context, appVersion: appVersion).fileData()
+                        try context.setQueryGenerationFrom(.current)
+                        return try makeData(context)
                     }
-                    exportedFile = ExportedFile(data: data, filename: "\(appName) Backup \(Self.fileDate)", contentType: .freakLogBackup)
+                    exportedFile = ExportedFile(data: data, filename: "\(appName)\(suffix) \(Self.fileDate)", contentType: contentType)
                     isExporting = true
                 } catch {
-                    print("Backup failed: \(error)")
-                    showErrorToast(message: "Backup Failed")
+                    showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Export Failed")
                 }
             }
         }
@@ -51,35 +59,7 @@ extension SettingsScreen {
                 timeSeparator: .omitted))
         }
 
-        // Restores a backup exactly, settings included: everything is replaced in one save, so a backup that can't be
-        // restored leaves the journal as it was
-        private func importBackup(_ backup: JournalBackup) async {
-            let container = PersistenceController.shared.container
-            let result: Result<Void, Error> = await container.performBackgroundTask { context in
-                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                do {
-                    try backup.restore(into: context)
-                    try context.save()
-                    return .success(())
-                } catch {
-                    return .failure(error)
-                }
-            }
-            switch result {
-            case .success:
-                await AnodyneClient.shared.applyInstanceChange {
-                    backup.restoreSettings()
-                }
-                TabManager.shared.reload()
-                LeaderboardServerStore.shared.reload()
-                showSuccessToast(message: "Backup Restored")
-            case .failure(let error):
-                print("Restoring the backup failed: \(error)")
-                showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
-            }
-        }
-
-        func importFile(_ url: URL) {
+        func importFile(_ url: URL, removePublishedCopies: Bool) {
             Task {
                 do {
                     try PersistenceController.beginJournalOperation()
@@ -89,31 +69,82 @@ extension SettingsScreen {
                         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
                         return try Data(contentsOf: url)
                     }.value
+                    let backup = try await Task.detached(priority: .userInitiated) { try JournalBackup.read(data) }.value
                     let container = PersistenceController.shared.container
-
-                    // A backup restores everything; other files are journal files
-                    if let backup = try await Task.detached(priority: .userInitiated, operation: {
-                        try JournalBackup.read(data)
-                    }).value {
-                        await importBackup(backup)
-                        return
+                    let retainInFlightMessages = removePublishedCopies ? nil : WebhookManager.shared.makeInFlightRetentionCommit()
+                    let removed: [UUID]
+                    if let backup {
+                        removed = try await container.performBackgroundTask { context in
+                            try Self.replaceJournal(
+                                in: context,
+                                removePublishedCopies: removePublishedCopies,
+                                retainInFlightMessages: retainInFlightMessages
+                            ) {
+                                try backup.restore(into: context)
+                            }
+                        }
+                    } else {
+                        let file = try await Task.detached(priority: .userInitiated) { try JournalFile.read(data) }.value
+                        removed = try await container.performBackgroundTask { context in
+                            let removed = try Self.replaceJournal(
+                                in: context,
+                                removePublishedCopies: removePublishedCopies,
+                                retainInFlightMessages: retainInFlightMessages
+                            ) {
+                                try PersistenceController.stageJournalDeletion(in: context)
+                                file.insert(into: context)
+                            }
+                            PersistenceController.purgeLocalHistory(in: context)
+                            return removed
+                        }
                     }
-
-                    // Decode off the main thread first; the view model, and so this task, is main-actor isolated
-                    let file = try await Task.detached(priority: .userInitiated) {
-                        try JournalFile.read(data)
-                    }.value
-                    
-                    try await container.performBackgroundTask { context in
-                        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                        try file.replaceJournal(in: context)
+                    LeaderboardSyncManager.shared.journalWasReplaced()
+                    if removePublishedCopies { IngestionDeletion.didDelete(identifiers: removed) }
+                    if let backup {
+                        await AnodyneClient.shared.applyInstanceChange { backup.restoreSettings() }
+                        TabManager.shared.reload()
+                        LeaderboardServerStore.shared.reload()
                     }
-                    showSuccessToast(message: "Import Successful")
+                    showSuccessToast(message: backup == nil ? "Import Successful" : "Backup Restored")
                 } catch {
-                    print("Import failed: \(error)")
                     showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Import Failed")
                 }
             }
+        }
+
+        nonisolated static func replaceJournal(
+            in context: NSManagedObjectContext,
+            removePublishedCopies: Bool,
+            retainInFlightMessages: (@Sendable () -> Void)? = nil,
+            replace: () throws -> Void
+        ) throws -> [UUID] {
+            try PersistenceController.withJournalStoreWrite {
+                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                var didSave = false
+                defer { if !didSave { context.rollback() } }
+                let outgoingIDs = removePublishedCopies ? try ingestionIDs(in: context) : []
+                let outgoingMessages = removePublishedCopies ? try messageDestinations(in: context) : []
+                try replace()
+                context.processPendingChanges()
+                let removedIDs = removePublishedCopies ? outgoingIDs.subtracting(try ingestionIDs(in: context)) : []
+                if removePublishedCopies {
+                    for destination in outgoingMessages.subtracting(try messageDestinations(in: context)) {
+                        destination.stage(in: context)
+                    }
+                }
+                try context.save()
+                didSave = true
+                retainInFlightMessages?()
+                return Array(removedIDs)
+            }
+        }
+
+        private nonisolated static func ingestionIDs(in context: NSManagedObjectContext) throws -> Set<UUID> {
+            try Set(context.fetch(Ingestion.fetchRequest()).compactMap(\.identifier))
+        }
+
+        private nonisolated static func messageDestinations(in context: NSManagedObjectContext) throws -> Set<WebhookManager.Destination> {
+            try Set(context.fetch(WebhookMessage.fetchRequest()).compactMap(WebhookManager.Destination.init))
         }
 
         func deleteEverything() {
@@ -121,18 +152,21 @@ extension SettingsScreen {
                 do {
                     try PersistenceController.beginJournalOperation()
                     defer { PersistenceController.endJournalOperation() }
-                    let persistence = PersistenceController.shared
-                    let container = persistence.container
-                    let ingestions = try persistence.viewContext.fetch(Ingestion.fetchRequest())
-                    let notes = try persistence.viewContext.fetch(TimedNote.fetchRequest())
-                    let cleanUp = await IngestionDeletion.remoteCleanUp(for: ingestions, timedNotes: notes)
-                    try await container.performBackgroundTask { context in
-                        try PersistenceController.stageJournalDeletion(in: context)
-                        try context.save()
-                        PersistenceController.purgeLocalHistory(in: context)
+                    let container = PersistenceController.shared.container
+                    let identifiers = try await container.performBackgroundTask { context in
+                        try PersistenceController.withJournalStoreWrite {
+                            let ingestions = try context.fetch(Ingestion.fetchRequest())
+                            let notes = try context.fetch(TimedNote.fetchRequest())
+                            let identifiers = ingestions.compactMap(\.identifier)
+                            WebhookManager.stageMessageDeletion(for: ingestions, timedNotes: notes, in: context)
+                            try WebhookManager.stageAllPresetDeletion(in: context)
+                            try PersistenceController.stageJournalDeletion(in: context)
+                            try context.save()
+                            PersistenceController.purgeLocalHistory(in: context)
+                            return identifiers
+                        }
                     }
-                    cleanUp()
-                    await WebhookManager.shared.deleteAllPresetsAndMessages()
+                    IngestionDeletion.didDelete(identifiers: identifiers)
                     showSuccessToast(message: "Delete Successful")
                 } catch {
                     showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Delete Failed")

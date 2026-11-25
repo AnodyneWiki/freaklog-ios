@@ -9,8 +9,6 @@ struct PersistenceController {
     let roaCache: ResolvedRoaCache
     let overrideCache: SubstanceOverrideCache
 
-    private var isInitialized = false
-
     static let needsToSeeWelcomeKey = "needsToSeeWelcome"
     static let isEyeOpenKey1 = "isEyeOpen"
     static let isEyeOpenKey2 = "isEyeOpen2"
@@ -58,6 +56,7 @@ struct PersistenceController {
     static let hasBeenMigrated7Key = "hasBeenMigrated7"
     static let hasBeenMigrated8Key = "hasBeenMigrated8"
     static let hasBeenMigrated9Key = "hasBeenMigrated9"
+    private static let didRepairMissingSortDatesKey = "didRepairMissingSortDates"
     static let openUntilRatedCountKey = "openUntilRatedCount"
     static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
 
@@ -101,16 +100,11 @@ struct PersistenceController {
         }
 
         if inMemory {
-            loadInMemoryStores(description: container.persistentStoreDescriptions.first)
-            isInitialized = true
+            loadInMemoryStores()
         }
     }
 
-    public func loadData(_ app: UIApplication) {
-        tryLoadPersistentStores(app)
-    }
-
-    private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
+    private func loadInMemoryStores() {
         let description = NSPersistentStoreDescription()
         description.type = NSInMemoryStoreType
         container.persistentStoreDescriptions = [description]
@@ -124,24 +118,13 @@ struct PersistenceController {
         viewContext.automaticallyMergesChangesFromParent = true
     }
 
-    private func tryLoadPersistentStores(_ app: UIApplication) {
-        if isInitialized { return }
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                let nsError = error as NSError
-                if (nsError.domain == "NSCocoaErrorDomain" && nsError.code == 256 && nsError.userInfo["NSSQLiteErrorDomain"] as? Int == 23) {
-                    exit(0)
-                }
-                else {
-                    fatalError("Failed to load Core Data stack: \(error)")
-                }
-            }
-        }
-
-        
+    @MainActor
+    func loadData() throws {
+        guard container.persistentStoreCoordinator.persistentStores.isEmpty else { return }
+        try loadStore(using: container.persistentStoreDescriptions)
         viewContext.automaticallyMergesChangesFromParent = true
         viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        
+
         // Pushes the schema to the CloudKit development environment. This blocks launch and fails against
         // production and without sync enabled (retrying on every launch), so only debug builds with sync try it.
         #if DEBUG
@@ -155,8 +138,12 @@ struct PersistenceController {
             }
         }
         #endif
+    }
 
+    private static let journalStoreWriteLock = NSLock()
 
+    static func withJournalStoreWrite<T>(_ body: () throws -> T) rethrows -> T {
+        try journalStoreWriteLock.withLock(body)
     }
 
     @MainActor private(set) static var isJournalOperationInProgress = false
@@ -170,6 +157,7 @@ struct PersistenceController {
     @MainActor
     static func endJournalOperation() {
         isJournalOperationInProgress = false
+        LeaderboardSyncManager.shared.journalOperationDidEnd()
     }
 
     @MainActor
@@ -209,17 +197,20 @@ struct PersistenceController {
             ? NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier) : nil
         description.setOption(enabled as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
 
-        try coordinator.remove(store)
-        do {
-            try loadStore(using: [description])
-        } catch {
-            try loadStore(using: original)
-            throw error
+        try Self.withJournalStoreWrite {
+            try coordinator.remove(store)
+            do {
+                try loadStore(using: [description])
+            } catch {
+                try loadStore(using: original)
+                throw error
+            }
         }
         UserDefaults.standard.set(enabled, forKey: Self.isICloudSyncEnabledKey)
     }
 
     private func loadStore(using descriptions: [NSPersistentStoreDescription]) throws {
+        descriptions.forEach { $0.shouldAddStoreAsynchronously = false }
         container.persistentStoreDescriptions = descriptions
         var loadError: Error?
         container.loadPersistentStores { _, error in loadError = error }
@@ -269,6 +260,7 @@ struct PersistenceController {
             (Self.hasBeenMigrated7Key, migrateRemoveDuplicateCompanions),
             (Self.hasBeenMigrated8Key, migrateFillPartialSubstanceOverrides),
             (Self.hasBeenMigrated9Key, migrateColorsToHex),
+            (Self.didRepairMissingSortDatesKey, repairMissingSortDates),
         ]
         for migration in migrations where !defaults.bool(forKey: migration.key) {
             let context = container.newBackgroundContext()
@@ -303,6 +295,14 @@ struct PersistenceController {
         let experienceFetchRequest = Experience.fetchRequest()
         let allExperiences = try context.fetch(experienceFetchRequest)
         for experience in allExperiences {
+            experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
+        }
+    }
+
+    private func repairMissingSortDates(_ context: NSManagedObjectContext) throws {
+        let request = Experience.fetchRequest()
+        request.predicate = NSPredicate(format: "sortDate == nil")
+        for experience in try context.fetch(request) {
             experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
         }
     }
@@ -717,14 +717,14 @@ struct PersistenceController {
         return (try? viewContext.fetch(r)) ?? []
     }
 
-    func getPersonalIngestions(from startDate: Date, to endDate: Date) -> [Ingestion] {
+    static func getPersonalIngestions(from startDate: Date, to endDate: Date, in context: NSManagedObjectContext) throws -> [Ingestion] {
         let r = Self.personalIngestionsRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: true)]
         r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             r.predicate!,
             NSPredicate(format: "time >= %@ AND time < %@", startDate as NSDate, endDate as NSDate),
         ])
-        return (try? viewContext.fetch(r)) ?? []
+        return try context.fetch(r)
     }
 
     func saveViewContext() {

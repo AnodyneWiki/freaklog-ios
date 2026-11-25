@@ -4,6 +4,84 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testAbortedReplacementLeavesJournalIntactAfterAnotherSave() throws {
+        enum TestError: Error { case abort }
+
+        let persistence = PersistenceController(inMemory: true)
+        let viewContext = persistence.viewContext
+        let original = Experience.create(at: .now, title: "Original", in: viewContext)
+        try viewContext.save()
+
+        do {
+            let edit = try persistence.journalEditContext()
+            XCTAssertThrowsError(try SettingsScreen.ViewModel.replaceJournal(in: edit, removePublishedCopies: true) {
+                try PersistenceController.stageJournalDeletion(in: edit)
+                throw TestError.abort
+            })
+        }
+
+        original.title = "Edited after failure"
+        try viewContext.save()
+        let check = try persistence.journalEditContext()
+        XCTAssertEqual(try check.fetch(Experience.fetchRequest()).map(\.title), ["Edited after failure"])
+    }
+
+    func testReplacementQueuesOnlyDiscardedPublicationsWhenSelected() throws {
+        for removePublishedCopies in [true, false] {
+            let persistence = PersistenceController(inMemory: true)
+            let context = persistence.viewContext
+            let oldID = UUID()
+            let retainedID = UUID()
+            let url = "https://example.invalid/webhooks/test"
+
+            func insert(ingestionID: UUID, messageID: String, in context: NSManagedObjectContext) {
+                let ingestion = Ingestion(context: context)
+                ingestion.identifier = ingestionID
+                let message = WebhookMessage(context: context)
+                message.ingestion = ingestion
+                message.messageId = messageID
+                message.destinationURL = url
+            }
+
+            insert(ingestionID: oldID, messageID: "discarded", in: context)
+            insert(ingestionID: retainedID, messageID: "retained", in: context)
+            try context.save()
+
+            let edit = try persistence.journalEditContext()
+            let removed = try SettingsScreen.ViewModel.replaceJournal(in: edit, removePublishedCopies: removePublishedCopies) {
+                try PersistenceController.stageJournalDeletion(in: edit)
+                insert(ingestionID: retainedID, messageID: "retained", in: edit)
+            }
+
+            let check = try persistence.journalEditContext()
+            XCTAssertEqual(removed, removePublishedCopies ? [oldID] : [])
+            XCTAssertEqual(try check.fetch(WebhookDeletion.fetchRequest()).compactMap(\.messageId),
+                           removePublishedCopies ? ["discarded"] : [])
+        }
+    }
+
+    func testIsolatedDeletionUpdatesStoredExperienceSortDate() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let context = persistence.viewContext
+        let firstTime = Date(timeIntervalSince1970: 1_700_000_000)
+        let secondTime = firstTime.addingTimeInterval(3_600)
+        let experience = Experience.create(at: firstTime, in: context)
+        let first = Ingestion(context: context)
+        first.time = firstTime
+        first.experience = experience
+        let second = Ingestion(context: context)
+        second.time = secondTime
+        second.experience = experience
+        try context.save()
+
+        let edit = try persistence.journalEditContext()
+        edit.delete(try PersistenceController.journalObject(first, in: edit))
+        try PersistenceController.saveJournalChanges(in: edit)
+
+        let check = try persistence.journalEditContext()
+        XCTAssertEqual(try PersistenceController.journalObject(experience, in: check).sortDate, secondTime)
+    }
+
     func testJournalImportRejectsAnEmptyUnidentifiedFile() throws {
         let decoder = JSONDecoder()
         for json in ["{}", #"{"customUnits":[]}"#, #"{"experiences":null}"#, #"{"experiences":{}}"#] {

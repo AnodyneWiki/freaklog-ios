@@ -7,54 +7,71 @@ import CoreData
 enum IngestionDeletion {
     @discardableResult
     static func delete(ingestions: [Ingestion]) async -> Bool {
-        await delete(ingestions, ingestions: ingestions)
+        await delete(ingestions)
     }
 
     @discardableResult
     static func delete(timedNote: TimedNote) async -> Bool {
-        await delete([timedNote], ingestions: [], timedNotes: [timedNote])
+        await delete([timedNote])
     }
 
     @discardableResult
     static func delete(experience: Experience) async -> Bool {
-        await delete([experience], ingestions: experience.ingestionsSorted, timedNotes: experience.timedNotesSorted)
+        await delete([experience])
     }
 
     @discardableResult
     static func delete(customUnit: CustomUnit) async -> Bool {
-        await delete([customUnit], ingestions: customUnit.ingestionsUnwrapped)
+        await delete([customUnit])
     }
 
-    private static func delete(_ objects: [NSManagedObject], ingestions: [Ingestion], timedNotes: [TimedNote] = []) async -> Bool {
+    static let failureNotification = Notification.Name("JournalDeletionFailed")
+
+    private static func delete(_ objects: [NSManagedObject]) async -> Bool {
         do {
-            try PersistenceController.beginJournalOperation()
-            defer { PersistenceController.endJournalOperation() }
-            let ids = objects.filter { !$0.isDeleted }.map(\.objectID)
-            let cleanUp = await remoteCleanUp(for: ingestions, timedNotes: timedNotes)
-            try await PersistenceController.shared.container.performBackgroundTask { context in
-                for id in ids {
-                    context.delete(try context.existingObject(with: id))
+            let context = try PersistenceController.shared.journalEditContext()
+            let identifiers = try PersistenceController.withJournalStoreWrite {
+                let rootObjects = try objects.filter { !$0.isDeleted }.map { try PersistenceController.journalObject($0, in: context) }
+                var ingestions: [Ingestion] = []
+                var notes: [TimedNote] = []
+                for object in rootObjects {
+                    switch object {
+                    case let ingestion as Ingestion:
+                        ingestions.append(ingestion)
+                    case let note as TimedNote:
+                        notes.append(note)
+                    case let experience as Experience:
+                        ingestions += experience.ingestionsSorted
+                        notes += experience.timedNotesSorted
+                    case let unit as CustomUnit:
+                        ingestions += unit.ingestionsUnwrapped
+                    default:
+                        break
+                    }
                 }
+                let identifiers = ingestions.compactMap(\.identifier)
+                WebhookManager.stageMessageDeletion(for: ingestions, timedNotes: notes, in: context)
+                rootObjects.forEach(context.delete)
                 try PersistenceController.saveJournalChanges(in: context)
+                return identifiers
             }
-            cleanUp()
+            didDelete(identifiers: identifiers)
             return true
         } catch {
-            print("Journal deletion failed: \(error)")
+            NotificationCenter.default.post(name: failureNotification, object: "Couldn't delete journal data")
             return false
         }
     }
 
-    // Collects what to clean up while the ingestions and timed notes still exist. Call the result once they are deleted.
-    static func remoteCleanUp(for ingestions: [Ingestion], timedNotes: [TimedNote] = []) async -> () -> Void {
-        let identifiers = ingestions.compactMap(\.identifier)
-        let webhookDeletion = await WebhookManager.shared.prepareMessageDeletion(for: ingestions, timedNotes: timedNotes)
-        return {
-            Task {
-                async let webhooks: Void = webhookDeletion.run()
-                async let leaderboards: Void = LeaderboardSyncManager.shared.notifyDeletion(identifiers: identifiers)
-                _ = await (webhooks, leaderboards)
+    static func didDelete(identifiers: [UUID]) {
+        LeaderboardSyncManager.shared.queueDeletions(identifiers: identifiers)
+        Task {
+            async let webhooks = WebhookManager.shared.retryPendingDeletions()
+            async let leaderboards: Void = LeaderboardSyncManager.shared.retryPendingDeletions()
+            if !(await webhooks) {
+                NotificationCenter.default.post(name: failureNotification, object: "Webhook cleanup will retry")
             }
+            await leaderboards
         }
     }
 }
