@@ -35,9 +35,12 @@ struct ChooseLocationScreen: View {
 
     var screen: some View {
         ChooseLocationScreenContent(
-            selectedLocation: $locationManager.selectedLocation,
-            selectedLocationName: $locationManager.selectedLocationName,
-            searchText: $locationManager.searchText,
+            selectedLocation: locationManager.selectedLocation,
+            selectedLocationName: Binding(
+                get: { locationManager.selectedLocationName },
+                set: locationManager.renameSelection
+            ),
+            selectLocation: locationManager.editSelection,
             authorizationStatus: locationManager.authorizationStatus,
             isLoadingLocationResults: locationManager.isSearchingForLocations,
             currentLocation: locationManager.currentLocation,

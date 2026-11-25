@@ -3,9 +3,9 @@ import MapKit
 import SwiftUI
 
 struct ChooseLocationScreenContent: View {
-    @Binding var selectedLocation: Location?
+    let selectedLocation: Location?
     @Binding var selectedLocationName: String
-    @Binding var searchText: String
+    let selectLocation: (Location?) -> Void
     let authorizationStatus: CLAuthorizationStatus?
     let isLoadingLocationResults: Bool
     let currentLocation: Location?
@@ -27,8 +27,7 @@ struct ChooseLocationScreenContent: View {
                             ForEach(searchSuggestedLocations) { location in
                                 Button {
                                     withAnimation {
-                                        selectedLocation = location
-                                        selectedLocationName = location.name
+                                        selectLocation(location)
                                         dismissSearch()
                                     }
                                 } label: {
@@ -41,17 +40,6 @@ struct ChooseLocationScreenContent: View {
             } else {
                 Section("Selected Location") {
                     TextField("Name", text: $selectedLocationName, prompt: Text("Enter Name"))
-                        .onChange(of: selectedLocationName) { name in
-                            withAnimation {
-                                if !name.isEmpty {
-                                    selectedLocation = Location(
-                                        name: name,
-                                        longitude: selectedLocation?.longitude,
-                                        latitude: selectedLocation?.latitude
-                                    )
-                                }
-                            }
-                        }
                     if let lat = selectedLocation?.latitude, let long = selectedLocation?.longitude {
                         let pinLocation = CLLocationCoordinate2D(latitude: lat, longitude: long)
                         ZStack(alignment: .topTrailing) {
@@ -60,7 +48,7 @@ struct ChooseLocationScreenContent: View {
                                 .frame(height: 200)
                             Button {
                                 withAnimation {
-                                    selectedLocation = Location(name: selectedLocationName, longitude: nil, latitude: nil)
+                                    selectLocation(Location(name: selectedLocationName, longitude: nil, latitude: nil))
                                 }
                             } label: {
                                 ZStack {
@@ -80,8 +68,7 @@ struct ChooseLocationScreenContent: View {
                     }
                     if selectedLocation != nil {
                         Button {
-                            selectedLocationName = ""
-                            selectedLocation = nil
+                            selectLocation(nil)
                         } label: {
                             Label("Delete Location", systemImage: "trash").foregroundColor(.red)
                         }
@@ -92,8 +79,7 @@ struct ChooseLocationScreenContent: View {
                         if let currentLocation {
                             Button {
                                 withAnimation {
-                                    selectedLocation = currentLocation
-                                    selectedLocationName = currentLocation.name
+                                    selectLocation(currentLocation)
                                 }
                             } label: {
                                 Label("Current Location", systemImage: "location")
@@ -102,8 +88,7 @@ struct ChooseLocationScreenContent: View {
                         ForEach(experienceLocations) { location in
                             Button {
                                 withAnimation {
-                                    selectedLocation = location
-                                    selectedLocationName = location.name
+                                    selectLocation(location)
                                 }
                             } label: {
                                 Label(location.name, systemImage: "clock.arrow.circlepath")
@@ -158,11 +143,9 @@ struct ExperienceLocationMap: View {
 
 #Preview {
     ChooseLocationScreenContent(
-        selectedLocation: .constant(
-            Location(name: "Zurich", longitude: 2, latitude: 2)
-        ),
+        selectedLocation: Location(name: "Zurich", longitude: 2, latitude: 2),
         selectedLocationName: .constant(""),
-        searchText: .constant(""),
+        selectLocation: { _ in },
         authorizationStatus: .denied,
         isLoadingLocationResults: false,
         currentLocation: nil,
