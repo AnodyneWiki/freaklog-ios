@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
@@ -487,6 +488,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
@@ -1987,6 +1989,7 @@
 				EA557B382942A1A2005740B4 /* EditNotesScreen.swift */,
 				EA4B8A042A952C4B009918DE /* EditTitleScreen.swift */,
 				EA41C61A295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift */,
+				F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */,
 				EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */,
 				EA41C618295AE60C000DA021 /* InteractionPairRow.swift */,
 				EA48F8BA29EE99C4007DA8C5 /* TimelineScreen.swift */,
@@ -2627,6 +2630,7 @@
 				EAD1D0042B5271BD00EC0D70 /* CustomUnitRow.swift in Sources */,
 				EA41C621295C1E9E000DA021 /* Settings-ViewModel.swift in Sources */,
 				EA41C61B295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift in Sources */,
+				366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */,
 				EA4793602B4A72D700685EAA /* CustomUnitMinInfo.swift in Sources */,
 				EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */,
 				EA41C627295EB65C000DA021 /* SubstanceOverview.swift in Sources */,

@@ -42,7 +42,8 @@ struct TimelineModel: Hashable {
         everythingForEachTimedNote: [EverythingForOneTimedNote],
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool,
-        visibleTimeRange: ClosedRange<Date>? = nil
+        visibleTimeRange: ClosedRange<Date>? = nil,
+        alignedTimeRange: ClosedRange<Date>? = nil
     ) {
 
         let startTime: Date
@@ -52,7 +53,9 @@ struct TimelineModel: Hashable {
             everythingForEachTimedNote: everythingForEachTimedNote
         )
         
-        if let visibleTimeRange {
+        if let alignedTimeRange {
+            startTime = alignedTimeRange.lowerBound
+        } else if let visibleTimeRange {
             startTime = max(visibleTimeRange.lowerBound, contentStartTime)
         } else {
             startTime = contentStartTime
@@ -142,7 +145,9 @@ struct TimelineModel: Hashable {
         let calculatedMaxWidth: TimeInterval = (widthOfTimelinesAndRatings.max() ?? sixHours)
         
         let finalWidth: TimeInterval
-        if let visibleTimeRange {
+        if let alignedTimeRange {
+            finalWidth = alignedTimeRange.upperBound.timeIntervalSince(startTime)
+        } else if let visibleTimeRange {
             let currentTime = visibleTimeRange.upperBound
             let windowDurationFromStart = currentTime.timeIntervalSince(startTime)
             

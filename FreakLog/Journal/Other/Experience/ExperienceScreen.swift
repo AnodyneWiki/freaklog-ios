@@ -279,6 +279,13 @@ struct ExperienceScreen: View {
                     )
                 }
             }
+            if Set(experience.ingestionsSorted.map({ $0.isMine ? "" : $0.consumerNameUnwrapped })).count > 1 {
+                Section {
+                    NavigationLink(value: GlobalNavigationDestination.compareExperienceTimelines(experience: experience)) {
+                        Label("Compare Timelines", systemImage: "chart.xyaxis.line")
+                    }
+                }
+            }
             ForEach(experience.getConsumers(areRedosesDrawnIndividually: areRedosesDrawnIndividually, areSubstanceHeightsIndependent: areSubstanceHeightsIndependent)) { consumer in
                 let consumerTimelineModel = consumer.timelineModel
                 Section {

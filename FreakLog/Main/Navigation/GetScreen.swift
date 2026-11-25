@@ -111,6 +111,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             TimelineScreen(timelineModel: timelineModel, timeDisplayStyle: timeDisplayStyle)
         case let .experienceTimeline(experience):
             ExperienceTimelineScreen(experience: experience)
+        case let .compareExperienceTimelines(experience):
+            ExperienceTimelineComparison(experience: experience)
         case .explainExperience:
             ExplainExperienceSectionScreen()
         case let .dosageStat(substanceName):

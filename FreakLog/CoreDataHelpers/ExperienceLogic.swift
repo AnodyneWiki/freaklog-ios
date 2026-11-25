@@ -67,7 +67,8 @@ struct ExperienceLogic {
         everythingForEachTimedNote: [EverythingForOneTimedNote] = [],
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool,
-        visibleTimeRange: ClosedRange<Date>? = nil
+        visibleTimeRange: ClosedRange<Date>? = nil,
+        alignedTimeRange: ClosedRange<Date>? = nil
     ) -> TimelineModel {
         TimelineModel(
             substanceGroups: getSubstanceIngestionGroups(ingestions: ingestions),
@@ -75,7 +76,8 @@ struct ExperienceLogic {
             everythingForEachTimedNote: everythingForEachTimedNote,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
             areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
-            visibleTimeRange: visibleTimeRange
+            visibleTimeRange: visibleTimeRange,
+            alignedTimeRange: alignedTimeRange
         )
     }
     
