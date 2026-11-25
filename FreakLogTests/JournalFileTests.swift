@@ -402,6 +402,62 @@ final class JournalFileTests: XCTestCase {
         XCTAssertEqual(renamed.merged(named).categories, [])
     }
 
+    func testSimilarSubstanceMergePreservesRecordedAmountsAndMovesLinkedData() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let context = persistence.viewContext
+        let target = CustomSubstance(context: context)
+        target.name = "Example Product"
+        target.units = "mg"
+        let duplicate = CustomSubstance(context: context)
+        duplicate.name = "Example Product A"
+        duplicate.units = "cups"
+
+        let route = CustomRoa(context: context)
+        route.customSubstance = duplicate
+        route.administrationRoute = AdministrationRoute.oral.rawValue
+        route.commonDose = 5
+        let container = CustomUnit(context: context)
+        container.substanceName = duplicate.name
+        let companion = SubstanceCompanion(context: context)
+        companion.substanceName = duplicate.name
+        companion.isHiddenInTimeline = true
+        let ingestion = Ingestion(context: context)
+        ingestion.substanceName = duplicate.name
+        ingestion.dose = 8
+        ingestion.units = "cups"
+        ingestion.customUnit = container
+        ingestion.substanceCompanion = companion
+        let override = SubstanceOverride(context: context)
+        override.substanceName = duplicate.name
+        override.personalTags = PersonalSubstanceTags(["Routine"], primary: "Routine")
+        try context.save()
+
+        XCTAssertNotNil(SimilarSubstanceNames.distance(target.nameUnwrapped, duplicate.nameUnwrapped))
+        let pair = SimilarCustomSubstancePair(first: target, second: duplicate)
+        let records = try CustomSubstanceMergeRecords.load(pair, in: context)
+        XCTAssertEqual(records.preview.ingestionCount, 1)
+        XCTAssertEqual(records.preview.unitCount, 1)
+        _ = try records.merge(selection: ["name": 0, "visibility": 1], in: context)
+
+        XCTAssertEqual(try context.fetch(PersistenceController.customSubstancesRequest()).map(\.nameUnwrapped), ["Example Product"])
+        XCTAssertEqual(ingestion.substanceName, target.name)
+        XCTAssertEqual(ingestion.dose, 8)
+        XCTAssertEqual(ingestion.units, "cups")
+        XCTAssertEqual(ingestion.customUnit, container)
+        XCTAssertEqual(container.substanceName, target.name)
+        XCTAssertTrue(ingestion.substanceCompanion?.isHiddenInTimeline == true)
+        let savedRoute = try XCTUnwrap(context.fetch(PersistenceController.customRoasRequest(for: target.nameUnwrapped)).first)
+        XCTAssertEqual(savedRoute.customSubstance, target)
+        XCTAssertEqual(savedRoute.doseUnits, "cups")
+
+        let overrides = try context.fetch(PersistenceController.substanceOverridesRequest(for: target.nameUnwrapped))
+        let overridesFile = SubstanceDataOverrideCodable.grouped([], overrides: overrides)
+        let data = try JSONEncoder().encode(overridesFile)
+        let decoded = try JSONDecoder().decode([SubstanceDataOverrideCodable].self, from: data)
+        let tags = try XCTUnwrap(decoded.first?.personalTags)
+        XCTAssertEqual(tags.primary, "Routine")
+    }
+
     func testDuplicateOverridesCollapseOnSave() throws {
         let persistence = PersistenceController(inMemory: true)
         let context = persistence.viewContext

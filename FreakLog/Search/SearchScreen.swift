@@ -164,11 +164,22 @@ struct SearchScreen: View {
             } label: {
                 Label("New Custom Substance", systemImage: "plus.circle.fill").labelStyle(.titleAndIcon).font(.headline)
             }
+            if customSubstances.count > 1 {
+                NavigationLink {
+                    SimilarCustomSubstancesScreen()
+                } label: {
+                    Label("Review Similar Names", systemImage: "rectangle.on.rectangle")
+                }
+            }
         }
         .listStyle(.plain)
         .scrollDismissesKeyboard(.interactively)
         .sheet(isPresented: $isShowingAddCustomSubstance) {
-            AddCustomSubstanceView(searchText: searchText, onAdded: { _ in })
+            AddCustomSubstanceView(searchText: searchText) { arguments in
+                if let destination = Navigator.substanceInfoDestination(for: arguments.substance.name) {
+                    Navigator.shared.openInCurrentTab(destination)
+                }
+            }
         }
     }
 }
