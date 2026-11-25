@@ -190,32 +190,208 @@ private struct JournalHelpScreen: View {
 
 private struct WhatsNewScreen: View {
     let isEyeOpen: Bool
+    @Environment(\.locale) private var locale
 
     var body: some View {
+        let installedVersion = getCurrentAppVersion()
+        let previous = Self.releases.filter { $0.version.compare(installedVersion, options: .numeric) == .orderedAscending }
+
         List {
-            Section("Version \(getCurrentAppVersion())") {
-                releaseNote("Backup Review", description: "Review a backup’s contents before restoring it.")
-                if UIApplication.shared.supportsAlternateIcons {
-                    releaseNote("App Icon", description: "Choose an alternate icon in Appearance.")
+            if let current = Self.releases.first(where: { $0.version == installedVersion }) {
+                Section {
+                    highlights(for: current)
+                } header: {
+                    releaseLabel(for: current)
                 }
-                if isEyeOpen {
-                    releaseNote("Markdown Reports", description: "Edit your experience report before sharing it.")
+            }
+            if !previous.isEmpty {
+                Section("Version History") {
+                    ForEach(previous) { release in
+                        DisclosureGroup {
+                            highlights(for: release)
+                        } label: {
+                            releaseLabel(for: release)
+                        }
+                    }
                 }
             }
         }
         .navigationTitle("What’s New")
     }
 
-    private func releaseNote(_ title: LocalizedStringKey, description: LocalizedStringKey) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.headline)
-            Text(description)
-                .font(.subheadline)
+    private func releaseLabel(for release: Release) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Version \(release.version)")
+            Text(release.date, format: Date.FormatStyle(
+                date: .abbreviated, time: .omitted, locale: locale, timeZone: Release.dateTimeZone
+            ))
+                .font(.footnote)
                 .foregroundStyle(.secondary)
+                .textCase(nil)
         }
         .accessibilityElement(children: .combine)
     }
+
+    private func highlights(for release: Release) -> some View {
+        let highlights = release.highlights
+        return ForEach(highlights.indices, id: \.self) { index in
+            let highlight = highlights[index]
+            if (!highlight.requiresOpenEye || isEyeOpen)
+                && (!highlight.requiresAlternateIcons || UIApplication.shared.supportsAlternateIcons) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(highlight.title)
+                        .font(.headline)
+                    Text(highlight.description)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private struct Release: Identifiable {
+        static let dateTimeZone = TimeZone(secondsFromGMT: 0)!
+
+        let version: String
+        let date: Date
+        let highlights: [Highlight]
+
+        var id: String { version }
+
+        init(version: String, year: Int, month: Int, day: Int, highlights: [Highlight]) {
+            var calendar = Calendar(identifier: .gregorian)
+            // Preserve the commit's calendar date across time zones.
+            calendar.timeZone = Self.dateTimeZone
+            self.version = version
+            self.date = calendar.date(from: DateComponents(year: year, month: month, day: day))!
+            self.highlights = highlights
+        }
+    }
+
+    private struct Highlight {
+        let title: LocalizedStringKey
+        let description: LocalizedStringKey
+        var requiresOpenEye = false
+        var requiresAlternateIcons = false
+    }
+
+    // Highlights follow the release that first included them, dated by its version bump.
+    private static let releases: [Release] = [
+        .init(version: "1.6.0", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Encrypted Backups",
+                  description: "Verify a backup without changing your journal and save a recovery copy before restoring. Automatic Backups saves verified encrypted copies to a chosen folder when you open the unlocked app."),
+            .init(title: "Journal Transfers",
+                  description: "Preview transfers for PW Journal 18.0 and 11.11 or FreakLog Android. Export Journal is also available in Shortcuts."),
+            .init(title: "Stats, History, and Goals",
+                  description: "Drag a chart to preview nearby dates or use the arrows to move by a small step or a larger jump. Tap a bar to see its entries, compare amount trends, and track goals."),
+            .init(title: "Search and Calendar",
+                  description: "Search for formulation components or timed notes by mood and energy. Set the same overnight day boundary for Calendar and Stats."),
+            .init(title: "Reports",
+                  description: "Review and share an experience as text or an image, or export a clinician summary as a PDF."),
+            .init(title: "App Icon", description: "Choose an alternate icon in Appearance.", requiresAlternateIcons: true),
+            .init(title: "Journal and Timeline",
+                  description: "Compare participants on one time axis, inspect estimated phases alongside Apple Health heart rate, and set private reminders. Move selected ingestions to another experience with Undo.",
+                  requiresOpenEye: true),
+            .init(title: "Exposure and Tolerance Research",
+                  description: "Explore a study-based model of relative exposure for caffeine dissolved in water and research on cross-tolerance for specific substance pairs.",
+                  requiresOpenEye: true),
+            .init(title: "Logging",
+                  description: "Scan a saved package from Add Ingestion, or review and save a batch of entries with different times. Tap the review summary to correct an entry. Choose whether to confirm single-entry deletion in Settings.",
+                  requiresOpenEye: true),
+            .init(title: "Routines",
+                  description: "See what’s due today or coming up. Schedule monthly and as-needed routines, preview upcoming dates, and test reminders.",
+                  requiresOpenEye: true),
+            .init(title: "Inventory",
+                  description: "Track individual containers, attach a lab report, and preview both container balances before moving stock.",
+                  requiresOpenEye: true),
+            .init(title: "Package Lookup",
+                  description: "Scan a package, remember a German PZN on this device, and look up names from the offline medication catalog.",
+                  requiresOpenEye: true),
+            .init(title: "Substance Library",
+                  description: "Search the library alongside your journal, organize substances with personal tags, merge duplicate names, and compare reference data by source and route. Filter AnodyneWiki by substance class.",
+                  requiresOpenEye: true),
+            .init(title: "Nested Blends and Presets",
+                  description: "Save one blend as part of another and preserve its ingredient amounts. Share a saved product, custom substance, or color palette from its editor.",
+                  requiresOpenEye: true),
+            .init(title: "Widgets and Privacy",
+                  description: "See your next routine and mark an eligible occurrence as taken from the Home Screen widget or Apple Watch. Routine names and amounts stay in the journal."),
+            .init(title: "Assistant",
+                  description: "Search the web in its own screen, and keep your open conversation visible when Assistant settings change.",
+                  requiresOpenEye: true),
+            .init(title: "Reliability",
+                  description: "Failed imports leave your journal intact. Watch logging and undo recover after a lost connection, and supported publishers retry cleanup."),
+        ]),
+        .init(version: "1.5.2", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Wikipedia Lookups",
+                  description: "The Assistant can look up established facts on Wikipedia when you enable online lookups.",
+                  requiresOpenEye: true),
+            .init(title: "Community and Issue Reporting",
+                  description: "Find community and issue-reporting links together in Settings.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.5.1", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Optional Web Search",
+                  description: "Search the web directly from Assistant chat with supported models.",
+                  requiresOpenEye: true),
+            .init(title: "Assistant Model Backups",
+                  description: "Full journal backups include your Assistant model settings.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.5.0", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Journal Backups",
+                  description: "Export and restore a FreakLog backup with your journal and settings."),
+            .init(title: "Journal Assistant",
+                  description: "Choose a model, ask about your journal, and summarize a session.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.4.2", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Custom Colors",
+                  description: "Choose a swatch, use the system color picker, or enter a hex code. Suggestions are picked to stand apart."),
+        ]),
+        .init(version: "1.4.1", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Apple Watch", description: "Quickly log from your watch."),
+            .init(title: "Timed Notes",
+                  description: "See timed notes alongside entries and add one by holding the Add button."),
+            .init(title: "Formulations",
+                  description: "Save combinations and log them together. Recently used formulations appear in suggestions.",
+                  requiresOpenEye: true),
+            .init(title: "Journal Settings", description: "Find journal and timeline display controls together in Settings."),
+        ]),
+        .init(version: "1.3.1", year: 2026, month: 11, day: 22, highlights: [
+            .init(title: "Journal Navigation",
+                  description: "Use the same toolbar and filters in both journal tabs. Switching views keeps your default tab."),
+            .init(title: "Custom Substance Details",
+                  description: "Set display names and categories and edit reference data for individual routes.",
+                  requiresOpenEye: true),
+            .init(title: "AnodyneWiki",
+                  description: "Compare reference sources, browse notes and reports, and choose your preferred instance.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.2", year: 2025, month: 9, day: 14, highlights: [
+            .init(title: "FreakLog",
+                  description: "The journal took on its FreakLog name, with iCloud sync and a choice of which tabs appear."),
+            .init(title: "All Ingestions",
+                  description: "Browse individual entries, see their timeline, and open the related experience."),
+            .init(title: "Journal Imports", description: "Added support for version 12 journal exports."),
+            .init(title: "Logging Details",
+                  description: "Record an administration site or location with each ingestion.",
+                  requiresOpenEye: true),
+            .init(title: "Webhooks and Leaderboards",
+                  description: "Configure multiple webhook destinations and opt in to leaderboard sync.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.1", year: 2025, month: 9, day: 10, highlights: [
+            .init(title: "Journal Lock", description: "Keep journal content hidden while the app is locked."),
+            .init(title: "Journal Exports", description: "Export filenames use sortable dates and times."),
+        ]),
+        .init(version: "1.0", year: 2025, month: 9, day: 6, highlights: [
+            .init(title: "Welcome and Privacy",
+                  description: "Added a welcome screen, privacy information, and help for the journal."),
+            .init(title: "Live Activity",
+                  description: "Fixed a crash when the device restarted while a Live Activity was running."),
+        ]),
+    ]
 }
 
 private struct JournalDataSettings: View {
