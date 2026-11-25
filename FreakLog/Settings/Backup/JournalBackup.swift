@@ -3,9 +3,8 @@ import Foundation
 
 // MARK: - JournalBackup
 
-// A complete copy of the journal and its settings that restores exactly. Every entity and attribute
-// of the data model is written as it is, so nothing is left out when the model grows, and relationships refer to the
-// ids the backup gives its objects. JournalFile stays for the format the Android app reads, which leaves things out.
+// A complete copy of the journal and its settings. Relationships refer to the IDs the backup gives its objects.
+// JournalFile stays for the format the Android app reads.
 //
 // Compatibility: a backup names its format version, and newer versions of the app read older backups by running the
 // steps in `upgrades` on them first. When the data model or the settings written change, bump `formatVersion`, set
@@ -25,8 +24,8 @@ struct JournalBackup: Codable {
   private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
   private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
   static let formatVersion = 2
-  // The data model this format version mirrors; a test fails once the current one differs
-  static let dataModelVersion = "PW Version 12"
+  static let dataModelVersion = "PW Version 13"
+  static let localOperationEntities: Set<String> = ["WatchLogReceipt", "WebhookDeletion"]
 
   // Settings that belong to the journal. Ones about this device (iCloud sync, the last unlock, the welcome screen,
   // migrations and the CloudKit schema) stay as they are.
@@ -65,7 +64,18 @@ struct JournalBackup: Codable {
   // Steps that bring a backup of an older format version to the next one, keyed by the version they upgrade from.
   // They work on the raw JSON, so they can follow any change, e.g. renaming an attribute in every record:
   // `2: { backup in try JournalBackup.renameAttribute("old", to: "new", of: "Ingestion", in: &backup) }`
-  static let upgrades: [Int: (inout JSONValue) throws -> Void] = [:]
+  static let upgrades: [Int: (inout JSONValue) throws -> Void] = [
+    1: { backup in
+      updateAttributes(of: "ExperienceLocation", in: &backup) { attributes in
+        attributes["hasExplicitLatitude"] = .bool(false)
+        attributes["hasExplicitLongitude"] = .bool(false)
+      }
+      updateAttributes(of: "WebhookMessage", in: &backup) { attributes in
+        attributes["destinationURL"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("PW Version 13"), in: backup)
+    },
+  ]
 
   var format: String
   var formatVersion: Int
@@ -138,8 +148,7 @@ extension JournalBackup {
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
     var objectsByEntity: [String: [NSManagedObject]] = [:]
     var ids: [NSManagedObjectID: String] = [:]
-    for entity in model.entities {
-      guard let name = entity.name else { continue }
+    for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
       request.includesSubentities = false
       let objects = try context.fetch(request).sorted {
@@ -186,6 +195,12 @@ extension JournalBackup {
   }
 
   private static func record(of object: NSManagedObject, ids: [NSManagedObjectID: String]) throws -> Record {
+    func id(of object: NSManagedObject) throws -> String {
+      guard let id = ids[object.objectID] else {
+        throw JournalBackupError.unknownObject(object.objectID.uriRepresentation().absoluteString)
+      }
+      return id
+    }
     let entity = object.entity
     var attributes: [String: JSONValue] = [:]
     for (name, attribute) in entity.attributesByName where !attribute.isTransient {
@@ -195,16 +210,16 @@ extension JournalBackup {
     for (name, relationship) in entity.relationshipsByName where isWritten(relationship) {
       if relationship.isOrdered {
         let related = (object.value(forKey: name) as? NSOrderedSet)?.array as? [NSManagedObject] ?? []
-        relationships[name] = .array(related.compactMap { ids[$0.objectID] }.map(JSONValue.string))
+        relationships[name] = .array(try related.map(id(of:)).map(JSONValue.string))
       } else if relationship.isToMany {
         let related = (object.value(forKey: name) as? Set<NSManagedObject>) ?? []
-        relationships[name] = .array(related.compactMap { ids[$0.objectID] }.sorted().map(JSONValue.string))
+        relationships[name] = .array(try related.map(id(of:)).sorted().map(JSONValue.string))
       } else {
         let related = object.value(forKey: name) as? NSManagedObject
-        relationships[name] = related.flatMap { ids[$0.objectID] }.map(JSONValue.string) ?? .null
+        relationships[name] = try related.map { try .string(id(of: $0)) } ?? .null
       }
     }
-    return Record(id: ids[object.objectID] ?? UUID().uuidString, attributes: attributes, relationships: relationships)
+    return try Record(id: id(of: object), attributes: attributes, relationships: relationships)
   }
 
   // One side of each relationship is enough: the to-one side, both sides of a one-to-one, and to-many relationships
@@ -271,27 +286,40 @@ extension JournalBackup {
     }
     guard version <= formatVersion else { throw JournalBackupError.newerFormat(version) }
     guard version >= 1 else { throw JournalBackupError.unsupportedFormat(version) }
-    for step in version ..< formatVersion {
+    // GitHub’s original version 2 only added assistant settings and kept the version 12 model.
+    let legacyVersion2 = !wrapped && version == 2 && root["dataModel"]?.string == "PW Version 12"
+    for step in (legacyVersion2 ? 1 : version) ..< formatVersion {
       try upgrades[step]?(&json)
       json = try replacing("formatVersion", with: .number(Double(step + 1)), in: json)
     }
     var backup = try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
-    // Original v1 JSON backups can omit optional properties and use the model's defaults.
-    backup.requiresCompleteRecords = wrapped
+    // The early bare JSON backups can omit properties and use the model’s defaults.
+    backup.requiresCompleteRecords = wrapped || (version > 1 && !legacyVersion2)
     return backup
   }
 
   // For upgrade steps: renames an attribute in every record of the entity
   static func renameAttribute(_ old: String, to new: String, of entity: String, in backup: inout JSONValue) throws {
+    updateAttributes(of: entity, in: &backup) { attributes in
+      if let value = attributes.removeValue(forKey: old) {
+        attributes[new] = value
+      }
+    }
+  }
+
+  private static func updateAttributes(
+    of entity: String,
+    in backup: inout JSONValue,
+    update: (inout [String: JSONValue]) -> Void)
+  {
     guard case .object(var root) = backup, case .object(var entities) = root["entities"] else { return }
     guard case .array(let records) = entities[entity] else { return }
     entities[entity] = .array(records.map { record in
       guard
         case .object(var fields) = record,
-        case .object(var attributes) = fields["attributes"],
-        let value = attributes.removeValue(forKey: old)
+        case .object(var attributes) = fields["attributes"]
       else { return record }
-      attributes[new] = value
+      update(&attributes)
       fields["attributes"] = .object(attributes)
       return .object(fields)
     })
@@ -304,8 +332,7 @@ extension JournalBackup {
   func restore(into context: NSManagedObjectContext) throws {
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
     try validateCompleteness(in: model)
-    for entity in model.entities {
-      guard let name = entity.name else { continue }
+    for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
       request.includesPropertyValues = false
       request.includesSubentities = false
@@ -363,7 +390,10 @@ extension JournalBackup {
   }
 
   private func validateCompleteness(in model: NSManagedObjectModel) throws {
-    for (name, entity) in model.entitiesByName {
+    for name in entities.keys where model.entitiesByName[name] == nil || Self.localOperationEntities.contains(name) {
+      throw JournalBackupError.unknownEntity(name)
+    }
+    for (name, entity) in model.entitiesByName where !Self.localOperationEntities.contains(name) {
       guard let records = entities[name] else { throw JournalBackupError.missingEntity(name) }
       guard requiresCompleteRecords else { continue }
       let attributes = Set(entity.attributesByName.values.filter { !$0.isTransient }.map(\.name))
@@ -459,8 +489,8 @@ enum BackupDate {
 
   static func date(from string: String) -> Date? {
     guard string.hasSuffix("Z") else { return nil }
-    let parts = string.dropLast().split(separator: ".", maxSplits: 1)
-    guard let base = formatter.date(from: String(parts[0]) + "Z") else { return nil }
+    let parts = string.dropLast().split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+    guard let seconds = parts.first, let base = formatter.date(from: String(seconds) + "Z") else { return nil }
     guard parts.count == 2 else { return base }
     let digits = parts[1]
     guard

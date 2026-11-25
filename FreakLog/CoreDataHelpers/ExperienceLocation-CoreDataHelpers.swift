@@ -13,19 +13,12 @@ extension ExperienceLocation {
     }
 
     var latitudeUnwrapped: Double? {
-        if latitude == 0 {
-            return nil
-        } else {
-            return latitude
-        }
+        // Older stores used zero as the sentinel for an absent coordinate.
+        hasExplicitLatitude || latitude != 0 ? latitude : nil
     }
 
     var longitudeUnwrapped: Double? {
-        if longitude == 0 {
-            return nil
-        } else {
-            return longitude
-        }
+        hasExplicitLongitude || longitude != 0 ? longitude : nil
     }
 
     var asLocation: Location {
@@ -42,5 +35,7 @@ extension ExperienceLocation {
         name = value.name
         latitude = value.latitude ?? 0
         longitude = value.longitude ?? 0
+        hasExplicitLatitude = value.latitude != nil
+        hasExplicitLongitude = value.longitude != nil
     }
 }

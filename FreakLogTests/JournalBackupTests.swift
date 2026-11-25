@@ -23,8 +23,11 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(mdma.estimatedDoseStandardDeviation, 10)
     XCTAssertEqual(mdma.identifier, UUID(uuidString: "6F1F0F3E-2C4B-4E36-9F1D-3A1B2C3D4E5F"))
     XCTAssertEqual(mdma.location?.name, "Home")
+    XCTAssertEqual(mdma.location?.latitudeUnwrapped, 52.52)
+    XCTAssertEqual(mdma.location?.longitudeUnwrapped, 13.405)
     XCTAssertEqual(mdma.formulation?.componentsSorted.map(\.substanceNameUnwrapped), ["MDMA", "Caffeine"])
     XCTAssertEqual(mdma.webhookMessagesSorted.first?.webhookPreset?.name, "Friends")
+    XCTAssertNil(mdma.webhookMessagesSorted.first?.destinationURL)
     XCTAssertEqual(mdma.substanceCompanion?.color, .pink)
     let ketamine = ingestions[1]
     XCTAssertEqual(ketamine.consumerName, "Alex")
@@ -52,10 +55,17 @@ final class JournalBackupTests: XCTestCase {
 
   func testVersion2BackupsRestoreAndExportModelConfiguration() throws {
     let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v2", withExtension: "json"))
-    let fixture = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let original = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v1", withExtension: "json"))
+    let decoder = JSONDecoder()
+    let settingsFixture = try decoder.decode(JournalBackup.self, from: Data(contentsOf: url))
+    var journalFixture = try decoder.decode(JournalBackup.self, from: Data(contentsOf: original))
+    journalFixture.formatVersion = 2
+    journalFixture.settings = settingsFixture.settings
+    let fixture = try XCTUnwrap(JournalBackup.read(journalFixture.data()))
     let context = PersistenceController(inMemory: true).viewContext
     try fixture.restore(into: context)
     try context.save()
+    XCTAssertEqual(try context.fetch(Ingestion.fetchRequest()).count, 2)
 
     let defaults = Self.emptyDefaults()
     fixture.restoreSettings(to: defaults)
@@ -110,15 +120,55 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(defaults.string(forKey: PersistenceController.assistantActiveProfileKey), restored.id.uuidString)
   }
 
+  func testImportsVersion2Backups() throws {
+    let backup = try XCTUnwrap(JournalBackup.read(Self.version2Fixture))
+    let context = PersistenceController(inMemory: true).viewContext
+    try backup.restore(into: context)
+    try context.save()
+
+    let location = try XCTUnwrap(context.fetch(ExperienceLocation.fetchRequest()).first)
+    XCTAssertEqual(location.latitudeUnwrapped, 0)
+    XCTAssertNil(location.longitudeUnwrapped)
+    XCTAssertEqual(
+      try context.fetch(WebhookMessage.fetchRequest()).first?.destinationURL,
+      "https://example.com/hook")
+  }
+
+  func testWrappedVersion1BackupsUpgradeBeforeCompletenessValidation() throws {
+    var backup = try XCTUnwrap(JournalBackup.read(Self.version2Fixture))
+    backup.formatVersion = 1
+    backup.dataModel = "PW Version 12"
+    backup.entities["ExperienceLocation"]?[0].attributes.removeValue(forKey: "hasExplicitLatitude")
+    backup.entities["ExperienceLocation"]?[0].attributes.removeValue(forKey: "hasExplicitLongitude")
+    backup.entities["WebhookMessage"]?[0].attributes.removeValue(forKey: "destinationURL")
+
+    let upgraded = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+    XCTAssertEqual(upgraded.formatVersion, 2)
+    let context = PersistenceController(inMemory: true).viewContext
+    try upgraded.restore(into: context)
+    try context.save()
+
+    let location = try XCTUnwrap(context.fetch(ExperienceLocation.fetchRequest()).first)
+    XCTAssertNil(location.latitudeUnwrapped)
+    XCTAssertNil(location.longitudeUnwrapped)
+    XCTAssertNil(try context.fetch(WebhookMessage.fetchRequest()).first?.destinationURL)
+
+    backup.entities["ExperienceLocation"]?[0].attributes.removeValue(forKey: "latitude")
+    let incomplete = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+    XCTAssertThrowsError(try incomplete.restore(into: context)) { error in
+      XCTAssertEqual(error as? JournalBackupError, .missingProperty(entity: "ExperienceLocation", name: "latitude"))
+    }
+    XCTAssertFalse(context.hasChanges)
+  }
+
   // Anything in the journal comes back the same: an export of the restored journal equals the first one,
   // apart from the ids the backup gives its objects
   func testRestoresEverythingExactly() throws {
     let source = PersistenceController(inMemory: true).viewContext
     try Self.fillEveryEntity(in: source)
     let backup = try JournalBackup(context: source, defaults: Self.emptyDefaults(), appVersion: "1")
-    XCTAssertEqual(
-      Set(backup.entities.keys),
-      Set(source.persistentStoreCoordinator?.managedObjectModel.entities.compactMap(\.name) ?? []))
+    let model = try XCTUnwrap(source.persistentStoreCoordinator?.managedObjectModel)
+    XCTAssertEqual(Set(backup.entities.keys), Set(model.entitiesByName.keys).subtracting(JournalBackup.localOperationEntities))
     XCTAssertTrue(backup.entities.values.allSatisfy { !$0.isEmpty }, "every entity has an object to compare")
 
     let read = try XCTUnwrap(JournalBackup.read(backup.fileData()))
@@ -128,6 +178,23 @@ final class JournalBackupTests: XCTestCase {
     let restored = try JournalBackup(context: target, defaults: Self.emptyDefaults(), appVersion: "1")
 
     XCTAssertEqual(Self.canonical(restored), Self.canonical(backup))
+  }
+
+  func testLocalOperationRecordsStayInTheStoreDuringBackupRestore() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let receipt = NSEntityDescription.insertNewObject(forEntityName: "WatchLogReceipt", into: context)
+    receipt.setValue(UUID(), forKey: "requestID")
+    let deletion = NSEntityDescription.insertNewObject(forEntityName: "WebhookDeletion", into: context)
+    deletion.setValue("123", forKey: "messageId")
+    try context.save()
+
+    let backup = try JournalBackup(context: context, defaults: Self.emptyDefaults(), appVersion: "1")
+    XCTAssertNil(backup.entities["WatchLogReceipt"])
+    XCTAssertNil(backup.entities["WebhookDeletion"])
+    try backup.restore(into: context)
+    try context.save()
+    XCTAssertFalse(receipt.isDeleted)
+    XCTAssertEqual(deletion.value(forKey: "messageId") as? String, "123")
   }
 
   func testRestoringReplacesWhatWasThere() throws {
@@ -176,6 +243,8 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(BackupDate.date(from: "2023-11-14T22:13:20.5Z"), Date(timeIntervalSince1970: 1_700_000_000.5))
     XCTAssertEqual(BackupDate.string(from: Date(timeIntervalSince1970: 0.9999999)), "1970-01-01T00:00:01.000000Z")
     XCTAssertNil(BackupDate.date(from: "2023-11-14"))
+    XCTAssertNil(BackupDate.date(from: "Z"))
+    XCTAssertNil(BackupDate.date(from: "2023-11-14T22:13:20.Z"))
   }
 
   func testRefusesBackupsOfNewerVersions() {
@@ -191,7 +260,7 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertNil(try JournalBackup.read(Data("not json".utf8)))
   }
 
-  func testBackupContainerFailsLegacyJSONParsingAndKeepsV1Payload() throws {
+  func testBackupContainerFailsLegacyJSONParsingAndKeepsItsPayload() throws {
     let context = PersistenceController(inMemory: true).viewContext
     try Self.fillEveryEntity(in: context)
     let backup = try JournalBackup(context: context, defaults: Self.emptyDefaults(), appVersion: "1")
@@ -276,6 +345,39 @@ final class JournalBackupTests: XCTestCase {
 
   // MARK: - Helpers
 
+  private static let version2Fixture = Data(#"""
+    FREAKLOG-BACKUP/1
+    {
+      "format": "FreakLog Backup",
+      "formatVersion": 2,
+      "dataModel": "PW Version 13",
+      "appVersion": "1.4.3",
+      "created": "2026-11-25T10:00:00.000000Z",
+      "settings": {},
+      "entities": {
+        "CustomRoa": [], "CustomSubstance": [], "CustomUnit": [], "Experience": [],
+        "ExperienceLocation": [{
+          "id": "location-1",
+          "attributes": {
+            "name": "WGS 84", "latitude": 0, "longitude": 0,
+            "hasExplicitLatitude": true, "hasExplicitLongitude": false
+          },
+          "relationships": {"ingestion": null, "legacyExperience": null}
+        }],
+        "Formulation": [], "FormulationComponent": [], "Ingestion": [], "ShulginRating": [],
+        "Spray": [], "SubstanceCompanion": [], "SubstanceOverride": [], "TimedNote": [],
+        "WebhookMessage": [{
+          "id": "message-1",
+          "attributes": {
+            "id": null, "messageId": "123", "creationDate": null, "destinationURL": "https://example.com/hook"
+          },
+          "relationships": {"ingestion": null, "timedNote": null, "webhookPreset": null}
+        }],
+        "WebhookPreset": []
+      }
+    }
+    """#.utf8)
+
   private static func emptyDefaults() -> UserDefaults {
     let name = "JournalBackupTests-\(UUID().uuidString)"
     let defaults = UserDefaults(suiteName: name)!
@@ -322,6 +424,7 @@ final class JournalBackupTests: XCTestCase {
     let legacyLocation = ExperienceLocation(context: context)
     legacyLocation.name = "Old place"
     legacyLocation.latitude = 1.5
+    legacyLocation.hasExplicitLongitude = true
     experience.legacyLocation = legacyLocation
 
     let companion = SubstanceCompanion(context: context)
@@ -403,6 +506,7 @@ final class JournalBackupTests: XCTestCase {
       let message = WebhookMessage(context: context)
       message.id = UUID()
       message.messageId = "\(index)"
+      message.destinationURL = "https://example.com/hook"
       message.webhookPreset = preset
       message.ingestion = owner as? Ingestion
       message.timedNote = owner as? TimedNote
