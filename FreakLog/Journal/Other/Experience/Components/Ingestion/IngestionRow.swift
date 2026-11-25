@@ -19,6 +19,7 @@ struct IngestionRow<Content: View>: View {
 
 private struct IngestionRowContent<Content: View>: View {
     @ObservedObject var ingestion: Ingestion
+    @AppStorage(AdministrationSiteNameStyle.preferenceKey) private var siteNameStyle = AdministrationSiteNameStyle.simple
     let substanceColor: SubstanceColor
     let isEyeOpen: Bool
     let isHidingDosageDots: Bool
@@ -69,15 +70,20 @@ private struct IngestionRowContent<Content: View>: View {
     }
 
     private var routeTextWithSpace: Text {
-        let routeText = isEyeOpen ? ingestion.administrationRouteUnwrapped.rawValue : ""
-        let administrationSiteText = isEyeOpen && !ingestion.administrationSiteUnwrapped.isEmpty ? " (\(ingestion.administrationSiteUnwrapped.lowercased()))" : ""
-        return Text(" " + routeText + administrationSiteText).foregroundColor(.secondary)
+        Text(" " + routeDescription()).foregroundColor(.secondary)
+    }
+
+    private func routeDescription(capitalized: Bool = false) -> String {
+        guard isEyeOpen else { return "" }
+        let route = ingestion.administrationRouteUnwrapped
+        let routeText = capitalized ? route.rawValue.localizedCapitalized : route.rawValue
+        let site = siteNameStyle.label(for: ingestion.administrationSiteUnwrapped, route: route)
+        return site.isEmpty ? routeText : "\(routeText) (\(site))"
     }
 
     private var doseRow: some View {
         HStack {
             VStack(alignment: .leading) {
-                let routeText = isEyeOpen ? ingestion.administrationRouteUnwrapped.rawValue : ""
                 if let customUnitDose = ingestion.customUnitDose {
                     if let calculatedDoseDescription = customUnitDose.calculatedDoseDescription {
                         Text(customUnitDose.doseDescription) + Text(" = \(calculatedDoseDescription)").foregroundColor(.secondary) + routeTextWithSpace
@@ -94,7 +100,7 @@ private struct IngestionRowContent<Content: View>: View {
                         )) + routeTextWithSpace
                     } else {
                         // Insufflated
-                        Text(routeText.localizedCapitalized).foregroundColor(.secondary)
+                        Text(routeDescription(capitalized: true)).foregroundColor(.secondary)
                     }
                 }
                 
