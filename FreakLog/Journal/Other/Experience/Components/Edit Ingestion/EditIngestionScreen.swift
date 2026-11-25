@@ -157,9 +157,9 @@ struct EditIngestionScreen: View {
         }
     }
 
-    private func delete() {
+    private func delete(returningStock: Bool) {
         Task {
-            if await IngestionDeletion.delete(ingestions: [ingestion]) {
+            if await IngestionDeletion.delete(ingestions: [ingestion], returningStock: returningStock) {
                 dismiss()
             }
         }
@@ -185,7 +185,7 @@ struct EditIngestionContent: View {
     @Binding var consumerName: String
     @Binding var siteSelection: AdministrationSiteSelection
     let save: () -> Void
-    let delete: () -> Void
+    let delete: (Bool) -> Void
     let deleteWebhookMessage: (WebhookMessage) async -> Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
@@ -195,6 +195,7 @@ struct EditIngestionContent: View {
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
+    @State private var confirmsDeletionWithStock = false
 
     var body: some View {
         NavigationStack {
@@ -277,6 +278,20 @@ struct EditIngestionContent: View {
                     AdministrationSitePicker(route: route, selection: $siteSelection)
                     LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
                 }.listRowSeparator(.hidden)
+                if let stockChange = ingestion.stockChange, let container = stockChange.container {
+                    Section {
+                        NavigationLink {
+                            StockContainerDetail(container: container)
+                        } label: {
+                            LabeledContent("Container", value: container.displayName)
+                        }
+                        LabeledContent("Recorded Stock Use", value: container.quantityLabel(-stockChange.quantity))
+                    } header: {
+                        Text("Inventory")
+                    } footer: {
+                        Text("To change the amount used from stock, correct the container’s count.")
+                    }
+                }
                 Section {
                     Toggle("Hide in timeline", isOn: $isHidden).tint(.accentColor)
                     Button(action: {
@@ -285,7 +300,13 @@ struct EditIngestionContent: View {
                     }) {
                         Label("Add ingestion at same time", systemImage: "plus")
                     }
-                    Button(action: delete) {
+                    Button {
+                        if ingestion.stockChange == nil {
+                            delete(false)
+                        } else {
+                            confirmsDeletionWithStock = true
+                        }
+                    } label: {
                         Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
                     }
                 }
@@ -331,6 +352,19 @@ struct EditIngestionContent: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Ingestion")
+            .confirmationDialog("Delete Ingestion?", isPresented: $confirmsDeletionWithStock, titleVisibility: .visible) {
+                Button("Delete Entry, Keep Stock Use", role: .destructive) { delete(false) }
+                if ingestion.stockChange?.canReverseUse == true {
+                    Button("Delete Entry and Return Stock", role: .destructive) { delete(true) }
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                if ingestion.stockChange?.canReverseUse == true {
+                    Text("Return the stock if this entry was logged by mistake.")
+                } else {
+                    Text("The container’s stock history will still show the original amount used.")
+                }
+            }
         }
     }
 
@@ -359,7 +393,7 @@ struct EditIngestionContent: View {
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { },
+        delete: { _ in },
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
@@ -387,7 +421,7 @@ struct EditIngestionContent: View {
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { },
+        delete: { _ in },
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),

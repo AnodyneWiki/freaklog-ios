@@ -6,8 +6,8 @@ import CoreData
 @MainActor
 enum IngestionDeletion {
     @discardableResult
-    static func delete(ingestions: [Ingestion]) async -> Bool {
-        await delete(ingestions)
+    static func delete(ingestions: [Ingestion], returningStock: Bool = false) async -> Bool {
+        await delete(ingestions, returningStock: returningStock)
     }
 
     @discardableResult
@@ -27,7 +27,7 @@ enum IngestionDeletion {
 
     static let failureNotification = Notification.Name("JournalDeletionFailed")
 
-    private static func delete(_ objects: [NSManagedObject]) async -> Bool {
+    private static func delete(_ objects: [NSManagedObject], returningStock: Bool = false) async -> Bool {
         do {
             let context = try PersistenceController.shared.journalEditContext()
             let identifiers = try PersistenceController.withJournalStoreWrite {
@@ -50,6 +50,12 @@ enum IngestionDeletion {
                     }
                 }
                 let identifiers = ingestions.compactMap(\.identifier)
+                if returningStock {
+                    guard rootObjects.count == 1, let ingestion = rootObjects.first as? Ingestion else {
+                        throw InventoryError.cannotReverseUse
+                    }
+                    try Inventory.stageUsageReversal(for: ingestion)
+                }
                 WebhookManager.stageMessageDeletion(for: ingestions, timedNotes: notes, in: context)
                 rootObjects.forEach(context.delete)
                 try PersistenceController.saveJournalChanges(in: context)
@@ -58,7 +64,8 @@ enum IngestionDeletion {
             didDelete(identifiers: identifiers)
             return true
         } catch {
-            NotificationCenter.default.post(name: failureNotification, object: "Couldn't delete journal data")
+            let message = (error as? InventoryError)?.errorDescription ?? "Couldn't delete journal data"
+            NotificationCenter.default.post(name: failureNotification, object: message)
             return false
         }
     }

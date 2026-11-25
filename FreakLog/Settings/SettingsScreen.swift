@@ -65,6 +65,11 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.formulations) {
                         Label("Formulations", systemImage: "testtube.2")
                     }
+                    NavigationLink {
+                        InventoryScreen()
+                    } label: {
+                        Label("Inventory", systemImage: "archivebox")
+                    }
                 }
                 Section("Integrations") {
                     NavigationLink(value: GlobalNavigationDestination.webhookSettings) {

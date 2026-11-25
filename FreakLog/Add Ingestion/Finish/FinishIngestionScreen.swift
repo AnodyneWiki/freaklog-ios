@@ -58,6 +58,7 @@ struct FinishIngestionScreen: View {
     @State private var hasSelectedExperience = false
     @State private var saveError: String?
     @State private var isSettingUpLoggedRoutine = false
+    @State private var stockContainerID: NSManagedObjectID?
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
@@ -139,6 +140,9 @@ struct FinishIngestionScreen: View {
                 Section {
                     LabeledContent("Webhook Recipients", value: webhookRecipients)
                 }
+            }
+            if let inventoryUse = Inventory.Use(ingestions) {
+                InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
             }
             Section("When") {
                 TimePointOrRangePicker(
@@ -396,6 +400,10 @@ struct FinishIngestionScreen: View {
         }
         if let occurrence {
             for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
+        }
+        if let stockContainerID {
+            guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
+            try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
         }
         try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
         let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
