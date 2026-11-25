@@ -5,6 +5,7 @@ struct TimePointOrRangePicker: View {
     @Binding var selectedTimePickerOption: TimePickerOption
     @Binding var selectedTime: Date
     @Binding var selectedEndTime: Date
+    var showsPresets = false
 
     var body: some View {
         Picker("Time picker option", selection: $selectedTimePickerOption.animation()) {
@@ -17,6 +18,9 @@ struct TimePointOrRangePicker: View {
                 selectedEndTime = selectedTime.addingTimeInterval(30*60)
             }
         }
+        if showsPresets {
+            timePresets
+        }
         switch selectedTimePickerOption {
         case .pointInTime:
             HStack(alignment: .center) {
@@ -26,13 +30,15 @@ struct TimePointOrRangePicker: View {
                     displayedComponents: [.date, .hourAndMinute]
                 )
                 .datePickerStyle(.compact)
-                Spacer()
-                Button {
-                    withAnimation {
-                        selectedTime = Date.now
+                if !showsPresets {
+                    Spacer()
+                    Button {
+                        withAnimation {
+                            selectedTime = Date.now
+                        }
+                    } label: {
+                        Label("Reset time", systemImage: "clock.arrow.circlepath").labelStyle(.iconOnly)
                     }
-                } label: {
-                    Label("Reset time", systemImage: "clock.arrow.circlepath").labelStyle(.iconOnly)
                 }
             }
         case .timeRange:
@@ -63,7 +69,35 @@ struct TimePointOrRangePicker: View {
             )
             .datePickerStyle(.compact)
         }
+    }
 
+    private var timePresets: some View {
+        Menu {
+            Button("Now") { applyTimePreset(minutesAgo: 0) }
+            Button("15 minutes ago") { applyTimePreset(minutesAgo: 15) }
+            Button("30 minutes ago") { applyTimePreset(minutesAgo: 30) }
+            Button("1 hour ago") { applyTimePreset(minutesAgo: 60) }
+            Button("2 hours ago") { applyTimePreset(minutesAgo: 120) }
+        } label: {
+            Label {
+                if selectedTimePickerOption == .timeRange {
+                    Text("Set Start Time")
+                } else {
+                    Text("Set Time")
+                }
+            } icon: {
+                Image(systemName: "clock")
+            }
+        }
+    }
+
+    private func applyTimePreset(minutesAgo: Int) {
+        let newStart = Date.now.addingTimeInterval(-Double(minutesAgo) * 60)
+        if selectedTimePickerOption == .timeRange {
+            let duration = max(0, selectedEndTime.timeIntervalSince(selectedTime))
+            selectedEndTime = newStart.addingTimeInterval(duration)
+        }
+        selectedTime = newStart
     }
 }
 

@@ -115,7 +115,8 @@ struct FinishIngestionScreen: View {
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
                     selectedTime: $selectedTime,
-                    selectedEndTime: $selectedEndTime
+                    selectedEndTime: $selectedEndTime,
+                    showsPresets: true
                 )
             }
             Section("Journal") {
