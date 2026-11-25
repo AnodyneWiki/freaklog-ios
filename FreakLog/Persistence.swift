@@ -43,6 +43,7 @@ struct PersistenceController {
     static let isAssistantAnodyneWikiEnabledKey = "isAssistantAnodyneWikiEnabled"
     static let isAssistantWebAccessEnabledKey = "isAssistantWebAccessEnabled"
     static let defaultJournalViewKey = "defaultJournalView"
+    static let confirmsIngestionDeletionKey = "confirmsIngestionDeletion"
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
     static let leaderboardServersKey = "leaderboardServers"
     static let leaderboardDeviceSeedKey = "leaderboardDeviceSeed"

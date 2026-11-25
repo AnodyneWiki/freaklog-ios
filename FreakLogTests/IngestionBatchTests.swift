@@ -82,6 +82,10 @@ final class IngestionBatchTests: XCTestCase {
 
         let single = IngestionDeletion.Request(entries[2])
         let batch = IngestionDeletion.Request(entries[0])
+        XCTAssertTrue(single.requiresConfirmation(preferenceEnabled: true))
+        XCTAssertFalse(single.requiresConfirmation(preferenceEnabled: false))
+        XCTAssertTrue(batch.requiresConfirmation(preferenceEnabled: false))
+
         let freshContext = try store.journalEditContext()
         XCTAssertEqual(try single.resolve(in: freshContext).map(\.objectID), [entries[2].objectID])
         XCTAssertEqual(Set(try batch.resolve(in: freshContext).map(\.objectID)), Set(entries.prefix(2).map(\.objectID)))
@@ -92,6 +96,12 @@ final class IngestionBatchTests: XCTestCase {
         let changedContext = try store.journalEditContext()
         XCTAssertThrowsError(try single.resolve(in: changedContext))
         XCTAssertThrowsError(try batch.resolve(in: changedContext))
+
+        entries[2].isUnconfirmed = false
+        entries[2].confirmationBatchID = nil
+        let (_, stock) = try productWithStock(2, in: context)
+        try Inventory.stage(.use, quantity: -1, in: stock, linkedIngestions: [entries[2]])
+        XCTAssertTrue(IngestionDeletion.Request(entries[2]).requiresConfirmation(preferenceEnabled: false))
     }
 
     private func productWithStock(

@@ -152,7 +152,7 @@ struct JournalCalendarScreen: View {
                     JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.hour().minute())
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button {
-                                pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
+                                requestIngestionDeletion(ingestion, confirmation: $pendingIngestionDeletion)
                             } label: {
                                 Label("Delete", systemImage: "trash")
                             }

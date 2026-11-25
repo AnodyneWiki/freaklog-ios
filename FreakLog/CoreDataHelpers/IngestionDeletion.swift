@@ -17,6 +17,10 @@ enum IngestionDeletion {
         var count: Int { entryIDs.count }
         var hasStockUse: Bool { stockUseID != nil }
 
+        func requiresConfirmation(preferenceEnabled: Bool) -> Bool {
+            preferenceEnabled || count > 1 || hasStockUse
+        }
+
         init(_ ingestion: Ingestion) {
             let entries = Self.entries(for: ingestion)
             selectedID = ingestion.objectID

@@ -235,7 +235,7 @@ private extension AllIngestionsView {
             }
 
             Button(role: .destructive) {
-                pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
+                requestIngestionDeletion(ingestion, confirmation: $pendingIngestionDeletion)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -290,7 +290,7 @@ private extension AllIngestionsView {
 
     func delete(_ item: IngestionSection.Item) {
         switch item {
-        case .ingestion(let ingestion): pendingIngestionDeletion = IngestionDeletion.Request(ingestion)
+        case .ingestion(let ingestion): requestIngestionDeletion(ingestion, confirmation: $pendingIngestionDeletion)
         case .timedNote(let timedNote): viewModel.delete(timedNote)
         }
     }

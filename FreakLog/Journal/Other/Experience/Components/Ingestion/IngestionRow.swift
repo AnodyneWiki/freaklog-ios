@@ -145,6 +145,24 @@ struct SubstanceInfoSwipeAction: ViewModifier {
 }
 
 extension View {
+    @MainActor
+    func requestIngestionDeletion(
+        _ ingestion: Ingestion,
+        confirmation: Binding<IngestionDeletion.Request?>,
+        onDeleted: @escaping () -> Void = {}
+    ) {
+        let request = IngestionDeletion.Request(ingestion)
+        let confirmsDeletion = UserDefaults.standard
+            .object(forKey: PersistenceController.confirmsIngestionDeletionKey) as? Bool ?? true
+        if request.requiresConfirmation(preferenceEnabled: confirmsDeletion) {
+            confirmation.wrappedValue = request
+        } else {
+            Task {
+                if await IngestionDeletion.delete(request) { onDeleted() }
+            }
+        }
+    }
+
     func confirmIngestionDeletion(
         _ request: Binding<IngestionDeletion.Request?>,
         onDeleted: @escaping () -> Void = {}

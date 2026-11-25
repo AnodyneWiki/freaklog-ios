@@ -66,6 +66,7 @@ struct JournalBackup: Codable {
     PersistenceController.doseSourceKey,
     PersistenceController.anodyneInstanceURLKey,
     PersistenceController.defaultJournalViewKey,
+    PersistenceController.confirmsIngestionDeletionKey,
     PersistenceController.isHidingJournalTabSwitcherKey,
     PersistenceController.leaderboardServersKey,
     PersistenceController.leaderboardDeviceSeedKey,

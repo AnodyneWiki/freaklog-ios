@@ -548,7 +548,7 @@ struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: Vie
                         Label("Add Ingestion at Same Time", systemImage: "plus")
                     }
                     Button(role: .destructive) {
-                        pendingDeletion = IngestionDeletion.Request(ingestion)
+                        requestIngestionDeletion(ingestion, confirmation: $pendingDeletion, onDeleted: onDeleted)
                     } label: {
                         Label("Delete Ingestion", systemImage: "trash")
                     }

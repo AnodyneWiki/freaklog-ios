@@ -15,6 +15,7 @@ struct JournalSettingsScreen: View {
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
     @AppStorage(AdministrationSiteNameStyle.preferenceKey) private var siteNameStyle = AdministrationSiteNameStyle.simple
     @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
+    @AppStorage(PersistenceController.confirmsIngestionDeletionKey) private var confirmsIngestionDeletion = true
 
     var body: some View {
         List {
@@ -70,6 +71,13 @@ struct JournalSettingsScreen: View {
                 } label: {
                     Label("Time Range", systemImage: "clock.arrow.circlepath")
                 }
+            }
+
+            Section {
+                Toggle("Confirm Ingestion Deletion", isOn: $confirmsIngestionDeletion)
+                    .tint(.accentColor)
+            } footer: {
+                Text("Linked batches and entries with stock use always ask for confirmation.")
             }
 
             Section {
