@@ -32,11 +32,6 @@ struct ContentScreen: View {
                     view(for: tab)
                 }
             }
-            .onOpenURL { url in
-                if url.absoluteString == openLatestExperience {
-                    navigator.openLatestActiveExperience()
-                }
-            }
             .onChange(of: filteredTabs) { _ in
                 if !filteredTabs.contains(navigator.selectedTab) {
                     if let firstTab = filteredTabs.first {

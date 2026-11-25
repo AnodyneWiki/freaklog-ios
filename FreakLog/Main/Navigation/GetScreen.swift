@@ -73,6 +73,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             SaferRoutesScreen()
         case .tools:
             ToolsScreen()
+        case .dueToday:
+            RoutineDayScreen()
         case .sprayCalculator:
             SprayCalculatorScreen()
         case .saferUse:

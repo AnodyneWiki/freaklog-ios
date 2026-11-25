@@ -26,7 +26,7 @@ struct TimelineWidgetLiveActivity: Widget {
             .padding(.top, 8)
             .padding(.bottom, 6)
             .padding(.horizontal, 10)
-            .widgetURL(URL(string: openLatestExperience))
+            .widgetURL(continueJournalURL)
             .frame(height: 160) // in the documentation: https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities it says that truncation only happens if the height exceeds 160 points
         } dynamicIsland: { context in
             let timelineModel = context.state.timelineModel
@@ -55,7 +55,7 @@ struct TimelineWidgetLiveActivity: Widget {
                 Image(systemName: "eye")
             }
             .contentMargins(.bottom, 13, for: .expanded)
-            .widgetURL(URL(string: openLatestExperience))
+            .widgetURL(continueJournalURL)
         }
     }
 }

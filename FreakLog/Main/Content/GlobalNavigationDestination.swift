@@ -38,6 +38,7 @@ enum GlobalNavigationDestination: Hashable {
 
     // tools tab
     case tools
+    case dueToday
     case sprayCalculator
     case saferUse
 
