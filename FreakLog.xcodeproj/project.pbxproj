@@ -198,7 +198,6 @@
 		EA418A0429675FE800DEA663 /* ExperiencePickerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */; };
 		EA418A072969740D00DEA663 /* IngestionNoteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A062969740D00DEA663 /* IngestionNoteScreen.swift */; };
 		EA418A0B296974D800DEA663 /* IngestionNote-ViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0A296974D800DEA663 /* IngestionNote-ViewModel.swift */; };
-		EA418A0D29697EB200DEA663 /* ExperienceTitleScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A0C29697EB200DEA663 /* ExperienceTitleScreen.swift */; };
 		EA418A2B2969C36100DEA663 /* ChooseLocationScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2A2969C36100DEA663 /* ChooseLocationScreen.swift */; };
 		EA418A2D296C00BF00DEA663 /* LocationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2C296C00BF00DEA663 /* LocationManager.swift */; };
 		EA418A2F296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA418A2E296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift */; };
@@ -681,7 +680,6 @@
 		EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperiencePickerScreen.swift; sourceTree = "<group>"; };
 		EA418A062969740D00DEA663 /* IngestionNoteScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionNoteScreen.swift; sourceTree = "<group>"; };
 		EA418A0A296974D800DEA663 /* IngestionNote-ViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IngestionNote-ViewModel.swift"; sourceTree = "<group>"; };
-		EA418A0C29697EB200DEA663 /* ExperienceTitleScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTitleScreen.swift; sourceTree = "<group>"; };
 		EA418A2A2969C36100DEA663 /* ChooseLocationScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChooseLocationScreen.swift; sourceTree = "<group>"; };
 		EA418A2C296C00BF00DEA663 /* LocationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocationManager.swift; sourceTree = "<group>"; };
 		EA418A2E296C03AF00DEA663 /* ExperienceLocation-CoreDataHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceLocation-CoreDataHelpers.swift"; sourceTree = "<group>"; };
@@ -1305,7 +1303,6 @@
 				EA48F8B729EE8A15007DA8C5 /* Choose Location */,
 				EAB1659427E302BC003DF79D /* ColorPickerScreen.swift */,
 				EA418A0329675FE800DEA663 /* ExperiencePickerScreen.swift */,
-				EA418A0C29697EB200DEA663 /* ExperienceTitleScreen.swift */,
 				EA418A09296974B300DEA663 /* Ingestion Note */,
 				EA4B8A262A9DCE63009918DE /* EditConsumerScreen.swift */,
 			);
@@ -2479,7 +2476,6 @@
 				EAA9C3922A57203800869E5A /* MissingToleranceText.swift in Sources */,
 				EABD92022941C3A30073303A /* GroupDrawable.swift in Sources */,
 				EAE4722526CBA664009FB0EC /* JournalScreen.swift in Sources */,
-				EA418A0D29697EB200DEA663 /* ExperienceTitleScreen.swift in Sources */,
 				EA48F88C29DD503D007DA8C5 /* IngestionCodable.swift in Sources */,
 				EA014FA427EA1AD300077FB2 /* ToastViewModel.swift in Sources */,
 				EA6048312A166FD9005C6A4B /* SprayCalculatorScreen.swift in Sources */,

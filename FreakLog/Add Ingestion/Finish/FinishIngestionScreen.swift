@@ -10,7 +10,6 @@ struct FinishIngestionScreen: View {
     }
 
     enum SheetOption: Identifiable, Hashable {
-        case editTitle
         case editLocation
         case editConsumer
         case setUpRoutine(RoutineDraft)
@@ -46,7 +45,8 @@ struct FinishIngestionScreen: View {
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedEndTime = Date().addingTimeInterval(30*60)
     @State private var enteredNote = ""
-    @State private var showsMoreDetails = false
+    @State private var showsDisplayOptions = false
+    @State private var showsWebhooks = false
     @State private var enteredTitle = ""
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
@@ -74,14 +74,14 @@ struct FinishIngestionScreen: View {
 
     var body: some View {
         screen.toolbar {
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .confirmationAction) {
                 doneButton
             }
         }
     }
 
     var doneButton: some View {
-        Button(isUnconfirmed ? "Save Unconfirmed" : "Log", action: save)
+        Button(isUnconfirmed ? "Save" : "Log", action: save)
             .font(.headline)
             .disabled(isSettingUpLoggedRoutine)
     }
@@ -116,37 +116,26 @@ struct FinishIngestionScreen: View {
                     Button("Try Again", action: save)
                 }
             }
-            if let routineSlot {
-                Section("Routine") {
+            ingestionSummary
+            Section("When") {
+                TimePointOrRangePicker(
+                    selectedTimePickerOption: $selectedTimePickerOption,
+                    selectedTime: $selectedTime,
+                    selectedEndTime: $selectedEndTime,
+                    showsPresets: true
+                )
+                if let routineSlot {
                     LabeledContent("Scheduled") {
                         Text(routineSlot.scheduledAt, format: .dateTime.month().day().hour().minute())
                     }
                 }
             }
-            Section("Ingestion") {
-                ForEach(ingestions.indices, id: \.self) { index in
-                    let ingestion = ingestions[index]
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
-                            .font(.headline)
-                        Text(doseDescription(for: ingestion))
-                            .monospacedDigit()
-                        Text(ingestion.administrationRoute.rawValue.capitalized)
-                            .foregroundStyle(.secondary)
-                    }
-                    .padding(.vertical, 3)
-                    .accessibilityElement(children: .combine)
-                }
+            experienceSection
+            Section {
                 Toggle("Unconfirmed", isOn: $isUnconfirmed)
+            } footer: {
                 if isUnconfirmed {
-                    Text("Confirm this entry in your journal to include it in totals and use stock or send webhooks.")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            if !isUnconfirmed, sendWebhooks.wrappedValue, !enabledWebhookPresets.isEmpty {
-                Section {
-                    LabeledContent("Webhook Recipients", value: webhookRecipients)
+                    Text("Confirm this entry in Journal to count it in totals, use stock, or send webhooks.")
                 }
             }
             if !isUnconfirmed, let inventoryUse = Inventory.Use(ingestions) {
@@ -157,87 +146,28 @@ struct FinishIngestionScreen: View {
                     StatsGoalLoggingSection(substanceName: name, at: selectedTime)
                 }
             }
-            Section("When") {
-                TimePointOrRangePicker(
-                    selectedTimePickerOption: $selectedTimePickerOption,
-                    selectedTime: $selectedTime,
-                    selectedEndTime: $selectedEndTime,
-                    showsPresets: true
-                )
-            }
-            Section("Journal") {
-                if experiencesWithinLargerRange.isEmpty {
-                    LabeledContent("Experience", value: "New Experience")
-                } else {
-                    ExperiencePickerRow(
-                        selectedExperience: $selectedExperience,
-                        wantsToForceNewExperience: $wantsToForceNewExperience,
-                        experiences: experiencesWithinLargerRange,
-                        onSelection: { hasSelectedExperience = true }
-                    )
+            Section("Details") {
+                TextField("Note", text: $enteredNote, axis: .vertical)
+                    .textInputAutocapitalization(.sentences)
+                ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
+                if let sharedRoute {
+                    AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
                 }
-                if let locationName = locationManager.selectedLocation?.name {
-                    LocationButton(locationName: locationName) { sheetToShow = .editLocation }
+                LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
+                if #available(iOS 16.2, *), selectedExperience == nil, !isUnconfirmed,
+                   LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive,
+                   selectedTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
+                    Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity)
                 }
-                if selectedExperience == nil {
-                    Button {
-                        sheetToShow = .editTitle
-                    } label: {
-                        if enteredTitle.isEmpty {
-                            Label("Add Title", systemImage: "plus")
-                        } else {
-                            Label(enteredTitle, systemImage: "pencil").lineLimit(1)
-                        }
-                    }
-                    if #available(iOS 16.2, *) {
-                        let isTimeRecentOrFuture = selectedTime > Date().addingTimeInterval(-12 * 60 * 60)
-                        if !isUnconfirmed, LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive, isTimeRecentOrFuture {
-                            Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity).tint(.accentColor)
-                        }
-                    }
-                }
-            }
-            Section {
-                DisclosureGroup("More Details", isExpanded: $showsMoreDetails) {
-                    TextField("Enter Note", text: $enteredNote, axis: .vertical)
-                        .textInputAutocapitalization(.sentences)
-                    ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
-                    if let sharedRoute {
-                        AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
-                    }
-                    if locationManager.selectedLocation == nil {
-                        LocationButton(locationName: nil) { sheetToShow = .editLocation }
-                    }
-                    ForEach(substanceNames, id: \.self) { substanceName in
-                        let selectedColor = colorBinding(for: substanceName)
-                        NavigationLink {
-                            ColorPickerScreen(selectedColor: selectedColor, usedColors: usedColors)
-                        } label: {
-                            LabeledContent("\(PersistenceController.shared.displayName(for: substanceName)) Color") {
-                                Image(systemName: "circle.fill").foregroundStyle(selectedColor.wrappedValue.swiftUIColor)
-                            }
-                        }
-                    }
-                }
+                displayOptions
             }
             if !isUnconfirmed, !enabledWebhookPresets.isEmpty {
-                Section("Webhooks") {
-                    Toggle("Send Webhooks", isOn: sendWebhooks.animation())
-                        .tint(.accentColor)
-
-                    if sendWebhooks.wrappedValue {
-                        ForEach(enabledWebhookPresets, id: \.objectID) { preset in
-                            Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
-                                .tint(.accentColor)
-                        }
-                    }
-                }
+                sharingSection
             }
-            Section {
-                if !isUnconfirmed, let routineDraft {
+            if !isUnconfirmed, let routineDraft {
+                Section {
                     Button("Log and Save as Routine…") { save(then: routineDraft) }
                 }
-                Button("Cancel Logging", role: .cancel, action: dismiss)
             }
         }
         .onChange(of: selectedTime) { _ in
@@ -251,14 +181,13 @@ struct FinishIngestionScreen: View {
             initializeWebhooks(with: availableIDs)
             selectedWebhookPresetIDs.formIntersection(availableIDs)
         }
+        .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $sheetToShow, onDismiss: {
             if isSettingUpLoggedRoutine { dismiss() }
         }, content: { sheet in
             switch sheet {
-            case .editTitle:
-                ExperienceTitleScreen(title: $enteredTitle)
             case .editLocation:
                 ChooseLocationScreen(locationManager: locationManager, onDone: { })
             case .editConsumer:
@@ -276,7 +205,6 @@ struct FinishIngestionScreen: View {
             }
             if let prefillNote, !prefillNote.isEmpty {
                 enteredNote = prefillNote
-                showsMoreDetails = true
             }
             if let startTime {
                 selectedTime = startTime
@@ -290,6 +218,83 @@ struct FinishIngestionScreen: View {
             selectExperienceBasedOnCurrentTime()
             locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
             initializeColorCompanionAndNote()
+        }
+    }
+
+    private var ingestionSummary: some View {
+        Section {
+            ForEach(ingestions.indices, id: \.self) { index in
+                let ingestion = ingestions[index]
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
+                        .font(.headline)
+                    Text(doseDescription(for: ingestion))
+                        .font(.title3.weight(.semibold))
+                        .monospacedDigit()
+                    Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+                .accessibilityElement(children: .combine)
+            }
+        }
+    }
+
+    private var experienceSection: some View {
+        Section("Experience") {
+            if experiencesWithinLargerRange.isEmpty {
+                LabeledContent("Add To", value: "New Experience")
+            } else {
+                ExperiencePickerRow(
+                    selectedExperience: $selectedExperience,
+                    wantsToForceNewExperience: $wantsToForceNewExperience,
+                    experiences: experiencesWithinLargerRange,
+                    onSelection: { hasSelectedExperience = true }
+                )
+            }
+            if selectedExperience == nil {
+                TextField("Title (Optional)", text: $enteredTitle)
+                    .textInputAutocapitalization(.sentences)
+            }
+        }
+    }
+
+    private var displayOptions: some View {
+        DisclosureGroup("Journal Colors", isExpanded: $showsDisplayOptions) {
+            ForEach(substanceNames, id: \.self) { substanceName in
+                let color = colorBinding(for: substanceName)
+                NavigationLink {
+                    ColorPickerScreen(selectedColor: color, usedColors: usedColors)
+                } label: {
+                    LabeledContent {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(color.wrappedValue.swiftUIColor)
+                            .accessibilityLabel(Text(color.wrappedValue.name))
+                    } label: {
+                        if substanceNames.count == 1 {
+                            Text("Journal Color")
+                        } else {
+                            Text(PersistenceController.shared.displayName(for: substanceName))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var sharingSection: some View {
+        Section("Sharing") {
+            DisclosureGroup(isExpanded: $showsWebhooks) {
+                Toggle("Send Webhooks", isOn: sendWebhooks)
+                if sendWebhooks.wrappedValue {
+                    ForEach(enabledWebhookPresets, id: \.objectID) { preset in
+                        Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
+                    }
+                }
+            } label: {
+                LabeledContent("Webhooks", value: sendWebhooks.wrappedValue ? webhookRecipients : String(localized: "Off"))
+            }
         }
     }
 

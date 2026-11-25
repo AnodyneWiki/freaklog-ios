@@ -102,6 +102,7 @@ struct EditIngestionScreen: View {
             sheetToShow: $sheetToShow
         ) {
             identitySection
+        } confirmationContent: {
             if ingestion.isUnconfirmed { confirmationSection }
         }
         .onFirstAppear {
@@ -196,8 +197,10 @@ struct EditIngestionScreen: View {
             Button {
                 sheetToShow = .correctSubstance
             } label: {
-                LabeledContent("Change Substance", value: PersistenceController.shared.displayName(for: substanceName))
+                LabeledContent("Name", value: PersistenceController.shared.displayName(for: substanceName))
             }
+            .accessibilityLabel("Change Substance")
+            .accessibilityValue(Text(PersistenceController.shared.displayName(for: substanceName)))
             Picker("Route", selection: Binding(
                 get: { route },
                 set: {
@@ -213,8 +216,9 @@ struct EditIngestionScreen: View {
                 NavigationLink {
                     SubstanceHistoryScreen(substanceName: substanceName)
                 } label: {
-                    Label("Substance History", systemImage: "chart.bar")
+                    Label("History", systemImage: "chart.bar")
                 }
+                .accessibilityLabel("Substance History")
             }
         } header: {
             Text("Substance")
@@ -248,23 +252,23 @@ struct EditIngestionScreen: View {
     @ViewBuilder
     private var confirmationSection: some View {
         let count = movesExperience ? 1 : ingestion.pendingConfirmationEntries.count
+        if let confirmationInventoryUse {
+            InventorySourcePicker(use: confirmationInventoryUse, selection: $stockContainerID)
+        }
         Section {
-            Button(count > 1 ? "Confirm \(count) Ingestions" : "Confirm Ingestion") {
-                request(.confirm)
-            }
             if !webhookPresets.isEmpty {
                 Toggle("Send Webhooks on Confirmation", isOn: $sendConfirmationWebhooks)
                 if sendConfirmationWebhooks {
                     LabeledContent("Recipients", value: webhookPresets.map(\.displayName).formatted(.list(type: .and)))
                 }
             }
+            Button(count > 1 ? "Confirm \(count) Ingestions" : "Confirm Ingestion") {
+                request(.confirm)
+            }
         } header: {
             Text("Unconfirmed")
         } footer: {
             Text("Confirmation includes these entries in totals and keeps their recorded times.")
-        }
-        if let confirmationInventoryUse {
-            InventorySourcePicker(use: confirmationInventoryUse, selection: $stockContainerID)
         }
     }
 
@@ -387,7 +391,7 @@ struct EditIngestionScreen: View {
 
 // MARK: - EditIngestionContent
 
-struct EditIngestionContent<HeaderContent: View>: View {
+struct EditIngestionContent<HeaderContent: View, ConfirmationContent: View>: View {
     @ObservedObject var ingestion: Ingestion
     let roaDose: RoaDose?
     @Binding var customUnit: CustomUnit?
@@ -412,20 +416,19 @@ struct EditIngestionContent<HeaderContent: View>: View {
     let experiencesWithinLargerRange: [Experience]
     @Binding var sheetToShow: EditIngestionScreen.SheetOption?
     @ViewBuilder var headerContent: HeaderContent
+    @ViewBuilder var confirmationContent: ConfirmationContent
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
     @State private var confirmsDeletionWithStock = false
+    @State private var showsTimelineOptions = false
 
     var body: some View {
         NavigationStack {
             Form {
                 headerContent
-                Section("\(route.rawValue.localizedCapitalized) Dose") {
+                Section("Amount") {
                     VStack(alignment: .leading, spacing: 8) {
-                        if let roaDose {
-                            RoaDoseRow(roaDose: roaDose)
-                        }
                         if let customUnit {
                             CustomUnitCalculationText(
                                 customUnit: customUnit,
@@ -444,21 +447,16 @@ struct EditIngestionContent<HeaderContent: View>: View {
                             )
                         }
                     }
+                    if let roaDose {
+                        DisclosureGroup("Reference Range") {
+                            RoaDoseRow(roaDose: roaDose)
+                        }
+                    }
                     if !otherUnits.isEmpty {
                         NavigationLink {
                             ChooseCustomUnitScreen(customUnit: $customUnit, customUnits: otherUnits)
                         } label: {
-                            HStack {
-                                Text("Choose Unit")
-                                Spacer()
-                                Group {
-                                    if let customUnit {
-                                        Text(customUnit.nameUnwrapped)
-                                    } else {
-                                        Text("Default")
-                                    }
-                                }.foregroundStyle(.secondary)
-                            }
+                            LabeledContent("Counting Unit", value: customUnit?.nameUnwrapped ?? String(localized: "Default"))
                         }
                         .onChange(of: customUnit, perform: { unit in
                             units = unit?.unit ?? roaDose?.units ?? ""
@@ -480,25 +478,35 @@ struct EditIngestionContent<HeaderContent: View>: View {
                         }
                     }.listRowSeparator(.hidden)
                 }
-                Section("Notes") {
-                    TextField("Enter Note", text: $note, axis: .vertical)
-                        .autocapitalization(.sentences)
-                }
-                Section {
+                Section("When") {
                     TimePointOrRangePicker(
                         selectedTimePickerOption: $selectedTimePickerOption,
                         selectedTime: $time,
                         selectedEndTime: $endTime
                     )
-                    ExperiencePickerRow(
-                        selectedExperience: $selectedExperience,
-                        wantsToForceNewExperience: $wantsToForceNewExperience,
-                        experiences: experiencesWithinLargerRange
-                    )
+                }
+                Section("Experience") {
+                    if experiencesWithinLargerRange.isEmpty {
+                        LabeledContent("Add To", value: selectedExperience?.titleUnwrapped ?? String(localized: "New Experience"))
+                    } else {
+                        ExperiencePickerRow(
+                            selectedExperience: $selectedExperience,
+                            wantsToForceNewExperience: $wantsToForceNewExperience,
+                            experiences: experiencesWithinLargerRange
+                        )
+                    }
+                }
+                Section("Details") {
+                    TextField("Note", text: $note, axis: .vertical)
+                        .textInputAutocapitalization(.sentences)
                     ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
                     AdministrationSitePicker(route: route, selection: $siteSelection)
                     LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-                }.listRowSeparator(.hidden)
+                    DisclosureGroup("Display Options", isExpanded: $showsTimelineOptions) {
+                        Toggle("Hide from Timeline", isOn: $isHidden)
+                    }
+                }
+                confirmationContent
                 if let stockChange = ingestion.stockChange, let container = stockChange.container {
                     Section {
                         NavigationLink {
@@ -511,20 +519,6 @@ struct EditIngestionContent<HeaderContent: View>: View {
                         Text("Inventory")
                     } footer: {
                         Text("To change the amount used from stock, correct the container’s count.")
-                    }
-                }
-                Section {
-                    Toggle("Hide in timeline", isOn: $isHidden).tint(.accentColor)
-                    Button(action: {
-                        dismiss()
-                        addIngestionAtSameTime()
-                    }) {
-                        Label("Add ingestion at same time", systemImage: "plus")
-                    }
-                    Button {
-                        confirmsDeletionWithStock = true
-                    } label: {
-                        Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
                     }
                 }
                 if !ingestion.webhookMessagesSorted.isEmpty {
@@ -553,7 +547,19 @@ struct EditIngestionContent<HeaderContent: View>: View {
                         }
                     }
                 }
-
+                Section {
+                    Button(action: {
+                        dismiss()
+                        addIngestionAtSameTime()
+                    }) {
+                        Label("Add Ingestion at Same Time", systemImage: "plus")
+                    }
+                    Button(role: .destructive) {
+                        confirmsDeletionWithStock = true
+                    } label: {
+                        Label("Delete Ingestion", systemImage: "trash")
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -569,6 +575,7 @@ struct EditIngestionContent<HeaderContent: View>: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Ingestion")
+            .navigationBarTitleDisplayMode(.inline)
             .confirmationDialog("Delete Ingestion?", isPresented: $confirmsDeletionWithStock, titleVisibility: .visible) {
                 let count = ingestion.pendingConfirmationEntries.count
                 let title = count > 1 ? "Delete \(count) Entries" : ingestion.stockChange == nil ? "Delete Entry" : "Delete Entry, Keep Stock Use"
@@ -623,7 +630,8 @@ struct EditIngestionContent<HeaderContent: View>: View {
         wantsToForceNewExperience: .constant(false),
         experiencesWithinLargerRange: [],
         sheetToShow: .constant(nil)
-    ) { EmptyView() }.environmentObject(LocationManager())
+    ) { EmptyView() } confirmationContent: { EmptyView() }
+        .environmentObject(LocationManager())
 }
 
 #Preview("Edit custom unit ingestion") {
@@ -651,6 +659,7 @@ struct EditIngestionContent<HeaderContent: View>: View {
         wantsToForceNewExperience: .constant(false),
         experiencesWithinLargerRange: [],
         sheetToShow: .constant(nil)
-    ) { EmptyView() }.environmentObject(LocationManager())
+    ) { EmptyView() } confirmationContent: { EmptyView() }
+        .environmentObject(LocationManager())
 }
 
