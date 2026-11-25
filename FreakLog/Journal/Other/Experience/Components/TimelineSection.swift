@@ -72,14 +72,19 @@ struct TimelineSection: View {
                     }
                 }
             }
-            if isCurrentExperience, let time = ingestionsSorted.last?.timeUnwrapped {
-                if timeDisplayStyle == .between {
+            if isCurrentExperience {
+                let confirmed = ingestionsSorted.filter { !$0.isUnconfirmed }
+                if timeDisplayStyle == .between, let time = confirmed.last(where: { $0.timeUnwrapped <= .now })?.time {
                     TimelineView(.everyMinute) { _ in
                         Text("Last ingestion was ") + Text(time, style: .relative) + Text(" ago")
                     }
-                } else if timeDisplayStyle == .relativeToStart {
-                    TimelineView(.everyMinute) { _ in
-                        Text("Now ") + Text(time, style: .relative) + Text(" after start")
+                } else if timeDisplayStyle == .relativeToStart, let time = confirmed.first?.time {
+                    TimelineView(.everyMinute) { context in
+                        if time <= context.date {
+                            Text("Now ") + Text(time, style: .relative) + Text(" after start")
+                        } else {
+                            Text("Starts in ") + Text(time, style: .relative)
+                        }
                     }
                 }
             }

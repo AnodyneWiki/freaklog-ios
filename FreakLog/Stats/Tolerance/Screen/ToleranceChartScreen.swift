@@ -12,7 +12,7 @@ struct ToleranceChartScreen: View {
     var body: some View {
         StatsJournal { entries, _ in
             let persisted = entries.compactMap { entry -> SubstanceAndDay? in
-                guard entry.isMine, let time = entry.time, time > sinceDate else { return nil }
+                guard entry.isMine, !entry.isUnconfirmed, let time = entry.time, time > sinceDate else { return nil }
                 return SubstanceAndDay(substanceName: entry.substanceNameUnwrapped, day: time)
             }
             let chart = ExperienceLogic.chartData(
@@ -26,7 +26,8 @@ struct ToleranceChartScreen: View {
                 substancesInIngestionsButNotChart: chart.namesOfSubstancesWithMissingTolerance,
                 numberOfSubstancesInChart: chart.numberOfSubstancesInToleranceChart,
                 onAddTap: { isPresentingSheet.toggle() },
-                substances: chart.substancesInChart
+                substances: chart.substancesInChart,
+                confirmedDays: persisted.filter { $0.day <= Date.now }
             )
         }
         .sheet(isPresented: $isPresentingSheet) {

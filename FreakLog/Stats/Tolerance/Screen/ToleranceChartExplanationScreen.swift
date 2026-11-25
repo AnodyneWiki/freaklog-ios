@@ -9,13 +9,13 @@ struct ToleranceChartExplanationScreen: View {
 
                 The chart assumes instant full tolerance with each ingestion, acting as a basic reference. However for many substances, full tolerance doesn't happen immediately but builds up with prolonged and repeated use. For more nuanced details regarding the tolerance of a specific substance, refer to the corresponding article on PsychonautWiki.
 
-                Other influencing factors, like the doses consumed and potential cross-tolerances, are not considered.
+                The chart uses confirmed entries. It leaves out doses and possible cross-tolerance. Cross-Tolerance Evidence lists studied pairs separately.
                 """)
             }
 
             Section("Understanding the Visualization") {
                 Text("""
-                Marked by an opaque hue, the phase directly succeeding consumption reflects an elevated tolerance to the particular substance. The subsequent lighter shade indicates a reduced tolerance level. This is followed by a return to zero tolerance, necessitating dosage adjustments akin to initial consumption.
+                The darker color marks the estimated full-tolerance interval. The lighter color marks the estimated half-tolerance interval. These intervals describe the chart's assumptions, and their end does not establish a person's tolerance.
 
                 The 'start date' denotes the earliest ingestion taken into consideration.
 

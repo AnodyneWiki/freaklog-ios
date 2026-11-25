@@ -9,6 +9,7 @@ struct EffectTimeline: View {
     var spaceToLabels = 5.0
     var cursorTime: Date?
     var onTimeSelected: ((Date) -> Void)?
+    var allowsHorizontalScrub = true
     private let lineWidth: Double = 5
     private var halfLineWidth: Double {
         lineWidth / 2
@@ -138,11 +139,15 @@ struct EffectTimeline: View {
                                 .fill(.clear)
                                 .contentShape(Rectangle())
                                 .gesture(SpatialTapGesture().onEnded { tap in
-                                    guard geometry.size.width > 0 else { return }
-                                    let fraction = min(1, max(0, tap.location.x / geometry.size.width))
-                                    let time = timelineModel.startTime.addingTimeInterval(fraction * timelineModel.totalWidth)
-                                    onTimeSelected(time)
+                                    selectTime(at: tap.location.x, width: geometry.size.width, using: onTimeSelected)
                                 })
+                                .simultaneousGesture(
+                                    DragGesture(minimumDistance: 12).onChanged { drag in
+                                        guard abs(drag.translation.width) > abs(drag.translation.height) else { return }
+                                        selectTime(at: drag.location.x, width: geometry.size.width, using: onTimeSelected)
+                                    },
+                                    including: allowsHorizontalScrub ? .all : .none
+                                )
                                 .accessibilityHidden(true)
                         }
                     }
@@ -150,7 +155,28 @@ struct EffectTimeline: View {
             }
             .padding(.vertical, spaceToLabels)
             timeLabels
-        }.frame(height: height)
+        }
+        .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Effect Timeline")
+        .accessibilityValue(cursorTime.map { getTimeText(time: $0) } ?? Text("No time selected"))
+        .accessibilityAdjustableAction { direction in
+            guard let onTimeSelected else { return }
+            let position = cursorTime ?? timelineModel.startTime
+            let step = max(60, timelineModel.totalWidth / 24)
+            switch direction {
+            case .increment: onTimeSelected(timelineModel.clampingTime(position.addingTimeInterval(step)))
+            case .decrement: onTimeSelected(timelineModel.clampingTime(position.addingTimeInterval(-step)))
+            @unknown default: break
+            }
+        }
+        .accessibilityHidden(onTimeSelected == nil)
+    }
+
+    private func selectTime(at x: CGFloat, width: CGFloat, using onTimeSelected: (Date) -> Void) {
+        guard width > 0 else { return }
+        let fraction = min(1, max(0, x / width))
+        onTimeSelected(timelineModel.startTime.addingTimeInterval(fraction * timelineModel.totalWidth))
     }
 
     func getTimeText(time: Date) -> Text {

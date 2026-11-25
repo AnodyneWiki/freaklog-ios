@@ -2,7 +2,7 @@ import Foundation
 
 // return value is ready to be sent to live activity
 func getSubstanceIngestionGroups(ingestions: [Ingestion]) -> [SubstanceIngestionGroup] {
-    let visible = ingestions.filter { !$0.isHiddenFromTimeline }
+    let visible = ingestions.filter { !$0.isHiddenFromTimeline && !$0.isUnconfirmed }
     return Dictionary(grouping: visible, by: \.substanceNameUnwrapped).compactMap { substanceName, ingestionsForSubstance in
         guard let color = ingestionsForSubstance.first?.substanceColor else { return nil }
         let routeMinInfos = Dictionary(grouping: ingestionsForSubstance, by: \.administrationRouteUnwrapped).map { route, ingestionsForRoute in

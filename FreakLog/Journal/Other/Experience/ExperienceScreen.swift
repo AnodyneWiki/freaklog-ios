@@ -124,6 +124,7 @@ struct ExperienceScreen: View {
     @State private var isShowingDeleteConfirmation = false
     @State private var sheetToShow: SheetOption?
     @State private var showsHiddenItems = false
+    @State private var timelineTime: Date?
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
@@ -181,7 +182,19 @@ struct ExperienceScreen: View {
             )
             if timelineModel.isWorthDrawing {
                 Section {
-                    EffectTimeline(timelineModel: timelineModel, height: 156, timeDisplayStyle: timeDisplayStyle)
+                    EffectTimeline(
+                        timelineModel: timelineModel,
+                        height: 156,
+                        timeDisplayStyle: timeDisplayStyle,
+                        cursorTime: timelineTime.map(timelineModel.clampingTime),
+                        onTimeSelected: { timelineTime = $0 }
+                    )
+                    if let timelineTime {
+                        LabeledContent("Selected Time") {
+                            Text(timelineModel.clampingTime(timelineTime), format: TimelineCursorEntry.dateFormat)
+                                .monospacedDigit()
+                        }
+                    }
                 } header: {
                     HStack {
                         Text(timelineModel.groupDrawables.contains(where: \.hasDurationInfo) ? "Estimated Effects" : "Timeline")
@@ -230,6 +243,10 @@ struct ExperienceScreen: View {
                         }
                     }
                 }
+            } footer: {
+                if myIngestions.contains(where: \.isUnconfirmed) {
+                    Text("Estimates and totals use confirmed ingestions.")
+                }
             }
             if ExperienceHeartRateScreen.isAvailable,
                let window = ExperienceHeartRateScreen.window(for: experience, includesRatings: isEyeOpen) {
@@ -255,11 +272,14 @@ struct ExperienceScreen: View {
             let notes = experience.textUnwrapped
             if !notes.isEmpty {
                 Section("Notes") {
-                    Text(notes)
-                        .padding(.vertical, 5)
-                        .onTapGesture {
-                            sheetToShow = .editNotes
-                        }
+                    Button {
+                        sheetToShow = .editNotes
+                    } label: {
+                        Text(notes)
+                            .foregroundStyle(.primary)
+                            .padding(.vertical, 5)
+                    }
+                    .accessibilityHint("Edit notes")
                 }
             }
             if isEyeOpen && !experience.ratingsUnwrapped.isEmpty {
@@ -281,7 +301,9 @@ struct ExperienceScreen: View {
             }
             if Set(experience.ingestionsSorted.map({ $0.isMine ? "" : $0.consumerNameUnwrapped })).count > 1 {
                 Section {
-                    NavigationLink(value: GlobalNavigationDestination.compareExperienceTimelines(experience: experience)) {
+                    NavigationLink {
+                        ExperienceTimelineComparison(experience: experience, selectedTime: $timelineTime)
+                    } label: {
                         Label("Compare Timelines", systemImage: "chart.xyaxis.line")
                     }
                 }
@@ -395,7 +417,9 @@ struct ExperienceScreen: View {
     }
 
     private var expandTimelineLink: some View {
-        NavigationLink(value: GlobalNavigationDestination.experienceTimeline(experience: experience)) {
+        NavigationLink {
+            ExperienceTimelineScreen(experience: experience, selection: $timelineTime)
+        } label: {
             Label("Expand Timeline", systemImage: "arrow.down.left.and.arrow.up.right.square")
                 .labelStyle(.iconOnly)
         }

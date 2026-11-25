@@ -21,6 +21,15 @@ struct TimelineModel: Hashable {
     let timedNoteDrawables: [TimedNoteDrawable]
     let axisDrawable: AxisDrawable
 
+    var timeRange: ClosedRange<Date> {
+        startTime...startTime.addingTimeInterval(max(0, totalWidth))
+    }
+
+    func clampingTime(_ time: Date) -> Date {
+        let range = timeRange
+        return min(range.upperBound, max(range.lowerBound, time))
+    }
+
     var isWorthDrawing: Bool {
         let allHaveMissingDuration = groupDrawables.allSatisfy { groupDrawable in
             !groupDrawable.hasDurationInfo

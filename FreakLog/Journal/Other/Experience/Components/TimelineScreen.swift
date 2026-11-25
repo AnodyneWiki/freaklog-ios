@@ -56,10 +56,10 @@ struct TimelineScreen: View {
     }
 }
 
-// The expanded view of a saved experience. Each selectable time comes from the
-// journal even when the timeline has no estimate for the event.
+// The expanded view of a saved experience uses the same cursor as the preview.
 struct ExperienceTimelineScreen: View {
     @ObservedObject var experience: Experience
+    @Binding var selection: Date?
 
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var storedTimeStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) private var drawsRedosesIndividually = true
@@ -67,26 +67,28 @@ struct ExperienceTimelineScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
     var body: some View {
+        let model = experience.getMyTimeLineModel(
+            areRedosesDrawnIndividually: drawsRedosesIndividually,
+            areSubstanceHeightsIndependent: usesIndependentHeights
+        )
         TimelineCursorContent(
             experience: experience,
-            model: experience.getMyTimeLineModel(
-                areRedosesDrawnIndividually: drawsRedosesIndividually,
-                areSubstanceHeightsIndependent: usesIndependentHeights
-            ),
-            entries: recordedEntries,
+            model: model,
+            entries: recordedEntries.filter { model.timeRange.contains($0.time) },
             timeDisplayStyle: storedTimeStyle.resolved(isCurrent: experience.isCurrent),
-            showsLimitations: isEyeOpen
+            showsLimitations: isEyeOpen,
+            selection: $selection
         )
         .observeExperienceTimeline(experience)
     }
 
     private var recordedEntries: [TimelineCursorEntry] {
         let ingestions = experience.myIngestionsSorted.compactMap { ingestion -> TimelineCursorEntry? in
-            guard let date = ingestion.time, !ingestion.isHiddenFromTimeline else { return nil }
+            guard let date = ingestion.time, !ingestion.isHiddenFromTimeline, !ingestion.isUnconfirmed else { return nil }
             return TimelineCursorEntry(id: ingestion.id, time: date, title: ingestion.substanceDisplayName, icon: "pills")
         }
         let notes = experience.timedNotesSorted.compactMap { note -> TimelineCursorEntry? in
-            guard let date = note.time else { return nil }
+            guard let date = note.time, note.isPartOfTimeline else { return nil }
             return TimelineCursorEntry(id: note.id, time: date, title: note.noteUnwrapped, icon: "note.text")
         }
         let ratings = isEyeOpen ? experience.ratingsWithTimeSorted.compactMap { rating -> TimelineCursorEntry? in
@@ -105,17 +107,38 @@ private struct TimelineCursorContent: View {
     let timeDisplayStyle: TimeDisplayStyle
     let showsLimitations: Bool
 
-    @State private var selection: Date?
+    @Binding var selection: Date?
     @State private var noteTime: NoteTime?
-    @State private var zoom = 1.0
     @State private var showsRecordedEntries = false
+    @State private var zoom = 1
+    @Namespace private var zoomAnchor
+    @Namespace private var plotViewport
+    @State private var visibleStartFraction = 0.0
 
-    private var selectedTime: Date { selection ?? entries.first?.time ?? model.startTime }
+    private var selectedTime: Date {
+        model.clampingTime(selection ?? entries.first?.time ?? model.startTime)
+    }
+
+    private var visibleTimeRange: ClosedRange<Date> {
+        let duration = max(1, model.totalWidth)
+        let span = duration / Double(zoom)
+        let offset = zoom == 1 ? 0 : min(max(0, visibleStartFraction * duration), duration - span)
+        let start = model.startTime.addingTimeInterval(offset)
+        return start...start.addingTimeInterval(span)
+    }
 
     var body: some View {
         ScrollViewReader { scroll in
             List {
                 cursorSection
+                if ExperienceHeartRateScreen.isAvailable,
+                   let window = ExperienceHeartRateScreen.window(for: experience, includesRatings: showsLimitations) {
+                    HeartRateTimelineSection(
+                        window: window,
+                        domain: visibleTimeRange,
+                        cursor: selectedTime
+                    )
+                }
                 if let nearest = entries.min(by: {
                     abs($0.time.timeIntervalSince(selectedTime)) < abs($1.time.timeIntervalSince(selectedTime))
                 }) {
@@ -148,10 +171,30 @@ private struct TimelineCursorContent: View {
                         }
                     }
                 }
+                if showsLimitations, !experience.myIngestionsSorted.isEmpty {
+                    Section("Models") {
+                        NavigationLink {
+                            RelativeExposureScreen(ingestions: experience.myIngestionsSorted)
+                        } label: {
+                            Label("Modeled Exposure", systemImage: "chart.xyaxis.line")
+                        }
+                    }
+                }
             }
         }
         .navigationTitle("Timeline")
         .toolbar {
+            if model.totalWidth > 0 {
+                Menu {
+                    Picker("Timeline Zoom", selection: $zoom) {
+                        Text("Fit to Screen").tag(1)
+                        Text("2×").tag(2)
+                        Text("4×").tag(4)
+                    }
+                } label: {
+                    Label("Timeline Zoom", systemImage: "magnifyingglass")
+                }
+            }
             if showsLimitations {
                 NavigationLink(value: GlobalNavigationDestination.explainExperience) {
                     Label("Timeline Limitations", systemImage: "info.circle")
@@ -171,15 +214,6 @@ private struct TimelineCursorContent: View {
             LabeledContent("Cursor Time") {
                 Text(selectedTime, format: TimelineCursorEntry.dateFormat).monospacedDigit()
             }
-            if model.totalWidth > 0 {
-                Slider(value: elapsedTime, in: 0...model.totalWidth) {
-                    Text("Timeline Position")
-                }
-                .accessibilityValue(Text(selectedTime, format: TimelineCursorEntry.dateFormat))
-                Stepper(value: $zoom, in: 1...6) {
-                    LabeledContent("Zoom", value: "\(Int(zoom))×")
-                }
-            }
             Button {
                 noteTime = NoteTime(time: selectedTime)
             } label: {
@@ -190,33 +224,47 @@ private struct TimelineCursorContent: View {
         }
     }
 
-    private var elapsedTime: Binding<Double> {
-        Binding {
-            min(max(0, selectedTime.timeIntervalSince(model.startTime)), model.totalWidth)
-        } set: { elapsed in
-            selection = model.startTime.addingTimeInterval(elapsed)
-        }
-    }
-
     private var chart: some View {
         GeometryReader { geometry in
-            let viewportWidth = geometry.size.width
-            let chartWidth = viewportWidth * zoom
-            let x = selectedTime.timeIntervalSince(model.startTime) / max(1, model.totalWidth) * chartWidth
-            let offset = min(max(0, x - viewportWidth / 2), chartWidth - viewportWidth)
-            EffectTimeline(
-                timelineModel: model,
-                height: geometry.size.height,
-                timeDisplayStyle: timeDisplayStyle,
-                cursorTime: selectedTime,
-                onTimeSelected: { selection = $0 }
-            )
-            .frame(width: chartWidth)
-            .offset(x: -offset)
-            .frame(width: viewportWidth, alignment: .leading)
-            .clipped()
-            .contentShape(Rectangle())
-            .accessibilityHidden(true)
+            ScrollViewReader { scroll in
+                ScrollView(.horizontal, showsIndicators: zoom > 1) {
+                    let width = geometry.size.width * Double(zoom)
+                    let fraction = selectedTime.timeIntervalSince(model.startTime) / max(1, model.totalWidth)
+                    EffectTimeline(
+                        timelineModel: model,
+                        height: 220,
+                        timeDisplayStyle: timeDisplayStyle,
+                        cursorTime: selectedTime,
+                        onTimeSelected: { selection = $0 },
+                        allowsHorizontalScrub: zoom == 1
+                    )
+                    .frame(width: width)
+                    .background {
+                        GeometryReader { plot in
+                            Color.clear.preference(
+                                key: TimelinePlotPosition.self,
+                                value: -plot.frame(in: .named(plotViewport)).minX / max(1, width)
+                            )
+                        }
+                    }
+                    .overlay(alignment: .leading) {
+                        HStack(spacing: 0) {
+                            Color.clear.frame(width: max(0, min(width - 1, width * fraction)))
+                            Color.clear
+                                .frame(width: 1)
+                                .id(zoomAnchor)
+                        }
+                        .accessibilityHidden(true)
+                        .allowsHitTesting(false)
+                    }
+                }
+                .coordinateSpace(name: plotViewport)
+                .onPreferenceChange(TimelinePlotPosition.self) { visibleStartFraction = $0 }
+                .onChange(of: zoom) { _ in scroll.scrollTo(zoomAnchor, anchor: .center) }
+                .onChange(of: selectedTime) { _ in
+                    if zoom > 1 { scroll.scrollTo(zoomAnchor, anchor: .center) }
+                }
+            }
         }
         .frame(height: 220)
     }
@@ -227,7 +275,15 @@ private struct TimelineCursorContent: View {
     }
 }
 
-private struct TimelineCursorEntry: Identifiable {
+private struct TimelinePlotPosition: PreferenceKey {
+    static var defaultValue = 0.0
+
+    static func reduce(value: inout Double, nextValue: () -> Double) {
+        value = nextValue()
+    }
+}
+
+struct TimelineCursorEntry: Identifiable {
     static let dateFormat = Date.FormatStyle().month(.abbreviated).day().hour().minute()
 
     let id: ObjectIdentifier

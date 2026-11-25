@@ -50,7 +50,7 @@ struct ExperienceLogic {
     }
     
     static func myCumulativeDoses(from ingestions: [Ingestion], includeSingleIngestions: Bool = false) -> [CumulativeDose] {
-        let myIngs = myIngestions(from: ingestions)
+        let myIngs = myIngestions(from: ingestions).filter { !$0.isUnconfirmed }
         let ingestionsBySubstance = Dictionary(grouping: myIngs, by: { $0.substanceNameUnwrapped })
         return ingestionsBySubstance.compactMap { (substanceName: String, ingestions: [Ingestion]) in
             if !includeSingleIngestions {
@@ -88,7 +88,7 @@ struct ExperienceLogic {
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) -> TimelineModel {
-        let anchorTime = ingestions.map(\.timeUnwrapped).max() ?? Date()
+        let anchorTime = ingestions.filter { !$0.isUnconfirmed }.compactMap(\.time).max() ?? Date()
         return timelineModel(
             from: ingestions,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
@@ -106,11 +106,11 @@ struct ExperienceLogic {
     
     // Tolerance chart for the three months before the last of the given ingestions
     static func chartData(for ingestions: [Ingestion]) -> ChartData {
-        let lastIngestionDate = ingestions.last?.timeUnwrapped ?? Date.now
+        let lastIngestionDate = ingestions.last(where: { !$0.isUnconfirmed })?.timeUnwrapped ?? Date.now
         let threeMonthsBefore = lastIngestionDate.addingTimeInterval(-3 * 30 * 24 * 60 * 60)
         let ingestionsForChart = myIngestions(
             from: PersistenceController.shared.getIngestionsBetween(startDate: threeMonthsBefore, endDate: lastIngestionDate)
-        )
+        ).filter { !$0.isUnconfirmed }
         return chartData(
             for: ingestionsForChart.map { SubstanceAndDay(substanceName: $0.substanceNameUnwrapped, day: $0.timeUnwrapped) },
             substanceCompanions: PersistenceController.shared.getSubstanceCompanions()

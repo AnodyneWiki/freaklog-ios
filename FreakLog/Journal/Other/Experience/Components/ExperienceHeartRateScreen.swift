@@ -3,24 +3,9 @@ import HealthKit
 import SwiftUI
 
 struct ExperienceHeartRateScreen: View {
-    private struct Reading: Identifiable {
-        let id: UUID
-        let time: Date
-        let beatsPerMinute: Double
-        let source: String
-    }
-
-    private enum Phase {
-        case idle
-        case loading
-        case loaded([Reading])
-        case failed
-    }
-
     let window: DateInterval
-    @State private var phase = Phase.idle
-    @State private var didRequestReadings = false
-    @State private var healthStore = HKHealthStore()
+    @State private var phase = HeartRatePhase.idle
+    @State private var request: UUID?
 
     static var isAvailable: Bool {
         HKHealthStore.isHealthDataAvailable()
@@ -59,8 +44,8 @@ struct ExperienceHeartRateScreen: View {
         }
         .navigationTitle("Heart Rate")
         .navigationBarTitleDisplayMode(.inline)
-        .task(id: didRequestReadings) {
-            guard didRequestReadings else { return }
+        .task(id: request) {
+            guard request != nil else { return }
             await loadReadings()
         }
     }
@@ -69,12 +54,12 @@ struct ExperienceHeartRateScreen: View {
     private var content: some View {
         switch phase {
         case .idle:
-            Button("Read from Apple Health") { didRequestReadings = true }
+            Button("Read from Apple Health") { request = UUID() }
         case .loading:
             ProgressView("Reading from Apple Health…")
         case .failed:
             Text("Heart rate couldn’t be loaded.").foregroundStyle(.secondary)
-            Button("Try Again") { didRequestReadings = true }
+            Button("Try Again") { request = UUID() }
         case .loaded(let readings):
             if readings.isEmpty {
                 Text("No samples available").foregroundStyle(.secondary)
@@ -100,11 +85,11 @@ struct ExperienceHeartRateScreen: View {
                     LabeledContent("Readings", value: readings.count.formatted())
                 }
             }
-            Button("Refresh Readings") { didRequestReadings = true }
+            Button("Refresh Readings") { request = UUID() }
         }
     }
 
-    private func readingsList(_ readings: [Reading]) -> some View {
+    private func readingsList(_ readings: [HeartRateReading]) -> some View {
         List(readings) { reading in
             LabeledContent {
                 Text("\(reading.beatsPerMinute, format: .number.precision(.fractionLength(0...1))) bpm")
@@ -120,40 +105,161 @@ struct ExperienceHeartRateScreen: View {
 
     @MainActor
     private func loadReadings() async {
-        defer { didRequestReadings = false }
-        guard Self.isAvailable else { return }
-        phase = .loading
-        let type = HKQuantityType(.heartRate)
-        do {
-            try await healthStore.requestAuthorization(toShare: [], read: [type])
-            try Task.checkCancellation()
-            let predicate = HKQuery.predicateForSamples(
-                withStart: window.start,
-                end: window.end,
-                options: [.strictStartDate, .strictEndDate]
+        await readHeartRate(in: window, phase: $phase)
+    }
+}
+
+private struct HeartRateReading: Identifiable {
+    let id: UUID
+    let time: Date
+    let beatsPerMinute: Double
+    let source: String
+}
+
+private enum HeartRatePhase {
+    case idle
+    case loading
+    case loaded([HeartRateReading])
+    case failed
+}
+
+@MainActor
+private func readHeartRate(in window: DateInterval, phase: Binding<HeartRatePhase>) async {
+    phase.wrappedValue = .loading
+    let healthStore = HKHealthStore()
+    let type = HKQuantityType(.heartRate)
+    do {
+        try await healthStore.requestAuthorization(toShare: [], read: [type])
+        try Task.checkCancellation()
+        let predicate = HKQuery.predicateForSamples(
+            withStart: window.start, end: window.end, options: [.strictStartDate, .strictEndDate]
+        )
+        let query = HKSampleQueryDescriptor(
+            predicates: [.quantitySample(type: type, predicate: predicate)],
+            sortDescriptors: [SortDescriptor(\.startDate)]
+        )
+        let samples = try await query.result(for: healthStore)
+        try Task.checkCancellation()
+        let unit = HKUnit.count().unitDivided(by: .minute())
+        let readings = samples.compactMap { sample -> HeartRateReading? in
+            let beatsPerMinute = sample.quantity.doubleValue(for: unit)
+            guard beatsPerMinute.isFinite, beatsPerMinute > 0 else { return nil }
+            return HeartRateReading(
+                id: sample.uuid, time: sample.startDate, beatsPerMinute: beatsPerMinute,
+                source: sample.sourceRevision.source.name
             )
-            let query = HKSampleQueryDescriptor(
-                predicates: [.quantitySample(type: type, predicate: predicate)],
-                sortDescriptors: [SortDescriptor(\.startDate)]
-            )
-            let samples = try await query.result(for: healthStore)
-            try Task.checkCancellation()
-            let unit = HKUnit.count().unitDivided(by: .minute())
-            let readings = samples.compactMap { sample -> Reading? in
-                let beatsPerMinute = sample.quantity.doubleValue(for: unit)
-                guard beatsPerMinute.isFinite, beatsPerMinute > 0 else { return nil }
-                return Reading(
-                    id: sample.uuid,
-                    time: sample.startDate,
-                    beatsPerMinute: beatsPerMinute,
-                    source: sample.sourceRevision.source.name
-                )
-            }
-            phase = .loaded(readings)
-        } catch is CancellationError {
-            phase = .idle
-        } catch {
-            phase = .failed
         }
+        phase.wrappedValue = .loaded(readings)
+    } catch is CancellationError {
+        return
+    } catch {
+        guard !Task.isCancelled else { return }
+        phase.wrappedValue = .failed
+    }
+}
+
+struct HeartRateTimelineSection: View {
+    let window: DateInterval
+    let domain: ClosedRange<Date>
+    let cursor: Date?
+
+    @Environment(\.scenePhase) private var scenePhase
+    @State private var phase = HeartRatePhase.idle
+    @State private var request: UUID?
+
+    var body: some View {
+        Section {
+            switch phase {
+            case .idle:
+                Button {
+                    request = UUID()
+                } label: {
+                    Label("Show Heart Rate", systemImage: "heart")
+                }
+            case .loading:
+                ProgressView("Reading Apple Health…")
+            case .failed:
+                Text("Heart rate couldn’t be loaded.")
+                    .foregroundStyle(.secondary)
+                Button("Try Again") { request = UUID() }
+            case .loaded(let readings):
+                measuredReadings(readings)
+                Button("Hide Heart Rate", action: clearReadings)
+            }
+        } header: {
+            Text("Measured Heart Rate")
+        } footer: {
+            switch phase {
+            case .idle:
+                Text("Read Apple Health samples from this experience’s recorded window.")
+            case .loaded:
+                Text("Each point is an Apple Health sample. Empty intervals have no readings.")
+            default:
+                EmptyView()
+            }
+        }
+        .task(id: request) {
+            guard request != nil else { return }
+            await readHeartRate(in: window, phase: $phase)
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .background { clearReadings() }
+        }
+    }
+
+    @ViewBuilder
+    private func measuredReadings(_ readings: [HeartRateReading]) -> some View {
+        if readings.isEmpty {
+            Text("No heart rate samples in this experience.")
+                .foregroundStyle(.secondary)
+        } else {
+            let plotted = readings.filter { domain.contains($0.time) }
+            Chart {
+                ForEach(plotted) { reading in
+                    PointMark(
+                        x: .value("Time", reading.time),
+                        y: .value("Heart Rate", reading.beatsPerMinute)
+                    )
+                    .foregroundStyle(Color.pink)
+                    .accessibilityLabel(Text(reading.time, format: .dateTime.hour().minute().second()))
+                    .accessibilityValue(Text("\(reading.beatsPerMinute, format: .number.precision(.fractionLength(0...1))) bpm"))
+                }
+                if let cursor, domain.contains(cursor) {
+                    RuleMark(x: .value("Selected Time", cursor))
+                        .foregroundStyle(Color.accentColor)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
+                        .accessibilityHidden(true)
+                }
+            }
+            .chartXScale(domain: domain, range: .plotDimension(padding: 0))
+            .chartYScale(domain: .automatic(includesZero: false))
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+            .overlay(alignment: .topLeading) {
+                Text("bpm")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(6)
+                    .accessibilityHidden(true)
+            }
+            .frame(height: 92)
+            .accessibilityLabel("Measured Heart Rate")
+            .listRowInsets(EdgeInsets(top: 6, leading: 0, bottom: 6, trailing: 0))
+            .privacySensitive()
+            if plotted.isEmpty {
+                Text("No heart rate samples in this part of the timeline.")
+                    .foregroundStyle(.secondary)
+            } else if let low = plotted.map(\.beatsPerMinute).min(), let high = plotted.map(\.beatsPerMinute).max() {
+                LabeledContent("Range") {
+                    Text("\(low, format: .number.precision(.fractionLength(0...1)))–\(high, format: .number.precision(.fractionLength(0...1))) bpm")
+                }
+                    .privacySensitive()
+            }
+        }
+    }
+
+    private func clearReadings() {
+        request = nil
+        phase = .idle
     }
 }

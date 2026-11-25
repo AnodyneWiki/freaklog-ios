@@ -7,6 +7,7 @@ struct ToleranceChartScreenContent: View {
     let numberOfSubstancesInChart: Int
     let onAddTap: () -> Void
     let substances: [SubstanceWithToleranceAndColor]
+    var confirmedDays: [SubstanceAndDay] = []
 
     @State private var isTimeRelative = false
 
@@ -42,6 +43,11 @@ struct ToleranceChartScreenContent: View {
                     NavigationLink(value: GlobalNavigationDestination.toleranceTexts(substances: substances)) {
                         Label("Tolerance Info", systemImage: "doc.plaintext")
                     }
+                }
+                NavigationLink {
+                    CrossToleranceEvidenceScreen(confirmedDays: confirmedDays)
+                } label: {
+                    Label("Cross-Tolerance Evidence", systemImage: "link")
                 }
             }
         }
