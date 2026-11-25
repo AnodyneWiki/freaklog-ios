@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		D6C76B34BB81807680FBD295 /* JournalRecoveryBackups.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */; };
+		7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */; };
 		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
@@ -488,6 +490,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalRecoveryBackups.swift; sourceTree = "<group>"; };
+		90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupProtection.swift; sourceTree = "<group>"; };
 		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
@@ -1001,6 +1005,8 @@
 			children = (
 				A7B357B963A085C666251860 /* JSONValue.swift */,
 				8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */,
+				80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */,
+				90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */,
 				B302BDA5F741381059AE6948 /* ExportedFile.swift */,
 			);
 			path = Backup;
@@ -2317,6 +2323,8 @@
 				2AC40D0BBECA9791DF78C01C /* AssistantChat.swift in Sources */,
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
+				D6C76B34BB81807680FBD295 /* JournalRecoveryBackups.swift in Sources */,
+				7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */,
 				60B8D847A464E6C843FBB524 /* ExportedFile.swift in Sources */,
 				54024224DDAF1611C1C8C412 /* FormulationDoseScreen.swift in Sources */,
 				3AB2E7361B91FFC0FF321304 /* FormulationBox.swift in Sources */,

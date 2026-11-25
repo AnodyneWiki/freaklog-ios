@@ -229,6 +229,8 @@ private struct JournalDataSettings: View {
     @ObservedObject var viewModel: SettingsScreen.ViewModel
     @State private var isChoosingFile = false
     @State private var isConfirmingDeletion = false
+    @State private var filePurpose: SettingsScreen.ImportPurpose = .restore
+    @AppStorage(SettingsScreen.ViewModel.lastBackupDateKey) private var lastBackupTime = 0.0
     // PersistenceController reads this with bool(forKey:), so unset means off.
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) private var isICloudSyncEnabled = false
     @EnvironmentObject private var toastViewModel: ToastViewModel
@@ -250,12 +252,11 @@ private struct JournalDataSettings: View {
                 Text("Sync your journal across devices using iCloud.")
             }
             Section("Restore") {
-                if let error = viewModel.importError, viewModel.importReview == nil {
+                if let error = viewModel.importError, !viewModel.isShowingImportDetails {
                     Label(error, systemImage: "exclamationmark.circle")
                 }
                 Button {
-                    viewModel.importError = nil
-                    isChoosingFile = true
+                    chooseFile(for: .restore)
                 } label: {
                     if viewModel.isPreparingImport {
                         ProgressView("Reading File…")
@@ -263,7 +264,19 @@ private struct JournalDataSettings: View {
                         Label("Import Data", systemImage: "arrow.down.doc")
                     }
                 }
-                .disabled(viewModel.isPreparingImport)
+                .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+                if !viewModel.recoveryCopies.isEmpty {
+                    Menu {
+                        ForEach(viewModel.recoveryCopies) { entry in
+                            Button(entry.created.formatted(date: .abbreviated, time: .shortened)) {
+                                viewModel.prepareRecoveryBackup(entry)
+                            }
+                        }
+                    } label: {
+                        Label("Recovery Copies", systemImage: "clock.arrow.circlepath")
+                    }
+                    .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+                }
             }
             Section("Export") {
                 NavigationLink {
@@ -292,28 +305,126 @@ private struct JournalDataSettings: View {
                 }
             }
             Section {
+                Button {
+                    chooseFile(for: .verify)
+                } label: {
+                    Label("Verify Backup", systemImage: "checkmark.shield")
+                }
+                .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+                if lastBackupTime > 0 {
+                    LabeledContent(
+                        "Last Saved Backup",
+                        value: Date(timeIntervalSince1970: lastBackupTime).formatted(date: .abbreviated, time: .shortened))
+                }
+            } header: {
+                Text("Backup Status")
+            }
+            Section {
                 Button(role: .destructive) {
                     isConfirmingDeletion = true
                 } label: {
                     Label("Delete Everything", systemImage: "trash")
                 }
+                .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
             }
         }
         .navigationTitle("Journal Data")
         .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: ExportedFile.readableContentTypes) { result in
             switch result {
-            case .success(let url): viewModel.prepareImport(url)
+            case .success(let url): viewModel.prepareImport(url, purpose: filePurpose)
             case .failure: viewModel.importError = "The file couldn’t be opened. Choose it again to retry."
             }
         }
-        .sheet(item: $viewModel.importReview, onDismiss: { viewModel.importError = nil }) { review in
-            JournalImportReview(review: review, viewModel: viewModel)
+        .sheet(isPresented: $viewModel.isShowingImportDetails, onDismiss: {
+            viewModel.clearImportDetails()
+            viewModel.refreshRecoveryCopies()
+        }) {
+            JournalImportDetails(viewModel: viewModel)
         }
+        .onAppear(perform: viewModel.refreshRecoveryCopies)
         .confirmationDialog("Delete Everything?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
             Button("Delete", role: .destructive, action: viewModel.deleteEverything)
         } message: {
-            Text("This will delete all your experiences, ingestions, custom substances and sprays.")
+            Text("This will delete your journal and its on-device recovery copies.")
         }
+    }
+
+    private func chooseFile(for purpose: SettingsScreen.ImportPurpose) {
+        filePurpose = purpose
+        viewModel.importError = nil
+        isChoosingFile = true
+    }
+}
+
+private struct JournalImportDetails: View {
+    @ObservedObject var viewModel: SettingsScreen.ViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var passphrase = ""
+
+    var body: some View {
+        Group {
+            if let review = viewModel.importReview {
+                JournalImportReview(review: review, viewModel: viewModel)
+            } else if let backup = viewModel.verifiedBackup {
+                NavigationStack {
+                    Form {
+                        Section {
+                            Label("This backup can be restored.", systemImage: "checkmark.shield")
+                            LabeledContent("Name", value: backup.filename)
+                            JournalCountsRows(counts: backup.counts)
+                        }
+                    }
+                    .navigationTitle("Backup Verified")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { dismiss() }
+                        }
+                    }
+                }
+            } else if let lockedImport = viewModel.lockedImport {
+                NavigationStack {
+                    Form {
+                        Section {
+                            LabeledContent("Name", value: lockedImport.filename)
+                            SecureField("Passphrase", text: $passphrase)
+                                .textContentType(.password)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .disabled(viewModel.isPreparingImport)
+                                .onSubmit(unlock)
+                        }
+                        if viewModel.isPreparingImport {
+                            ProgressView("Opening Backup…")
+                        } else if let error = viewModel.importError {
+                            Label(error, systemImage: "exclamationmark.circle")
+                        }
+                    }
+                    .navigationTitle("Protected Backup")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") { dismiss() }.disabled(viewModel.isPreparingImport)
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Open", action: unlock)
+                                .disabled(!canUnlock)
+                        }
+                    }
+                }
+            }
+        }
+        .interactiveDismissDisabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+    }
+
+    private var canUnlock: Bool {
+        !passphrase.isEmpty && !viewModel.isPreparingImport
+    }
+
+    private func unlock() {
+        guard canUnlock else { return }
+        viewModel.unlockImport(passphrase: passphrase)
+        passphrase = ""
     }
 }
 
@@ -322,6 +433,7 @@ private struct JournalImportReview: View {
     @ObservedObject var viewModel: SettingsScreen.ViewModel
     @Environment(\.dismiss) private var dismiss
     @State private var removePublishedCopies = false
+    @State private var saveRecoveryCopy = true
     @State private var isConfirmingReplacement = false
 
     private var replacementImpact: LocalizedStringKey {
@@ -341,6 +453,9 @@ private struct JournalImportReview: View {
                 Section("File") {
                     LabeledContent("Format", value: review.isBackup ? "FreakLog Backup" : "Journal JSON")
                     LabeledContent("Name", value: review.filename)
+                    if review.isProtected {
+                        Label("Encrypted", systemImage: "lock")
+                    }
                 }
                 Section("Incoming Journal") {
                     JournalCountsRows(counts: review.counts)
@@ -368,6 +483,11 @@ private struct JournalImportReview: View {
                     }
                 }
                 Section {
+                    Toggle("Save a Recovery Copy", isOn: $saveRecoveryCopy)
+                } footer: {
+                    Text("Keep an encrypted copy of your current journal on this device before replacing it.")
+                }
+                Section {
                     if let error = viewModel.importError {
                         Label(error, systemImage: "exclamationmark.circle")
                     }
@@ -392,7 +512,8 @@ private struct JournalImportReview: View {
             }
             .confirmationDialog("Replace Journal?", isPresented: $isConfirmingReplacement, titleVisibility: .visible) {
                 Button("Replace Journal", role: .destructive) {
-                    viewModel.importFile(review, removePublishedCopies: removePublishedCopies)
+                    viewModel.importFile(
+                        review, removePublishedCopies: removePublishedCopies, saveRecoveryCopy: saveRecoveryCopy)
                 }
             } message: {
                 Text(replacementImpact)
@@ -409,6 +530,12 @@ private struct JournalCountsRows: View {
         LabeledContent("Experiences", value: counts.experiences.formatted())
         LabeledContent("Ingestions", value: counts.ingestions.formatted())
         LabeledContent("Timed Notes", value: counts.timedNotes.formatted())
+        if counts.routines > 0 {
+            LabeledContent("Routines", value: counts.routines.formatted())
+        }
+        if counts.stockContainers > 0 {
+            LabeledContent("Stock Containers", value: counts.stockContainers.formatted())
+        }
     }
 }
 
@@ -420,8 +547,19 @@ private struct JournalExportReview: View {
     @State private var prepared: SettingsScreen.PreparedExport?
     @State private var exportError: String?
     @State private var isExporting = false
+    @State private var exportDocument: ExportedFile?
+    @State private var protectsBackup = true
+    @State private var passphrase = ""
+    @State private var confirmedPassphrase = ""
+    @State private var isProtecting = false
+    @AppStorage(SettingsScreen.ViewModel.lastBackupDateKey) private var lastBackupTime = 0.0
 
     private var formatName: String { isBackup ? "FreakLog Backup" : "Journal JSON" }
+    private var requiresPassphrase: Bool { isBackup && protectsBackup }
+    private var passphraseIsValid: Bool {
+        !passphrase.isEmpty && passphrase == confirmedPassphrase
+            && passphrase.precomposedStringWithCanonicalMapping.utf8.count <= JournalBackupProtection.maximumPassphraseBytes
+    }
 
     var body: some View {
         List {
@@ -442,11 +580,46 @@ private struct JournalExportReview: View {
                     ProgressView("Preparing Export…")
                 }
             }
+            if isBackup {
+                Section {
+                    Toggle("Protect with Passphrase", isOn: $protectsBackup)
+                    if protectsBackup {
+                        SecureField("Passphrase", text: $passphrase)
+                            .textContentType(.newPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        SecureField("Confirm Passphrase", text: $confirmedPassphrase)
+                            .textContentType(.newPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        if !confirmedPassphrase.isEmpty && passphrase != confirmedPassphrase {
+                            Text("The passphrases don’t match.").foregroundStyle(.secondary)
+                        } else if passphrase.precomposedStringWithCanonicalMapping.utf8.count > JournalBackupProtection.maximumPassphraseBytes {
+                            Text("Choose a shorter passphrase.").foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Protection")
+                } footer: {
+                    if protectsBackup {
+                        Text("Keep your passphrase somewhere safe. You’ll need it to open this backup.")
+                    } else {
+                        Text("Anyone with the exported file can read its contents.")
+                    }
+                }
+                .disabled(isProtecting)
+                .onChange(of: protectsBackup) { enabled in
+                    guard !enabled else { return }
+                    passphrase = ""
+                    confirmedPassphrase = ""
+                }
+            }
             Section {
                 Text("Journal entries, notes and ratings")
                 Text("Locations saved on experiences and individual ingestions")
                 Text("Custom substances, units, formulations and overrides")
                 if isBackup {
+                    Text("Routines, inventory and stock history")
                     Text("Journal preferences and integration settings")
                 }
             } header: {
@@ -462,6 +635,7 @@ private struct JournalExportReview: View {
                     Text("Assistant chats and API keys, cached references and retry records")
                 } else {
                     Text("App settings, webhooks and leaderboard history")
+                    Text("Routines, inventory and stock history")
                     Text("Spray calculator data, assistant data and cached references")
                 }
             }
@@ -471,11 +645,12 @@ private struct JournalExportReview: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save") {
-                    exportError = nil
-                    isExporting = true
+                if isProtecting {
+                    ProgressView().accessibilityLabel("Protecting Backup")
+                } else {
+                    Button("Save", action: save)
+                        .disabled(prepared == nil || (requiresPassphrase && !passphraseIsValid))
                 }
-                .disabled(prepared == nil)
             }
         }
         .task(id: preparation) {
@@ -491,15 +666,40 @@ private struct JournalExportReview: View {
         }
         .fileExporter(
             isPresented: $isExporting,
-            document: prepared?.file,
-            contentType: prepared?.file.contentType ?? (isBackup ? .freakLogBackup : .json),
-            defaultFilename: prepared?.file.filename
+            document: exportDocument,
+            contentType: exportDocument?.contentType ?? (isBackup ? .freakLogBackup : .json),
+            defaultFilename: exportDocument?.filename
         ) { result in
             if case .success = result {
+                if isBackup { lastBackupTime = Date.now.timeIntervalSince1970 }
                 toastViewModel.showSuccessToast(message: "Export Successful")
             } else {
                 exportError = "The export couldn’t be saved."
             }
+        }
+    }
+
+    private func save() {
+        guard let prepared, !isProtecting else { return }
+        exportError = nil
+        if requiresPassphrase {
+            guard passphraseIsValid else { return }
+            isProtecting = true
+            let secret = passphrase
+            passphrase = ""
+            confirmedPassphrase = ""
+            Task {
+                defer { isProtecting = false }
+                do {
+                    exportDocument = try await viewModel.protectBackup(prepared.file, passphrase: secret)
+                    isExporting = true
+                } catch {
+                    exportError = (error as? LocalizedError)?.errorDescription ?? "The backup couldn’t be protected."
+                }
+            }
+        } else {
+            exportDocument = prepared.file
+            isExporting = true
         }
     }
 

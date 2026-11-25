@@ -165,6 +165,32 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(try context.fetch(Experience.fetchRequest()), [original])
   }
 
+  func testProtectedBackupsUseTheSameValidationAsPlainBackups() throws {
+    let original = Self.version2Fixture
+    let passphrase = "réveil-inventory-backup"
+    let protected = try JournalBackupProtection.protect(original, passphrase: passphrase)
+    XCTAssertTrue(JournalBackupProtection.isProtected(protected))
+    XCTAssertFalse(JournalBackupProtection.isProtected(original))
+    let decrypted = try JournalBackupProtection.open(protected, passphrase: "re\u{301}veil-inventory-backup")
+    XCTAssertEqual(decrypted, original)
+
+    let backup = try XCTUnwrap(JournalBackup.read(decrypted))
+    let context = PersistenceController(inMemory: true).viewContext
+    let model = try XCTUnwrap(context.persistentStoreCoordinator?.managedObjectModel)
+    try backup.validateContents(in: model)
+    XCTAssertThrowsError(try JournalBackupProtection.open(protected, passphrase: "wrong-passphrase")) { error in
+      XCTAssertEqual(error as? JournalBackupProtection.Failure, .authentication)
+    }
+    var tampered = protected
+    tampered[tampered.index(before: tampered.endIndex)] ^= 1
+    XCTAssertThrowsError(try JournalBackupProtection.open(tampered, passphrase: passphrase)) { error in
+      XCTAssertEqual(error as? JournalBackupProtection.Failure, .authentication)
+    }
+    XCTAssertThrowsError(try JournalBackupProtection.validateEnvelope(Data(protected.prefix(19)))) { error in
+      XCTAssertEqual(error as? JournalBackupProtection.Failure, .damaged)
+    }
+  }
+
   func testWrappedVersion1BackupsUpgradeBeforeCompletenessValidation() throws {
     var backup = try XCTUnwrap(JournalBackup.read(Self.version2Fixture))
     backup.formatVersion = 1

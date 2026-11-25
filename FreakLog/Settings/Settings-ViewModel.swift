@@ -14,10 +14,12 @@ extension SettingsScreen {
         let contents: Contents
         let counts: JournalCounts
         let dateRange: ClosedRange<Date>?
+        let isProtected: Bool
 
-        init(filename: String, contents: Contents) {
+        init(filename: String, contents: Contents, isProtected: Bool = false) {
             self.filename = filename
             self.contents = contents
+            self.isProtected = isProtected
             switch contents {
             case .backup(let backup): counts = JournalCounts(backup)
             case .journal(let journal): counts = JournalCounts(journal)
@@ -100,17 +102,23 @@ extension SettingsScreen {
         let experiences: Int
         let ingestions: Int
         let timedNotes: Int
+        let routines: Int
+        let stockContainers: Int
 
         init(_ backup: JournalBackup) {
             experiences = backup.entities["Experience", default: []].count
             ingestions = backup.entities["Ingestion", default: []].count
             timedNotes = backup.entities["TimedNote", default: []].count
+            routines = backup.entities["RoutineRecord", default: []].count
+            stockContainers = backup.entities["StockContainer", default: []].count
         }
 
         init(_ journal: JournalFile) {
             experiences = journal.experiences.count
             ingestions = journal.experiences.reduce(0) { $0 + $1.ingestions.count }
             timedNotes = journal.experiences.reduce(0) { $0 + $1.timedNotes.count }
+            routines = 0
+            stockContainers = 0
         }
     }
 
@@ -119,9 +127,25 @@ extension SettingsScreen {
         let counts: JournalCounts
     }
 
+    enum ImportPurpose: Sendable {
+        case restore, verify
+    }
+
+    struct LockedImport: Sendable {
+        let data: Data
+        let filename: String
+        let purpose: ImportPurpose
+    }
+
     @MainActor
     class ViewModel: ObservableObject {
-        @Published var importReview: ImportReview?
+        static let lastBackupDateKey = "lastJournalBackupDate"
+
+        @Published private(set) var importReview: ImportReview?
+        @Published private(set) var verifiedBackup: ImportReview?
+        @Published private(set) var lockedImport: LockedImport?
+        @Published private(set) var recoveryCopies: [JournalRecoveryBackups.Entry] = []
+        @Published var isShowingImportDetails = false
         @Published var importError: String?
         @Published private(set) var isApplyingImport = false
         @Published private(set) var isPreparingImport = false
@@ -149,6 +173,13 @@ extension SettingsScreen {
             }
         }
 
+        func protectBackup(_ file: ExportedFile, passphrase: String) async throws -> ExportedFile {
+            let data = try await Task.detached(priority: .userInitiated) {
+                try JournalBackupProtection.protect(file.data, passphrase: passphrase)
+            }.value
+            return ExportedFile(data: data, filename: file.filename, contentType: file.contentType)
+        }
+
         private func export(
             contentType: UTType,
             suffix: String,
@@ -172,7 +203,7 @@ extension SettingsScreen {
                 timeSeparator: .omitted))
         }
 
-        func prepareImport(_ url: URL) {
+        func prepareImport(_ url: URL, purpose: ImportPurpose = .restore) {
             guard !isPreparingImport, !isApplyingImport else { return }
             importError = nil
             isPreparingImport = true
@@ -180,28 +211,111 @@ extension SettingsScreen {
             Task {
                 defer { isPreparingImport = false }
                 do {
-                    importReview = try await Task.detached(priority: .userInitiated) {
+                    let data = try await Task.detached(priority: .userInitiated) {
                         let scoped = url.startAccessingSecurityScopedResource()
                         defer { if scoped { url.stopAccessingSecurityScopedResource() } }
-                        let data = try Data(contentsOf: url)
-                        let contents: ImportReview.Contents
-                        if let backup = try JournalBackup.read(data) {
-                            try backup.validateContents(in: model)
-                            contents = .backup(backup)
-                        } else {
-                            contents = .journal(try JournalFile.read(data))
-                        }
-                        return ImportReview(filename: url.lastPathComponent, contents: contents)
+                        return try Data(contentsOf: url)
                     }.value
-                } catch is DecodingError {
-                    importError = "This file couldn’t be read as a journal. It may be damaged or incomplete."
+                    if JournalBackupProtection.isProtected(data) {
+                        try JournalBackupProtection.validateEnvelope(data)
+                        lockedImport = LockedImport(data: data, filename: url.lastPathComponent, purpose: purpose)
+                        isShowingImportDetails = true
+                    } else {
+                        let review = try await Task.detached(priority: .userInitiated) {
+                            try Self.readImport(data, filename: url.lastPathComponent, purpose: purpose, model: model)
+                        }.value
+                        present(review, for: purpose)
+                    }
                 } catch {
-                    importError = (error as? LocalizedError)?.errorDescription ?? "This journal file couldn’t be opened or validated."
+                    reportOpenError(error)
                 }
             }
         }
 
-        func importFile(_ review: ImportReview, removePublishedCopies: Bool) {
+        func unlockImport(passphrase: String) {
+            guard let lockedImport, !isPreparingImport, !isApplyingImport else { return }
+            importError = nil
+            isPreparingImport = true
+            let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
+            Task {
+                defer { isPreparingImport = false }
+                do {
+                    let review = try await Task.detached(priority: .userInitiated) {
+                        let data = try JournalBackupProtection.open(lockedImport.data, passphrase: passphrase)
+                        return try Self.readImport(
+                            data, filename: lockedImport.filename, purpose: lockedImport.purpose,
+                            model: model, isProtected: true)
+                    }.value
+                    self.lockedImport = nil
+                    present(review, for: lockedImport.purpose)
+                } catch {
+                    reportOpenError(error)
+                }
+            }
+        }
+
+        func prepareRecoveryBackup(_ entry: JournalRecoveryBackups.Entry) {
+            guard !isPreparingImport, !isApplyingImport else { return }
+            importError = nil
+            isPreparingImport = true
+            let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
+            let name = entry.created.formatted(date: .abbreviated, time: .shortened)
+            Task {
+                defer { isPreparingImport = false }
+                do {
+                    let review = try await Task.detached(priority: .userInitiated) {
+                        let data = try JournalRecoveryBackups.open(entry.url)
+                        return try Self.readImport(data, filename: name, purpose: .restore, model: model, isProtected: true)
+                    }.value
+                    present(review, for: .restore)
+                } catch {
+                    reportOpenError(error)
+                }
+            }
+        }
+
+        func clearImportDetails() {
+            lockedImport = nil
+            importReview = nil
+            verifiedBackup = nil
+            importError = nil
+        }
+
+        func refreshRecoveryCopies() {
+            recoveryCopies = (try? JournalRecoveryBackups.entries()) ?? []
+        }
+
+        private func present(_ review: ImportReview, for purpose: ImportPurpose) {
+            switch purpose {
+            case .restore: importReview = review
+            case .verify: verifiedBackup = review
+            }
+            isShowingImportDetails = true
+        }
+
+        private func reportOpenError(_ error: Error) {
+            if error is DecodingError {
+                importError = "This file couldn’t be read as a journal. It may be damaged or incomplete."
+            } else {
+                importError = (error as? LocalizedError)?.errorDescription ?? "This journal file couldn’t be opened or validated."
+            }
+        }
+
+        private nonisolated static func readImport(
+            _ data: Data, filename: String, purpose: ImportPurpose, model: NSManagedObjectModel, isProtected: Bool = false
+        ) throws -> ImportReview {
+            let contents: ImportReview.Contents
+            if let backup = try JournalBackup.read(data) {
+                try backup.validateContents(in: model)
+                contents = .backup(backup)
+            } else {
+                guard purpose == .restore, !isProtected else { throw JournalBackupError.unrecognizedFormat }
+                contents = .journal(try JournalFile.read(data))
+            }
+            return ImportReview(filename: filename, contents: contents, isProtected: isProtected)
+        }
+
+        func importFile(_ review: ImportReview, removePublishedCopies: Bool, saveRecoveryCopy: Bool) {
             guard !isApplyingImport, importReview?.id == review.id else { return }
             isApplyingImport = true
             importError = nil
@@ -211,6 +325,7 @@ extension SettingsScreen {
                     try PersistenceController.beginJournalOperation()
                     defer { PersistenceController.endJournalOperation() }
                     let container = PersistenceController.shared.container
+                    let recoveryAppVersion = saveRecoveryCopy ? getCurrentAppVersion() : nil
                     let retainInFlightMessages = removePublishedCopies ? nil : WebhookManager.shared.makeInFlightRetentionCommit()
                     let removed: [UUID]
                     switch review.contents {
@@ -219,7 +334,8 @@ extension SettingsScreen {
                             try Self.replaceJournal(
                                 in: context,
                                 removePublishedCopies: removePublishedCopies,
-                                retainInFlightMessages: retainInFlightMessages
+                                retainInFlightMessages: retainInFlightMessages,
+                                recoveryAppVersion: recoveryAppVersion
                             ) {
                                 try backup.restore(into: context)
                             }
@@ -229,7 +345,8 @@ extension SettingsScreen {
                             let removed = try Self.replaceJournal(
                                 in: context,
                                 removePublishedCopies: removePublishedCopies,
-                                retainInFlightMessages: retainInFlightMessages
+                                retainInFlightMessages: retainInFlightMessages,
+                                recoveryAppVersion: recoveryAppVersion
                             ) {
                                 try PersistenceController.stageJournalDeletion(in: context)
                                 file.insert(into: context)
@@ -245,7 +362,7 @@ extension SettingsScreen {
                         TabManager.shared.reload()
                         LeaderboardServerStore.shared.reload()
                     }
-                    importReview = nil
+                    isShowingImportDetails = false
                     showSuccessToast(message: review.isBackup ? "Backup Restored" : "Import Successful")
                 } catch {
                     importError = (error as? LocalizedError)?.errorDescription ?? "The journal couldn’t be imported."
@@ -257,6 +374,7 @@ extension SettingsScreen {
             in context: NSManagedObjectContext,
             removePublishedCopies: Bool,
             retainInFlightMessages: (@Sendable () -> Void)? = nil,
+            recoveryAppVersion: String? = nil,
             replace: () throws -> Void
         ) throws -> [UUID] {
             try PersistenceController.withJournalStoreWrite {
@@ -265,6 +383,9 @@ extension SettingsScreen {
                 defer { if !didSave { context.rollback() } }
                 let outgoingIDs = removePublishedCopies ? try ingestionIDs(in: context) : []
                 let outgoingMessages = removePublishedCopies ? try messageDestinations(in: context) : []
+                if let recoveryAppVersion {
+                    try saveRecoveryCopy(in: context, appVersion: recoveryAppVersion)
+                }
                 try replace()
                 context.processPendingChanges()
                 let removedIDs = removePublishedCopies ? outgoingIDs.subtracting(try ingestionIDs(in: context)) : []
@@ -277,6 +398,19 @@ extension SettingsScreen {
                 didSave = true
                 retainInFlightMessages?()
                 return Array(removedIDs)
+            }
+        }
+
+        private nonisolated static func saveRecoveryCopy(in context: NSManagedObjectContext, appVersion: String) throws {
+            do {
+                guard let model = context.persistentStoreCoordinator?.managedObjectModel else {
+                    throw JournalRecoveryBackups.Failure.cannotSave
+                }
+                let backup = try JournalBackup(context: context, appVersion: appVersion)
+                try backup.validateContents(in: model)
+                try JournalRecoveryBackups.saveVerified(backup.fileData())
+            } catch {
+                throw JournalRecoveryBackups.Failure.cannotSave
             }
         }
 
@@ -308,7 +442,14 @@ extension SettingsScreen {
                         }
                     }
                     IngestionDeletion.didDelete(identifiers: identifiers)
-                    showSuccessToast(message: "Delete Successful")
+                    do {
+                        try JournalRecoveryBackups.removeAll()
+                        refreshRecoveryCopies()
+                        showSuccessToast(message: "Delete Successful")
+                    } catch {
+                        refreshRecoveryCopies()
+                        showErrorToast(message: "The journal was deleted, but the recovery copies couldn’t be removed.")
+                    }
                 } catch {
                     showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Delete Failed")
                 }
