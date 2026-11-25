@@ -2,6 +2,7 @@ import UIKit
 import CoreData
 
 class AppDelegate: NSObject, UIApplicationDelegate {
+    private var isJournalReady = false
     private var cloudKitBackgroundTaskID: UIBackgroundTaskIdentifier = .invalid
 
     func application(_ app: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
@@ -11,7 +12,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
             _ = ActivityManager.shared
         }
         setupCloudKitBackgroundTaskHandling()
-        PhoneWatchSession.shared.activate()
+        prepareJournal()
         return true
     }
 
@@ -23,7 +24,21 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationWillEnterForeground(_ application: UIApplication) {
         // End the background task when app comes to foreground
         endCloudKitBackgroundTask()
-        PhoneWatchSession.shared.retryPendingUndos()
+        if isJournalReady {
+            PhoneWatchSession.shared.retryPendingUndos()
+        } else {
+            prepareJournal()
+        }
+    }
+
+    private func prepareJournal() {
+        do {
+            try PersistenceController.shared.runPendingMigrations()
+            isJournalReady = true
+            PhoneWatchSession.shared.activate()
+        } catch {
+            print("Journal migration failed: \(error)")
+        }
     }
 
     private func setupCloudKitBackgroundTaskHandling() {

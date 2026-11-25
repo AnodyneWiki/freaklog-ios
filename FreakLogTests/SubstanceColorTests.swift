@@ -101,7 +101,8 @@ final class SubstanceColorTests: XCTestCase {
     unreadable.colorAsText = "nonsense"
     try context.save()
 
-    persistence.migrateColorsToHex()
+    try persistence.migrateColorsToHex(context)
+    try context.save()
 
     XCTAssertEqual(companion.colorAsText, "#0A84FF")
     XCTAssertEqual(ingestion.color, "#ED2B2A")

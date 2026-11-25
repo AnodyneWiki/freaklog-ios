@@ -12,9 +12,6 @@ struct ContentView: View {
             .fullScreenCover(isPresented: $needsToSeeWelcome) {
                 WelcomeScreen(isShowingWelcome: $needsToSeeWelcome)
             }
-            .onAppear {
-                PersistenceController.shared.runPendingMigrations()
-            }
     }
 }
 

@@ -157,7 +157,6 @@ struct PersistenceController {
         #endif
 
 
-        return
     }
 
     func updateCloudKitSyncStatus(_ enabled: Bool) {
@@ -226,13 +225,10 @@ struct PersistenceController {
     }
 
     // One-off data fixes, each run once and remembered under its key, in order
-    func runPendingMigrations() {
+    func runPendingMigrations() throws {
         let defaults = UserDefaults.standard
-        let migrations: [(key: String, run: () -> Void)] = [
-            (Self.hasBeenMigrated2Key, {
-                self.migrateCompanionsAndExperienceSortDates()
-                defaults.set(defaults.bool(forKey: Self.isEyeOpenKey1), forKey: Self.isEyeOpenKey2)
-            }),
+        let migrations: [(key: String, run: (NSManagedObjectContext) throws -> Void)] = [
+            (Self.hasBeenMigrated2Key, migrateCompanionsAndExperienceSortDates),
             (Self.hasBeenMigrated3Key, migrateIngestionNamesAndUnits),
             (Self.hasBeenMigrated4Key, migrateColors),
             (Self.hasBeenMigrated5Key, migrateBenzydamineUnits),
@@ -242,182 +238,163 @@ struct PersistenceController {
             (Self.hasBeenMigrated9Key, migrateColorsToHex),
         ]
         for migration in migrations where !defaults.bool(forKey: migration.key) {
-            migration.run()
+            let context = container.newBackgroundContext()
+            try context.performAndWait {
+                try migration.run(context)
+                try context.save()
+            }
+            if migration.key == Self.hasBeenMigrated2Key {
+                defaults.set(defaults.bool(forKey: Self.isEyeOpenKey1), forKey: Self.isEyeOpenKey2)
+            }
             defaults.set(true, forKey: migration.key)
         }
     }
 
-    func migrateCompanionsAndExperienceSortDates() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            var companionsDict: [String: SubstanceCompanion] = [:]
-            for ingestion in allIngestions {
-                guard let name = ingestion.substanceName else { continue }
-                guard let colorUnwrap = ingestion.color else { continue }
-                if let companion = companionsDict[name] {
-                    ingestion.substanceCompanion = companion
-                } else {
-                    let companion = SubstanceCompanion(context: viewContext)
-                    companion.substanceName = name
-                    companion.colorAsText = colorUnwrap
-                    ingestion.substanceCompanion = companion
-                    companionsDict[name] = companion
-                }
+    func migrateCompanionsAndExperienceSortDates(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        var companionsDict: [String: SubstanceCompanion] = [:]
+        for ingestion in allIngestions {
+            guard let name = ingestion.substanceName else { continue }
+            guard let colorUnwrap = ingestion.color else { continue }
+            if let companion = companionsDict[name] {
+                ingestion.substanceCompanion = companion
+            } else {
+                let companion = SubstanceCompanion(context: context)
+                companion.substanceName = name
+                companion.colorAsText = colorUnwrap
+                ingestion.substanceCompanion = companion
+                companionsDict[name] = companion
             }
-            let experienceFetchRequest = Experience.fetchRequest()
-            let allExperiences = (try? viewContext.fetch(experienceFetchRequest)) ?? []
-            for experience in allExperiences {
-                experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
-            }
-            try? viewContext.save()
+        }
+        let experienceFetchRequest = Experience.fetchRequest()
+        let allExperiences = try context.fetch(experienceFetchRequest)
+        for experience in allExperiences {
+            experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
         }
     }
 
-    func migrateIngestionNamesAndUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Psilocybin Mushrooms" {
-                    ingestion.substanceName = "Psilocybin mushrooms"
-                }
-                if ingestion.units == "mg (THC)" {
-                    ingestion.units = "mg"
-                }
-                if ingestion.units == "70" {
-                    ingestion.units = "mg"
-                }
+    func migrateIngestionNamesAndUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Psilocybin Mushrooms" {
+                ingestion.substanceName = "Psilocybin mushrooms"
             }
-            try? viewContext.save()
+            if ingestion.units == "mg (THC)" {
+                ingestion.units = "mg"
+            }
+            if ingestion.units == "70" {
+                ingestion.units = "mg"
+            }
         }
     }
 
-    func migrateBenzydamineUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Benzydamine" && ingestion.units == "g" {
-                    ingestion.units = "mg"
-                    ingestion.dose = ingestion.dose * 1000
-                }
+    func migrateBenzydamineUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Benzydamine" && ingestion.units == "g" {
+                ingestion.units = "mg"
+                ingestion.dose = ingestion.dose * 1000
             }
-            try? viewContext.save()
         }
     }
 
-    func migrateCannabisAndMushroomUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Cannabis" && ingestion.units == "mg" {
-                    ingestion.units = "mg THC"
-                }
-                if ingestion.substanceName == "Psilocybin mushrooms" && ingestion.units == "mg" {
-                    ingestion.units = "mg Psilocybin"
-                }
+    func migrateCannabisAndMushroomUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Cannabis" && ingestion.units == "mg" {
+                ingestion.units = "mg THC"
             }
-
-            let customUnitFetchRequest = CustomUnit.fetchRequest()
-            let customUnits = (try? viewContext.fetch(customUnitFetchRequest)) ?? []
-            for customUnit in customUnits {
-                if customUnit.substanceName == "Cannabis" && customUnit.originalUnit == "mg" {
-                    customUnit.originalUnit = "mg THC"
-                }
-                if customUnit.substanceName == "Psilocybin mushrooms" && customUnit.originalUnit == "mg" {
-                    customUnit.originalUnit = "mg Psilocybin"
-                }
+            if ingestion.substanceName == "Psilocybin mushrooms" && ingestion.units == "mg" {
+                ingestion.units = "mg Psilocybin"
             }
+        }
 
-            try? viewContext.save()
+        let customUnitFetchRequest = CustomUnit.fetchRequest()
+        let customUnits = try context.fetch(customUnitFetchRequest)
+        for customUnit in customUnits {
+            if customUnit.substanceName == "Cannabis" && customUnit.originalUnit == "mg" {
+                customUnit.originalUnit = "mg THC"
+            }
+            if customUnit.substanceName == "Psilocybin mushrooms" && customUnit.originalUnit == "mg" {
+                customUnit.originalUnit = "mg Psilocybin"
+            }
         }
     }
 
-    func migrateColors() {
-        viewContext.performAndWait {
-            let companionFetchRequest = SubstanceCompanion.fetchRequest()
-            let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
-            for companion in allCompanions {
-                companion.colorAsText = companion.colorAsText?.uppercased()
-            }
-            let timedNotesFetchRequest = TimedNote.fetchRequest()
-            let allTimedNotes = (try? viewContext.fetch(timedNotesFetchRequest)) ?? []
-            for timedNote in allTimedNotes {
-                timedNote.colorAsText = timedNote.colorAsText?.uppercased()
-            }
-            try? viewContext.save()
+    func migrateColors(_ context: NSManagedObjectContext) throws {
+        let companionFetchRequest = SubstanceCompanion.fetchRequest()
+        let allCompanions = try context.fetch(companionFetchRequest)
+        for companion in allCompanions {
+            companion.colorAsText = companion.colorAsText?.uppercased()
+        }
+        let timedNotesFetchRequest = TimedNote.fetchRequest()
+        let allTimedNotes = try context.fetch(timedNotesFetchRequest)
+        for timedNote in allTimedNotes {
+            timedNote.colorAsText = timedNote.colorAsText?.uppercased()
         }
     }
 
     // Colors were stored as the names of a fixed palette and are hex codes now. Reading still understands the
     // names (iCloud can bring them from older versions), so this only makes the stored values consistent.
-    func migrateColorsToHex() {
-        viewContext.performAndWait {
-            func hex(of text: String?) -> String? {
-                text.flatMap(SubstanceColor.init(rawValue:))?.hex
+    func migrateColorsToHex(_ context: NSManagedObjectContext) throws {
+        func hex(of text: String?) -> String? {
+            text.flatMap(SubstanceColor.init(rawValue:))?.hex
+        }
+        for companion in try context.fetch(SubstanceCompanion.fetchRequest()) {
+            if let hex = hex(of: companion.colorAsText), hex != companion.colorAsText {
+                companion.colorAsText = hex
             }
-            for companion in (try? viewContext.fetch(SubstanceCompanion.fetchRequest())) ?? [] {
-                if let hex = hex(of: companion.colorAsText), hex != companion.colorAsText {
-                    companion.colorAsText = hex
-                }
+        }
+        for ingestion in try context.fetch(Ingestion.fetchRequest()) {
+            if let hex = hex(of: ingestion.color), hex != ingestion.color {
+                ingestion.color = hex
             }
-            for ingestion in (try? viewContext.fetch(Ingestion.fetchRequest())) ?? [] {
-                if let hex = hex(of: ingestion.color), hex != ingestion.color {
-                    ingestion.color = hex
-                }
+        }
+        for timedNote in try context.fetch(TimedNote.fetchRequest()) {
+            if let hex = hex(of: timedNote.colorAsText), hex != timedNote.colorAsText {
+                timedNote.colorAsText = hex
             }
-            for timedNote in (try? viewContext.fetch(TimedNote.fetchRequest())) ?? [] {
-                if let hex = hex(of: timedNote.colorAsText), hex != timedNote.colorAsText {
-                    timedNote.colorAsText = hex
-                }
-            }
-            try? viewContext.save()
         }
     }
 
     // Overrides of PsychonautWiki data with only some phases or dose levels left the rest undrawn
-    func migrateFillPartialSubstanceOverrides() {
-        viewContext.performAndWait {
-            for roa in getAllStandaloneCustomRoas() {
-                guard let name = roa.substanceName, SubstanceRepo.shared.getSubstance(name: name) != nil else { continue }
-                let values = CustomRoaCodable(roa: roa)
-                let filled = values.fillingGaps(from: .psychonautWikiValues(for: name, route: values.administrationRoute))
-                if filled != values {
-                    filled.apply(to: roa)
-                }
+    func migrateFillPartialSubstanceOverrides(_ context: NSManagedObjectContext) throws {
+        for roa in try context.fetch(Self.standaloneCustomRoasRequest()) {
+            guard let name = roa.substanceName, SubstanceRepo.shared.getSubstance(name: name) != nil else { continue }
+            let values = CustomRoaCodable(roa: roa)
+            let filled = values.fillingGaps(from: .psychonautWikiValues(for: name, route: values.administrationRoute))
+            if filled != values {
+                filled.apply(to: roa)
             }
-            try? viewContext.save()
         }
     }
 
-    func migrateRemoveDuplicateCompanions() {
-        viewContext.performAndWait {
-            let companionFetchRequest = SubstanceCompanion.fetchRequest()
-            let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
+    func migrateRemoveDuplicateCompanions(_ context: NSManagedObjectContext) throws {
+        let companionFetchRequest = SubstanceCompanion.fetchRequest()
+        let allCompanions = try context.fetch(companionFetchRequest)
 
-            var companionsByName: [String: [SubstanceCompanion]] = [:]
-            for companion in allCompanions {
-                guard let name = companion.substanceName else { continue }
-                companionsByName[name, default: []].append(companion)
-            }
+        var companionsByName: [String: [SubstanceCompanion]] = [:]
+        for companion in allCompanions {
+            guard let name = companion.substanceName else { continue }
+            companionsByName[name, default: []].append(companion)
+        }
 
-            for (_, companions) in companionsByName where companions.count > 1 {
-                let keeper = companions[0]
-                let duplicates = companions[1...]
+        for (_, companions) in companionsByName where companions.count > 1 {
+            let keeper = companions[0]
+            let duplicates = companions[1...]
 
-                for duplicate in duplicates {
-                    if let ingestions = duplicate.ingestions as? Set<Ingestion> {
-                        for ingestion in ingestions {
-                            ingestion.substanceCompanion = keeper
-                        }
+            for duplicate in duplicates {
+                if let ingestions = duplicate.ingestions as? Set<Ingestion> {
+                    for ingestion in ingestions {
+                        ingestion.substanceCompanion = keeper
                     }
-                    viewContext.delete(duplicate)
                 }
+                context.delete(duplicate)
             }
-
-            try? viewContext.save()
         }
     }
 
@@ -676,10 +653,14 @@ struct PersistenceController {
         (try? viewContext.fetch(Self.formulationsRequest())) ?? []
     }
 
-    func getAllStandaloneCustomRoas() -> [CustomRoa] {
+    static func standaloneCustomRoasRequest() -> NSFetchRequest<CustomRoa> {
         let r = CustomRoa.fetchRequest()
         r.predicate = NSPredicate(format: "customSubstance == nil")
-        return (try? viewContext.fetch(r)) ?? []
+        return r
+    }
+
+    func getAllStandaloneCustomRoas() -> [CustomRoa] {
+        (try? viewContext.fetch(Self.standaloneCustomRoasRequest())) ?? []
     }
 
     func getSubstanceCompanion(for substanceName: String) -> SubstanceCompanion? {
