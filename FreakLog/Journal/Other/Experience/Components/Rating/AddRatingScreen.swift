@@ -7,6 +7,7 @@ struct AddRatingScreen: View {
     @State private var selectedTime = Date.now
     @State private var selectedRating = ShulginRatingOption.twoPlus
     @State private var isOverallRating = false
+    @State private var showsSaveError = false
     @EnvironmentObject private var toastViewModel: ToastViewModel
 
     var body: some View {
@@ -22,20 +23,29 @@ struct AddRatingScreen: View {
                 }
             }
         }
-        .onAppear {
+        .onFirstAppear {
             if experience.isCurrent {
                 selectedTime = Date()
             } else {
                 selectedTime = experience.sortDateUnwrapped.addingTimeInterval(30 * 60)
             }
         }
+        .alert("Rating Couldn’t Be Saved", isPresented: $showsSaveError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("Your rating is still here. Try saving again.")
+        }
     }
 
     var doneButton: some View {
         DoneButton {
-            save()
-            toastViewModel.showSuccessToast(message: "Rating Added")
-            dismiss()
+            do {
+                try save()
+                toastViewModel.showSuccessToast(message: "Rating Added")
+                dismiss()
+            } catch {
+                showsSaveError = true
+            }
         }
     }
 
@@ -49,17 +59,16 @@ struct AddRatingScreen: View {
         .navigationTitle("Add Shulgin Rating")
     }
 
-    func save() {
-        let context = PersistenceController.shared.viewContext
-        let newRating = ShulginRating(context: context)
-        newRating.creationDate = Date()
-        if canDefineOverall && isOverallRating {
-            newRating.time = nil
-        } else {
-            newRating.time = selectedTime
+    private func save() throws {
+        try PersistenceController.withJournalStoreWrite {
+            let context = try PersistenceController.shared.journalEditContext()
+            let storedExperience = try PersistenceController.journalObject(experience, in: context)
+            let newRating = ShulginRating(context: context)
+            newRating.creationDate = .now
+            newRating.time = canDefineOverall && isOverallRating ? nil : selectedTime
+            newRating.option = selectedRating.rawValue
+            newRating.experience = storedExperience
+            try PersistenceController.saveJournalChanges(in: context)
         }
-        newRating.option = selectedRating.rawValue
-        newRating.experience = experience
-        try? context.save()
     }
 }

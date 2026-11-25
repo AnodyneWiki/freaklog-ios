@@ -14,33 +14,35 @@ struct TimedNoteScreenContent: View {
 
     var body: some View {
         Form {
-            Section {
+            Section("Note") {
                 TextEditor(text: $note)
                     .focused(isTextFieldFocused)
                     .autocapitalization(.sentences)
                     .frame(minHeight: 100)
+                    .accessibilityLabel("Note")
             }
-            Section {
+            Section("When") {
                 DatePicker(
                     "Time",
                     selection: $time,
                     displayedComponents: [.date, .hourAndMinute]
                 )
-                .labelsHidden()
-                .datePickerStyle(.wheel)
-                Toggle("Is part of timeline", isOn: $isPartOfTimeline).tint(.accentColor)
+                .datePickerStyle(.compact)
             }
-            Section {
+            Section("Display") {
+                Toggle("Show in Timeline", isOn: $isPartOfTimeline).tint(.accentColor)
                 NavigationLink {
                     ColorPickerScreen(
                         selectedColor: $color,
                         usedColors: usedColors
                     )
                 } label: {
-                    HStack {
+                    LabeledContent {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(color.swiftUIColor)
+                            .accessibilityLabel(Text(color.name))
+                    } label: {
                         Text("Note Color")
-                        Spacer()
-                        Image(systemName: "circle.fill").foregroundColor(color.swiftUIColor)
                     }
                 }
             }
