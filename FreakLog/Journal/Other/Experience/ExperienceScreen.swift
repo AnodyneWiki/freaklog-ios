@@ -131,6 +131,9 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(TimelineModel.combinesComparableRoutesKey) private var combinesRoutes = false
+    @AppStorage(TimelineModel.showsQuantityDetailsKey) private var showsQuantityDetails = true
+    @State private var noteReminder: JournalReminderDraft?
     @AppStorage(PersistenceController.isOpenLastExperienceSiriTipVisibleKey) private var isSiriTipVisible = false
 
     @Environment(\.dismiss) var dismiss
@@ -144,6 +147,7 @@ struct ExperienceScreen: View {
         case addLocation
         case addRating
         case addTimedNote
+        case reminder
         case editTimedNote(timedNote: TimedNote)
         case editIngestion(ingestion: Ingestion)
         case shareExperience
@@ -178,7 +182,8 @@ struct ExperienceScreen: View {
             experienceSummary(ingestions: myIngestions)
             let timelineModel = experience.getMyTimeLineModel(
                 areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+                combinesComparableRoutes: combinesRoutes
             )
             if timelineModel.isWorthDrawing {
                 Section {
@@ -190,9 +195,19 @@ struct ExperienceScreen: View {
                         onTimeSelected: { timelineTime = $0 }
                     )
                     if let timelineTime {
+                        let selectedTime = timelineModel.clampingTime(timelineTime)
                         LabeledContent("Selected Time") {
-                            Text(timelineModel.clampingTime(timelineTime), format: TimelineCursorEntry.dateFormat)
+                            Text(selectedTime, format: TimelineCursorEntry.dateFormat)
                                 .monospacedDigit()
+                        }
+                        if let estimate = timelineModel.effectEstimate(at: selectedTime) {
+                            TimelineEstimateRows(estimate: estimate, time: selectedTime)
+                        }
+                    } else if isCurrent {
+                        TimelineView(.explicit(timelineModel.phaseUpdateDates(from: .now))) { context in
+                            if let estimate = timelineModel.effectEstimate(at: context.date) {
+                                TimelineEstimateRows(estimate: estimate, time: context.date, showsCountdown: true)
+                            }
                         }
                     }
                 } header: {
@@ -201,6 +216,11 @@ struct ExperienceScreen: View {
                         Spacer()
                         timeDisplayMenu
                         expandTimelineLink
+                    }
+                } footer: {
+                    if showsQuantityDetails, let time = timelineTime.map(timelineModel.clampingTime),
+                       timelineModel.effectEstimate(at: time)?.curveScaledAmount(at: time) != nil {
+                        Text("The curve-scaled amount is the logged amount multiplied by the curve’s relative height.")
                     }
                 }
             }
@@ -224,7 +244,11 @@ struct ExperienceScreen: View {
                         isCurrentExperience: isCurrent,
                         timedNotes: timedNotes,
                         firstIngestionTimeForNotes: firstIngestionTime,
-                        editTimedNote: { sheetToShow = .editTimedNote(timedNote: $0) }
+                        editTimedNote: { sheetToShow = .editTimedNote(timedNote: $0) },
+                        remindAboutTimedNote: { note in
+                            let date = note.timeUnwrapped > .now ? note.timeUnwrapped : Date.now.addingTimeInterval(3600)
+                            noteReminder = JournalReminderDraft(date: date, source: .timedNote)
+                        }
                     )
                 }
                 if #available(iOS 16.2, *) {
@@ -374,6 +398,8 @@ struct ExperienceScreen: View {
                     AddRatingScreen(experience: experience, canDefineOverall: experience.overallRating == nil)
                 case .addTimedNote:
                     AddTimedNoteScreen(experience: experience)
+                case .reminder:
+                    JournalReminderEditor(draft: JournalReminderDraft())
                 case let .editTimedNote(timedNote):
                     EditTimedNoteScreen(timedNote: timedNote, experience: experience)
                 case let .editIngestion(ingestion):
@@ -399,6 +425,7 @@ struct ExperienceScreen: View {
         .sheet(isPresented: $showsHiddenItems) {
             NavigationStack { HiddenTimelineItemsScreen(experience: experience, includesRatings: isEyeOpen) }
         }
+        .sheet(item: $noteReminder) { JournalReminderEditor(draft: $0) }
         .observeExperienceTimeline(experience)
         .confirmationDialog(
             "Delete Experience?",

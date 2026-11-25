@@ -27,7 +27,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNoti
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, willPresent notification: UNNotification
     ) async -> UNNotificationPresentationOptions {
-        notification.request.content.categoryIdentifier == RoutineNotificationResponse.category ? [.banner, .sound] : []
+        let request = notification.request
+        if request.content.categoryIdentifier == RoutineNotificationResponse.category
+            || request.identifier.hasPrefix(JournalReminders.prefix) {
+            return [.banner, .sound]
+        }
+        return []
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {

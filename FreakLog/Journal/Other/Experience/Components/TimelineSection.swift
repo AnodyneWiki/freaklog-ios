@@ -11,6 +11,7 @@ struct TimelineSection: View {
     var timedNotes: [TimedNote] = []
     var firstIngestionTimeForNotes: Date?
     var editTimedNote: ((TimedNote) -> Void)?
+    var remindAboutTimedNote: ((TimedNote) -> Void)?
 
     private enum Event: Identifiable {
         case ingestion(Ingestion, previousTime: Date?)
@@ -69,6 +70,15 @@ struct TimelineSection: View {
                             }
                         }
                         .foregroundStyle(.primary)
+                        .contextMenu {
+                            if let remindAboutTimedNote {
+                                Button {
+                                    remindAboutTimedNote(note)
+                                } label: {
+                                    Label("Set Reminder", systemImage: "bell")
+                                }
+                            }
+                        }
                     }
                 }
             }

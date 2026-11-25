@@ -162,18 +162,21 @@ extension Experience: Comparable {
 
     func getMyTimeLineModel(
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        combinesComparableRoutes: Bool = UserDefaults.standard.bool(forKey: TimelineModel.combinesComparableRoutesKey)
     ) -> TimelineModel {
         liveActivityState(
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            combinesComparableRoutes: combinesComparableRoutes
         ).timelineModel
     }
 
     // The user's own timeline, in the form sent to the live activity
     func liveActivityState(
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        combinesComparableRoutes: Bool = UserDefaults.standard.bool(forKey: TimelineModel.combinesComparableRoutesKey)
     ) -> TimelineWidgetAttributes.ContentState {
         TimelineWidgetAttributes.ContentState(
             substanceGroups: getSubstanceIngestionGroups(ingestions: myIngestionsSorted),
@@ -182,7 +185,8 @@ extension Experience: Comparable {
                 .map { EverythingForOneRating(time: $0.timeUnwrapped, option: $0.optionUnwrapped) },
             everythingForEachTimedNote: timedNotesForTimeline,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            combinesComparableRoutes: combinesComparableRoutes
         )
     }
 

@@ -23,6 +23,11 @@ struct ExperienceToolbarContent: View {
                 } label: {
                     Label("Add Timed Note", systemImage: "note.text")
                 }
+                Button {
+                    sheetToShow = .reminder
+                } label: {
+                    Label("Set Reminder", systemImage: "bell")
+                }
                 if isEyeOpen {
                     Button {
                         sheetToShow = .addRating

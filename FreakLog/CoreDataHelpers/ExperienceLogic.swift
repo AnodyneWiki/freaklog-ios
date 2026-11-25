@@ -90,7 +90,8 @@ struct ExperienceLogic {
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
             areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
             visibleTimeRange: visibleTimeRange,
-            alignedTimeRange: alignedTimeRange
+            alignedTimeRange: alignedTimeRange,
+            combinesComparableRoutes: UserDefaults.standard.bool(forKey: TimelineModel.combinesComparableRoutesKey)
         )
     }
     

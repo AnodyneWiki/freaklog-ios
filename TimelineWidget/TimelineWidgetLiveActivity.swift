@@ -14,7 +14,7 @@ struct TimelineWidgetLiveActivity: Widget {
                     TimelineTimer(interval: timelineModel.activityInterval, countsDown: false)
                 }
                 DynamicIslandExpandedRegion(.trailing) {
-                    TimelineTimer(interval: timelineModel.activityInterval, countsDown: true)
+                    TimelineTimer(interval: timelineModel.countdownInterval, countsDown: true, tracksEffects: timelineModel.singleEffectEstimate != nil)
                 }
                 DynamicIslandExpandedRegion(.bottom) {
                     ActivityTimelineChart(model: timelineModel, height: 90)
@@ -23,7 +23,7 @@ struct TimelineWidgetLiveActivity: Widget {
             } compactLeading: {
                 TimelineTimer(interval: timelineModel.activityInterval, countsDown: false, compact: true)
             } compactTrailing: {
-                TimelineTimer(interval: timelineModel.activityInterval, countsDown: true, compact: true)
+                TimelineTimer(interval: timelineModel.countdownInterval, countsDown: true, compact: true, tracksEffects: timelineModel.singleEffectEstimate != nil)
             } minimal: {
                 Image(systemName: "eye")
                     .accessibilityLabel("Journal Timeline")
@@ -37,6 +37,11 @@ struct TimelineWidgetLiveActivity: Widget {
 private extension TimelineModel {
     var activityInterval: ClosedRange<Date> {
         startTime ... startTime.addingTimeInterval(max(1, totalWidth))
+    }
+
+    var countdownInterval: ClosedRange<Date> {
+        guard let estimate = singleEffectEstimate else { return activityInterval }
+        return estimate.start...estimate.end
     }
 }
 
@@ -62,9 +67,9 @@ private struct LockScreenTimeline: View {
                     ActivityTimelineChart(model: model, height: geometry.size.height)
                 }
             }
-            ProgressView(timerInterval: interval, countsDown: false)
+            ProgressView(timerInterval: model.countdownInterval, countsDown: false)
                 .progressViewStyle(.linear)
-                .accessibilityLabel("Estimated Timeline Progress")
+                .accessibilityLabel(model.singleEffectEstimate == nil ? "Timeline Progress" : "Estimated Effect Progress")
         }
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
@@ -96,6 +101,7 @@ private struct TimelineTimer: View {
     let interval: ClosedRange<Date>
     let countsDown: Bool
     var compact = false
+    var tracksEffects = false
 
     var body: some View {
         Group {
@@ -106,7 +112,7 @@ private struct TimelineTimer: View {
                 }
             } else {
                 VStack(alignment: countsDown ? .trailing : .leading, spacing: 2) {
-                    Text(countsDown ? "Remaining" : "Elapsed")
+                    Text(title)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     value
@@ -114,13 +120,18 @@ private struct TimelineTimer: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(countsDown ? "Estimated Time Remaining" : "Elapsed Time"))
+        .accessibilityLabel(Text(title))
         .accessibilityValue(value)
     }
 
     private var value: Text {
         Text(timerInterval: interval, countsDown: countsDown)
             .monospacedDigit()
+    }
+
+    private var title: String {
+        guard countsDown else { return "Elapsed" }
+        return tracksEffects ? "Estimated Effects" : "Chart Time Left"
     }
 }
 

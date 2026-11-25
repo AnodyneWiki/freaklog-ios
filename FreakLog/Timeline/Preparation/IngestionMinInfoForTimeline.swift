@@ -21,16 +21,23 @@ struct IngestionWithRepoInfo {
 func getSubstanceGroupWithRepoInfo(substanceIngestionGroups: [SubstanceIngestionGroup]) -> [SubstanceGroupWithRepoInfo] {
     substanceIngestionGroups.map { substanceIngestionGroup in
         let routeGroups = substanceIngestionGroup.routeMinInfos.map { routeMinInfo in
-            let allKnownDoses = routeMinInfo.ingestions.compactMap { $0.dose }
+            let doseUnits = Set(routeMinInfo.ingestions.compactMap(\.doseUnits))
+            let referenceUnits = routeMinInfo.commonDoseUnits ?? (doseUnits.count == 1 ? doseUnits.first : nil)
+            func comparableDose(for ingestion: IngestionMinInfo) -> Double? {
+                guard (doseUnits.isEmpty || ingestion.doseUnits == referenceUnits),
+                      let dose = ingestion.dose, dose.isFinite, dose > 0 else { return nil }
+                return dose
+            }
+            let allKnownDoses = routeMinInfo.ingestions.compactMap { comparableDose(for: $0) }
             let averageDose = allKnownDoses.reduce(0, +) / max(1.0, Double(allKnownDoses.count))
-            let commonDose = routeMinInfo.commonDose ?? averageDose
+            let commonDose = [routeMinInfo.commonDose, averageDose].compactMap { $0 }.first { $0.isFinite && $0 > 0 } ?? 1
             let ingestions = routeMinInfo.ingestions.map { ingestion in
                 IngestionWithRepoInfo(
                     onsetDelayInHours: ingestion.onsetDelayInHours,
                     time: ingestion.time,
                     endTime: ingestion.endTime,
                     horizontalWeight: ingestion.horizontalWeight,
-                    strengthRelativeToCommonDose: ingestion.dose.map { $0 / commonDose } ?? 1
+                    strengthRelativeToCommonDose: comparableDose(for: ingestion).map { $0 / commonDose } ?? 1
                 )
             }
             return RouteGroupWithRepoInfo(
@@ -58,6 +65,15 @@ struct RouteMinInfo: Hashable, Codable {
     var roaDuration: RoaDuration?
     // Midpoint of the common dose range, if known
     var commonDose: Double?
+    var commonDoseUnits: String? = nil
+
+    var canCombine: Bool {
+        guard let commonDose, commonDose.isFinite, commonDose > 0, let commonDoseUnits, !ingestions.isEmpty else { return false }
+        return ingestions.allSatisfy {
+            $0.doseUnits == commonDoseUnits && ($0.dose ?? 0) > 0
+                && TimelineEffectEstimate(substance: "", route: self, ingestion: $0) != nil
+        }
+    }
 }
 
 struct IngestionMinInfo: Hashable, Codable {
@@ -67,4 +83,5 @@ struct IngestionMinInfo: Hashable, Codable {
     let onsetDelayInHours: Double
     // 0 (threshold) ... 1 (heavy), 0.5 when unknown
     var horizontalWeight = 0.5
+    var doseUnits: String? = nil
 }

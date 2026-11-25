@@ -65,11 +65,13 @@ struct ExperienceTimelineScreen: View {
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) private var drawsRedosesIndividually = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) private var usesIndependentHeights = true
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @AppStorage(TimelineModel.combinesComparableRoutesKey) private var combinesRoutes = false
 
     var body: some View {
         let model = experience.getMyTimeLineModel(
             areRedosesDrawnIndividually: drawsRedosesIndividually,
-            areSubstanceHeightsIndependent: usesIndependentHeights
+            areSubstanceHeightsIndependent: usesIndependentHeights,
+            combinesComparableRoutes: combinesRoutes
         )
         TimelineCursorContent(
             experience: experience,
@@ -77,7 +79,8 @@ struct ExperienceTimelineScreen: View {
             entries: recordedEntries.filter { model.timeRange.contains($0.time) },
             timeDisplayStyle: storedTimeStyle.resolved(isCurrent: experience.isCurrent),
             showsLimitations: isEyeOpen,
-            selection: $selection
+            selection: $selection,
+            combinesRoutes: $combinesRoutes
         )
         .observeExperienceTimeline(experience)
     }
@@ -108,12 +111,15 @@ private struct TimelineCursorContent: View {
     let showsLimitations: Bool
 
     @Binding var selection: Date?
+    @Binding var combinesRoutes: Bool
     @State private var noteTime: NoteTime?
+    @State private var reminder: JournalReminderDraft?
     @State private var showsRecordedEntries = false
     @State private var zoom = 1
     @Namespace private var zoomAnchor
     @Namespace private var plotViewport
     @State private var visibleStartFraction = 0.0
+    @AppStorage(TimelineModel.showsQuantityDetailsKey) private var showsQuantityDetails = true
 
     private var selectedTime: Date {
         model.clampingTime(selection ?? entries.first?.time ?? model.startTime)
@@ -191,8 +197,11 @@ private struct TimelineCursorContent: View {
                         Text("2×").tag(2)
                         Text("4×").tag(4)
                     }
+                    if model.supportsCombiningRoutes {
+                        Toggle("Combine Comparable Routes", isOn: $combinesRoutes)
+                    }
                 } label: {
-                    Label("Timeline Zoom", systemImage: "magnifyingglass")
+                    Label("Timeline Options", systemImage: "chart.xyaxis.line")
                 }
             }
             if showsLimitations {
@@ -204,23 +213,58 @@ private struct TimelineCursorContent: View {
         .sheet(item: $noteTime) { time in
             AddTimedNoteScreen(experience: experience, initialTime: time.time)
         }
+        .sheet(item: $reminder) { JournalReminderEditor(draft: $0) }
     }
 
     private var cursorSection: some View {
-        Section {
-            chart
-                .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
-                .id("timeline-chart")
-            LabeledContent("Cursor Time") {
-                Text(selectedTime, format: TimelineCursorEntry.dateFormat).monospacedDigit()
+        Group {
+            Section {
+                chart
+                    .listRowInsets(EdgeInsets(top: 12, leading: 0, bottom: 12, trailing: 0))
+                    .id("timeline-chart")
+                LabeledContent("Cursor Time") {
+                    Text(selectedTime, format: TimelineCursorEntry.dateFormat).monospacedDigit()
+                }
+                if let estimate = model.effectEstimate(at: selectedTime) {
+                    TimelineEstimateRows(estimate: estimate, time: selectedTime)
+                }
+            } header: {
+                Text(model.groupDrawables.contains(where: \.hasDurationInfo) ? "Estimated Effects" : "Timeline")
+            } footer: {
+                if showsQuantityDetails, model.effectEstimate(at: selectedTime)?.curveScaledAmount(at: selectedTime) != nil {
+                    Text("The curve-scaled amount is the logged amount multiplied by the curve’s relative height.")
+                }
             }
-            Button {
-                noteTime = NoteTime(time: selectedTime)
-            } label: {
-                Label("Add Note Here", systemImage: "note.text.badge.plus")
+            Section {
+                Button {
+                    noteTime = NoteTime(time: selectedTime)
+                } label: {
+                    Label("Add Note Here", systemImage: "note.text.badge.plus")
+                }
+                Menu {
+                    if selectedTime > .now {
+                        Button {
+                            reminder = JournalReminderDraft(date: selectedTime, source: .timeline)
+                        } label: {
+                            Label("At Cursor Time", systemImage: "clock")
+                        }
+                    }
+                    if let point = model.effectEstimate(at: .now)?.phase(at: .now) {
+                        Button {
+                            reminder = JournalReminderDraft(date: point.transition, source: .timeline)
+                        } label: {
+                            Label("At Estimated Phase End", systemImage: "waveform.path")
+                        }
+                    }
+                    Button {
+                        reminder = JournalReminderDraft()
+                    } label: {
+                        Label("Choose a Time", systemImage: "calendar")
+                    }
+                } label: {
+                    Label("Set Reminder", systemImage: "bell")
+                }
             }
-        } header: {
-            Text(model.groupDrawables.contains(where: \.hasDurationInfo) ? "Estimated Effects" : "Timeline")
         }
     }
 
@@ -272,6 +316,41 @@ private struct TimelineCursorContent: View {
     private struct NoteTime: Identifiable {
         let time: Date
         var id: Date { time }
+    }
+}
+
+struct TimelineEstimateRows: View {
+    let estimate: TimelineEffectEstimate
+    let time: Date
+    var showsCountdown = false
+    @AppStorage(TimelineModel.showsQuantityDetailsKey) private var showsQuantityDetails = true
+
+    var body: some View {
+        if let status = estimate.phase(at: time) {
+            LabeledContent {
+                VStack(alignment: .trailing, spacing: 3) {
+                    Text(status.phase.rawValue)
+                    if showsCountdown {
+                        Text("\(Text(timerInterval: time...status.transition, countsDown: true)) left in phase")
+                            .monospacedDigit()
+                            .font(.caption)
+                    }
+                }
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Estimated Phase")
+                    Text("\(estimate.substance) · \(estimate.route.rawValue.capitalized)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        if !showsCountdown, showsQuantityDetails, let fraction = estimate.fractionOfPeak(at: time) {
+            LabeledContent("Percent of Modeled Peak", value: fraction.formatted(.percent.precision(.fractionLength(0))))
+            if let amount = estimate.curveScaledAmount(at: time), let unit = estimate.amountUnit {
+                LabeledContent("Curve-scaled Amount", value: "\(amount.formatted(.number.precision(.significantDigits(1...2)))) \(unit)")
+            }
+        }
     }
 }
 

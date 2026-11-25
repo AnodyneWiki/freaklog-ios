@@ -45,6 +45,8 @@ struct JournalBackup: Codable {
     PersistenceController.areRedosesDrawnIndividuallyKey,
     PersistenceController.shouldAutomaticallyStartLiveActivityKey,
     PersistenceController.independentSubstanceHeightKey,
+    TimelineModel.combinesComparableRoutesKey,
+    TimelineModel.showsQuantityDetailsKey,
     PersistenceController.fabButtonPositionKey,
     PersistenceController.dynamicExperienceRangeHoursKey,
     PersistenceController.showsDueTodayKey,

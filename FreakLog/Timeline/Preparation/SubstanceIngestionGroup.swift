@@ -14,7 +14,8 @@ func getSubstanceIngestionGroups(ingestions: [Ingestion]) -> [SubstanceIngestion
                         dose: ingestion.pureSubstanceDose,
                         time: ingestion.timeUnwrapped,
                         endTime: ingestion.endTime,
-                        onsetDelayInHours: 0
+                        onsetDelayInHours: 0,
+                        doseUnits: ingestion.pureUnits
                     )
                 }
             )
@@ -31,16 +32,17 @@ extension RouteMinInfo {
             route: route,
             ingestions: ingestions.map { $0.withHorizontalWeight(for: resolved.dose) },
             roaDuration: resolved.duration,
-            commonDose: resolved.dose?.averageCommonDose
+            commonDose: resolved.dose?.averageCommonDose,
+            commonDoseUnits: resolved.dose?.units
         )
     }
 }
 
 private extension IngestionMinInfo {
     func withHorizontalWeight(for roaDose: RoaDose?) -> IngestionMinInfo {
-        guard let dose, let roaDose else { return self }
+        guard let dose, dose.isFinite, dose > 0, let doseUnits, let roaDose else { return self }
         var copy = self
-        switch roaDose.getRangeType(for: dose, with: roaDose.units) {
+        switch roaDose.getRangeType(for: dose, with: doseUnits) {
         case .thresh: copy.horizontalWeight = 0
         case .light: copy.horizontalWeight = 0.25
         case .common, .none: copy.horizontalWeight = 0.5
