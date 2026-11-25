@@ -24,6 +24,7 @@ struct FormulationDoseScreen: View {
 
   var body: some View {
     let values = FormulationCodable(formulation)
+    let arguments = validAmount.map { formulation.ingestionArguments(amount: $0) } ?? []
     let interactions = ExperienceLogic.interactions(between: values.substanceNames)
     Form {
       Section {
@@ -40,8 +41,13 @@ struct FormulationDoseScreen: View {
         Text("The doses of all substances are multiplied by the amount.")
       }
       Section("Substances") {
-        ForEach(values.components) { component in
-          FormulationComponentDoseRow(component: component, amount: validAmount ?? 0)
+        if validAmount != nil, arguments.isEmpty {
+          Text("The ingredients can’t be scaled to this amount.")
+            .foregroundStyle(.secondary)
+        } else {
+          ForEach(values.components) { component in
+            FormulationComponentDoseRow(component: component, amount: validAmount ?? 0)
+          }
         }
       }
       if !interactions.isEmpty {
@@ -76,10 +82,10 @@ struct FormulationDoseScreen: View {
         Button("Cancel", action: dismiss)
       }
       ToolbarItem(placement: .primaryAction) {
-        NavigationLink(value: FinishFormulationArguments(ingestions: formulation.ingestionArguments(amount: validAmount ?? 1))) {
+        NavigationLink(value: FinishFormulationArguments(ingestions: arguments)) {
           NextLabel()
         }
-        .disabled(validAmount == nil)
+        .disabled(arguments.isEmpty)
       }
     }
   }
@@ -89,7 +95,7 @@ struct FormulationDoseScreen: View {
   @ObservedObject private var formulation: Formulation
 
   private var validAmount: Double? {
-    guard let amount, amount > 0 else { return nil }
+    guard let amount, amount.isFinite, amount > 0 else { return nil }
     return amount
   }
 
@@ -119,6 +125,11 @@ struct FormulationComponentDoseRow: View {
       }
       Text(component.doseDescription(amount: amount)).foregroundColor(doseRangeType.color)
         + Text(" \(component.administrationRoute.rawValue)").foregroundColor(.secondary)
+      if !component.blendPath.isEmpty {
+        Text(component.blendPath.map(\.name).joined(separator: " › "))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
     }
   }
 

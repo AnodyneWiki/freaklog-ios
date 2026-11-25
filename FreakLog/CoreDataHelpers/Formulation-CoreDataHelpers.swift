@@ -1,4 +1,5 @@
 import Foundation
+import CryptoKit
 
 // MARK: - Formulation
 
@@ -38,6 +39,20 @@ extension Formulation {
     creationDate ?? .now
   }
 
+  var stableBlendIdentifier: UUID {
+    if let blendIdentifier { return blendIdentifier }
+    let digest = Array(SHA256.hash(data: Data(objectID.uriRepresentation().absoluteString.utf8)).prefix(16))
+    return UUID(uuid: (
+      digest[0], digest[1], digest[2], digest[3], digest[4], digest[5], (digest[6] & 0x0f) | 0x80, digest[7],
+      (digest[8] & 0x3f) | 0x80, digest[9], digest[10], digest[11], digest[12], digest[13], digest[14], digest[15]
+    ))
+  }
+
+  var includedProduct: FormulationCodable.IncludedProduct {
+    .init(kind: .formulation, sourceIdentifier: stableBlendIdentifier,
+          name: nameUnwrapped, unit: String(localized: "servings"), leaves: FormulationCodable(self).components)
+  }
+
   var componentsUnwrapped: [FormulationComponent] {
     components?.allObjects as? [FormulationComponent] ?? []
   }
@@ -72,6 +87,7 @@ extension Formulation {
       || componentsUnwrapped.contains { component in
         component.substanceNameUnwrapped.lowercased().contains(search)
           || component.substanceDisplayName.lowercased().contains(search)
+          || component.blendPath.contains(where: { $0.name.lowercased().contains(search) })
       }
   }
 
@@ -80,6 +96,12 @@ extension Formulation {
 // MARK: - FormulationComponent
 
 extension FormulationComponent {
+  var blendPath: [FormulationCodable.BlendLayer] {
+    guard let blendPathData,
+          let path = try? JSONDecoder().decode([FormulationCodable.BlendLayer].self, from: blendPathData),
+          FormulationCodable.Component.isValid(blendPath: path) else { return [] }
+    return path
+  }
   var substanceNameUnwrapped: String {
     substanceName ?? ""
   }
@@ -109,5 +131,19 @@ extension FormulationComponent {
       units: unitsUnwrapped,
       isEstimate: isEstimate,
       standardDeviation: estimatedDoseStandardDeviationUnwrapped) ?? "Unknown dose"
+  }
+}
+
+extension CustomUnit {
+  var includedProduct: FormulationCodable.IncludedProduct {
+    .init(
+      kind: .customUnit,
+      sourceIdentifier: nil,
+      name: nameUnwrapped,
+      unit: pluralizableUnit.plural,
+      leaves: [.init(substanceName: substanceNameUnwrapped, administrationRoute: administrationRouteUnwrapped,
+                     dose: doseUnwrapped, units: originalUnitUnwrapped, isEstimate: isEstimate,
+                     estimatedDoseStandardDeviation: estimatedDoseStandardDeviationUnwrapped)]
+    )
   }
 }
