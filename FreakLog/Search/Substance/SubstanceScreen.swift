@@ -3,6 +3,7 @@ import SwiftUI
 
 struct SubstanceScreen: View {
   let substance: Substance
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
 
   @State private var isShowingCustomizeSheet = false
   @StateObject private var anodyneModel: AnodyneLoadModel
@@ -75,7 +76,7 @@ struct SubstanceScreen: View {
         isMissingOnAnodyne: anodyneModel.phase == .notFound
       )
     }
-    .task {
+    .task(id: instanceURL) {
       await anodyneModel.start()
     }
     .toolbar {

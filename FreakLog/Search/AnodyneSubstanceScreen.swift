@@ -5,6 +5,7 @@ import SwiftUI
 // screens. Substances that are neither in PsychonautWiki nor custom yet can be added as custom substances.
 struct AnodyneSubstanceScreen: View {
   let title: String
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @StateObject private var model: AnodyneLoadModel
   @State private var isShowingAddSheet = false
   @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
@@ -61,7 +62,7 @@ struct AnodyneSubstanceScreen: View {
         }
       }
     }
-    .task {
+    .task(id: instanceURL) {
       // Opening the screen asks for the substance, so it is loaded even without automatic loading
       await model.start(loadingIfNotCached: true)
     }

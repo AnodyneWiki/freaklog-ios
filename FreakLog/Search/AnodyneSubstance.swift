@@ -124,9 +124,9 @@ struct AnodyneSubstance: Codable, Hashable {
     Self.pageURL(for: title)
   }
 
-  static func pageURL(for title: String) -> URL {
+  static func pageURL(for title: String, at instance: URL = baseURL) -> URL {
     let encoded = title.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? title
-    return URL(string: "\(baseURL.absoluteString)/substance/\(encoded)") ?? baseURL
+    return URL(string: "\(instance.absoluteString)/substance/\(encoded)") ?? instance
   }
 
   // The short name people use, e.g. MDMA for 3,4-Methylenedioxymethamphetamine

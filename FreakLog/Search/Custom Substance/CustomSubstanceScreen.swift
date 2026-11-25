@@ -28,6 +28,7 @@ struct CustomSubstanceScreen: View {
 // The user's own data first, then AnodyneWiki's once it is loaded
 private struct CustomSubstanceList: View {
   @ObservedObject var customSubstance: CustomSubstance
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @StateObject private var anodyneModel: AnodyneLoadModel
   // Redraws the screen when the categories change
   @FetchRequest(fetchRequest: PersistenceController.substanceOverridesRequest())
@@ -92,7 +93,7 @@ private struct CustomSubstanceList: View {
         SourcesSection(anodyne: anodyneModel.substance, isMissingOnAnodyne: anodyneModel.phase == .notFound)
       }
     }
-    .task {
+    .task(id: instanceURL) {
       await anodyneModel.start()
     }
   }

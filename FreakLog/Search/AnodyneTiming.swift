@@ -11,7 +11,9 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   static let shared = AnodyneFallbackStore()
 
   private let lock = NSLock()
-  private var didLoadCache = false
+  private let cacheRoot: URL
+  private let configuredInstance: @Sendable () -> URL
+  private var loadedInstance: URL?
   // Lowercased name or title -> lowercased AnodyneWiki title
   private var titlesByName: [String: String] = [:]
   // By lowercased title
@@ -22,17 +24,25 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   // The timings combined by lowercased title, built from `noteRoutes` once they are asked for
   private var builtRouteDurations: [String: [AdministrationRoute: RoaDuration]]?
 
+  init(
+    cacheRoot: URL = AnodyneClient.defaultCacheRoot,
+    configuredInstance: @escaping @Sendable () -> URL = { AnodyneSubstance.baseURL }
+  ) {
+    self.cacheRoot = cacheRoot
+    self.configuredInstance = configuredInstance
+  }
+
   func dose(for substanceName: String, route: AdministrationRoute) -> RoaDose? {
     lock.lock()
     defer { lock.unlock() }
-    loadCacheIfNeeded()
+    loadCacheIfNeeded(for: configuredInstance())
     return doses[title(for: substanceName)]?[route]
   }
 
   func duration(for substanceName: String, route: AdministrationRoute) -> RoaDuration? {
     lock.lock()
     defer { lock.unlock() }
-    loadCacheIfNeeded()
+    loadCacheIfNeeded(for: configuredInstance())
     let title = title(for: substanceName)
     return routeDurations()[title]?[route] ?? totals[title]
   }
@@ -45,7 +55,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   func routesWithData(for substanceName: String) -> [AdministrationRoute] {
     lock.lock()
     defer { lock.unlock() }
-    loadCacheIfNeeded()
+    loadCacheIfNeeded(for: configuredInstance())
     let title = title(for: substanceName)
     let durations = routeDurations()[title]
     return AdministrationRoute.allCases.filter { doses[title]?[$0] != nil || durations?[$0] != nil }
@@ -55,7 +65,7 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   func routesWithTimings(for substanceName: String) -> [AdministrationRoute] {
     lock.lock()
     defer { lock.unlock() }
-    loadCacheIfNeeded()
+    loadCacheIfNeeded(for: configuredInstance())
     let title = title(for: substanceName)
     let durations = routeDurations()[title]
     return AdministrationRoute.allCases.filter { durations?[$0] != nil }
@@ -78,27 +88,39 @@ final class AnodyneFallbackStore: @unchecked Sendable {
     return built
   }
 
-  func record(_ substance: AnodyneSubstance, lookedUpAs name: String) {
+  func record(_ substance: AnodyneSubstance, lookedUpAs name: String, from instance: URL) {
     lock.lock()
     defer { lock.unlock() }
+    guard instance == configuredInstance() else { return }
+    loadCacheIfNeeded(for: instance)
     recordUnlocked(substance, lookedUpAs: name)
   }
 
-  func record(_ notes: [AnodyneUserNote]) {
+  func record(_ notes: [AnodyneUserNote], from instance: URL) {
     lock.lock()
     defer { lock.unlock() }
+    guard instance == configuredInstance() else { return }
+    loadCacheIfNeeded(for: instance)
     recordUnlocked(notes)
   }
 
-  func clear() {
+  func clearCache(for instance: URL) {
     lock.lock()
     defer { lock.unlock() }
+    let files = AnodyneCacheFiles(root: cacheRoot, instance: instance)
+    try? FileManager.default.removeItem(at: files.directory)
+    if loadedInstance == instance {
+      resetLoadedData()
+      loadedInstance = nil
+    }
+  }
+
+  private func resetLoadedData() {
     titlesByName = [:]
     totals = [:]
     doses = [:]
     noteRoutes = [:]
     builtRouteDurations = nil
-    didLoadCache = true
   }
 
   private func recordUnlocked(_ substance: AnodyneSubstance, lookedUpAs name: String) {
@@ -136,20 +158,23 @@ final class AnodyneFallbackStore: @unchecked Sendable {
   // comes first loads it itself (and one that comes during the preload waits for it), so it always sees the data.
   // Files from before the current format are removed on the way.
   func preload() {
-    AnodyneClient.removeOutdatedFilesOnDisk()
     lock.lock()
     defer { lock.unlock() }
-    loadCacheIfNeeded()
+    let instance = configuredInstance()
+    AnodyneClient.removeOutdatedFilesOnDisk(in: AnodyneCacheFiles(root: cacheRoot, instance: instance))
+    loadCacheIfNeeded(for: instance)
   }
 
   // After a relaunch the cache on disk has what was loaded before
-  private func loadCacheIfNeeded() {
-    guard !didLoadCache else { return }
-    didLoadCache = true
-    for (name, substance) in AnodyneClient.cachedSubstancesOnDisk() {
+  private func loadCacheIfNeeded(for instance: URL) {
+    guard loadedInstance != instance else { return }
+    resetLoadedData()
+    loadedInstance = instance
+    let files = AnodyneCacheFiles(root: cacheRoot, instance: instance)
+    for (name, substance) in AnodyneClient.cachedSubstancesOnDisk(in: files) {
       recordUnlocked(substance, lookedUpAs: name)
     }
-    recordUnlocked(AnodyneClient.cachedUserNotesOnDisk())
+    recordUnlocked(AnodyneClient.cachedUserNotesOnDisk(in: files))
   }
 }
 

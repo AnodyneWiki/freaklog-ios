@@ -13,11 +13,16 @@ final class AnodyneLoadModel: ObservableObject {
     case failed
   }
 
-  @Published private(set) var phase = Phase.idle
+  @Published private var loadedPhase = Phase.idle
   // What AnodyneWiki's users wrote about the substance on their userpages
   @Published private(set) var userNotes: [AnodyneUserNote] = []
   let name: String
   let otherNames: [String]
+  private var context: AnodyneClient.RequestContext?
+
+  var phase: Phase {
+    context?.baseURL == AnodyneSubstance.baseURL ? loadedPhase : .idle
+  }
 
   init(name: String, otherNames: [String] = []) {
     self.name = name
@@ -29,35 +34,70 @@ final class AnodyneLoadModel: ObservableObject {
   }
 
   func start(loadingIfNotCached: Bool = AnodyneClient.isAutomaticLoadingEnabled) async {
-    guard phase == .idle else { return }
-    if let cached = await AnodyneClient.shared.cachedLookup(for: name) {
-      phase = Self.makePhase(for: cached)
-      await loadUserNotes(online: loadingIfNotCached)
+    guard let context = await prepareContext(), phase == .idle else { return }
+    let cached = await AnodyneClient.shared.cachedLookup(for: name, using: context)
+    guard await canPresent(context), phase == .idle else { return }
+    if let cached {
+      loadedPhase = Self.makePhase(for: cached)
+      await loadUserNotes(online: loadingIfNotCached, using: context)
     } else if loadingIfNotCached {
-      await load()
+      await load(using: context)
     }
   }
 
   func load() async {
-    phase = .loading
+    guard let context = await prepareContext(), phase != .loading else { return }
+    await load(using: context)
+  }
+
+  private func load(using context: AnodyneClient.RequestContext) async {
+    loadedPhase = .loading
     do {
-      phase = Self.makePhase(for: try await AnodyneClient.shared.lookup(name, otherNames: otherNames))
+      let lookup = try await AnodyneClient.shared.lookup(name, otherNames: otherNames, using: context)
+      guard await canPresent(context) else { return }
+      loadedPhase = Self.makePhase(for: lookup)
     } catch {
-      phase = .failed
+      guard await canPresent(context) else { return }
+      loadedPhase = .failed
     }
-    await loadUserNotes()
+    await loadUserNotes(online: true, using: context)
+  }
+
+  private func prepareContext() async -> AnodyneClient.RequestContext? {
+    let current = await AnodyneClient.shared.requestContext()
+    guard !Task.isCancelled, current.baseURL == AnodyneSubstance.baseURL else { return nil }
+    if context != current {
+      context = current
+      loadedPhase = .idle
+      userNotes = []
+    }
+    return current
+  }
+
+  private func canPresent(_ request: AnodyneClient.RequestContext) async -> Bool {
+    let current = await AnodyneClient.shared.isCurrent(request)
+    guard context == request else { return false }
+    guard current, request.baseURL == AnodyneSubstance.baseURL, !Task.isCancelled else {
+      loadedPhase = .idle
+      userNotes = []
+      return false
+    }
+    return true
   }
 
   // Userpages name substances by their AnodyneWiki title, sometimes by an abbreviation. Offline, the
   // notes saved last are shown, however old.
-  private func loadUserNotes(online: Bool = true) async {
+  private func loadUserNotes(online: Bool, using context: AnodyneClient.RequestContext) async {
     guard let substance else { return }
     let names = [substance.title, name] + substance.abbreviations
-    if online {
-      userNotes = (try? await AnodyneClient.shared.userNotes(matching: names)) ?? []
+    let notes: [AnodyneUserNote]
+    if online, let refreshed = try? await AnodyneClient.shared.userNotes(matching: names, using: context) {
+      notes = refreshed
     } else {
-      userNotes = await AnodyneClient.shared.cachedUserNotes(matching: names)
+      notes = await AnodyneClient.shared.cachedUserNotes(matching: names, using: context)
     }
+    guard await canPresent(context) else { return }
+    userNotes = notes
   }
 
   private static func makePhase(for lookup: AnodyneClient.Lookup) -> Phase {

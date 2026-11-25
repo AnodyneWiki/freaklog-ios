@@ -352,7 +352,10 @@ extension AssistantToolbox {
   // The index is downloaded whole and searched here, so the query never leaves the device
   private func searchAnodyneWiki(_ query: String) async throws -> JSONValue {
     guard !query.isEmpty else { return Self.error("'query' is required.") }
-    let entries = try await AnodyneClient.shared.indexEntries()
+    let client = AnodyneClient.shared
+    let request = await client.requestContext()
+    let entries = try await client.indexEntries(using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
     let matches = entries
       .filter { entry in
         entry.matches(query) || entry.title.localizedCaseInsensitiveContains(query)
@@ -360,7 +363,7 @@ extension AssistantToolbox {
       }
       .prefix(limits.defaultListLength)
     return Self.success([
-      "source": .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki"),
+      "source": .string(request.baseURL.host ?? "AnodyneWiki"),
       "matches": .array(matches.map { entry in
         .object([
           "title": .string(entry.title),
@@ -374,7 +377,10 @@ extension AssistantToolbox {
   // Only a title from AnodyneWiki's own index is requested, so names of the user's own substances stay private
   private func lookUpAnodyneWiki(_ query: String) async throws -> JSONValue {
     guard !query.isEmpty else { return Self.error("'substance' is required.") }
-    let entries = try await AnodyneClient.shared.indexEntries()
+    let client = AnodyneClient.shared
+    let request = await client.requestContext()
+    let entries = try await client.indexEntries(using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
     let pwName = storedSubstanceName(for: query).flatMap { SubstanceRepo.shared.getSubstance(name: $0)?.name }
     guard
       let entry = entries.first(where: { $0.matches(query) }) ?? pwName
@@ -382,12 +388,14 @@ extension AssistantToolbox {
     else {
       return Self.error("AnodyneWiki has no page called '\(query)'. Try search_anodyne_wiki first.")
     }
-    guard case .found(let substance) = try await AnodyneClient.shared.lookup(entry.title) else {
+    let lookup = try await client.lookup(entry.title, using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
+    guard case .found(let substance) = lookup else {
       return Self.error("AnodyneWiki has no page called '\(entry.title)'.")
     }
     var page = Self.trimmed((try? JSONValue(encoding: substance)) ?? .null, textLimit: limits.maxTextCharacters * 2).object ?? [:]
-    page["source"] = .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki")
-    page["url"] = .string(substance.pageURL.absoluteString)
+    page["source"] = .string(request.baseURL.host ?? "AnodyneWiki")
+    page["url"] = .string(AnodyneSubstance.pageURL(for: substance.title, at: request.baseURL).absoluteString)
     return Self.success(page)
   }
 

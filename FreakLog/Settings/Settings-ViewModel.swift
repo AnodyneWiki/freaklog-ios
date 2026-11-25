@@ -68,7 +68,9 @@ extension SettingsScreen {
             }
             switch result {
             case .success:
-                backup.restoreSettings()
+                await AnodyneClient.shared.applyInstanceChange {
+                    backup.restoreSettings()
+                }
                 TabManager.shared.reload()
                 LeaderboardServerStore.shared.reload()
                 showSuccessToast(message: "Backup Restored")

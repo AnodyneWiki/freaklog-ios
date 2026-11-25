@@ -111,9 +111,10 @@ struct AnodyneSettingsScreen: View {
     }
     draftInstanceURL = newValue
     guard newValue != instanceURL else { return }
-    instanceURL = newValue
     Task {
-      await AnodyneClient.shared.clearCache()
+      await AnodyneClient.shared.applyInstanceChange {
+        UserDefaults.standard.set(newValue, forKey: PersistenceController.anodyneInstanceURLKey)
+      }
       cacheSize = await AnodyneClient.shared.cacheSize()
     }
   }

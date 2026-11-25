@@ -4,11 +4,14 @@ import WrappingHStack
 // Searches all of AnodyneWiki's substances, including the many PsychonautWiki doesn't have
 struct AnodyneSearchScreen: View {
   @State var searchText: String
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @State private var entries: [AnodyneIndexEntry] = []
+  @State private var entriesInstance: URL?
   @State private var isLoading = true
   @State private var didFail = false
 
   private var results: [AnodyneIndexEntry] {
+    guard entriesInstance == AnodyneSubstance.baseURL else { return [] }
     let text = searchText.trimmingCharacters(in: .whitespaces)
     guard !text.isEmpty else { return entries }
     let matches = entries.filter { entry in
@@ -56,7 +59,7 @@ struct AnodyneSearchScreen: View {
     .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
     .disableAutocorrection(true)
     .navigationTitle("AnodyneWiki")
-    .task {
+    .task(id: instanceURL) {
       await load()
     }
   }
@@ -67,13 +70,24 @@ struct AnodyneSearchScreen: View {
 
   // Opening the screen asks for AnodyneWiki's list, so it is loaded even without automatic loading
   private func load() async {
+    let instance = AnodyneSubstance.baseURL
+    entries = []
+    entriesInstance = nil
     isLoading = true
     didFail = false
-    do {
-      entries = try await AnodyneClient.shared.indexEntries()
-    } catch {
-      didFail = true
+    defer {
+      if !Task.isCancelled, instance == AnodyneSubstance.baseURL { isLoading = false }
     }
-    isLoading = false
+    let client = AnodyneClient.shared
+    let context = await client.requestContext()
+    guard !Task.isCancelled, context.baseURL == instance else { return }
+    do {
+      let result = try await client.indexEntries(using: context)
+      guard await client.isCurrent(context), !Task.isCancelled, instance == AnodyneSubstance.baseURL else { return }
+      entriesInstance = instance
+      entries = result
+    } catch {
+      if !Task.isCancelled, instance == AnodyneSubstance.baseURL { didFail = true }
+    }
   }
 }
