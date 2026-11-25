@@ -370,6 +370,7 @@ struct FinishIngestionScreen: View {
         ingestion.customUnit = try arguments.customUnit.map { try PersistenceController.journalObject($0, in: context) }
         ingestion.formulation = try arguments.formulation.map { try PersistenceController.journalObject($0, in: context) }
         ingestion.formulationAmount = arguments.formulationAmount ?? 0
+        ingestion.isHiddenInTimeline = arguments.isHiddenInTimeline
         ingestion.dose = arguments.dose ?? 0
         ingestion.units = arguments.units
         ingestion.isEstimate = arguments.isEstimate

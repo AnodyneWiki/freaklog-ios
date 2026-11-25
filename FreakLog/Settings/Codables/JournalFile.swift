@@ -65,7 +65,11 @@ struct JournalFile: FileDocument, Codable {
         var substanceNames = Set<String>()
         substanceCompanions = experiences.flatMap(\.ingestionsSorted).compactMap { ingestion in
             guard substanceNames.insert(ingestion.substanceNameUnwrapped).inserted else { return nil }
-            return CompanionCodable(substanceName: ingestion.substanceNameUnwrapped, color: ingestion.substanceColor)
+            return CompanionCodable(
+                substanceName: ingestion.substanceNameUnwrapped,
+                color: ingestion.substanceColor,
+                isHiddenInTimeline: ingestion.substanceCompanion?.isHiddenInTimeline == true
+            )
         }
         self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
         self.customUnits = try customUnits.map { unit in

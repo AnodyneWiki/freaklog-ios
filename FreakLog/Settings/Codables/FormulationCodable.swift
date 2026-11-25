@@ -13,7 +13,8 @@ struct FormulationCodable: Codable, Hashable {
       dose: Double?,
       units: String,
       isEstimate: Bool,
-      estimatedDoseStandardDeviation: Double?)
+      estimatedDoseStandardDeviation: Double?,
+      isHiddenInTimeline: Bool = false)
     {
       self.substanceName = substanceName
       self.administrationRoute = administrationRoute
@@ -21,6 +22,7 @@ struct FormulationCodable: Codable, Hashable {
       self.units = units
       self.isEstimate = isEstimate
       self.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation
+      self.isHiddenInTimeline = isHiddenInTimeline
     }
 
     init(from decoder: Decoder) throws {
@@ -38,6 +40,7 @@ struct FormulationCodable: Codable, Hashable {
       units = try values.decode(String.self, forKey: .units)
       isEstimate = try values.decode(Bool.self, forKey: .isEstimate)
       estimatedDoseStandardDeviation = try values.decodeIfPresent(Double.self, forKey: .estimatedDoseStandardDeviation)
+      isHiddenInTimeline = try values.decodeIfPresent(Bool.self, forKey: .isHiddenInTimeline) ?? false
     }
 
     enum CodingKeys: String, CodingKey {
@@ -47,6 +50,7 @@ struct FormulationCodable: Codable, Hashable {
       case units
       case isEstimate
       case estimatedDoseStandardDeviation
+      case isHiddenInTimeline
     }
 
     // Only tells components apart in lists while editing, so it isn't exported
@@ -57,6 +61,7 @@ struct FormulationCodable: Codable, Hashable {
     var units: String
     var isEstimate: Bool
     var estimatedDoseStandardDeviation: Double?
+    var isHiddenInTimeline: Bool
 
     func encode(to encoder: Encoder) throws {
       var container = encoder.container(keyedBy: CodingKeys.self)
@@ -66,6 +71,7 @@ struct FormulationCodable: Codable, Hashable {
       try container.encode(units, forKey: .units)
       try container.encode(isEstimate, forKey: .isEstimate)
       try container.encode(estimatedDoseStandardDeviation, forKey: .estimatedDoseStandardDeviation)
+      try container.encodeIfPresent(isHiddenInTimeline ? true : nil, forKey: .isHiddenInTimeline)
     }
 
     // The ingestion of this component when taking the given amount of the formulation. The amount is exact,
@@ -77,7 +83,8 @@ struct FormulationCodable: Codable, Hashable {
         dose: dose.map { $0 * amount },
         units: units,
         isEstimate: isEstimate,
-        estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation.map { $0 * amount } : nil)
+        estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation.map { $0 * amount } : nil,
+        isHiddenInTimeline: isHiddenInTimeline)
     }
 
     func doseDescription(amount: Double = 1) -> String {
@@ -135,7 +142,8 @@ extension FormulationCodable {
           dose: component.doseUnwrapped,
           units: component.unitsUnwrapped,
           isEstimate: component.isEstimate,
-          estimatedDoseStandardDeviation: component.estimatedDoseStandardDeviationUnwrapped)
+          estimatedDoseStandardDeviation: component.estimatedDoseStandardDeviationUnwrapped,
+          isHiddenInTimeline: component.isHiddenInTimeline)
       })
   }
 
@@ -170,6 +178,7 @@ extension FormulationCodable {
       component.dose = value.dose ?? 0
       component.units = value.units
       component.isEstimate = value.isEstimate
+      component.isHiddenInTimeline = value.isHiddenInTimeline
       component.estimatedDoseStandardDeviation = value.estimatedDoseStandardDeviation ?? 0
       component.formulation = formulation
     }

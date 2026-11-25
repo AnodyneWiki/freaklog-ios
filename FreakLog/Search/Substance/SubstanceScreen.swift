@@ -173,6 +173,7 @@ struct SubstanceJournalLinks: View {
       } label: {
         Label("History", systemImage: "clock.arrow.circlepath")
       }
+      SubstanceTimelineVisibilityToggle(substanceName: substanceName)
       NavigationLink {
         EditPersonalTagsScreen(substanceName: substanceName)
       } label: {

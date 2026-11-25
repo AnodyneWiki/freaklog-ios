@@ -22,6 +22,10 @@ extension Ingestion: Comparable {
         AdministrationRoute(rawValue: administrationRoute ?? "oral") ?? .oral
     }
 
+    var isHiddenFromTimeline: Bool {
+        isHiddenInTimeline || substanceCompanion?.isHiddenInTimeline == true
+    }
+
     var administrationSiteUnwrapped: String {
         administrationSite ?? ""
     }

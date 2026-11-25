@@ -60,8 +60,6 @@ struct TimelineScreen: View {
 // journal even when the timeline has no estimate for the event.
 struct ExperienceTimelineScreen: View {
     @ObservedObject var experience: Experience
-    let hiddenIngestions: Set<ObjectIdentifier>
-    let hiddenRatings: Set<ObjectIdentifier>
 
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var storedTimeStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) private var drawsRedosesIndividually = true
@@ -72,8 +70,6 @@ struct ExperienceTimelineScreen: View {
         TimelineCursorContent(
             experience: experience,
             model: experience.getMyTimeLineModel(
-                hiddenIngestions: hiddenIngestions,
-                hiddenRatings: hiddenRatings,
                 areRedosesDrawnIndividually: drawsRedosesIndividually,
                 areSubstanceHeightsIndependent: usesIndependentHeights
             ),
@@ -81,11 +77,12 @@ struct ExperienceTimelineScreen: View {
             timeDisplayStyle: storedTimeStyle.resolved(isCurrent: experience.isCurrent),
             showsLimitations: isEyeOpen
         )
+        .observeExperienceTimeline(experience)
     }
 
     private var recordedEntries: [TimelineCursorEntry] {
         let ingestions = experience.myIngestionsSorted.compactMap { ingestion -> TimelineCursorEntry? in
-            guard let date = ingestion.time, !hiddenIngestions.contains(ingestion.id) else { return nil }
+            guard let date = ingestion.time, !ingestion.isHiddenFromTimeline else { return nil }
             return TimelineCursorEntry(id: ingestion.id, time: date, title: ingestion.substanceDisplayName, icon: "pills")
         }
         let notes = experience.timedNotesSorted.compactMap { note -> TimelineCursorEntry? in
@@ -93,7 +90,7 @@ struct ExperienceTimelineScreen: View {
             return TimelineCursorEntry(id: note.id, time: date, title: note.noteUnwrapped, icon: "note.text")
         }
         let ratings = isEyeOpen ? experience.ratingsWithTimeSorted.compactMap { rating -> TimelineCursorEntry? in
-            guard let date = rating.time, !hiddenRatings.contains(rating.id) else { return nil }
+            guard let date = rating.time, !rating.isHiddenInTimeline else { return nil }
             return TimelineCursorEntry(id: rating.id, time: date, title: "Rating \(rating.optionUnwrapped.stringRepresentation)", icon: "plus.forwardslash.minus")
         } : []
         return (ingestions + notes + ratings).sorted { $0.time < $1.time }

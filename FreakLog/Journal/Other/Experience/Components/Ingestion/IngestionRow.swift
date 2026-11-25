@@ -46,6 +46,12 @@ private struct IngestionRowContent<Content: View>: View {
                 HStack {
                     timeText.font(.caption)
                     Spacer()
+                    if ingestion.isHiddenFromTimeline {
+                        Label("Hidden from Timeline", systemImage: "eye.slash")
+                            .labelStyle(.iconOnly)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     if let location = ingestion.location {
                         Group {
                             Text(Image(systemName: "mappin")) + Text(" ") + Text(location.nameUnwrapped)

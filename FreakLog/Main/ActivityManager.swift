@@ -23,9 +23,6 @@ class ActivityManager: ObservableObject {
     private var observers: [NSObjectProtocol] = []
 
     @Published private(set) var shownExperience: Experience?
-    // What the experience screen hides; hidden ingestions and ratings are left out of the activity too
-    private var hiddenIngestions: Set<ObjectIdentifier> = []
-    private var hiddenRatings: Set<ObjectIdentifier> = []
     private var shownState: TimelineWidgetAttributes.ContentState?
 
     private var areActivitiesSupported: Bool {
@@ -73,14 +70,8 @@ class ActivityManager: ObservableObject {
     }
 
     // Starts the activity for the experience, or switches the running activity over to it
-    func show(
-        _ experience: Experience,
-        hiddenIngestions: Set<ObjectIdentifier> = [],
-        hiddenRatings: Set<ObjectIdentifier> = []
-    ) async {
+    func show(_ experience: Experience) async {
         guard areActivitiesAvailable else { return }
-        self.hiddenIngestions = hiddenIngestions
-        self.hiddenRatings = hiddenRatings
         let state = state(for: experience)
         if isShowing(experience), let activity = Activity<TimelineWidgetAttributes>.activities.first {
             await activity.update(ActivityContent(state: state, staleDate: nil))
@@ -90,14 +81,6 @@ class ActivityManager: ObservableObject {
         }
         shownExperience = experience
         shownState = state
-    }
-
-    // Leaves what the experience screen hides out of the activity, if it shows that experience
-    func setHidden(ingestions: Set<ObjectIdentifier>, ratings: Set<ObjectIdentifier>, in experience: Experience) {
-        guard isShowing(experience) else { return }
-        hiddenIngestions = ingestions
-        hiddenRatings = ratings
-        scheduleRefresh()
     }
 
     func stop() async {
@@ -161,8 +144,6 @@ class ActivityManager: ObservableObject {
     private func state(for experience: Experience) -> TimelineWidgetAttributes.ContentState {
         let defaults = UserDefaults.standard
         return experience.liveActivityState(
-            hiddenIngestions: hiddenIngestions,
-            hiddenRatings: hiddenRatings,
             areRedosesDrawnIndividually: defaults.object(forKey: PersistenceController.areRedosesDrawnIndividuallyKey)
                 as? Bool ?? true,
             areSubstanceHeightsIndependent: defaults.object(forKey: PersistenceController.independentSubstanceHeightKey)

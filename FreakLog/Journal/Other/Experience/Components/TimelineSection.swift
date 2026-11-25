@@ -7,7 +7,6 @@ struct TimelineSection: View {
     let timeDisplayStyle: TimeDisplayStyle
     let isEyeOpen: Bool
     let isHidingDosageDots: Bool
-    let hiddenIngestions: Set<ObjectIdentifier>
     let isCurrentExperience: Bool
     var timedNotes: [TimedNote] = []
     var firstIngestionTimeForNotes: Date?
@@ -91,25 +90,19 @@ struct TimelineSection: View {
         Button {
             editIngestion(ingestion)
         } label: {
-            HStack {
-                IngestionRow(
-                    ingestion: ingestion,
-                    isEyeOpen: isEyeOpen,
-                    isHidingDosageDots: isHidingDosageDots,
-                    timeText: {
-                        EventTimeText(
-                            time: ingestion.timeUnwrapped,
-                            endTime: ingestion.endTime,
-                            style: timeDisplayStyle,
-                            firstIngestionTime: ingestionsSorted.first?.time,
-                            previousTime: previousTime,
-                            isIngestion: true
-                        )
-                    }
+            IngestionRow(
+                ingestion: ingestion,
+                isEyeOpen: isEyeOpen,
+                isHidingDosageDots: isHidingDosageDots
+            ) {
+                EventTimeText(
+                    time: ingestion.timeUnwrapped,
+                    endTime: ingestion.endTime,
+                    style: timeDisplayStyle,
+                    firstIngestionTime: ingestionsSorted.first?.time,
+                    previousTime: previousTime,
+                    isIngestion: true
                 )
-                if hiddenIngestions.contains(ingestion.id) {
-                    Label("Hidden", systemImage: "eye.slash.fill").labelStyle(.iconOnly)
-                }
             }
         }
         .modifier(SubstanceInfoSwipeAction(substanceName: ingestion.substanceNameUnwrapped))

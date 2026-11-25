@@ -78,7 +78,7 @@ struct JournalSettingsScreen: View {
 
             Section {
                 NavigationLink(value: GlobalNavigationDestination.editColors) {
-                    Label("Substance Colors", systemImage: "paintpalette")
+                    Label("Substance Colors & Visibility", systemImage: "paintpalette")
                 }
             }
         }

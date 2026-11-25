@@ -5,7 +5,7 @@ import SwiftUI
 
 struct EditIngestionScreen: View {
     let ingestion: Ingestion
-    @Binding var isHidden: Bool
+    @State private var isHidden = false
     @State private var time = Date()
     @State private var endTime = Date().addingTimeInterval(30*60)
     @State private var dose: Double?
@@ -94,6 +94,7 @@ struct EditIngestionScreen: View {
             isEstimate = ingestion.isEstimate
             estimatedDoseStandardDeviation = ingestion.estimatedDoseStandardDeviationUnwrapped
             note = ingestion.noteUnwrapped
+            isHidden = ingestion.isHiddenInTimeline
             consumerName = ingestion.consumerName ?? ""
             selectedCustomUnit = ingestion.customUnit
             selectedExperience = ingestion.experience
@@ -137,6 +138,7 @@ struct EditIngestionScreen: View {
             ingestion.isEstimate = isEstimate
             ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
             ingestion.note = note
+            ingestion.isHiddenInTimeline = isHidden
             ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
             let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
             ingestion.administrationSite = site.isEmpty ? nil : site

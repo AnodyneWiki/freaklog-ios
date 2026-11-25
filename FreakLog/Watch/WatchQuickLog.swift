@@ -141,6 +141,7 @@ struct WatchFormulationComponent: Codable, Hashable {
   let units: String
   // In one unit of the formulation
   let dose: WatchDose
+  var isHiddenInTimeline: Bool?
 
   // The amount is exact, so the deviation scales with it
   func dose(for amount: Double) -> WatchDose {

@@ -11,4 +11,5 @@ struct FinishIngestionScreenArguments: Hashable {
     // Set when logging a formulation, which then suggests the amount again instead of each substance
     var formulation: Formulation?
     var formulationAmount: Double?
+    var isHiddenInTimeline = false
 }

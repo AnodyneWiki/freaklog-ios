@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ShulginRatingSection: View {
     @ObservedObject var experience: Experience
-    @Binding var hiddenRatings: Set<ObjectIdentifier>
     let timeDisplayStyle: TimeDisplayStyle
     let firstIngestionTime: Date?
 
@@ -24,9 +23,8 @@ struct ShulginRatingSection: View {
                 Button(action: {
                     sheetToShow = .editRegular(rating: rating)
                 }, label: {
-                    let isRatingHidden = hiddenRatings.contains(rating.id)
                     HStack(alignment: .center) {
-                        if isRatingHidden {
+                        if rating.isHiddenInTimeline {
                             Label("Hidden", systemImage: "eye.slash.fill").labelStyle(.iconOnly)
                         }
                         RatingRow(rating: rating) {
@@ -53,7 +51,7 @@ struct ShulginRatingSection: View {
             NavigationStack {
                 switch sheetOption {
                 case .editRegular(let rating):
-                    EditRatingScreen(rating: rating, isHidden: $hiddenRatings.contains(rating.id))
+                    EditRatingScreen(rating: rating)
                 case .editOverall(let rating):
                     EditOverallRatingScreen(rating: rating)
                 }

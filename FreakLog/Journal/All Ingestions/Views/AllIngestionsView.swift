@@ -15,7 +15,6 @@ struct AllIngestionsView: View {
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var sheetToShow: SheetOption?
-    @State private var hiddenIngestions: Set<ObjectIdentifier> = []
 
     var body: some View {
         List {
@@ -63,10 +62,7 @@ struct AllIngestionsView: View {
         .sheet(item: $sheetToShow) { sheet in
             switch sheet {
             case .editIngestion(let ingestion):
-                EditIngestionScreen(
-                    ingestion: ingestion,
-                    isHidden: $hiddenIngestions.contains(ingestion.id)
-                )
+                EditIngestionScreen(ingestion: ingestion)
             case .editTimedNote(let timedNote, let experience):
                 EditTimedNoteScreen(timedNote: timedNote, experience: experience)
             }

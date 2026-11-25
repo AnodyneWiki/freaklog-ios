@@ -329,10 +329,17 @@ final class JournalFileTests: XCTestCase {
         ingestion.consumerName = "Someone"
         ingestion.customUnit = unit
         ingestion.experience = experience
+        ingestion.isHiddenInTimeline = true
+        ingestion.stomachFullness = "halfFull"
+        let companion = SubstanceCompanion(context: source)
+        companion.substanceName = "Ketamine"
+        companion.isHiddenInTimeline = true
+        ingestion.substanceCompanion = companion
         let rating = ShulginRating(context: source)
         rating.creationDate = Date(timeIntervalSince1970: 6_000)
         rating.option = ShulginRatingOption.twoPlus.rawValue
         rating.experience = experience
+        rating.isHiddenInTimeline = true
         let customSubstance = CustomSubstance(context: source)
         customSubstance.name = "Coffee"
         customSubstance.units = "cups"
@@ -362,6 +369,7 @@ final class JournalFileTests: XCTestCase {
         XCTAssertTrue(importedExperience.isFavorite)
         XCTAssertEqual(importedExperience.ratingsUnwrapped.first?.optionUnwrapped, .twoPlus)
         XCTAssertNil(importedExperience.ratingsUnwrapped.first?.time)
+        XCTAssertEqual(importedExperience.ratingsUnwrapped.first?.isHiddenInTimeline, true)
         XCTAssertEqual(importedExperience.sortDate, experience.sortDate)
         let importedIngestion = try XCTUnwrap(importedExperience.ingestionsSorted.first)
         XCTAssertEqual(importedIngestion.time, ingestion.time)
@@ -372,6 +380,9 @@ final class JournalFileTests: XCTestCase {
         XCTAssertEqual(importedIngestion.customUnit?.dose, 20)
         XCTAssertNotNil(importedIngestion.identifier)
         XCTAssertEqual(importedIngestion.substanceCompanion?.substanceName, "Ketamine")
+        XCTAssertTrue(importedIngestion.isHiddenInTimeline)
+        XCTAssertEqual(importedIngestion.stomachFullness, "halfFull")
+        XCTAssertEqual(importedIngestion.substanceCompanion?.isHiddenInTimeline, true)
         let importedSubstance = try XCTUnwrap(target.fetch(CustomSubstance.fetchRequest()).first)
         XCTAssertEqual(importedSubstance.units, "cups")
         XCTAssertEqual(importedSubstance.explanation, "Bitter")

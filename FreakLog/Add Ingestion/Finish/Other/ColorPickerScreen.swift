@@ -5,6 +5,7 @@ struct ColorPickerScreen: View {
     @Binding var selectedColor: SubstanceColor
     // Colors already taken by other substances or notes, shown apart from the unused ones
     let usedColors: [SubstanceColor]
+    var hidesTimeline: Binding<Bool>?
 
     @State private var hexText = ""
     // Made once, so a suggestion stays in place after choosing it
@@ -63,6 +64,13 @@ struct ColorPickerScreen: View {
                     Text("In Use")
                 } footer: {
                     Text("Already used by other substances or notes.")
+                }
+            }
+            if let hidesTimeline {
+                Section {
+                    Toggle("Hide Timeline by Default", isOn: hidesTimeline)
+                } footer: {
+                    Text("This substance stays in your journal and statistics.")
                 }
             }
         }

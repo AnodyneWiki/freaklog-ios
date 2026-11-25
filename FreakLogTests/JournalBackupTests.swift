@@ -145,7 +145,7 @@ final class JournalBackupTests: XCTestCase {
     let ingestion = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
     XCTAssertEqual(ingestion.substanceName, "Example")
     XCTAssertFalse(ingestion.isHiddenInTimeline)
-    XCTAssertTrue(ingestion.substanceCompanion?.isHiddenInTimeline == true)
+    XCTAssertTrue(ingestion.isHiddenFromTimeline)
     XCTAssertEqual(ingestion.stomachFullness, "halfFull")
   }
 
@@ -484,7 +484,8 @@ final class JournalBackupTests: XCTestCase {
           dose: 100,
           units: "mg",
           isEstimate: true,
-          estimatedDoseStandardDeviation: 10),
+          estimatedDoseStandardDeviation: 10,
+          isHiddenInTimeline: true),
         .init(
           substanceName: "Caffeine",
           administrationRoute: .oral,
@@ -493,7 +494,6 @@ final class JournalBackupTests: XCTestCase {
           isEstimate: false,
           estimatedDoseStandardDeviation: nil),
       ]).insert(into: context)
-    formulation.componentsSorted.first?.isHiddenInTimeline = true
 
     let ingestion = Ingestion(context: context)
     ingestion.identifier = UUID()

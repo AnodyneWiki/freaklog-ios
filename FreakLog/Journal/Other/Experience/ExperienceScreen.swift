@@ -1,5 +1,120 @@
 import SwiftUI
+import CoreData
 import AppIntents
+
+extension View {
+    // Visibility is stored on entries and their companions, so a change may
+    // leave the experience's own fields and relationships untouched.
+    func observeExperienceTimeline(_ experience: Experience) -> some View {
+        onReceive(NotificationCenter.default.publisher(
+            for: .NSManagedObjectContextObjectsDidChange,
+            object: experience.managedObjectContext
+        )) { change in
+            let keys = [NSUpdatedObjectsKey, NSRefreshedObjectsKey]
+            if keys.contains(where: { key in
+                let objects = change.userInfo?[key] as? Set<NSManagedObject> ?? []
+                return objects.contains {
+                    if let entry = $0 as? Ingestion { return entry.experience == experience }
+                    if let rating = $0 as? ShulginRating { return rating.experience == experience }
+                    if let companion = $0 as? SubstanceCompanion {
+                        return companion.ingestionsUnwrapped.contains { $0.experience == experience }
+                    }
+                    return false
+                }
+            }) {
+                experience.objectWillChange.send()
+            }
+        }
+    }
+}
+
+private struct HiddenTimelineItemsScreen: View {
+    @ObservedObject var experience: Experience
+    let includesRatings: Bool
+    @Environment(\.dismiss) private var dismiss
+    @State private var showsSaveError = false
+
+    var body: some View {
+        let ingestions = experience.ingestionsSorted.filter(\.isHiddenInTimeline)
+        let ratings = includesRatings ? experience.ratingsWithTimeSorted.filter(\.isHiddenInTimeline) : []
+        let companions = experience.ingestionsSorted.compactMap(\.substanceCompanion)
+            .filter(\.isHiddenInTimeline).uniqued()
+        List {
+            if ingestions.isEmpty, ratings.isEmpty, companions.isEmpty {
+                Text("Nothing is hidden from this timeline.")
+                    .foregroundStyle(.secondary)
+            }
+            if !ingestions.isEmpty {
+                Section("Ingestions") {
+                    ForEach(ingestions) { ingestion in
+                        item(ingestion.substanceDisplayName, date: ingestion.time) {
+                            show(ingestion, keyPath: \.isHiddenInTimeline)
+                        }
+                    }
+                }
+            }
+            if !ratings.isEmpty {
+                Section("Ratings") {
+                    ForEach(ratings) { rating in
+                        item(rating.optionUnwrapped.stringRepresentation, date: rating.time) {
+                            show(rating, keyPath: \.isHiddenInTimeline)
+                        }
+                    }
+                }
+            }
+            if !companions.isEmpty {
+                Section {
+                    ForEach(companions) { companion in
+                        item(PersistenceController.shared.displayName(for: companion.substanceNameUnwrapped)) {
+                            show(companion, keyPath: \.isHiddenInTimeline)
+                        }
+                    }
+                } header: {
+                    Text("Hidden by Default")
+                } footer: {
+                    Text("Showing one of these substances changes its default for all timelines.")
+                }
+            }
+        }
+        .navigationTitle("Hidden Items")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+        }
+        .alert("Couldn’t Update the Timeline", isPresented: $showsSaveError) {
+            Button("OK", role: .cancel) {}
+        }
+        .observeExperienceTimeline(experience)
+    }
+
+    private func item(_ name: String, date: Date? = nil, show: @escaping () -> Void) -> some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(name)
+                if let date {
+                    Text(date, format: .dateTime.hour().minute())
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button("Show", action: show)
+                .buttonStyle(.borderless)
+                .accessibilityLabel("Show \(name) in Timeline")
+        }
+    }
+
+    private func show<T: NSManagedObject>(_ record: T, keyPath: ReferenceWritableKeyPath<T, Bool>) {
+        do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let editable = try PersistenceController.journalObject(record, in: context)
+            editable[keyPath: keyPath] = false
+            try context.save()
+        } catch {
+            showsSaveError = true
+        }
+    }
+}
 
 // swiftlint:disable type_body_length
 struct ExperienceScreen: View {
@@ -8,8 +123,7 @@ struct ExperienceScreen: View {
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var saveableTimeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @State private var isShowingDeleteConfirmation = false
     @State private var sheetToShow: SheetOption?
-    @State private var hiddenIngestions: Set<ObjectIdentifier> = []
-    @State private var hiddenRatings: Set<ObjectIdentifier> = []
+    @State private var showsHiddenItems = false
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
@@ -43,14 +157,8 @@ struct ExperienceScreen: View {
     @available(iOS 16.2, *)
     private func startLiveActivity() {
         Task {
-            await ActivityManager.shared.show(experience, hiddenIngestions: hiddenIngestions, hiddenRatings: hiddenRatings)
+            await ActivityManager.shared.show(experience)
         }
-    }
-
-    // Hiding ingestions or ratings also hides them in the live activity
-    private func updateLiveActivityHiddenItems() {
-        guard #available(iOS 16.2, *) else { return }
-        ActivityManager.shared.setHidden(ingestions: hiddenIngestions, ratings: hiddenRatings, in: experience)
     }
 
     private func addIngestion() {
@@ -68,8 +176,6 @@ struct ExperienceScreen: View {
         List {
             experienceSummary(ingestions: myIngestions)
             let timelineModel = experience.getMyTimeLineModel(
-                hiddenIngestions: hiddenIngestions,
-                hiddenRatings: hiddenRatings,
                 areRedosesDrawnIndividually: areRedosesDrawnIndividually,
                 areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
             )
@@ -86,6 +192,12 @@ struct ExperienceScreen: View {
                 }
             }
             Section {
+                if experience.ingestionsSorted.contains(where: \.isHiddenFromTimeline)
+                    || (isEyeOpen && experience.ratingsWithTimeSorted.contains(where: \.isHiddenInTimeline)) {
+                    Button { showsHiddenItems = true } label: {
+                        Label("Hidden Items", systemImage: "eye.slash")
+                    }
+                }
                 if !myIngestions.isEmpty || !timedNotes.isEmpty {
                     TimelineSection(
                         timelineModel: nil,
@@ -96,7 +208,6 @@ struct ExperienceScreen: View {
                         timeDisplayStyle: timeDisplayStyle,
                         isEyeOpen: isEyeOpen,
                         isHidingDosageDots: isHidingDosageDots,
-                        hiddenIngestions: hiddenIngestions,
                         isCurrentExperience: isCurrent,
                         timedNotes: timedNotes,
                         firstIngestionTimeForNotes: firstIngestionTime,
@@ -154,7 +265,6 @@ struct ExperienceScreen: View {
             if isEyeOpen && !experience.ratingsUnwrapped.isEmpty {
                 ShulginRatingSection(
                     experience: experience,
-                    hiddenRatings: $hiddenRatings,
                     timeDisplayStyle: timeDisplayStyle,
                     firstIngestionTime: firstIngestionTime
                 )
@@ -169,7 +279,7 @@ struct ExperienceScreen: View {
                     )
                 }
             }
-            ForEach(experience.getConsumers(hiddenIngestions: hiddenIngestions, areRedosesDrawnIndividually: areRedosesDrawnIndividually, areSubstanceHeightsIndependent: areSubstanceHeightsIndependent)) { consumer in
+            ForEach(experience.getConsumers(areRedosesDrawnIndividually: areRedosesDrawnIndividually, areSubstanceHeightsIndependent: areSubstanceHeightsIndependent)) { consumer in
                 let consumerTimelineModel = consumer.timelineModel
                 Section {
                     TimelineSection(
@@ -181,7 +291,6 @@ struct ExperienceScreen: View {
                         timeDisplayStyle: timeDisplayStyle,
                         isEyeOpen: isEyeOpen,
                         isHidingDosageDots: isHidingDosageDots,
-                        hiddenIngestions: hiddenIngestions,
                         isCurrentExperience: isCurrent
                     )
                 } header: {
@@ -239,9 +348,7 @@ struct ExperienceScreen: View {
                 case let .editTimedNote(timedNote):
                     EditTimedNoteScreen(timedNote: timedNote, experience: experience)
                 case let .editIngestion(ingestion):
-                    EditIngestionScreen(
-                        ingestion: ingestion,
-                        isHidden: $hiddenIngestions.contains(ingestion.id))
+                    EditIngestionScreen(ingestion: ingestion)
                 case let .assistant(prompt):
                     AssistantScreen(experience: experience, initialPrompt: prompt)
                 case .shareExperience:
@@ -260,8 +367,10 @@ struct ExperienceScreen: View {
                 )
             }
         }
-        .onChange(of: hiddenIngestions) { _ in updateLiveActivityHiddenItems() }
-        .onChange(of: hiddenRatings) { _ in updateLiveActivityHiddenItems() }
+        .sheet(isPresented: $showsHiddenItems) {
+            NavigationStack { HiddenTimelineItemsScreen(experience: experience, includesRatings: isEyeOpen) }
+        }
+        .observeExperienceTimeline(experience)
         .confirmationDialog(
             "Delete Experience?",
             isPresented: $isShowingDeleteConfirmation,
@@ -279,11 +388,7 @@ struct ExperienceScreen: View {
     }
 
     private var expandTimelineLink: some View {
-        NavigationLink(value: GlobalNavigationDestination.experienceTimeline(
-            experience: experience,
-            hiddenIngestions: hiddenIngestions,
-            hiddenRatings: hiddenRatings
-        )) {
+        NavigationLink(value: GlobalNavigationDestination.experienceTimeline(experience: experience)) {
             Label("Expand Timeline", systemImage: "arrow.down.left.and.arrow.up.right.square")
                 .labelStyle(.iconOnly)
         }
