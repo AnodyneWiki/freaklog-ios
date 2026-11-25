@@ -19,11 +19,22 @@ enum IngestionSaving {
     }
 
     static func didSave(_ ingestions: [Ingestion], newIngestions: [Ingestion], sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) {
+        didSave(
+            ingestions, newIngestions: newIngestions,
+            webhookPresetsByIngestion: Dictionary(newIngestions.map { ($0.objectID, presetObjectIDs) }, uniquingKeysWith: { first, _ in first })
+        )
+    }
+
+    static func didSave(
+        _ ingestions: [Ingestion], newIngestions: [Ingestion],
+        webhookPresetsByIngestion: [NSManagedObjectID: [NSManagedObjectID]]
+    ) {
         let confirmed = ingestions.filter { !$0.isUnconfirmed }
         guard !confirmed.isEmpty else { return }
+        let newIDs = Set(newIngestions.map(\.objectID))
         for ingestion in confirmed {
-            if newIngestions.contains(ingestion) {
-                if !presetObjectIDs.isEmpty {
+            if newIDs.contains(ingestion.objectID) {
+                if let presetObjectIDs = webhookPresetsByIngestion[ingestion.objectID], !presetObjectIDs.isEmpty {
                     WebhookManager.shared.sendWebhooks(for: ingestion, presetObjectIDs: presetObjectIDs)
                 }
             } else {

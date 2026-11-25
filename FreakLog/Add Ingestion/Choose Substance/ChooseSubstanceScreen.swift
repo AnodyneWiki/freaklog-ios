@@ -6,6 +6,7 @@ struct ChooseSubstanceScreen: View {
     private let usesShortcutPrefill: Bool
     @StateObject private var viewModel = ViewModel()
     @Environment(\.dismiss) var dismiss
+    @Environment(\.routineOccurrenceSlot) private var routineSlot
     @EnvironmentObject private var locationManager: LocationManager
 
     init(usesShortcutPrefill: Bool = true) {
@@ -27,6 +28,7 @@ struct ChooseSubstanceScreen: View {
             allowsPackageScan: usesShortcutPrefill && prefill == nil,
             prefill: prefill,
             matchedSubstance: matchedSubstance,
+            allowsBatch: routineSlot == nil && prefill == nil,
             dismiss: { dismiss() }).task {
                 locationManager.maybeRequestLocation() // because we might need current location on finish screen
             }
@@ -46,24 +48,26 @@ struct ChooseSubstanceContent: View {
     let allowsPackageScan: Bool
     var prefill: IngestionPrefill? = nil
     var matchedSubstance: AddIngestionSubstance? = nil
+    var allowsBatch = false
     let dismiss: () -> Void
 
     @State private var navPath = NavigationPath()
+    @State private var isBatchMode = false
+    @State private var drafts: [StagedIngestion] = []
+    @State private var confirmsDiscardingBatch = false
 
     var body: some View {
         NavigationStack(path: $navPath) {
             screen.toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
+                    Button("Cancel", action: cancelBatchOrDismiss)
                 }
             }
             .navigationDestination(for: FinishIngestionScreenArguments.self) { arguments in
-                FinishIngestionScreen(arguments: arguments, dismiss: dismiss)
+                FinishIngestionScreen(arguments: arguments, dismiss: cancelEntry, onStage: stageAction)
             }
             .navigationDestination(for: Formulation.self) { formulation in
-                FormulationDoseScreen(formulation: formulation, dismiss: dismiss)
+                FormulationDoseScreen(formulation: formulation, dismiss: cancelEntry)
             }
             .navigationDestination(for: JournalPresetProduct.self) { product in
                 switch product {
@@ -78,24 +82,28 @@ struct ChooseSubstanceContent: View {
                             estimatedDoseStandardDeviation: nil,
                             customUnit: unit
                         ),
-                        dismiss: dismiss
+                        dismiss: cancelEntry,
+                        onStage: stageAction
                     )
                     .environment(\.requiresIngestionAmount, true)
                 case .formulation(let formulation):
                     FormulationDoseScreen(
-                        formulation: formulation, dismiss: dismiss, initialAmount: nil
+                        formulation: formulation, dismiss: cancelEntry, showsProductLink: false, initialAmount: nil
                     )
                 }
             }
             .navigationDestination(for: FinishFormulationArguments.self) { arguments in
-                FinishIngestionScreen(ingestions: arguments.ingestions, dismiss: dismiss)
+                FinishIngestionScreen(ingestions: arguments.ingestions, dismiss: cancelEntry, onStage: stageAction)
+            }
+            .navigationDestination(for: BatchReviewDestination.self) { _ in
+                IngestionBatchScreen(drafts: $drafts, onSaved: dismiss)
             }
             .navigationDestination(for: AddIngestionDestination.self) { destination in
                 switch destination {
                 case .interactions(let substance):
-                    AcknowledgeInteractionsView(substance: substance, dismiss: dismiss)
+                    AcknowledgeInteractionsView(substance: substance, dismiss: cancelEntry)
                 case .saferUse(let substance):
-                    AcknowledgeSaferUseScreen(substance: substance, dismiss: dismiss)
+                    AcknowledgeSaferUseScreen(substance: substance, dismiss: cancelEntry)
                 case .saferRoutes:
                     SaferRoutesScreen()
                 }
@@ -108,16 +116,16 @@ struct ChooseSubstanceContent: View {
                             ? request.administrationRoute
                             : nil
                     },
-                    dismiss: dismiss
+                    dismiss: cancelEntry
                 )
             })
             .navigationDestination(for: ChooseOtherRouteScreenArguments.self, destination: { arguments in
-                ChooseOtherRouteScreen(arguments: arguments, dismiss: dismiss)
+                ChooseOtherRouteScreen(arguments: arguments, dismiss: cancelEntry)
             })
             .navigationDestination(for: SubstanceAndRoute.self) { arguments in
                 ChooseDoseScreen(
                     arguments: arguments,
-                    dismiss: dismiss,
+                    dismiss: cancelEntry,
                     navigateToCustomUnitChooseDose: { customUnit in
                         navPath.append(customUnit)
                     },
@@ -127,7 +135,7 @@ struct ChooseSubstanceContent: View {
             .navigationDestination(for: CustomUnit.self) { customUnit in
                 CustomUnitsChooseDoseScreen(
                     customUnit: customUnit,
-                    dismiss: dismiss,
+                    dismiss: cancelEntry,
                     navigateToCustomUnitChooseDose: { navPath.append($0) },
                     initialDose: prefill?.dose(for: customUnit, matchedSubstance: matchedSubstance)
                 )
@@ -142,6 +150,39 @@ struct ChooseSubstanceContent: View {
             AlertToast(
                 displayMode: .alert,
                 type: .image("Eye Open", .red))
+        }
+        .confirmationDialog("Discard Batch?", isPresented: $confirmsDiscardingBatch, titleVisibility: .visible) {
+            Button("Discard Batch", role: .destructive, action: dismiss)
+        } message: {
+            Text("The entries in this batch haven’t been saved.")
+        }
+    }
+
+    private struct BatchReviewDestination: Hashable {}
+
+    private var stageAction: ((StagedIngestion) -> Void)? {
+        guard isBatchMode else { return nil }
+        return { draft in
+            guard !navPath.isEmpty else { return }
+            drafts.append(draft)
+            searchText = ""
+            navPath = NavigationPath()
+        }
+    }
+
+    private func cancelEntry() {
+        if isBatchMode {
+            navPath = NavigationPath()
+        } else {
+            dismiss()
+        }
+    }
+
+    private func cancelBatchOrDismiss() {
+        if drafts.isEmpty {
+            dismiss()
+        } else {
+            confirmsDiscardingBatch = true
         }
     }
 
@@ -163,7 +204,10 @@ struct ChooseSubstanceContent: View {
     private var screen: some View {
         ScrollView {
             LazyVStack(alignment: .leading) {
-                SiriTipView(intent: AddIngestionIntent(), isVisible: $isSiriTipVisible).padding(.horizontal)
+                if allowsBatch { batchControls }
+                if !isBatchMode {
+                    SiriTipView(intent: AddIngestionIntent(), isVisible: $isSiriTipVisible).padding(.horizontal)
+                }
                 if allowsPackageScan {
                     VStack(alignment: .leading, spacing: 8) {
                         PackageLabelDraftButton(logProduct: { navPath.append($0) })
@@ -205,7 +249,7 @@ struct ChooseSubstanceContent: View {
                 ForEach(filteredSubstances) { substance in
                     SubstanceBox(
                         substance: substance,
-                        dismiss: dismiss,
+                        dismiss: cancelEntry,
                         isEyeOpen: isEyeOpen)
                 }
                 Button {
@@ -223,7 +267,39 @@ struct ChooseSubstanceContent: View {
         .scrollDismissesKeyboard(.interactively)
         .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .always))
         .disableAutocorrection(true)
-        .navigationBarTitle("New Ingestion")
+        .navigationTitle(isBatchMode ? "Add to Batch" : "New Ingestion")
+    }
+
+    @ViewBuilder
+    private var batchControls: some View {
+        if isBatchMode {
+            if drafts.isEmpty {
+                Text("Choose the first entry for this batch.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+                Button {
+                    isBatchMode = false
+                } label: {
+                    Label("Log One Ingestion", systemImage: "square.and.pencil")
+                }
+                .padding(.horizontal)
+            } else {
+                NavigationLink(value: BatchReviewDestination()) {
+                    Label("Review Batch (\(drafts.count))", systemImage: "checklist")
+                }
+                .buttonStyle(.borderedProminent)
+                .padding(.horizontal)
+            }
+        } else {
+            Button {
+                isBatchMode = true
+            } label: {
+                Label("Log Multiple Ingestions", systemImage: "list.bullet")
+            }
+            .buttonStyle(.bordered)
+            .padding(.horizontal)
+        }
     }
 }
 

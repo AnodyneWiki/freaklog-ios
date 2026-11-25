@@ -12,4 +12,13 @@ struct FinishIngestionScreenArguments: Hashable {
     var formulation: Formulation?
     var formulationAmount: Double?
     var isHiddenInTimeline = false
+
+    var reviewAmount: String {
+        guard let dose else { return String(localized: "Unknown amount") }
+        return dose.doseDescription(
+            units: customUnit?.unitUnwrapped ?? units ?? "",
+            isEstimate: isEstimate,
+            standardDeviation: estimatedDoseStandardDeviation
+        )
+    }
 }

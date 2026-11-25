@@ -24,14 +24,22 @@ struct FinishIngestionScreen: View {
     // like the substances of a formulation
     @State private var ingestions: [FinishIngestionScreenArguments]
     let dismiss: () -> Void
+    private let onStage: ((StagedIngestion) -> Void)?
 
-    init(arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void) {
-        self.init(ingestions: [arguments], dismiss: dismiss)
+    init(
+        arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void,
+        onStage: ((StagedIngestion) -> Void)? = nil
+    ) {
+        self.init(ingestions: [arguments], dismiss: dismiss, onStage: onStage)
     }
 
-    init(ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void) {
+    init(
+        ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void,
+        onStage: ((StagedIngestion) -> Void)? = nil
+    ) {
         _ingestions = State(initialValue: ingestions)
         self.dismiss = dismiss
+        self.onStage = onStage
     }
 
     @EnvironmentObject private var toastViewModel: ToastViewModel
@@ -53,7 +61,6 @@ struct FinishIngestionScreen: View {
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
     @State private var usedColors = [SubstanceColor]()
-    @State private var foundCompanions: [String: SubstanceCompanion] = [:]
 
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var selectedExperience: Experience?
@@ -83,14 +90,18 @@ struct FinishIngestionScreen: View {
     }
 
     var doneButton: some View {
-        Button(isUnconfirmed ? "Save" : "Log", action: save)
+        Button(onStage != nil ? "Add to Batch" : isUnconfirmed ? "Save" : "Log", action: save)
             .font(.headline)
             .disabled(isSettingUpLoggedRoutine || needsAmount)
     }
 
     private func save() {
         guard !needsAmount else { return }
-        save(then: nil)
+        if let onStage {
+            onStage(stagedIngestion)
+        } else {
+            save(then: nil)
+        }
     }
 
     private func save(then routine: RoutineDraft?) {
@@ -133,7 +144,9 @@ struct FinishIngestionScreen: View {
                     }
                 }
             }
-            experienceSection
+            if onStage == nil {
+                experienceSection
+            }
             Section {
                 Toggle("Unconfirmed", isOn: $isUnconfirmed)
             } footer: {
@@ -157,7 +170,7 @@ struct FinishIngestionScreen: View {
                     AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
                 }
                 LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-                if #available(iOS 16.2, *), selectedExperience == nil, !isUnconfirmed,
+                if #available(iOS 16.2, *), onStage == nil, selectedExperience == nil, !isUnconfirmed,
                    LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive,
                    selectedTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
                     Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity)
@@ -167,14 +180,14 @@ struct FinishIngestionScreen: View {
             if !isUnconfirmed, !enabledWebhookPresets.isEmpty {
                 sharingSection
             }
-            if !isUnconfirmed, let routineDraft {
+            if onStage == nil, !isUnconfirmed, let routineDraft {
                 Section {
                     Button("Log and Save as Routine…") { save(then: routineDraft) }
                 }
             }
         }
         .onChange(of: selectedTimeRange) { _ in
-            selectExperienceBasedOnCurrentTime()
+            if onStage == nil { selectExperienceBasedOnCurrentTime() }
         }
         .onAppear {
             generator.prepare()
@@ -222,7 +235,7 @@ struct FinishIngestionScreen: View {
                     selectedEndTime = startTime.addingTimeInterval(30*60)
                 }
             }
-            selectExperienceBasedOnCurrentTime()
+            if onStage == nil { selectExperienceBasedOnCurrentTime() }
             locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
             initializeColorCompanionAndNote()
         }
@@ -263,7 +276,7 @@ struct FinishIngestionScreen: View {
             if requiresAmount, let unitName = ingestion.customUnit?.nameUnwrapped, !unitName.isEmpty {
                 Text(unitName).font(.subheadline).foregroundStyle(.secondary)
             }
-            Text(doseDescription(for: ingestion))
+            Text(ingestion.reviewAmount)
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
             Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
@@ -340,15 +353,6 @@ struct FinishIngestionScreen: View {
                 LabeledContent("Webhooks", value: sendWebhooks.wrappedValue ? webhookRecipients : String(localized: "Off"))
             }
         }
-    }
-
-    private func doseDescription(for ingestion: FinishIngestionScreenArguments) -> String {
-        guard let dose = ingestion.dose else { return "Unknown amount" }
-        return dose.doseDescription(
-            units: ingestion.customUnit?.unitUnwrapped ?? ingestion.units ?? "",
-            isEstimate: ingestion.isEstimate,
-            standardDeviation: ingestion.estimatedDoseStandardDeviation
-        )
     }
 
     private var routineDraft: RoutineDraft? {
@@ -436,7 +440,6 @@ struct FinishIngestionScreen: View {
         usedColors = companions.map(\.color)
         for substanceName in substanceNames {
             if let companion = companions.first(where: { $0.substanceNameUnwrapped == substanceName }) {
-                foundCompanions[substanceName] = companion
                 selectedColors[substanceName] = companion.color
             } else {
                 // New substances logged together get different colors too
@@ -445,49 +448,28 @@ struct FinishIngestionScreen: View {
         }
     }
 
+    private var stagedIngestion: StagedIngestion {
+        StagedIngestion(
+            arguments: ingestions,
+            time: selectedTime,
+            endTime: selectedTimePickerOption == .timeRange ? selectedEndTime : nil,
+            note: enteredNote,
+            consumer: consumerName,
+            location: locationManager.selectedLocation,
+            sites: siteSelection,
+            colors: selectedColors,
+            isUnconfirmed: isUnconfirmed,
+            stockContainerID: stockContainerID,
+            webhookPresetIDs: chosenWebhookPresetObjectIDs
+        )
+    }
+
     func addIngestionWithExperience() throws {
         let persistence = PersistenceController.shared
-        let context = try persistence.journalEditContext()
-        let occurrence: RoutineOccurrence?
-        if let routineSlot {
-            guard let pending = try RoutineSchedules.stageLog(for: routineSlot, in: context) else {
-                throw RoutineSchedules.StorageError.alreadyLogged
-            }
-            occurrence = pending
-        } else {
-            occurrence = nil
-        }
-        let selectedLocationValue = locationManager.selectedLocation
         let isNewExperience = selectedExperience == nil
-        let experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
-            ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
-        let companions = try Dictionary(uniqueKeysWithValues: substanceNames.map { substanceName in
-            (substanceName, try createOrUpdateCompanion(for: substanceName, with: context))
-        })
-        let newIngestions = try ingestions.map { arguments in
-            try createIngestion(
-                from: arguments,
-                companion: companions[arguments.substanceName],
-                with: experience,
-                location: selectedLocationValue,
-                and: context)
-        }
-        if isUnconfirmed {
-            let confirmationBatchID = newIngestions.count > 1 ? UUID() : nil
-            for ingestion in newIngestions {
-                ingestion.isUnconfirmed = true
-                ingestion.confirmationBatchID = confirmationBatchID
-            }
-        }
-        if let occurrence {
-            for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
-        }
-        if !isUnconfirmed, let stockContainerID {
-            guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
-            try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
-        }
-        try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
-        let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
+        let saved = try StagedIngestion.persist([stagedIngestion], to: selectedExperience, title: enteredTitle, routineSlot: routineSlot)
+        saved.notifyIntegrations()
+        let savedExperience = persistence.viewContext.object(with: saved.experience.objectID) as? Experience
         if !isUnconfirmed, let savedExperience {
             startLiveActivityIfWanted(for: savedExperience, isNewExperience: isNewExperience)
         }
@@ -506,58 +488,6 @@ struct FinishIngestionScreen: View {
         Task {
             await ActivityManager.shared.show(experience)
         }
-    }
-
-    private func createOrUpdateCompanion(for substanceName: String, with context: NSManagedObjectContext) throws -> SubstanceCompanion {
-        let color = colorBinding(for: substanceName).wrappedValue
-        if let foundCompanion = foundCompanions[substanceName] {
-            let foundCompanion = try PersistenceController.journalObject(foundCompanion, in: context)
-            foundCompanion.colorAsText = color.rawValue
-            return foundCompanion
-        } else {
-            let companion = SubstanceCompanion(context: context)
-            companion.substanceName = substanceName
-            companion.colorAsText = color.rawValue
-            return companion
-        }
-    }
-
-    private func createIngestion(
-        from arguments: FinishIngestionScreenArguments,
-        companion: SubstanceCompanion?,
-        with experience: Experience,
-        location: Location?,
-        and context: NSManagedObjectContext
-    ) throws -> Ingestion {
-        let ingestion = Ingestion(context: context)
-        ingestion.identifier = UUID()
-        ingestion.time = selectedTime
-        if selectedTimePickerOption == .timeRange {
-            ingestion.endTime = selectedEndTime
-        } else {
-            ingestion.endTime = nil
-        }
-        ingestion.creationDate = Date()
-        ingestion.customUnit = try arguments.customUnit.map { try PersistenceController.journalObject($0, in: context) }
-        ingestion.formulation = try arguments.formulation.map { try PersistenceController.journalObject($0, in: context) }
-        ingestion.formulationAmount = arguments.formulationAmount ?? 0
-        ingestion.isHiddenInTimeline = arguments.isHiddenInTimeline
-        ingestion.dose = arguments.dose ?? 0
-        ingestion.units = arguments.units
-        ingestion.isEstimate = arguments.isEstimate
-        ingestion.estimatedDoseStandardDeviation = arguments.estimatedDoseStandardDeviation ?? 0
-        ingestion.note = enteredNote
-        ingestion.administrationRoute = arguments.administrationRoute.rawValue
-        ingestion.substanceName = arguments.substanceName
-        ingestion.color = colorBinding(for: arguments.substanceName).wrappedValue.rawValue
-        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
-        let site = siteSelection.siteString(for: arguments.administrationRoute)
-        ingestion.administrationSite = site.isEmpty ? nil : site
-        ingestion.webhookMessageId = nil
-        ingestion.experience = experience
-        ingestion.setLocation(location)
-        ingestion.substanceCompanion = companion
-        return ingestion
     }
 
     private let generator = UINotificationFeedbackGenerator()
