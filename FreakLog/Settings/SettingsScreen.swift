@@ -303,6 +303,16 @@ private struct JournalDataSettings: View {
                         Image(systemName: "doc.text")
                     }
                 }
+                NavigationLink {
+                    SelectiveExportScreen()
+                } label: {
+                    Label("Journal Summary", systemImage: "doc.text.magnifyingglass")
+                }
+                NavigationLink {
+                    SelectiveExportScreen(kind: .clinician)
+                } label: {
+                    Label("Clinician Summary", systemImage: "stethoscope")
+                }
             }
             Section {
                 Button {
