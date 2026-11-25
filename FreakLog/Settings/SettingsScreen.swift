@@ -8,22 +8,10 @@ struct SettingsScreen: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
 
     var body: some View {
-        SettingsContent(
-            isFaceIDAvailable: authenticator.isFaceIDEnabled,
-            isExporting: $viewModel.isExporting,
-            exportedFile: viewModel.exportedFile,
-            exportBackup: {
-                viewModel.exportBackup()
-            },
-            exportData: {
-                viewModel.exportData()
-            },
-            importFile: viewModel.importFile,
-            deleteEverything: viewModel.deleteEverything
-        )
-        .onAppear {
-            viewModel.toastViewModel = toastViewModel
-        }
+        SettingsContent(isFaceIDAvailable: authenticator.isFaceIDEnabled, viewModel: viewModel)
+            .onAppear {
+                viewModel.toastViewModel = toastViewModel
+            }
     }
 }
 
@@ -34,18 +22,8 @@ struct SettingsContent: View {
     // PersistenceController reads this with bool(forKey:), so unset means off
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
-    @State var isImporting = false
-    @State private var removePublishedCopies = false
-    @Binding var isExporting: Bool
-    let exportedFile: ExportedFile
+    @ObservedObject var viewModel: SettingsScreen.ViewModel
     @EnvironmentObject private var toastViewModel: ToastViewModel
-    let exportBackup: () -> Void
-    let exportData: () -> Void
-    let importFile: (URL, Bool) -> Void
-    let deleteEverything: () -> Void
-
-    @State private var isShowingDeleteConfirmation = false
-    @State private var isShowingImportAlert = false
 
     var body: some View {
         List {
@@ -76,19 +54,35 @@ struct SettingsContent: View {
                 })).tint(Color.accentColor)
             }
             if isEyeOpen {
-                Section("UI") {
+                Section("Appearance") {
                     NavigationLink(value: GlobalNavigationDestination.journalSettings) {
                         Label("Journal", systemImage: "list.dash.header.rectangle")
                     }
                     NavigationLink(value: GlobalNavigationDestination.editColors) {
                         Label("Edit Substance Colors", systemImage: "paintpalette")
                     }
+                    NavigationLink(value: GlobalNavigationDestination.tabSettings) {
+                        Label("Customize Tabs", systemImage: "rectangle.stack")
+                    }
+                }
+            }
+            Section {
+                NavigationLink {
+                    JournalDataSettings(viewModel: viewModel)
+                } label: {
+                    Label("Journal Data", systemImage: "externaldrive")
+                }
+            }
+            if isEyeOpen {
+                Section("Logging") {
                     NavigationLink(value: GlobalNavigationDestination.customUnits) {
                         Label("Custom Units", systemImage: "pills")
                     }
                     NavigationLink(value: GlobalNavigationDestination.formulations) {
                         Label("Formulations", systemImage: "testtube.2")
                     }
+                }
+                Section("Integrations") {
                     NavigationLink(value: GlobalNavigationDestination.webhookSettings) {
                         Label("Webhooks", systemImage: "network")
                     }
@@ -101,71 +95,10 @@ struct SettingsContent: View {
                     NavigationLink(value: GlobalNavigationDestination.leaderboardServers) {
                         Label("Leaderboard", systemImage: "chart.bar.xaxis")
                     }
-                    NavigationLink(value: GlobalNavigationDestination.tabSettings) {
-                        Label("Customize Tabs", systemImage: "rectangle.stack")
-                    }
                 }
             }
-            Section(
-                header: Text("Journal Data"),
-                footer: Text("Use a FreakLog backup to restore your journal and settings in FreakLog. Backups include webhook addresses and leaderboard servers, so keep them private. Export JSON to share your journal with compatible apps. FreakLog can import both formats.")
-            ) {
-                Button {
-                    exportBackup()
-                } label: {
-                    Label("Export Backup", systemImage: "externaldrive")
-                }
-                Button {
-                    exportData()
-                } label: {
-                    Label("Export JSON", systemImage: "arrow.up.doc")
-                }
-                Button {
-                    isShowingImportAlert.toggle()
-                } label: {
-                    Label("Import Data", systemImage: "arrow.down.doc")
-                }
-                .confirmationDialog(
-                    "Replace Journal?",
-                    isPresented: $isShowingImportAlert,
-                    titleVisibility: .visible,
-                    actions: {
-                        Button("Import and Keep Published Copies", role: .destructive) {
-                            removePublishedCopies = false
-                            isImporting = true
-                        }
-                        Button("Import and Remove Discarded Copies", role: .destructive) {
-                            removePublishedCopies = true
-                            isImporting = true
-                        }
-                        Button("Cancel", role: .cancel) {}
-                    },
-                    message: {
-                        Text("Import replaces your local journal. A FreakLog backup also replaces settings. Portable JSON has no publication IDs, so it can republish entries on the next leaderboard sync if you keep their old copies.")
-                    }
-                )
-                Button {
-                    isShowingDeleteConfirmation.toggle()
-                } label: {
-                    Label("Delete Everything", systemImage: "trash").foregroundColor(.red)
-                }
-                .confirmationDialog(
-                    "Delete Everything?",
-                    isPresented: $isShowingDeleteConfirmation,
-                    titleVisibility: .visible,
-                    actions: {
-                        Button("Delete", role: .destructive) {
-                            deleteEverything()
-                        }
-                        Button("Cancel", role: .cancel) {}
-                    },
-                    message: {
-                        Text("This will delete all your experiences, ingestions, custom substances and sprays.")
-                    }
-                )
-            }
-            Section("Communication") {
-                if isEyeOpen {
+            if isEyeOpen {
+                Section("Communication") {
                     NavigationLink(value: GlobalNavigationDestination.faq) {
                         Label("Frequently Asked Questions", systemImage: "questionmark.square")
                     }
@@ -189,28 +122,6 @@ struct SettingsContent: View {
                 }
             }
             eye
-        }
-        .fileImporter(
-            isPresented: $isImporting,
-            allowedContentTypes: ExportedFile.readableContentTypes
-        ) { result in
-            do {
-                importFile(try result.get(), removePublishedCopies)
-            } catch {
-                toastViewModel.showErrorToast(message: "Import Failed")
-            }
-        }
-        .fileExporter(
-            isPresented: $isExporting,
-            document: exportedFile,
-            contentType: exportedFile.contentType,
-            defaultFilename: exportedFile.filename
-        ) { result in
-            if case .success = result {
-                toastViewModel.showSuccessToast(message: "Export Successful")
-            } else {
-                toastViewModel.showErrorToast(message: "Export Failed")
-            }
         }
         .navigationTitle("Settings")
     }
@@ -239,16 +150,273 @@ struct SettingsContent: View {
     }
 }
 
+private struct JournalDataSettings: View {
+    @ObservedObject var viewModel: SettingsScreen.ViewModel
+    @State private var isChoosingFile = false
+    @State private var isConfirmingDeletion = false
+
+    var body: some View {
+        List {
+            Section("Restore") {
+                if let error = viewModel.importError, viewModel.importReview == nil {
+                    Label(error, systemImage: "exclamationmark.circle")
+                }
+                Button {
+                    viewModel.importError = nil
+                    isChoosingFile = true
+                } label: {
+                    if viewModel.isPreparingImport {
+                        ProgressView("Reading File…")
+                    } else {
+                        Label("Import Data", systemImage: "arrow.down.doc")
+                    }
+                }
+                .disabled(viewModel.isPreparingImport)
+            }
+            Section("Export") {
+                NavigationLink {
+                    JournalExportReview(viewModel: viewModel, isBackup: true)
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("FreakLog Backup")
+                            Text("Journal and settings").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "externaldrive")
+                    }
+                }
+                NavigationLink {
+                    JournalExportReview(viewModel: viewModel, isBackup: false)
+                } label: {
+                    Label {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Journal JSON")
+                            Text("For compatible apps").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                    } icon: {
+                        Image(systemName: "doc.text")
+                    }
+                }
+            }
+            Section {
+                Button(role: .destructive) {
+                    isConfirmingDeletion = true
+                } label: {
+                    Label("Delete Everything", systemImage: "trash")
+                }
+            }
+        }
+        .navigationTitle("Journal Data")
+        .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: ExportedFile.readableContentTypes) { result in
+            switch result {
+            case .success(let url): viewModel.prepareImport(url)
+            case .failure: viewModel.importError = "The file couldn’t be opened. Choose it again to retry."
+            }
+        }
+        .sheet(item: $viewModel.importReview, onDismiss: { viewModel.importError = nil }) { review in
+            JournalImportReview(review: review, viewModel: viewModel)
+        }
+        .confirmationDialog("Delete Everything?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
+            Button("Delete", role: .destructive, action: viewModel.deleteEverything)
+        } message: {
+            Text("This will delete all your experiences, ingestions, custom substances and sprays.")
+        }
+    }
+}
+
+private struct JournalImportReview: View {
+    let review: SettingsScreen.ImportReview
+    @ObservedObject var viewModel: SettingsScreen.ViewModel
+    @Environment(\.dismiss) private var dismiss
+    @State private var removePublishedCopies = false
+    @State private var isConfirmingReplacement = false
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("File") {
+                    LabeledContent("Format", value: review.isBackup ? "FreakLog Backup" : "Journal JSON")
+                    LabeledContent("Name", value: review.filename)
+                }
+                Section("Incoming Journal") {
+                    JournalCountsRows(counts: review.counts)
+                }
+                Section {
+                    Toggle("Remove Published Copies", isOn: $removePublishedCopies)
+                } header: {
+                    Text("Publishing")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("This removes published copies of discarded entries from supported integrations.")
+                        if !review.isBackup {
+                            Text("Keeping old copies can result in duplicates on the next leaderboard sync.")
+                        }
+                    }
+                }
+                Section {
+                    if let error = viewModel.importError {
+                        Label(error, systemImage: "exclamationmark.circle")
+                    }
+                    if viewModel.isApplyingImport {
+                        ProgressView("Replacing Journal…")
+                    } else {
+                        Button(viewModel.importError == nil ? "Replace Journal" : "Try Again", role: .destructive) {
+                            isConfirmingReplacement = true
+                        }
+                    }
+                } footer: {
+                    Text(review.isBackup
+                         ? "Restoring this backup replaces your current journal and backed-up settings."
+                         : "Importing this file replaces your current journal.")
+                }
+            }
+            .disabled(viewModel.isApplyingImport)
+            .navigationTitle("Review Import")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }.disabled(viewModel.isApplyingImport)
+                }
+            }
+            .confirmationDialog("Replace Journal?", isPresented: $isConfirmingReplacement, titleVisibility: .visible) {
+                Button("Replace Journal", role: .destructive) {
+                    viewModel.importFile(review, removePublishedCopies: removePublishedCopies)
+                }
+            }
+        }
+        .interactiveDismissDisabled(viewModel.isApplyingImport)
+    }
+}
+
+private struct JournalCountsRows: View {
+    let counts: SettingsScreen.JournalCounts
+
+    var body: some View {
+        LabeledContent("Experiences", value: counts.experiences.formatted())
+        LabeledContent("Ingestions", value: counts.ingestions.formatted())
+        LabeledContent("Timed Notes", value: counts.timedNotes.formatted())
+    }
+}
+
+private struct JournalExportReview: View {
+    let viewModel: SettingsScreen.ViewModel
+    @EnvironmentObject private var toastViewModel: ToastViewModel
+    let isBackup: Bool
+    @State private var preparation = UUID()
+    @State private var prepared: SettingsScreen.PreparedExport?
+    @State private var exportError: String?
+    @State private var isExporting = false
+
+    private var formatName: String { isBackup ? "FreakLog Backup" : "Journal JSON" }
+
+    var body: some View {
+        List {
+            Section {
+                formatRow
+                if let prepared {
+                    if let exportError {
+                        Label(exportError, systemImage: "exclamationmark.circle")
+                    }
+                    JournalCountsRows(counts: prepared.counts)
+                } else if let exportError {
+                    Label(exportError, systemImage: "exclamationmark.circle")
+                    Button("Try Again") {
+                        self.exportError = nil
+                        preparation = UUID()
+                    }
+                } else {
+                    ProgressView("Preparing Export…")
+                }
+            }
+            Section {
+                Text("Journal entries, notes and ratings")
+                Text("Locations saved on experiences and individual ingestions")
+                Text("Custom substances, units, formulations and overrides")
+                if isBackup {
+                    Text("Journal preferences and integration settings")
+                }
+            } header: {
+                Text("Included")
+            } footer: {
+                if isBackup {
+                    Text("This backup contains private webhook addresses and leaderboard settings.")
+                }
+            }
+            Section("Excluded") {
+                if isBackup {
+                    Text("Device state, including iCloud Sync and last unlock time")
+                    Text("Assistant chats and API keys, cached references and retry records")
+                } else {
+                    Text("App settings, webhooks and leaderboard history")
+                    Text("Spray calculator data, assistant data and cached references")
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .navigationTitle("Export")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Save") {
+                    exportError = nil
+                    isExporting = true
+                }
+                .disabled(prepared == nil)
+            }
+        }
+        .task(id: preparation) {
+            guard prepared == nil else { return }
+            do {
+                let export = try await (isBackup ? viewModel.exportBackup() : viewModel.exportData())
+                if !Task.isCancelled { prepared = export }
+            } catch {
+                if !Task.isCancelled {
+                    exportError = (error as? LocalizedError)?.errorDescription ?? "The export couldn’t be prepared."
+                }
+            }
+        }
+        .fileExporter(
+            isPresented: $isExporting,
+            document: prepared?.file,
+            contentType: prepared?.file.contentType ?? (isBackup ? .freakLogBackup : .json),
+            defaultFilename: prepared?.file.filename
+        ) { result in
+            if case .success = result {
+                toastViewModel.showSuccessToast(message: "Export Successful")
+            } else {
+                exportError = "The export couldn’t be saved."
+            }
+        }
+    }
+
+    private var formatRow: some View {
+        HStack(spacing: 12) {
+            Image(systemName: isBackup ? "externaldrive" : "doc.text")
+                .font(.title3.weight(.medium))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 42, height: 42)
+                .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(formatName).font(.headline)
+                Text(isBackup ? "Restore in FreakLog" : "For compatible apps")
+                    .foregroundStyle(.secondary)
+                if let prepared {
+                    Text(prepared.file.data.count.formatted(.byteCount(style: .file)))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.subheadline)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+}
+
 #Preview {
-    SettingsContent(
-        isFaceIDAvailable: true,
-        isImporting: false,
-        isExporting: .constant(false),
-        exportedFile: ExportedFile(),
-        exportBackup: {},
-        exportData: {},
-        importFile: { _, _ in },
-        deleteEverything: {}
-    )
-    .accentColor(Color.blue)
+    NavigationStack {
+        SettingsContent(isFaceIDAvailable: true, viewModel: SettingsScreen.ViewModel())
+    }
+    .environmentObject(ToastViewModel())
 }
