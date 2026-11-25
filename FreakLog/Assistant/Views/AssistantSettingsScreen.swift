@@ -57,11 +57,12 @@ struct AssistantSettingsScreen: View {
       } header: {
         Text("Online Lookups")
       } footer: {
-        if isWebAccessEnabled {
-          Text("Queries go to Exa for web search and directly to Wikipedia for article lookups.")
+        VStack(alignment: .leading, spacing: 8) {
+          Text(
+            "Web Access checks Wikipedia first, with Exa web search as a fallback, to look up substance info and interactions missing from the app's data.")
+          Text(
+            "AnodyneWiki lets the assistant read dose tiers, interactions and warnings when the app's data isn't enough. Only the titles of AnodyneWiki's own pages are requested, never the names of your custom substances.")
         }
-        Text(
-          "Lets the assistant read dose tiers, interactions and warnings on AnodyneWiki when the app's data isn't enough. Only the titles of AnodyneWiki's own pages are requested, never the names of your custom substances.")
       }
     }
     .navigationTitle("Assistant")

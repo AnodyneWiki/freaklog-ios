@@ -63,7 +63,7 @@ extension AssistantToolbox {
         run: { [unowned self] arguments in try await searchAnodyneWiki(arguments.string("query")) }),
       Tool(
         name: "lookup_anodyne_wiki",
-        description: "Read a substance page on AnodyneWiki: dose tiers per route from users' logged doses, duration, half-life, interactions, adverse effects, warnings and subjective effects. Takes titles and common abbreviations. Say that the facts come from AnodyneWiki when you use them.",
+        description: "Read a substance page and user annotations (user_notes from AnodyneWiki userpages) on AnodyneWiki: dose tiers per route from logged doses, duration, half-life, interactions, adverse effects, warnings, subjective effects, and individual contributors' dosages, route timings, effects, effect_groups, after-effects, tolerance and notes. Takes titles and common abbreviations. Call this when asked about subjective effects so user annotations are included; say when facts come from AnodyneWiki and attribute personal annotations to the contributor.",
         parameters: [Parameter(
           name: "substance",
           description: "Page title or abbreviation, e.g. 'MDMA' or 'Amphetamine'.",
@@ -371,24 +371,100 @@ extension AssistantToolbox {
     ])
   }
 
-  // Only a title from AnodyneWiki's own index is requested, so names of the user's own substances stay private
+  // Only a title from AnodyneWiki's own index is requested, so names of the user's own substances stay private.
+  // Userpages are fetched as a whole and filtered locally, so checking them also never leaks custom substance names.
   private func lookUpAnodyneWiki(_ query: String) async throws -> JSONValue {
     guard !query.isEmpty else { return Self.error("'substance' is required.") }
     let entries = try await AnodyneClient.shared.indexEntries()
     let pwName = storedSubstanceName(for: query).flatMap { SubstanceRepo.shared.getSubstance(name: $0)?.name }
-    guard
-      let entry = entries.first(where: { $0.matches(query) }) ?? pwName
-        .flatMap({ name in entries.first { $0.matches(name) } })
-    else {
-      return Self.error("AnodyneWiki has no page called '\(query)'. Try search_anodyne_wiki first.")
+    let entry = entries.first(where: { $0.matches(query) }) ?? pwName
+      .flatMap { name in entries.first { $0.matches(name) } }
+    if let entry, case .found(let substance) = try await AnodyneClient.shared.lookup(entry.title) {
+      let noteNames = [substance.title, query] + substance.abbreviations + (pwName.map { [$0] } ?? [])
+      let userNotes = await loadAnodyneUserNotes(matching: noteNames)
+      var page = Self.trimmed((try? JSONValue(encoding: substance)) ?? .null, textLimit: limits.maxTextCharacters * 2)
+        .object ?? [:]
+      page["source"] = .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki")
+      page["url"] = .string(substance.pageURL.absoluteString)
+      Self.attachUserNotes(userNotes, to: &page, limits: limits)
+      return Self.success(page)
     }
-    guard case .found(let substance) = try await AnodyneClient.shared.lookup(entry.title) else {
-      return Self.error("AnodyneWiki has no page called '\(entry.title)'.")
+    let noteNames = [query] + (pwName.map { [$0] } ?? [])
+    let userNotes = await loadAnodyneUserNotes(matching: noteNames)
+    guard !userNotes.isEmpty else {
+      let missing = entry?.title ?? query
+      return Self.error("AnodyneWiki has no page or user annotations for '\(missing)'. Try search_anodyne_wiki first.")
     }
-    var page = Self.trimmed((try? JSONValue(encoding: substance)) ?? .null, textLimit: limits.maxTextCharacters * 2).object ?? [:]
-    page["source"] = .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki")
-    page["url"] = .string(substance.pageURL.absoluteString)
+    var page: [String: JSONValue] = [
+      "source": .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki"),
+      "note": "No main AnodyneWiki substance page was found; returning matching AnodyneWiki user annotations.",
+    ]
+    Self.attachUserNotes(userNotes, to: &page, limits: limits)
     return Self.success(page)
+  }
+
+  private func loadAnodyneUserNotes(matching names: [String]) async -> [AnodyneUserNote] {
+    if let fetched = try? await AnodyneClient.shared.userNotes(matching: names) {
+      return fetched
+    }
+    return await AnodyneClient.shared.cachedUserNotes(matching: names)
+  }
+
+  private static func attachUserNotes(
+    _ notes: [AnodyneUserNote],
+    to page: inout [String: JSONValue],
+    limits: Limits)
+  {
+    guard !notes.isEmpty else { return }
+    let shown = Array(notes.prefix(limits.defaultListLength))
+    page["user_notes"] = .array(shown.map { anodyneUserNoteJSON($0, textLimit: limits.maxTextCharacters) })
+    if notes.count > shown.count {
+      page["user_notes_total"] = .number(Double(notes.count))
+    }
+  }
+
+  static func anodyneUserNoteJSON(_ note: AnodyneUserNote, textLimit: Int) -> JSONValue {
+    var json: [String: JSONValue] = [
+      "user": .string(note.user),
+      "substance": .string(note.substanceName),
+      "url": .string(note.userPageURL.absoluteString),
+    ]
+    if !note.routes.isEmpty {
+      json["routes"] = .array(note.routes.map { route in
+        var entry: [String: JSONValue] = ["route": .string(route.name)]
+        if let dosage = route.dosage { entry["dosage"] = AssistantFormat.text(dosage, limit: textLimit) }
+        if let onset = route.onset { entry["onset"] = AssistantFormat.text(onset, limit: textLimit) }
+        if let comeup = route.comeup { entry["comeup"] = AssistantFormat.text(comeup, limit: textLimit) }
+        if let duration = route.duration { entry["duration"] = AssistantFormat.text(duration, limit: textLimit) }
+        return .object(entry)
+      })
+    }
+    if !note.classes.isEmpty { json["classes"] = AssistantFormat.strings(note.classes) }
+    if !note.forms.isEmpty { json["forms"] = AssistantFormat.strings(note.forms) }
+    if !note.sources.isEmpty { json["sources"] = AssistantFormat.strings(note.sources) }
+    if !note.indications.isEmpty { json["indications"] = AssistantFormat.strings(note.indications) }
+    if !note.effects.isEmpty {
+      json["effects"] = .array(note.effects.map { AssistantFormat.text($0, limit: textLimit) })
+    }
+    if !note.effectGroups.isEmpty {
+      json["effect_groups"] = .array(note.effectGroups.map { group in
+        .object([
+          "heading": AssistantFormat.text(group.heading, limit: textLimit),
+          "effects": .array(group.effects.map { AssistantFormat.text($0, limit: textLimit) }),
+        ])
+      })
+    }
+    if !note.afterEffects.isEmpty {
+      json["after_effects"] = .array(note.afterEffects.map { AssistantFormat.text($0, limit: textLimit) })
+    }
+    if !note.tolerance.isEmpty {
+      json["tolerance"] = .array(note.tolerance.map { AssistantFormat.text($0, limit: textLimit) })
+    }
+    if !note.odor.isEmpty { json["odor"] = AssistantFormat.strings(note.odor) }
+    if !note.notes.isEmpty {
+      json["notes"] = .array(note.notes.map { AssistantFormat.text($0, limit: textLimit) })
+    }
+    return .object(json)
   }
 
 }

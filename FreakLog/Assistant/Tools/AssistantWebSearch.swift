@@ -11,7 +11,7 @@ enum AssistantWebSearch {
   static func tool(textLimit: Int) -> AssistantToolbox.Tool {
     AssistantToolbox.Tool(
       name: toolName,
-      description: "Search the public web for up-to-date information. Returns excerpts with links to their sources.",
+      description: "Fallback web search for substance info, pharmacology, or drug interactions when the app's data and Wikipedia don't have enough detail. Returns excerpts with source links.",
       parameters: [
         .init(
           name: "query",
@@ -40,19 +40,6 @@ enum AssistantWebSearch {
       }
     }
     throw AssistantError("The web search ended without a result.")
-  }
-
-  static func markdown(from result: JSONValue) -> String {
-    let excerpts = result["results"]?.array?.compactMap(\.string) ?? []
-    guard !excerpts.isEmpty else { return "No web results found." }
-    return excerpts.map { excerpt in
-      excerpt.components(separatedBy: "\n").map { line in
-        guard line.hasPrefix("URL: "), let url = URL(string: String(line.dropFirst(5))),
-              let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme),
-              let host = url.host, url.user == nil, url.password == nil else { return line }
-        return "[\(host)](<\(url.absoluteString)>)"
-      }.joined(separator: "\n")
-    }.joined(separator: "\n\n---\n\n")
   }
 
   static func requestBody(query: String) -> JSONValue {

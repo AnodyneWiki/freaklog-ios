@@ -77,13 +77,24 @@ final class AssistantConversationTests: XCTestCase {
     let toolbox = makeToolbox()
     let disabled = AssistantInstructions.text(for: nil, toolbox: toolbox)
     XCTAssertTrue(disabled.contains("Web Access is off"))
+    XCTAssertFalse(disabled.contains("lookup_anodyne_wiki"))
+
+    let anodyneOnly = AssistantToolbox(
+      context: toolbox.context, includesAnodyneWiki: true, includesWebAccess: false)
+    let anodyneInstructions = AssistantInstructions.text(for: nil, toolbox: anodyneOnly)
+    XCTAssertTrue(anodyneInstructions.contains("check AnodyneWiki first"))
+    XCTAssertTrue(anodyneInstructions.contains("user annotations (user_notes"))
+    XCTAssertTrue(anodyneInstructions.contains("When asked about subjective effects"))
+    XCTAssertTrue(anodyneInstructions.contains("Web Access is off"))
 
     let searchable = AssistantToolbox(
-      context: toolbox.context, includesAnodyneWiki: false, includesWebAccess: true)
+      context: toolbox.context, includesAnodyneWiki: true, includesWebAccess: true)
     let enabled = AssistantInstructions.text(for: nil, toolbox: searchable)
-    XCTAssertTrue(enabled.contains("Prefer lookup_wikipedia for established public facts"))
-    XCTAssertTrue(enabled.contains("Use search_web for current information"))
-    XCTAssertTrue(enabled.contains("ask what they want you to look up"))
+    XCTAssertTrue(enabled.contains("check AnodyneWiki first"))
+    XCTAssertTrue(enabled.contains("the app's data and AnodyneWiki are missing or incomplete"))
+    XCTAssertTrue(enabled.contains("Use lookup_wikipedia first as your primary web source"))
+    XCTAssertTrue(enabled.contains("Use search_web only as a fallback"))
+    XCTAssertTrue(enabled.contains("not a general-purpose chatbot"))
   }
 
   private func makeToolbox() -> AssistantToolbox {

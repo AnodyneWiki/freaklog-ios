@@ -10,7 +10,7 @@ enum AssistantWikipedia {
   static func tool(textLimit: Int) -> AssistantToolbox.Tool {
     AssistantToolbox.Tool(
       name: "lookup_wikipedia",
-      description: "Look up established facts in Wikipedia. Returns short article extracts and source links.",
+      description: "Primary online reference for substance info, pharmacology, and drug interactions when the app's data isn't enough. Returns short article extracts and source links.",
       parameters: [
         .init(name: "query", description: "A public topic or exact article title. Omit private details.", kind: .string, isRequired: true),
         .init(name: "mode", description: "Use summary for a known title or search for up to three matching extracts. Default: search.", kind: .string),

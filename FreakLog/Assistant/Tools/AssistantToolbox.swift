@@ -19,8 +19,8 @@ final class AssistantToolbox {
     tools = journalTools() + substanceTools() + (includesAnodyneWiki ? anodyneTools() : [])
     if includesWebAccess {
       tools += [
-        AssistantWebSearch.tool(textLimit: limits.maxTextCharacters),
         AssistantWikipedia.tool(textLimit: limits.maxTextCharacters),
+        AssistantWebSearch.tool(textLimit: limits.maxTextCharacters),
       ]
     }
   }

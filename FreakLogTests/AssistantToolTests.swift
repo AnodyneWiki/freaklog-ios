@@ -155,12 +155,32 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(sources.count, 2)
     XCTAssertTrue(sources[0].contains("https://example.com/one"))
     XCTAssertTrue(sources[1].contains("https://example.com/two"))
-    let markdown = AssistantWebSearch.markdown(from: result)
-    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/one>)"))
-    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/two>)"))
-    XCTAssertEqual(AssistantWebSearch.markdown(from: .object(["results": .array([])])), "No web results found.")
     XCTAssertThrowsError(try AssistantWebSearch.result(
       from: .object(["error": .object(["message": "Rate limited"])]), textLimit: 800))
+  }
+
+  func testAnodyneUserNoteJSONIncludesAnnotationsAndOmitsEmptyFields() throws {
+    let note = AnodyneUserNote(
+      user: "emily",
+      substanceName: "MDMA",
+      routes: [.init(name: "Oral", dosage: "90 mg", onset: "30 min", comeup: "45 min", duration: "4 h")],
+      effects: ["euphoria"],
+      effectGroups: [.init(heading: "Oral 90 mg", effects: ["jaw clenching"])],
+      afterEffects: ["mild fatigue"],
+      tolerance: ["wait 3 months"],
+      notes: ["Take with electrolytes."])
+    let json = AssistantToolbox.anodyneUserNoteJSON(note, textLimit: 200)
+    XCTAssertEqual(json["user"], "emily")
+    XCTAssertEqual(json["substance"], "MDMA")
+    XCTAssertEqual(json["routes"]?.array?.first?["dosage"], "90 mg")
+    XCTAssertEqual(json["routes"]?.array?.first?["onset"], "30 min")
+    XCTAssertEqual(json["effects"]?.array, ["euphoria"])
+    XCTAssertEqual(json["effect_groups"]?.array?.first?["heading"], "Oral 90 mg")
+    XCTAssertEqual(json["after_effects"]?.array, ["mild fatigue"])
+    XCTAssertEqual(json["tolerance"]?.array, ["wait 3 months"])
+    XCTAssertEqual(json["notes"]?.array, ["Take with electrolytes."])
+    XCTAssertNil(json["odor"])
+    XCTAssertNil(json["forms"])
   }
 
   func testArgumentsAreClamped() {
