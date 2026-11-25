@@ -44,6 +44,8 @@
 		<key>UISceneConfigurations</key>
 		<dict/>
 	</dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>FreakLog reads heart rate to show measurements during a journal experience you choose.</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>

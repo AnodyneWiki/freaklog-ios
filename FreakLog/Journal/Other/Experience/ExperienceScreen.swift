@@ -122,6 +122,16 @@ struct ExperienceScreen: View {
                     }
                 }
             }
+            if ExperienceHeartRateScreen.isAvailable,
+               let window = ExperienceHeartRateScreen.window(for: experience, includesRatings: isEyeOpen) {
+                Section("Measured Data") {
+                    NavigationLink {
+                        ExperienceHeartRateScreen(window: window)
+                    } label: {
+                        Label("Heart Rate", systemImage: "heart")
+                    }
+                }
+            }
             if isEyeOpen, !myIngestions.isEmpty {
                 let cumulativeDoses = ExperienceLogic.myCumulativeDoses(from: myIngestions)
                 if !cumulativeDoses.isEmpty {

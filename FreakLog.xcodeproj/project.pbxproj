@@ -263,6 +263,7 @@
 		EA4B8A292AA12630009918DE /* TimelineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A282AA12630009918DE /* TimelineSection.swift */; };
 		8E800FDA18791553DD1D74D4 /* EventTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */; };
 		EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */; };
+		7237676A0514172766E42057 /* ExperienceHeartRateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */; };
 		2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */; };
 		EA4B8A2F2AA6E231009918DE /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
 		EA4B8A312AA6FF02009918DE /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
@@ -711,6 +712,7 @@
 		EA4B8A282AA12630009918DE /* TimelineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineSection.swift; sourceTree = "<group>"; };
 		E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeText.swift; sourceTree = "<group>"; };
 		EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceToolbarContent.swift; sourceTree = "<group>"; };
+		445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceHeartRateScreen.swift"; sourceTree = "<group>"; };
 		DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceReportScreen.swift"; sourceTree = "<group>"; };
 		EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedNoteCodable.swift; sourceTree = "<group>"; };
 		EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockTimeOption.swift; sourceTree = "<group>"; };
@@ -1975,6 +1977,7 @@
 				EA4B8A282AA12630009918DE /* TimelineSection.swift */,
 				E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */,
 				EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */,
+				445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */,
 				DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */,
 				EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */,
 				EA48F8A329E991C6007DA8C5 /* DateDifference.swift */,
@@ -2429,6 +2432,7 @@
 				EAE4720B26CBA664009FB0EC /* ExperienceScreen.swift in Sources */,
 				EA302E482B381C2F007F113F /* FinishIngestionScreenArguments.swift in Sources */,
 				EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */,
+				7237676A0514172766E42057 /* ExperienceHeartRateScreen.swift in Sources */,
 				2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */,
 				EA4189FD2966DA4500DEA663 /* MDMAOptimalDoseSection.swift in Sources */,
 				EA55CEB92A3F290900FE1A44 /* DotRows.swift in Sources */,
