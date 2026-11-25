@@ -41,7 +41,7 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Scan medication package barcodes on this device to identify products in Inventory.</string>
+	<string>Scan medication package barcodes on this device to find saved products for logging or inventory.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Authenticate yourself to see your journal.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

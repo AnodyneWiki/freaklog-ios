@@ -85,12 +85,19 @@ enum PharmacyPackageMatches {
     static func productID(
         for code: PharmacyPackageCode, in context: NSManagedObjectContext, defaults: UserDefaults = .standard
     ) -> NSManagedObjectID? {
+        product(for: code, in: context, defaults: defaults)?.object.objectID
+    }
+
+    static func product(
+        for code: PharmacyPackageCode, in context: NSManagedObjectContext, defaults: UserDefaults = .standard
+    ) -> JournalPresetProduct? {
         guard let stored = defaults.dictionary(forKey: key)?[code.digits] as? [String],
               let address = stored.first.flatMap(URL.init(string:)),
               let id = context.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: address),
               let product = try? context.existingObject(with: id),
               signature(of: product) == Array(stored.dropFirst()) else { return nil }
-        return id
+        if let unit = product as? CustomUnit { return .customUnit(unit) }
+        return (product as? Formulation).map(JournalPresetProduct.formulation)
     }
 
     static func remember(_ code: PharmacyPackageCode, product: NSManagedObject, defaults: UserDefaults = .standard) {
@@ -130,9 +137,28 @@ enum PharmacyPackageMatches {
     }
 }
 
-struct PackageLabelDraftButton: View {
-    let usePackage: (String?, PharmacyPackageCode?) -> Void
+private enum PackageLabelAction {
+    case useLabel((String?, PharmacyPackageCode?) -> Void)
+    case logProduct((JournalPresetProduct) -> Void)
 
+    var isLogging: Bool {
+        if case .logProduct = self { return true }
+        return false
+    }
+}
+
+struct PackageLabelDraftButton: View {
+    private let action: PackageLabelAction
+
+    init(usePackage: @escaping (String?, PharmacyPackageCode?) -> Void) {
+        action = .useLabel(usePackage)
+    }
+
+    init(logProduct: @escaping (JournalPresetProduct) -> Void) {
+        action = .logProduct(logProduct)
+    }
+
+    @Environment(\.managedObjectContext) private var context
     @State private var selectedPhoto: PhotosPickerItem?
     @State private var choosingPhoto = false
     @State private var draft: PackageLabelDraft?
@@ -140,6 +166,7 @@ struct PackageLabelDraftButton: View {
     @State private var scanning = false
     @State private var cameraCode: PharmacyPackageCode?
     @State private var unsupportedBarcode = false
+    @State private var reviewedProduct: JournalPresetProduct?
 
     var body: some View {
         Menu {
@@ -166,13 +193,13 @@ struct PackageLabelDraftButton: View {
         .disabled(selectedPhoto != nil)
         .photosPicker(isPresented: $choosingPhoto, selection: $selectedPhoto, matching: .images)
         .task(id: selectedPhoto) { await readSelectedPhoto() }
-        .sheet(item: $draft) { draft in
-            PackageLabelReview(draft: draft, usePackage: usePackage)
+        .sheet(item: $draft, onDismiss: openReviewedProduct) { draft in
+            PackageLabelReview(draft: draft, action: reviewAction)
         }
         .sheet(isPresented: $scanning, onDismiss: {
             if let cameraCode {
-                draft = PackageLabelDraft(codes: [cameraCode])
                 self.cameraCode = nil
+                useRecognizedLabel(PackageLabelDraft(codes: [cameraCode]))
             }
         }) {
             NavigationStack {
@@ -217,6 +244,27 @@ struct PackageLabelDraftButton: View {
         }
     }
 
+    private var reviewAction: PackageLabelAction {
+        action.isLogging ? .logProduct { reviewedProduct = $0 } : action
+    }
+
+    private func openReviewedProduct() {
+        guard let reviewedProduct else { return }
+        self.reviewedProduct = nil
+        if case .logProduct(let open) = action {
+            open(reviewedProduct)
+        }
+    }
+
+    private func useRecognizedLabel(_ label: PackageLabelDraft) {
+        if case .logProduct(let open) = action, label.codes.count == 1,
+           let code = label.codes.first, let product = PharmacyPackageMatches.product(for: code, in: context) {
+            open(product)
+        } else {
+            draft = label
+        }
+    }
+
     private func openCamera() async {
         errorMessage = nil
         unsupportedBarcode = false
@@ -250,10 +298,12 @@ struct PackageLabelDraftButton: View {
             }
             guard !Task.isCancelled, selectedPhoto == photo else { return }
 
-            if result.lines.isEmpty && result.codes.isEmpty {
-                errorMessage = "No label or PZN found. Try a clearer photo of the package."
+            if result.codes.isEmpty && (action.isLogging || result.lines.isEmpty) {
+                errorMessage = action.isLogging
+                    ? "No PZN found. Try a clearer photo of the barcode or enter the PZN."
+                    : "No label or PZN found. Try a clearer photo of the package."
             } else {
-                draft = result
+                useRecognizedLabel(result)
             }
         } catch {
             guard !Task.isCancelled, selectedPhoto == photo else { return }
@@ -270,44 +320,46 @@ private struct PackageLabelDraft: Identifiable {
 
 private struct PackageLabelReview: View {
     let draft: PackageLabelDraft
-    let usePackage: (String?, PharmacyPackageCode?) -> Void
+    let action: PackageLabelAction
 
     @State private var name = ""
     @State private var pzn: String
     @Environment(\.dismiss) private var dismiss
     @Environment(\.managedObjectContext) private var context
 
-    init(draft: PackageLabelDraft, usePackage: @escaping (String?, PharmacyPackageCode?) -> Void) {
+    init(draft: PackageLabelDraft, action: PackageLabelAction) {
         self.draft = draft
-        self.usePackage = usePackage
+        self.action = action
         _pzn = State(initialValue: draft.codes.count == 1 ? draft.codes[0].digits : "")
     }
 
     private var code: PharmacyPackageCode? { PharmacyPackageCode(pzn) }
 
-    private var rememberedName: String? {
-        guard let code, let id = PharmacyPackageMatches.productID(for: code, in: context),
-              let product = try? context.existingObject(with: id) else { return nil }
-        if let unit = product as? CustomUnit { return unit.nameUnwrapped }
-        return (product as? Formulation)?.nameUnwrapped
+    private var rememberedProduct: JournalPresetProduct? {
+        code.flatMap { PharmacyPackageMatches.product(for: $0, in: context) }
     }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Product Name (Optional)", text: $name)
+                    if !action.isLogging {
+                        TextField("Product Name (Optional)", text: $name)
+                    }
                     TextField("PZN", text: $pzn)
                         .keyboardType(.numberPad)
                     if !pzn.isEmpty, code == nil {
                         Text("Enter the eight-digit PZN printed on the package.")
                             .foregroundStyle(.secondary)
                     }
-                    if let rememberedName {
-                        LabeledContent("Saved Product", value: rememberedName)
+                    if let rememberedProduct {
+                        LabeledContent("Saved Product", value: rememberedProduct.name)
+                    } else if action.isLogging, code != nil {
+                        Text("This PZN isn’t paired with a saved product. Pair it in Inventory or choose the product manually.")
+                            .foregroundStyle(.secondary)
                     }
                 } footer: {
-                    Text("Check the PZN and product name against the package.")
+                    Text(action.isLogging ? "Check the PZN against the package." : "Check the PZN and product name against the package.")
                 }
                 if draft.codes.count > 1 {
                     Section("Detected Codes") {
@@ -316,7 +368,7 @@ private struct PackageLabelReview: View {
                         }
                     }
                 }
-                if !draft.lines.isEmpty {
+                if !action.isLogging, !draft.lines.isEmpty {
                     Section("Recognized Text") {
                         ForEach(Array(draft.lines.enumerated()), id: \.offset) { _, line in
                             Button {
@@ -328,8 +380,10 @@ private struct PackageLabelReview: View {
                         }
                     }
                 }
-                Section("Medication References") {
-                    PackageReferenceLinks(name: name, pzn: code?.digits)
+                if !action.isLogging {
+                    Section("Medication References") {
+                        PackageReferenceLinks(name: name, pzn: code?.digits)
+                    }
                 }
             }
             .navigationTitle("Review Package Label")
@@ -339,12 +393,22 @@ private struct PackageLabelReview: View {
                     Button("Cancel", action: { dismiss() })
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Use Label") {
-                        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                        usePackage(trimmed.isEmpty ? nil : trimmed, code)
-                        dismiss()
+                    switch action {
+                    case .useLabel(let usePackage):
+                        Button("Use Label") {
+                            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                            usePackage(trimmed.isEmpty ? nil : trimmed, code)
+                            dismiss()
+                        }
+                        .disabled(pzn.isEmpty ? name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty : code == nil)
+                    case .logProduct(let open):
+                        Button("Continue") {
+                            guard let rememberedProduct else { return }
+                            open(rememberedProduct)
+                            dismiss()
+                        }
+                        .disabled(rememberedProduct == nil)
                     }
-                    .disabled(pzn.isEmpty ? name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty : code == nil)
                 }
             }
         }

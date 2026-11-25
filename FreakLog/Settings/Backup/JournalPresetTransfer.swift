@@ -357,7 +357,7 @@ struct JournalPreset: Codable, Identifiable {
     }
 }
 
-enum JournalPresetProduct {
+enum JournalPresetProduct: Hashable {
     case customUnit(CustomUnit)
     case formulation(Formulation)
 

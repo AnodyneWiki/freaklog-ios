@@ -24,6 +24,7 @@ struct ChooseSubstanceScreen: View {
             filteredCustomUnits: viewModel.filteredCustomUnits,
             filteredFormulations: viewModel.filteredFormulations,
             filteredCustomSubstances: viewModel.filteredCustomSubstances,
+            allowsPackageScan: usesShortcutPrefill && prefill == nil,
             prefill: prefill,
             matchedSubstance: matchedSubstance,
             dismiss: { dismiss() }).task {
@@ -42,6 +43,7 @@ struct ChooseSubstanceContent: View {
     let filteredCustomUnits: [CustomUnit]
     let filteredFormulations: [Formulation]
     let filteredCustomSubstances: [CustomSubstanceModel]
+    let allowsPackageScan: Bool
     var prefill: IngestionPrefill? = nil
     var matchedSubstance: AddIngestionSubstance? = nil
     let dismiss: () -> Void
@@ -62,6 +64,28 @@ struct ChooseSubstanceContent: View {
             }
             .navigationDestination(for: Formulation.self) { formulation in
                 FormulationDoseScreen(formulation: formulation, dismiss: dismiss)
+            }
+            .navigationDestination(for: JournalPresetProduct.self) { product in
+                switch product {
+                case .customUnit(let unit):
+                    FinishIngestionScreen(
+                        arguments: FinishIngestionScreenArguments(
+                            substanceName: unit.substanceNameUnwrapped,
+                            administrationRoute: unit.administrationRouteUnwrapped,
+                            dose: nil,
+                            units: unit.originalUnitUnwrapped,
+                            isEstimate: false,
+                            estimatedDoseStandardDeviation: nil,
+                            customUnit: unit
+                        ),
+                        dismiss: dismiss
+                    )
+                    .environment(\.requiresIngestionAmount, true)
+                case .formulation(let formulation):
+                    FormulationDoseScreen(
+                        formulation: formulation, dismiss: dismiss, initialAmount: nil
+                    )
+                }
             }
             .navigationDestination(for: FinishFormulationArguments.self) { arguments in
                 FinishIngestionScreen(ingestions: arguments.ingestions, dismiss: dismiss)
@@ -140,6 +164,13 @@ struct ChooseSubstanceContent: View {
         ScrollView {
             LazyVStack(alignment: .leading) {
                 SiriTipView(intent: AddIngestionIntent(), isVisible: $isSiriTipVisible).padding(.horizontal)
+                if allowsPackageScan {
+                    VStack(alignment: .leading, spacing: 8) {
+                        PackageLabelDraftButton(logProduct: { navPath.append($0) })
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                }
                 if prefill?.hasSubstance == true && matchedSubstance == nil {
                     Label(
                         "Choose a substance. The shortcut’s name didn’t match one available entry.",

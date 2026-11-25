@@ -40,6 +40,7 @@ struct FinishIngestionScreen: View {
     @Environment(\.addIngestionEndTime) private var endTime
     @Environment(\.ingestionPrefillNote) private var prefillNote
     @Environment(\.routineOccurrenceSlot) private var routineSlot
+    @Environment(\.requiresIngestionAmount) private var requiresAmount
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
@@ -84,15 +85,16 @@ struct FinishIngestionScreen: View {
     var doneButton: some View {
         Button(isUnconfirmed ? "Save" : "Log", action: save)
             .font(.headline)
-            .disabled(isSettingUpLoggedRoutine)
+            .disabled(isSettingUpLoggedRoutine || needsAmount)
     }
 
     private func save() {
+        guard !needsAmount else { return }
         save(then: nil)
     }
 
     private func save(then routine: RoutineDraft?) {
-        guard !isSettingUpLoggedRoutine else { return }
+        guard !isSettingUpLoggedRoutine, !needsAmount else { return }
         do {
             try addIngestionWithExperience()
             generateSuccessHaptic()
@@ -244,13 +246,23 @@ struct FinishIngestionScreen: View {
                     summary(for: ingestion)
                 }
             }
+            if needsAmount {
+                Button("Enter Amount") { sheetToShow = .editMeasurement }
+            }
         }
+    }
+
+    private var needsAmount: Bool {
+        requiresAmount && ingestions.first?.dose.map { $0.isFinite && $0 > 0 } != true
     }
 
     private func summary(for ingestion: FinishIngestionScreenArguments) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
                 .font(.headline)
+            if requiresAmount, let unitName = ingestion.customUnit?.nameUnwrapped, !unitName.isEmpty {
+                Text(unitName).font(.subheadline).foregroundStyle(.secondary)
+            }
             Text(doseDescription(for: ingestion))
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
@@ -564,13 +576,26 @@ struct FinishIngestionScreen: View {
 
 // swiftlint:enable type_body_length function_body_length file_length
 
+private struct RequiresIngestionAmountKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var requiresIngestionAmount: Bool {
+        get { self[RequiresIngestionAmountKey.self] }
+        set { self[RequiresIngestionAmountKey.self] = newValue }
+    }
+}
+
 private struct IngestionMeasurementEditor: View {
     let ingestion: FinishIngestionScreenArguments
     let onDone: (FinishIngestionScreenArguments) -> Void
     private let initialAmountText: String
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requiresIngestionAmount) private var requiresAmount
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @FocusState private var isAmountFocused: Bool
     @State private var route: AdministrationRoute
     @State private var amountText: String
     @State private var didChangeRoute = false
@@ -599,13 +624,14 @@ private struct IngestionMeasurementEditor: View {
         return getDouble(from: amountText)
     }
     private var amountIsValid: Bool {
-        amountText.isEmpty || (amount.map { $0.isFinite && $0 > 0 } ?? false)
+        guard let amount else { return amountText.isEmpty && !requiresAmount }
+        return amount.isFinite && amount > 0
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                if isEyeOpen {
+                if isEyeOpen && !requiresAmount {
                     Section {
                         Picker("Route", selection: $route) {
                             ForEach(AdministrationRoute.allCases) { route in
@@ -626,6 +652,7 @@ private struct IngestionMeasurementEditor: View {
                     }
                     TextField("Amount", text: $amountText)
                         .keyboardType(.decimalPad)
+                        .focused($isAmountFocused)
                     if amount != nil {
                         EstimateFields(
                             isEstimate: $isEstimate,
@@ -635,9 +662,12 @@ private struct IngestionMeasurementEditor: View {
                         )
                     }
                 } footer: {
-                    Text("Leave the amount blank to log it as unknown.")
+                    if !requiresAmount {
+                        Text("Leave the amount blank to log it as unknown.")
+                    }
                 }
             }
+            .onAppear { isAmountFocused = requiresAmount }
             .navigationTitle("Edit Ingestion")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

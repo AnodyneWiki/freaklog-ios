@@ -39,13 +39,37 @@ class DecodingTests: XCTestCase {
         unit.dose = 10
         try context.save()
 
+        XCTAssertNil(PharmacyPackageMatches.product(for: code, in: context, defaults: defaults))
         PharmacyPackageMatches.remember(code, product: unit, defaults: defaults)
-        XCTAssertEqual(PharmacyPackageMatches.productID(for: code, in: context, defaults: defaults), unit.objectID)
+        XCTAssertEqual(PharmacyPackageMatches.product(for: code, in: context, defaults: defaults), .customUnit(unit))
         unit.dose = 20
         XCTAssertNil(PharmacyPackageMatches.productID(for: code, in: context, defaults: defaults))
         context.delete(unit)
         try context.save()
         XCTAssertNil(PharmacyPackageMatches.productID(for: code, in: context, defaults: defaults))
+    }
+
+    @MainActor
+    func testRememberedFormulationBecomesUnavailableAfterAnIngredientChanges() throws {
+        let store = PersistenceController(inMemory: true)
+        let context = store.viewContext
+        let suite = "PharmacyPackageTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let code = try XCTUnwrap(PharmacyPackageCode("10785692"))
+        let formulation = FormulationCodable(
+            name: "Example", note: "", creationDate: .now,
+            components: [.init(
+                substanceName: "Example", administrationRoute: .oral, dose: 10, units: "mg",
+                isEstimate: false, estimatedDoseStandardDeviation: nil
+            )]
+        ).insert(into: context)
+        try context.save()
+
+        PharmacyPackageMatches.remember(code, product: formulation, defaults: defaults)
+        XCTAssertEqual(PharmacyPackageMatches.product(for: code, in: context, defaults: defaults), .formulation(formulation))
+        formulation.componentsSorted.first?.dose = 20
+        XCTAssertNil(PharmacyPackageMatches.product(for: code, in: context, defaults: defaults))
     }
 
     func testPregabalinPackageCode() {

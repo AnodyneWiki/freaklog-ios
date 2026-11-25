@@ -12,10 +12,13 @@ struct FinishFormulationArguments: Hashable {
 // Chooses how much of a formulation was taken, e.g. 1.5 pills, which scales the dose of every substance in it
 struct FormulationDoseScreen: View {
 
-  init(formulation: Formulation, dismiss: @escaping () -> Void, showsProductLink: Bool = true) {
+  init(
+    formulation: Formulation, dismiss: @escaping () -> Void, showsProductLink: Bool = true, initialAmount: Double? = 1
+  ) {
     self.formulation = formulation
     self.dismiss = dismiss
     self.showsProductLink = showsProductLink
+    _amount = State(initialValue: initialAmount)
   }
 
   let dismiss: () -> Void
@@ -40,14 +43,20 @@ struct FormulationDoseScreen: View {
       } footer: {
         Text("The doses of all substances are multiplied by the amount.")
       }
-      Section("Substances") {
+      Section {
         if validAmount != nil, arguments.isEmpty {
           Text("The ingredients can’t be scaled to this amount.")
             .foregroundStyle(.secondary)
         } else {
           ForEach(values.components) { component in
-            FormulationComponentDoseRow(component: component, amount: validAmount ?? 0)
+            FormulationComponentDoseRow(component: component, amount: validAmount ?? 1)
           }
+        }
+      } header: {
+        Text("Substances")
+      } footer: {
+        if validAmount == nil {
+          Text("Ingredient amounts are shown per serving until you enter the amount you took.")
         }
       }
       if !interactions.isEmpty {
@@ -90,7 +99,7 @@ struct FormulationDoseScreen: View {
     }
   }
 
-  @State private var amount: Double? = 1
+  @State private var amount: Double?
 
   @ObservedObject private var formulation: Formulation
 
