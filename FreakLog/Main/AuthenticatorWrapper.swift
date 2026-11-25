@@ -9,9 +9,13 @@ struct AuthenticatorWrapper<Content: View>: View {
 
     var body: some View {
         if authenticator.isStartingUp {
-            LockScreen(isEyeOpen: true, isFaceIDEnabled: true)
+            LockScreen(isFaceIDEnabled: true)
         } else if authenticator.isLocked {
-            LockScreen(isEyeOpen: false, isFaceIDEnabled: authenticator.isFaceIDEnabled)
+            LockScreen(
+                isFaceIDEnabled: authenticator.isFaceIDEnabled,
+                isAuthenticating: authenticator.isAuthenticating,
+                unlock: authenticator.retryUnlock
+            )
         }
         else {
             content
