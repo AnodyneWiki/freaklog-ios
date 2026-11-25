@@ -10,6 +10,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             EditCustomSubstanceView(customSubstance: customSubstance)
         case let .substance(substance):
             SubstanceScreen(substance: substance)
+        case let .substanceHistory(name):
+            SubstanceHistoryScreen(substanceName: name)
         case let .webView(articleURL):
             WebViewScreen(articleURL: articleURL)
         case let .webViewInteractions(substanceName, interactionURL):
@@ -39,6 +41,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             List {
                 TimelineExplanationTexts()
             }.navigationTitle("Timeline Info")
+        case .unifiedSearch:
+            JournalSearchScreen()
         case .calendar:
             JournalCalendarScreen()
         case let .experience(experience):

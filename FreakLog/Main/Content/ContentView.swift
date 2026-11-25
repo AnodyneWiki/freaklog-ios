@@ -23,7 +23,6 @@ struct ContentScreen: View {
 
     @ObservedObject var navigator = Navigator.shared
     @ObservedObject var tabManager = TabManager.shared
-    @FocusState var isSearchFocused: Bool
     @EnvironmentObject var authenticator: Authenticator
 
     var body: some View {
@@ -53,6 +52,7 @@ struct ContentScreen: View {
                 ChooseSubstanceScreen()
             }
             .environment(\.addIngestionStartTime, navigator.addIngestionStartTime)
+            .environment(\.addIngestionEndTime, navigator.addIngestionEndTime)
         }
     }
 
@@ -79,21 +79,14 @@ struct ContentScreen: View {
         case .stats:
             StatsScreen()
         case .journal:
-            JournalScreen(
-                searchText: $navigator.journalSearchText,
-                isSearchPresented: $navigator.isJournalSearchFocused,
-                isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled
-            )
+            JournalScreen(isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled)
         case .substances:
             SearchScreen(
-                isSearchFocused: _isSearchFocused,
                 searchText: $navigator.substanceSearchText,
-                selectedCategories: $navigator.selectedCategories,
-                isSearchingAnodyneWiki: $navigator.isSearchingAnodyneWiki,
-                clearCategories: navigator.clearCategories)
-            .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused }
-            .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
-            .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
+                scope: $navigator.substanceSearchScope,
+                isSearchPresented: $navigator.isSubstanceSearchFocused,
+                favoritesOnly: $navigator.isFavoriteFilterEnabled
+            )
         case .tools:
             ToolsScreen()
         case .settings:
