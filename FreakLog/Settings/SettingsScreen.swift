@@ -18,15 +18,8 @@ struct SettingsScreen: View {
             exportData: {
                 viewModel.exportData()
             },
-            importData: { data in
-                viewModel.importData(data: data)
-            },
-            deleteEverything: {
-                Task {
-                    viewModel.deleteEverything()
-                    await WebhookManager.shared.deleteAllPresetsAndMessages()
-                }
-            }
+            importFile: viewModel.importFile,
+            deleteEverything: viewModel.deleteEverything
         )
         .onAppear {
             viewModel.toastViewModel = toastViewModel
@@ -47,7 +40,7 @@ struct SettingsContent: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let exportBackup: () -> Void
     let exportData: () -> Void
-    let importData: (Data) -> Void
+    let importFile: (URL) -> Void
     let deleteEverything: () -> Void
 
     @State private var isShowingDeleteConfirmation = false
@@ -73,10 +66,13 @@ struct SettingsContent: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
-                Toggle("iCloud Sync", isOn: $isICloudSyncEnabled.animation()).tint(Color.accentColor)
-                    .onChange(of: isICloudSyncEnabled) { newValue in
-                        PersistenceController.shared.updateCloudKitSyncStatus(newValue)
+                Toggle("iCloud Sync", isOn: Binding(get: { isICloudSyncEnabled }, set: { enabled in
+                    do {
+                        try PersistenceController.shared.updateCloudKitSyncStatus(enabled)
+                    } catch {
+                        toastViewModel.showErrorToast(message: "Couldn't Change iCloud Sync")
                     }
+                })).tint(Color.accentColor)
             }
             if isEyeOpen {
                 Section("UI") {
@@ -193,14 +189,7 @@ struct SettingsContent: View {
             allowedContentTypes: ExportedFile.readableContentTypes
         ) { result in
             do {
-                let selectedFile: URL = try result.get()
-                if selectedFile.startAccessingSecurityScopedResource() {
-                    defer { selectedFile.stopAccessingSecurityScopedResource() }
-                    let data = try Data(contentsOf: selectedFile)
-                    importData(data)
-                } else {
-                    toastViewModel.showErrorToast(message: "Permission Denied")
-                }
+                importFile(try result.get())
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
             }
@@ -252,7 +241,7 @@ struct SettingsContent: View {
         exportedFile: ExportedFile(),
         exportBackup: {},
         exportData: {},
-        importData: { _ in },
+        importFile: { _ in },
         deleteEverything: {}
     )
     .accentColor(Color.blue)

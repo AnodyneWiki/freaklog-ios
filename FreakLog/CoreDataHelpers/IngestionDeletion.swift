@@ -1,40 +1,48 @@
-import Foundation
+import CoreData
 
 // Deleting ingestions has effects outside CoreData: sent webhook messages are removed and
 // leaderboard servers are told about the deletion. Delete ingestions, timed notes and experiences through here.
 // The local delete happens right away; the network cleanup runs afterwards in the background.
 @MainActor
 enum IngestionDeletion {
-    static func delete(ingestions: [Ingestion]) async {
-        let cleanUp = await remoteCleanUp(for: ingestions)
-        let context = PersistenceController.shared.viewContext
-        ingestions.filter { !$0.isDeleted }.forEach(context.delete)
-        PersistenceController.shared.saveViewContext()
-        cleanUp()
+    @discardableResult
+    static func delete(ingestions: [Ingestion]) async -> Bool {
+        await delete(ingestions, ingestions: ingestions)
     }
 
-    static func delete(timedNote: TimedNote) async {
-        let cleanUp = await remoteCleanUp(for: [], timedNotes: [timedNote])
-        timedNote.experience?.objectWillChange.send()
-        PersistenceController.shared.viewContext.delete(timedNote)
-        PersistenceController.shared.saveViewContext()
-        cleanUp()
+    @discardableResult
+    static func delete(timedNote: TimedNote) async -> Bool {
+        await delete([timedNote], ingestions: [], timedNotes: [timedNote])
     }
 
-    // The experience's ingestions and timed notes are deleted along with it. Its live activity ends by itself.
-    static func delete(experience: Experience) async {
-        let cleanUp = await remoteCleanUp(for: experience.ingestionsSorted, timedNotes: experience.timedNotesSorted)
-        PersistenceController.shared.viewContext.delete(experience)
-        PersistenceController.shared.saveViewContext()
-        cleanUp()
+    @discardableResult
+    static func delete(experience: Experience) async -> Bool {
+        await delete([experience], ingestions: experience.ingestionsSorted, timedNotes: experience.timedNotesSorted)
     }
 
-    // The unit's ingestions are deleted along with it.
-    static func delete(customUnit: CustomUnit) async {
-        let cleanUp = await remoteCleanUp(for: customUnit.ingestionsUnwrapped)
-        PersistenceController.shared.viewContext.delete(customUnit)
-        PersistenceController.shared.saveViewContext()
-        cleanUp()
+    @discardableResult
+    static func delete(customUnit: CustomUnit) async -> Bool {
+        await delete([customUnit], ingestions: customUnit.ingestionsUnwrapped)
+    }
+
+    private static func delete(_ objects: [NSManagedObject], ingestions: [Ingestion], timedNotes: [TimedNote] = []) async -> Bool {
+        do {
+            try PersistenceController.beginJournalOperation()
+            defer { PersistenceController.endJournalOperation() }
+            let ids = objects.filter { !$0.isDeleted }.map(\.objectID)
+            let cleanUp = await remoteCleanUp(for: ingestions, timedNotes: timedNotes)
+            try await PersistenceController.shared.container.performBackgroundTask { context in
+                for id in ids {
+                    context.delete(try context.existingObject(with: id))
+                }
+                try PersistenceController.saveJournalChanges(in: context)
+            }
+            cleanUp()
+            return true
+        } catch {
+            print("Journal deletion failed: \(error)")
+            return false
+        }
     }
 
     // Collects what to clean up while the ingestions and timed notes still exist. Call the result once they are deleted.

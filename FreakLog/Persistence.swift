@@ -159,50 +159,76 @@ struct PersistenceController {
 
     }
 
-    func updateCloudKitSyncStatus(_ enabled: Bool) {
-        
-        saveViewContext()
-        
-        guard let store = container.persistentStoreCoordinator.persistentStores.first,
-              let url = store.url else {
-            return
-        }
+    @MainActor private(set) static var isJournalOperationInProgress = false
 
-        guard let description = container.persistentStoreDescriptions.first else {
-             return
-        }
-
-        if enabled {
-            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier)
-            description.cloudKitContainerOptions = cloudKitContainerOptions
-            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-            description.configuration = nil
-        } else {
-            description.cloudKitContainerOptions = nil
-            description.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-            description.configuration = "Local"
-        }
-
-        do {
-            try container.persistentStoreCoordinator.remove(store)
-        } catch {
-            return
-        }
-        
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                fatalError("Failed to load Core Data stack: \(error)")
-            }
-        }
-        
-        viewContext.automaticallyMergesChangesFromParent = true
-        viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+    @MainActor
+    static func beginJournalOperation() throws {
+        guard !isJournalOperationInProgress else { throw JournalOperationError.busy }
+        isJournalOperationInProgress = true
     }
 
-    func deleteEverything() throws {
-        try Self.stageJournalDeletion(in: viewContext)
-        try viewContext.save()
-        Self.purgeLocalHistory(in: viewContext)
+    @MainActor
+    static func endJournalOperation() {
+        isJournalOperationInProgress = false
+    }
+
+    @MainActor
+    func journalEditContext() throws -> NSManagedObjectContext {
+        guard !Self.isJournalOperationInProgress else { throw JournalOperationError.busy }
+        let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        context.persistentStoreCoordinator = container.persistentStoreCoordinator
+        return context
+    }
+
+    static func saveJournalChanges(in context: NSManagedObjectContext) throws {
+        Experience.updateSortDates(beforeSaving: context)
+        try context.save()
+    }
+
+    @MainActor
+    func updateCloudKitSyncStatus(_ enabled: Bool) throws {
+        try Self.beginJournalOperation()
+        defer { Self.endJournalOperation() }
+        if viewContext.hasChanges { try viewContext.save() }
+
+        let coordinator = container.persistentStoreCoordinator
+        let original = container.persistentStoreDescriptions
+        guard let store = coordinator.persistentStores.first,
+              let description = original.first?.copy() as? NSPersistentStoreDescription else {
+            throw JournalOperationError.storeUnavailable
+        }
+        description.configuration = enabled ? nil : "Local"
+        description.cloudKitContainerOptions = enabled
+            ? NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier) : nil
+        description.setOption(enabled as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+
+        try coordinator.remove(store)
+        do {
+            try loadStore(using: [description])
+        } catch {
+            try loadStore(using: original)
+            throw error
+        }
+        UserDefaults.standard.set(enabled, forKey: Self.isICloudSyncEnabledKey)
+    }
+
+    private func loadStore(using descriptions: [NSPersistentStoreDescription]) throws {
+        container.persistentStoreDescriptions = descriptions
+        var loadError: Error?
+        container.loadPersistentStores { _, error in loadError = error }
+        if let loadError { throw loadError }
+    }
+
+    enum JournalOperationError: LocalizedError {
+        case busy
+        case storeUnavailable
+
+        var errorDescription: String? {
+            switch self {
+            case .busy: "Another journal operation is in progress."
+            case .storeUnavailable: "The journal store is unavailable."
+            }
+        }
     }
 
     static func stageJournalDeletion(in context: NSManagedObjectContext) throws {

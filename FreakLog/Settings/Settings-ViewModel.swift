@@ -7,7 +7,6 @@ extension SettingsScreen {
         @Published var isExporting = false
         @Published var exportedFile = ExportedFile()
         weak var toastViewModel: ToastViewModel?
-        private var isImportingData = false
 
         // The journal in the format the Android app reads
         func exportData() {
@@ -80,15 +79,16 @@ extension SettingsScreen {
             }
         }
 
-        func importData(data: Data) {
-            guard !isImportingData else {
-                showErrorToast(message: "An Import Is Already in Progress")
-                return
-            }
-            isImportingData = true
+        func importFile(_ url: URL) {
             Task {
-                defer { isImportingData = false }
                 do {
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
+                    let data = try await Task.detached(priority: .userInitiated) {
+                        let scoped = url.startAccessingSecurityScopedResource()
+                        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                        return try Data(contentsOf: url)
+                    }.value
                     let container = PersistenceController.shared.container
 
                     // A backup restores everything; other files are journal files
@@ -119,12 +119,23 @@ extension SettingsScreen {
         func deleteEverything() {
             Task {
                 do {
-                    let cleanUp = await IngestionDeletion.remoteCleanUp(for: PersistenceController.shared.getAllIngestions())
-                    try PersistenceController.shared.deleteEverything()
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
+                    let persistence = PersistenceController.shared
+                    let container = persistence.container
+                    let ingestions = try persistence.viewContext.fetch(Ingestion.fetchRequest())
+                    let notes = try persistence.viewContext.fetch(TimedNote.fetchRequest())
+                    let cleanUp = await IngestionDeletion.remoteCleanUp(for: ingestions, timedNotes: notes)
+                    try await container.performBackgroundTask { context in
+                        try PersistenceController.stageJournalDeletion(in: context)
+                        try context.save()
+                        PersistenceController.purgeLocalHistory(in: context)
+                    }
                     cleanUp()
+                    await WebhookManager.shared.deleteAllPresetsAndMessages()
                     showSuccessToast(message: "Delete Successful")
                 } catch {
-                    showErrorToast(message: "Delete Failed")
+                    showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Delete Failed")
                 }
             }
         }
