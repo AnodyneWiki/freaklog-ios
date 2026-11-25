@@ -172,7 +172,8 @@ final class AssistantChat: ObservableObject {
       webSearch: webSearch?.tool(textLimit: limits.maxTextCharacters) { [weak self] in
         self?.activeProfile?.model ?? profile.model
       })
-    let instructions = AssistantInstructions.text(for: experience, toolbox: toolbox)
+    let instructions = AssistantInstructions.text(
+      for: experience, toolbox: toolbox, webAccessEnabled: allowsWebSearch)
     if profile.standard == .onDevice {
       conversation = OnDeviceModel.conversation(instructions: instructions, toolbox: toolbox)
     } else if let client = profile.client(apiKey: activeKey ?? "") {

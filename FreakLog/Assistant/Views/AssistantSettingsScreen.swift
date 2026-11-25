@@ -48,6 +48,13 @@ struct AssistantSettingsScreen: View {
       }
       Section {
         Toggle("Web Access", isOn: $isWebAccessEnabled)
+        if isWebAccessEnabled, let selected = profiles.first(where: { $0.id == activeProfile.wrappedValue }),
+           AssistantWebSearch(profile: selected, apiKey: "") == nil
+        {
+          Label("Unavailable with \(selected.name)", systemImage: "info.circle")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+        }
         Toggle("Look Up Substances on AnodyneWiki", isOn: $isAnodyneWikiEnabled)
         if isAnodyneWikiEnabled {
           NavigationLink(value: GlobalNavigationDestination.anodyneSettings) {
@@ -69,6 +76,7 @@ struct AssistantSettingsScreen: View {
   @AppStorage(PersistenceController.isAssistantAnodyneWikiEnabledKey) private var isAnodyneWikiEnabled = true
   @AppStorage(PersistenceController.assistantProfilesKey) private var profilesData = Data()
   @AppStorage(PersistenceController.assistantActiveProfileKey) private var activeProfileID = ""
+
   private var profiles: [AssistantProfile] {
     AssistantProfileStore.profiles(from: profilesData)
   }

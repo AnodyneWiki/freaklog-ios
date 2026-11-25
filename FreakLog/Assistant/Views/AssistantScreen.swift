@@ -50,6 +50,9 @@ struct AssistantScreen: View {
         getScreen(from: destination)
       }
       .onAppear { chat.startIfNeeded() }
+      .onChange(of: path.isEmpty) { isAtChat in
+        if isAtChat { chat.startIfNeeded() }
+      }
       .alert("Couldn’t Add to Notes", isPresented: Binding(get: { noteSaveError != nil }, set: { if !$0 { noteSaveError = nil } })) {
         Button("OK", role: .cancel) {}
       } message: {

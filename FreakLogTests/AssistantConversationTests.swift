@@ -73,6 +73,21 @@ final class AssistantConversationTests: XCTestCase {
     XCTAssertTrue(instructions.contains("\"experience_id\":\"e1\""))
   }
 
+  func testWebAccessInstructionsReflectWhatTheChatCanDo() throws {
+    let toolbox = makeToolbox()
+    let disabled = AssistantInstructions.text(for: nil, toolbox: toolbox)
+    XCTAssertTrue(disabled.contains("Web Access is off"))
+    let unsupported = AssistantInstructions.text(for: nil, toolbox: toolbox, webAccessEnabled: true)
+    XCTAssertTrue(unsupported.contains("the selected provider has no web search tool"))
+
+    let search = try XCTUnwrap(AssistantWebSearch(profile: AssistantProfile(preset: .anthropic), apiKey: "fixture"))
+    let searchable = AssistantToolbox(
+      context: toolbox.context, includesAnodyneWiki: false, webSearch: search.tool(textLimit: 800) { "fixture" })
+    let enabled = AssistantInstructions.text(for: nil, toolbox: searchable, webAccessEnabled: true)
+    XCTAssertTrue(enabled.contains("This chat has web access through search_web"))
+    XCTAssertTrue(enabled.contains("ask what they want you to look up"))
+  }
+
   private func makeToolbox() -> AssistantToolbox {
     AssistantToolbox(context: PersistenceController(inMemory: true).viewContext, includesAnodyneWiki: false)
   }
