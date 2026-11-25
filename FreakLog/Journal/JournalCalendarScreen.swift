@@ -5,13 +5,17 @@ import UIKit
 
 struct JournalCalendarScreen: View {
 
-    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    @FetchRequest
     var ingestions: FetchedResults<Ingestion>
 
     @State private var isFirstAppear = true
     @State private var selectedDay = Calendar.current.startOfDay(for: .now)
 
-    init() {
+    private let substanceName: String?
+
+    init(substanceName: String? = nil) {
+        self.substanceName = substanceName
+        _ingestions = FetchRequest(fetchRequest: PersistenceController.historyIngestionsRequest(for: substanceName))
         self.calendar = Calendar.current
         self.monthsLayout = MonthsLayout.vertical
 
@@ -37,7 +41,7 @@ struct JournalCalendarScreen: View {
             VStack(spacing: 0) {
                 CalendarViewRepresentable(
                     calendar: calendar,
-                    visibleDateRange: visibleDateRange,
+                    visibleDateRange: historyDateRange,
                     monthsLayout: monthsLayout,
                     dataDependency: (ingestions, selectedDay),
                     proxy: calendarViewProxy)
@@ -67,6 +71,9 @@ struct JournalCalendarScreen: View {
                 .frame(height: geometry.size.height / 2)
                 .task {
                     guard isFirstAppear else { return }
+                    if substanceName != nil, let latest = ingestions.first?.time {
+                        selectedDay = calendar.startOfDay(for: latest)
+                    }
                     await Task.yield()
                     guard !Task.isCancelled else { return }
                     calendarViewProxy.scrollToDay(containing: selectedDay, scrollPosition: .centered, animated: false)
@@ -112,9 +119,58 @@ struct JournalCalendarScreen: View {
     private let monthDateFormatter: DateFormatter
 
     @StateObject private var calendarViewProxy = CalendarViewProxy()
+
+    private var historyDateRange: ClosedRange<Date> {
+        guard substanceName != nil,
+              let first = ingestions.last?.time, let last = ingestions.first?.time
+        else { return visibleDateRange }
+        let start = calendar.startOfDay(for: min(first, .now))
+        return start...max(last, Date.now)
+    }
 }
 
+extension PersistenceController {
+    static func historyIngestionsRequest(for substanceName: String?) -> NSFetchRequest<Ingestion> {
+        let request = ingestionsRequest()
+        if let substanceName {
+            request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+        }
+        return request
+    }
+}
 
+struct SubstanceHistoryScreen: View {
+    let substanceName: String
+    @FetchRequest private var ingestions: FetchedResults<Ingestion>
+
+    init(substanceName: String) {
+        self.substanceName = substanceName
+        _ingestions = FetchRequest(fetchRequest: PersistenceController.historyIngestionsRequest(for: substanceName))
+    }
+
+    var body: some View {
+        List {
+            if ingestions.isEmpty {
+                Text("No journal entries yet").foregroundStyle(.secondary)
+            } else {
+                ForEach(ingestions) { ingestion in
+                    JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.month().day().year().hour().minute())
+                }
+            }
+        }
+        .navigationTitle(PersistenceController.shared.displayName(for: substanceName))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                NavigationLink {
+                    JournalCalendarScreen(substanceName: substanceName)
+                } label: {
+                    Label("Calendar", systemImage: "calendar")
+                }
+            }
+        }
+    }
+}
 
 struct JournalEntryLink: View {
     @ObservedObject var ingestion: Ingestion

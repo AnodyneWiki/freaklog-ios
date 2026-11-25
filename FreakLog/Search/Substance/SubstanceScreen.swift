@@ -23,6 +23,7 @@ struct SubstanceScreen: View {
     let anodyne = anodyneModel.substance
     List {
       overviewSection(anodyne: anodyne)
+      SubstanceJournalLinks(substanceName: substance.name)
       AnodyneLoadStatus(model: anodyneModel)
       EffectsSection(summary: substance.effectsSummary, anodyne: anodyne)
       if let anodyne {
@@ -137,6 +138,20 @@ struct SubstanceScreen: View {
     } footer: {
       if !substance.isApproved {
         Text("This information hasn't been approved by PsychonautWiki's moderators.")
+      }
+    }
+  }
+}
+
+struct SubstanceJournalLinks: View {
+  let substanceName: String
+
+  var body: some View {
+    Section("Journal") {
+      NavigationLink {
+        SubstanceHistoryScreen(substanceName: substanceName)
+      } label: {
+        Label("History", systemImage: "clock.arrow.circlepath")
       }
     }
   }

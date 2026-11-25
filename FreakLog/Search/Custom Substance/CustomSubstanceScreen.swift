@@ -54,6 +54,7 @@ private struct CustomSubstanceList: View {
         || anodyneModel.substance != nil {
         overviewSection(categories: categories)
       }
+      SubstanceJournalLinks(substanceName: customSubstance.nameUnwrapped)
       AnodyneLoadStatus(model: anodyneModel)
       if routes.isEmpty {
         Section("Dose & Duration") {
