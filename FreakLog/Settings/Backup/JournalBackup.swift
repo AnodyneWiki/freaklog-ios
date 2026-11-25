@@ -48,6 +48,8 @@ struct JournalBackup: Codable {
     PersistenceController.fabButtonPositionKey,
     PersistenceController.dynamicExperienceRangeHoursKey,
     PersistenceController.showsDueTodayKey,
+    StatsPreferences.periodKey,
+    StatsPreferences.pinnedViewsKey,
     PersistenceController.sendWebhooksEnabledKey,
     PersistenceController.webhookUsernameKey,
     PersistenceController.webhookTemplateKey,

@@ -1,125 +1,274 @@
 import Charts
+import Combine
 import CoreData
 import SwiftUI
 
 struct StatsScreen: View {
-    @FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest())
-    var ingestions: FetchedResults<Ingestion>
-
-    @FetchRequest(fetchRequest: PersistenceController.experiencesRequest(prefetchingIngestions: true))
-    var experiences: FetchedResults<Experience>
-
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @AppStorage(StatsPreferences.periodKey) private var period: StatsPeriod = .last12Months
+    @State private var showsAllSubstances = false
+    @State private var substanceOrder = StatsSubstanceOrder.count
+    @AppStorage(StatsPreferences.pinnedViewsKey) private var pinnedStatsData = Data()
     @FetchRequest(fetchRequest: PersistenceController.substanceCompanionsRequest())
-    var substanceCompanions: FetchedResults<SubstanceCompanion>
-
-    @State private var experienceData: ExperienceData?
-    @State private var ingestionData: ExperienceData?
-    @State private var substanceData: SubstanceData?
-    @State private var toleranceWindows: [ToleranceWindow] = []
-    @State private var substancesInIngestionsButNotToleranceChart: [String] = []
-
-    @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
+    private var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     var body: some View {
-        Group {
-            if let experienceData, let ingestionData, let substanceData {
-                StatsScreenContent(
-                    experienceData: experienceData,
-                    ingestionData: ingestionData,
-                    substanceData: substanceData,
-                    toleranceWindows: toleranceWindows,
-                    substancesInIngestionsButNotChart: substancesInIngestionsButNotToleranceChart,
-                    isEyeOpen: isEyeOpen
-                )
-            } else {
-                ProgressView().task {
-                    calculateStats()
+        StatsJournal { entries, tags in
+            let selection = StatsSelection(period: period)
+            let records = StatsRecords(entries: entries, selection: selection, tags: tags)
+            let pins = StatsPreferences.decode(pinnedStatsData)
+
+            List {
+                Section {
+                    Picker("Period", selection: $period) {
+                        ForEach(StatsPeriod.allCases.filter { $0 != .custom }, id: \.self) { period in
+                            Text(period.title).tag(period)
+                        }
+                    }
+
+                    ingestionOverview(records: records, selection: selection)
+                    LabeledContent("Experiences", value: records.experiences.count.formatted())
+                    LabeledContent("Days Logged", value: records.daysLogged.formatted())
+                } header: {
+                    Text("Summary")
+                }
+
+                let counts = Dictionary(grouping: records.entries, by: \.substanceNameUnwrapped).mapValues(\.count)
+                let ranked = counts.keys.sorted {
+                    substanceOrder.precedes(
+                        count: counts[$0, default: 0], name: PersistenceController.shared.displayName(for: $0),
+                        otherCount: counts[$1, default: 0], otherName: PersistenceController.shared.displayName(for: $1)
+                    )
+                }
+                if !ranked.isEmpty {
+                    let highestCount = counts.values.max() ?? 0
+                    Section {
+                        ForEach(ranked.prefix(showsAllSubstances ? ranked.count : 4), id: \.self) { name in
+                            NavigationLink {
+                                StatsDetailScreen(metric: .ingestions, selection: selection.forSubstance(name))
+                            } label: {
+                                StatsComparisonRow(
+                                    title: PersistenceController.shared.displayName(for: name),
+                                    count: counts[name, default: 0], highestCount: highestCount,
+                                    color: colors[name] ?? .accentColor
+                                )
+                            }
+                        }
+                        if ranked.count > 4 {
+                            Button(showsAllSubstances ? "Show Fewer" : "Show All \(ranked.count) Substances") {
+                                withAnimation { showsAllSubstances.toggle() }
+                            }
+                        }
+                    } header: {
+                        StatsSubstanceSortHeader(title: "Ingestions by Substance", order: $substanceOrder)
+                    }
+                }
+
+                if !pins.isEmpty {
+                    Section("Pinned Views") {
+                        ForEach(pins) { pin in
+                            NavigationLink {
+                                StatsDetailScreen(metric: pin.metric, selection: pin.selection)
+                            } label: {
+                                Label(pin.name, systemImage: "pin")
+                            }
+                            .swipeActions {
+                                Button(role: .destructive) {
+                                    unpin(pin, pins: pins)
+                                } label: {
+                                    Label("Unpin", systemImage: "pin.slash")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if isEyeOpen {
+                    toleranceSection(entries: entries)
                 }
             }
-        }.onChange(of: ingestions.count) { _ in
-            calculateStats()
+            .navigationTitle("Your Stats")
         }
     }
 
-    private func calculateStats() {
-        // Chart color lookups happen per mark, so resolve colors once instead of fetching per call.
-        // Charts plot and label the names as shown, so colors are keyed by display name.
-        let colors = Dictionary(
-            substanceCompanions.map {
-                (PersistenceController.shared.displayName(for: $0.substanceNameUnwrapped), $0.color.swiftUIColor)
-            },
-            uniquingKeysWith: { first, _ in first }
-        )
-        let ingestionEntries = ingestions.map { ingestion in
-            WeightedSubstanceDate(substanceName: ingestion.substanceNameUnwrapped, date: ingestion.timeUnwrapped, weight: 1)
-        }
-        // One entry per distinct substance in an experience, weighted so each experience adds up to 1
-        let experienceEntries = experiences.flatMap { experience in
-            let date = experience.sortDateUnwrapped
-            let names = experience.myIngestionsSorted.map(\.substanceNameUnwrapped).uniqued()
-            return names.map { WeightedSubstanceDate(substanceName: $0, date: date, weight: 1 / Double(names.count)) }
-        }
-        ingestionData = Self.experienceData(from: ingestionEntries, colors: colors)
-        experienceData = Self.experienceData(from: experienceEntries, colors: colors)
-        substanceData = SubstanceData(
-            last30Days: Self.substanceCounts(of: experienceEntries, where: { TimeRange.last30Days.includes($0) }),
-            last12Months: Self.substanceCounts(of: experienceEntries, where: { TimeRange.last12Months.includes($0) }),
-            years: Self.substanceCounts(of: experienceEntries, where: { _ in true }),
-            colors: colors
-        )
-        let ingestionsLast90Days = ingestions.prefix { ing in
-            Calendar.current.numberOfDaysBetween(ing.timeUnwrapped, and: Date()) <= 90
-        }
-        let substanceDays = ingestionsLast90Days.map { ing in
-            SubstanceAndDay(substanceName: ing.substanceNameUnwrapped, day: ing.timeUnwrapped)
-        }
-        let chartData = ExperienceLogic.chartData(for: Array(substanceDays), substanceCompanions: Array(substanceCompanions))
-        toleranceWindows = chartData.toleranceWindows
-        substancesInIngestionsButNotToleranceChart = chartData.namesOfSubstancesWithMissingTolerance
+    private var colors: [String: Color] {
+        Dictionary(substanceCompanions.map { ($0.substanceNameUnwrapped, $0.color.swiftUIColor) },
+                   uniquingKeysWith: { first, _ in first })
     }
 
-    private struct WeightedSubstanceDate {
-        let substanceName: String
-        let date: Date
-        let weight: Double
+    private func ingestionOverview(records: StatsRecords, selection: StatsSelection) -> some View {
+        let contributions = records.ingestionContributions
+        let buckets = records.buckets(for: .ingestions)
+        return NavigationLink {
+            StatsDetailScreen(metric: .ingestions, selection: selection)
+        } label: {
+            VStack(alignment: .leading, spacing: 6) {
+                Label("Ingestions", systemImage: "list.bullet")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Color.accentColor)
+                Text(records.entries.count, format: .number)
+                    .font(.title2.weight(.semibold).monospacedDigit())
+                if let first = buckets.first, let last = buckets.last {
+                    let start = records.range.start == .distantPast ? first.interval.start : min(first.interval.start, records.range.start)
+                    let end = max(last.interval.end, records.range.end)
+                    Chart(contributions) { item in
+                        BarMark(x: .value("Period", item.id.date, unit: records.bucketComponent),
+                                y: .value("Count", item.count))
+                            .foregroundStyle(by: .value("Substance", item.id.substance))
+                    }
+                    .chartXScale(domain: start...end)
+                    .chartForegroundStyleScale(mapping: { colors[$0] ?? Color.accentColor })
+                    .chartLegend(.hidden)
+                    .chartXAxis(.hidden)
+                    .chartYAxis(.hidden)
+                    .frame(height: 54)
+                    .accessibilityHidden(true)
+                }
+            }
+            .padding(.vertical, 6)
+            .accessibilityElement(children: .combine)
+        }
     }
 
-    private struct PeriodKey: Hashable {
-        let substanceName: String
-        let period: DateComponents
-    }
-
-    private static func experienceData(from entries: [WeightedSubstanceDate], colors: [String: Color]) -> ExperienceData {
-        ExperienceData(
-            last30Days: counts(of: entries, in: .last30Days, where: { TimeRange.last30Days.includes($0) }),
-            last12Months: counts(of: entries, in: .last12Months, where: { TimeRange.last12Months.includes($0) }),
-            years: counts(of: entries, in: .years, where: { _ in true }),
-            colors: colors
-        )
-    }
-
-    // Sums entry weights per substance and calendar period. These counts are only shown, so they use display names.
-    private static func counts(
-        of entries: [WeightedSubstanceDate],
-        in timeRange: TimeRange,
-        where isIncluded: (Date) -> Bool
-    ) -> [SubstancePeriodCount] {
+    @ViewBuilder
+    private func toleranceSection(entries: [Ingestion]) -> some View {
+        let now = Date.now
         let calendar = Calendar.current
-        return Dictionary(grouping: entries.filter { isIncluded($0.date) }) { entry in
-            let period = calendar.dateComponents(timeRange.periodComponents, from: entry.date)
-            return PeriodKey(substanceName: PersistenceController.shared.displayName(for: entry.substanceName), period: period)
-        }.compactMap { key, group in
-            guard let first = group.first else { return nil }
-            let count = group.map(\.weight).reduce(0, +)
-            return SubstancePeriodCount(date: first.date, substanceName: key.substanceName, experienceCount: count)
+        let from = calendar.date(byAdding: .day, value: -90, to: calendar.startOfDay(for: now)) ?? now
+        let days = entries.compactMap { entry -> SubstanceAndDay? in
+            guard entry.isMine, let time = entry.time, from <= time, time <= now else { return nil }
+            return SubstanceAndDay(substanceName: entry.substanceNameUnwrapped, day: time)
+        }
+        let chart = ExperienceLogic.chartData(for: days, substanceCompanions: Array(substanceCompanions))
+        Section {
+            NavigationLink(value: GlobalNavigationDestination.toleranceChart) {
+                ToleranceChartOverView(toleranceWindows: chart.toleranceWindows)
+            }
+        } header: {
+            Text("Tolerance")
+        } footer: {
+            if !chart.namesOfSubstancesWithMissingTolerance.isEmpty {
+                Text("Excluding ") + Text(chart.namesOfSubstancesWithMissingTolerance, format: .list(type: .and))
+            }
         }
     }
 
-    // Number of experiences each substance was part of, most first
-    private static func substanceCounts(of experienceEntries: [WeightedSubstanceDate], where isIncluded: (Date) -> Bool) -> [SubstanceCount] {
-        Dictionary(grouping: experienceEntries.filter { isIncluded($0.date) }, by: \.substanceName)
-            .map { SubstanceCount(substanceName: $0.key, experienceCount: $0.value.count) }
-            .sorted { $0.experienceCount > $1.experienceCount }
+    private func unpin(_ pin: PinnedStatsView, pins: [PinnedStatsView]) {
+        if let data = try? JSONEncoder().encode(pins.filter { $0.id != pin.id }) {
+            pinnedStatsData = data
+        }
+    }
+}
+
+enum StatsSubstanceOrder: String, CaseIterable, Identifiable {
+    case count, name
+
+    var id: Self { self }
+    var title: LocalizedStringKey { self == .count ? "Most Logged" : "Name" }
+
+    func precedes(count: Int, name: String, otherCount: Int, otherName: String) -> Bool {
+        if self == .count && count != otherCount { return count > otherCount }
+        return name.localizedStandardCompare(otherName) == .orderedAscending
+    }
+}
+
+struct StatsSubstanceSortHeader: View {
+    let title: LocalizedStringKey
+    @Binding var order: StatsSubstanceOrder
+
+    var body: some View {
+        HStack {
+            Text(title)
+            Spacer()
+            Menu {
+                Picker("Sort By", selection: $order) {
+                    ForEach(StatsSubstanceOrder.allCases) { choice in
+                        Text(choice.title).tag(choice)
+                    }
+                }
+            } label: {
+                Label(order.title, systemImage: "chevron.up.chevron.down")
+            }
+            .textCase(nil)
+            .accessibilityLabel("Sort")
+            .accessibilityValue(Text(order.title))
+        }
+    }
+}
+
+struct StatsComparisonRow: View {
+    let title: String
+    let count: Int
+    let highestCount: Int
+    let color: Color
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            LabeledContent {
+                Text(count, format: .number).monospacedDigit()
+            } label: {
+                Text(title)
+            }
+            if highestCount > 0 {
+                GeometryReader { geometry in
+                    Capsule()
+                        .fill(color)
+                        .frame(width: geometry.size.width * CGFloat(count) / CGFloat(highestCount))
+                }
+                .frame(height: 9)
+                .accessibilityHidden(true)
+            }
+        }
+        .padding(.vertical, 3)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+enum StatsPreferences {
+    static let periodKey = "statsSummaryPeriod"
+    static let pinnedViewsKey = "pinnedStatsViews"
+
+    static func decode(_ data: Data) -> [PinnedStatsView] {
+        (try? JSONDecoder().decode([PinnedStatsView].self, from: data)) ?? []
+    }
+}
+
+// Observe the same context on every Stats screen. Updating an existing object can change every
+// total while leaving the fetch count unchanged. This also handles changes merged from a save context.
+struct StatsJournal<Content: View>: View {
+    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    private var ingestions: FetchedResults<Ingestion>
+    @Environment(\.managedObjectContext) private var context
+    @State private var revision: UInt = 0
+
+    @ViewBuilder let content: ([Ingestion], [String: PersonalSubstanceTags]) -> Content
+
+    var body: some View {
+        let _ = revision
+        let entries = Array(ingestions)
+        let substances = Set(entries.map(\.substanceNameUnwrapped))
+        let tags = Dictionary(uniqueKeysWithValues: substances.map { substance in
+            (substance, PersistenceController.shared.personalTags(for: substance))
+        })
+
+        content(entries, tags)
+            .onReceive(NotificationCenter.default.publisher(for: .NSManagedObjectContextObjectsDidChange, object: context)) { notification in
+                if Self.affectsStats(notification) {
+                    revision &+= 1
+                }
+            }
+    }
+
+    static func affectsStats(_ notification: Notification) -> Bool {
+        guard let changes = notification.userInfo else { return false }
+        if changes[NSInvalidatedAllObjectsKey] != nil { return true }
+        let keys = [NSInsertedObjectsKey, NSUpdatedObjectsKey, NSDeletedObjectsKey, NSRefreshedObjectsKey, NSInvalidatedObjectsKey]
+        return keys.contains { key in
+            let objects = changes[key] as? Set<NSManagedObject> ?? []
+            return objects.contains { object in
+                object is Ingestion || object is Experience || object is SubstanceCompanion || object is SubstanceOverride || object is CustomUnit
+            }
+        }
     }
 }
 
@@ -141,65 +290,9 @@ extension Calendar {
     // swiftlint:enable identifier_name
 }
 
-struct StatsScreenContent: View {
-    let experienceData: ExperienceData
-    let ingestionData: ExperienceData
-    let substanceData: SubstanceData
-    let toleranceWindows: [ToleranceWindow]
-    let substancesInIngestionsButNotChart: [String]
-    let isEyeOpen: Bool
-
-    var body: some View {
-        List {
-            Section("Last 12 Months") {
-                NavigationLink(
-                    value: GlobalNavigationDestination.experienceDetails(
-                        experienceData: experienceData,
-                        ingestionData: ingestionData,
-                        showIngestions: false
-                    )
-                ) {
-                    ExperienceOverview(experienceData: experienceData)
-                }
-                NavigationLink(
-                    value: GlobalNavigationDestination.experienceDetails(
-                        experienceData: experienceData,
-                        ingestionData: ingestionData,
-                        showIngestions: true
-                    )
-                ) {
-                    ExperienceOverview(experienceData: ingestionData, showIngestions: true)
-                }
-                NavigationLink(value: GlobalNavigationDestination.substanceDetails(substanceData: substanceData)) {
-                    SubstanceOverview(substanceData: substanceData)
-                }
-            }
-            if isEyeOpen {
-                Section {
-                    NavigationLink(value: GlobalNavigationDestination.toleranceChart) {
-                        ToleranceChartOverView(toleranceWindows: toleranceWindows)
-                    }
-                } header: {
-                    Text("Tolerance")
-                } footer: {
-                    if !substancesInIngestionsButNotChart.isEmpty {
-                        Text("Excluding ") + Text(substancesInIngestionsButNotChart, format: .list(type: .and))
-                    }
-                }
-            }
-        }.navigationTitle("Your Stats")
-    }
-}
-
 #Preview {
     NavigationStack {
-        StatsScreenContent(
-            experienceData: .mock1,
-            ingestionData: .mock1,
-            substanceData: .mock1,
-            toleranceWindows: ToleranceChartPreviewDataProvider.mock1,
-            substancesInIngestionsButNotChart: ["2C-B", "DMT"],
-            isEyeOpen: true
-        )
+        StatsScreen()
+            .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
     }
 }

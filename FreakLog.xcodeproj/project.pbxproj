@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */; };
+		CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E586B999611F07C489BD07AC /* StatsDetailScreen.swift */; };
+		83E54A437A2BAD9276A5717E /* StatsSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91546F11601A54F66F47B78A /* StatsSelection.swift */; };
 		A8389D7DFE50836CF638B4E9 /* JournalTransferCompatibilityScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E287B4B9649D29914161FC82 /* JournalTransferCompatibilityScreen.swift */; };
 		7F13EDF2AB5E89D33E698173 /* JournalPresetTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB87394F36839960053879E /* JournalPresetTransfer.swift */; };
 		64D559B79E1C0D6D8DE1C3AE /* SelectiveExportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */; };
@@ -493,6 +496,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelectionTests.swift; sourceTree = "<group>"; };
+		E586B999611F07C489BD07AC /* StatsDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDetailScreen.swift; sourceTree = "<group>"; };
+		91546F11601A54F66F47B78A /* StatsSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelection.swift; sourceTree = "<group>"; };
 		E287B4B9649D29914161FC82 /* JournalTransferCompatibilityScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalTransferCompatibilityScreen.swift; sourceTree = "<group>"; };
 		2BB87394F36839960053879E /* JournalPresetTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalPresetTransfer.swift; sourceTree = "<group>"; };
 		9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectiveExportScreen.swift; sourceTree = "<group>"; };
@@ -1469,6 +1475,8 @@
 				EA418A052968D62F00DEA663 /* Substance Charts */,
 				EAA9C3732A50759100869E5A /* TimeRange */,
 				EABDA72D28881B4800A23DB3 /* StatsScreen.swift */,
+				E586B999611F07C489BD07AC /* StatsDetailScreen.swift */,
+				91546F11601A54F66F47B78A /* StatsSelection.swift */,
 				EA41C624295EAFD8000DA021 /* Data.swift */,
 			);
 			path = Stats;
@@ -1786,6 +1794,7 @@
 				C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */,
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
+				C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
@@ -2300,6 +2309,7 @@
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
+				FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
@@ -2630,6 +2640,8 @@
 				0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */,
 				EABD91FD294105830073303A /* TimelineModel.swift in Sources */,
 				EABDA72E28881B4800A23DB3 /* StatsScreen.swift in Sources */,
+				CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */,
+				83E54A437A2BAD9276A5717E /* StatsSelection.swift in Sources */,
 				EAC4BFFC2B890ADA00293B44 /* ChooseCustomUnitScreen.swift in Sources */,
 				EA1F77512D4CCB7700E7F483 /* FullRangeTimeline.swift in Sources */,
 				A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */,
