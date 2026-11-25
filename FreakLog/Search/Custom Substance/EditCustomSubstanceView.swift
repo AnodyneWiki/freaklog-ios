@@ -57,6 +57,13 @@ struct EditCustomSubstanceView: View {
       } footer: {
         Text("Add dose ranges and timing data per administration route.")
       }
+      if let file = try? JournalPreset(customSubstance: .init(customSubstance)).exportFile() {
+        Section {
+          JournalPresetFileShare(file: file, name: customSubstance.nameUnwrapped)
+        } footer: {
+          Text("Shares the saved definition and its route information.")
+        }
+      }
     }
     .scrollDismissesKeyboard(.interactively)
     .confirmationDialog(

@@ -7,6 +7,7 @@ struct EditColorsScreen: View {
 
     @State private var companionToEdit: SubstanceCompanion?
     @State private var search = ""
+    @State private var isImportingPalette = false
 
     private var visibleCompanions: [SubstanceCompanion] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -46,6 +47,15 @@ struct EditColorsScreen: View {
         })
         .navigationTitle("Substance Colors & Visibility")
         .searchable(text: $search, prompt: "Find a substance")
+        .toolbar {
+            Menu {
+                NavigationLink("Share Palette") { PalettePresetExportScreen() }
+                Button("Import Palette") { isImportingPalette = true }
+            } label: {
+                Label("Palette", systemImage: "ellipsis.circle")
+            }
+        }
+        .modifier(JournalPresetImporter(isPresented: $isImportingPalette, scope: .palette))
     }
 }
 

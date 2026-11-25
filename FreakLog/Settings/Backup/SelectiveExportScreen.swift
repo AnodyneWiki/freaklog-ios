@@ -1,4 +1,5 @@
 import CoreData
+import PDFKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -120,6 +121,9 @@ struct SelectiveExportScreen: View {
                 Toggle("Location Names", isOn: $options.locations)
                 Toggle("Participant Names", isOn: $options.names)
                 Toggle("Administration Sites", isOn: $options.sites)
+                if ingestions.contains(where: \.isUnconfirmed) {
+                    Toggle("Unconfirmed Ingestions", isOn: $options.unconfirmed)
+                }
             } header: {
                 Text("Include")
             } footer: {
@@ -139,8 +143,10 @@ struct SelectiveExportScreen: View {
         }
         .navigationTitle(kind.title)
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $draft) { report in
-            SelectiveExportReview(report: report)
+        .navigationDestination(isPresented: Binding(get: { draft != nil }, set: { if !$0 { draft = nil } })) {
+            if let draft {
+                SelectiveExportReview(report: draft, allowsPDF: kind == .clinician)
+            }
         }
     }
 
@@ -190,6 +196,7 @@ struct SelectiveExportScreen: View {
                 && (taggedNames?.contains($0.substanceNameUnwrapped) ?? true)
                 && (route == nil || ReportMarkdown.recordedRoute($0) == route)
                 && person.matches($0)
+                && (options.unconfirmed || !$0.isUnconfirmed)
                 && SelectiveJournalReport.includes($0.time, in: range)
         }
         let selectedExperiences = Set(selected.compactMap(\.experience))
@@ -221,6 +228,7 @@ struct SelectiveJournalReport: Identifiable {
         var locations = false
         var names = false
         var sites = false
+        var unconfirmed = false
     }
 
     let id = UUID()
@@ -234,7 +242,7 @@ struct SelectiveJournalReport: Identifiable {
         options: Options
     ) {
         title = kind.title
-        let ingestions = ingestions.sorted {
+        let ingestions = ingestions.filter { options.unconfirmed || !$0.isUnconfirmed }.sorted {
             ($0.time ?? .distantFuture) < ($1.time ?? .distantFuture)
         }
         let experiences = experiences.sorted {
@@ -250,6 +258,7 @@ struct SelectiveJournalReport: Identifiable {
             ("Location names", options.locations),
             ("Participant names", options.names),
             ("Administration sites", options.sites),
+            ("Unconfirmed ingestions", options.unconfirmed),
         ]
         included = ["Selected journal records", "Substances, routes and recorded amounts"]
             + limits.filter { $0.1 }.map { $0.0 }
@@ -372,47 +381,75 @@ struct SelectiveJournalReport: Identifiable {
 
 private struct SelectiveExportReview: View {
     let report: SelectiveJournalReport
-    @Environment(\.dismiss) private var dismiss
-    @State private var isExporting = false
-    @State private var exportError: String?
+    let allowsPDF: Bool
 
     var body: some View {
-        NavigationStack {
-            Form {
-                if let exportError {
-                    Label(exportError, systemImage: "exclamationmark.circle")
+        Form {
+            Section("Preview") {
+                MarkdownReportPreview(markdown: report.markdown)
+            }
+            Section("What This File Contains") {
+                DisclosureGroup("Included") {
+                    ForEach(report.included, id: \.self) { Text($0) }
                 }
-                Section("Preview") {
-                    MarkdownReportPreview(markdown: report.markdown)
-                }
-                Section("What This File Contains") {
-                    DisclosureGroup("Included") {
-                        ForEach(report.included, id: \.self) { Text($0) }
-                    }
-                    DisclosureGroup("Excluded") {
-                        ForEach(report.excluded, id: \.self) { Text($0) }
-                    }
+                DisclosureGroup("Excluded") {
+                    ForEach(report.excluded, id: \.self) { Text($0) }
                 }
             }
-            .navigationTitle("Review Export")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Back") { dismiss() }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Save") {
-                        exportError = nil
-                        isExporting = true
-                    }
+            if allowsPDF {
+                NavigationLink("Review PDF") {
+                    ClinicianPDFReview(markdown: report.markdown)
                 }
             }
-            .fileExporter(
-                isPresented: $isExporting, document: MarkdownDocument(markdown: report.markdown),
-                contentType: MarkdownDocument.contentType, defaultFilename: report.title + ".md"
-            ) { result in
-                if case .failure = result { exportError = "The summary couldn’t be saved." }
+        }
+        .navigationTitle("Review Export")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                ShareLink(item: SharedMarkdown(markdown: report.markdown),
+                          preview: SharePreview(report.title))
             }
         }
     }
+}
+
+private struct ClinicianPDFReview: View {
+    let markdown: String
+    @State private var file: SharedClinicianPDF?
+
+    var body: some View {
+        Group {
+            if let file {
+                PDFReportPreview(data: file.data)
+            } else {
+                ProgressView("Preparing PDF")
+            }
+        }
+        .navigationTitle("Review PDF")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if let file {
+                ToolbarItem(placement: .confirmationAction) {
+                    ShareLink(item: file, preview: SharePreview("Clinician Summary"))
+                }
+            }
+        }
+        .task {
+            if file == nil { file = ReportRendering.clinicianPDF(markdown) }
+        }
+    }
+}
+
+private struct PDFReportPreview: UIViewRepresentable {
+    let data: Data
+
+    func makeUIView(context: Context) -> PDFView {
+        let view = PDFView()
+        view.autoScales = true
+        view.displayMode = .singlePageContinuous
+        view.document = PDFDocument(data: data)
+        return view
+    }
+
+    func updateUIView(_ view: PDFView, context: Context) {}
 }

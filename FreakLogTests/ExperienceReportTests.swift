@@ -1,5 +1,7 @@
 import CoreData
+import PDFKit
 @testable import FreakLog
+import UIKit
 import XCTest
 
 @MainActor
@@ -121,5 +123,102 @@ final class ExperienceReportTests: XCTestCase {
         XCTAssertTrue(summary.markdown.contains("Inside period"))
         XCTAssertFalse(summary.markdown.contains("Outside period"))
         XCTAssertFalse(summary.markdown.contains("Excluded substance"))
+    }
+
+    func testRenderedReportFilesUseReviewedCopyAndOmitPrivateFields() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let start = Date(timeIntervalSince1970: 1_700_000_000)
+        let experience = Experience.create(at: start, title: "Private party", in: context)
+        let ingestion = Ingestion(context: context)
+        ingestion.experience = experience
+        ingestion.time = start
+        ingestion.substanceName = "Caffeine"
+        ingestion.consumerName = "Private participant"
+        ingestion.administrationSite = "Private site"
+        ingestion.setLocation(Location(name: "Private location", longitude: 4, latitude: 5))
+
+        let report = SelectiveJournalReport(kind: .clinician, ingestions: [ingestion], experiences: [experience],
+                                           range: nil, options: .init())
+        let reviewed = report.markdown + "\nReviewed text"
+        let pdf = try XCTUnwrap(PDFDocument(data: ReportRendering.clinicianPDF(reviewed).data))
+        let pdfText = try XCTUnwrap(pdf.page(at: 0)?.string)
+        XCTAssertTrue(pdfText.contains("Reviewed text"))
+        XCTAssertTrue(pdfText.contains("Caffeine"))
+        for privateField in ["Private party", "Private participant", "Private site", "Private location"] {
+            XCTAssertFalse(pdfText.contains(privateField), privateField)
+        }
+
+        let image = try ReportRendering.timelineImage(
+            ExperienceReport.markdown(for: experience, includesRatings: false)
+        )
+        XCTAssertEqual(Array(image.data.prefix(8)), [137, 80, 78, 71, 13, 10, 26, 10])
+        XCTAssertNotNil(UIImage(data: image.data))
+    }
+
+    func testPDFPaginationRetainsLastReviewedEntry() throws {
+        let lines = (1...200).map { "- Reviewed line \($0)" }
+        let pdf = try XCTUnwrap(PDFDocument(data: ReportRendering.clinicianPDF(lines.joined(separator: "\n")).data))
+        XCTAssertGreaterThan(pdf.pageCount, 1)
+        XCTAssertTrue(pdf.page(at: pdf.pageCount - 1)?.string?.contains("Reviewed line 200") == true)
+    }
+
+    func testUnconfirmedEntriesAreExcludedUnlessSelectedForReview() {
+        let context = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: .now, in: context)
+        let ingestion = Ingestion(context: context)
+        ingestion.experience = experience
+        ingestion.time = .now
+        ingestion.substanceName = "Caffeine"
+        ingestion.isUnconfirmed = true
+
+        let trip = ExperienceReport.markdown(for: experience, includesRatings: false)
+        XCTAssertFalse(trip.contains("Caffeine"))
+        let summary = SelectiveJournalReport(kind: .journal, ingestions: [ingestion], experiences: [experience],
+                                             range: nil, options: .init(unconfirmed: true))
+        XCTAssertTrue(summary.markdown.contains("Caffeine"))
+        XCTAssertTrue(summary.markdown.contains("unconfirmed"))
+    }
+
+    func testStandaloneSubstancePresetCopiesDefinitionUnderReviewedName() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let existing = CustomSubstanceCodable(name: "My custom", units: "g", description: "Local definition")
+            .insert(into: context)
+        var oral = CustomRoaCodable(administrationRoute: .oral, doseUnits: "mg")
+        oral.commonDose = 1
+        let preset = try JournalPreset(customSubstance: .init(name: "MY CUSTOM", units: "mg",
+                                                             description: "Incoming definition", roas: [oral]))
+        let restored = try JSONDecoder().decode(JournalPreset.self, from: preset.exportFile().data)
+        XCTAssertEqual(try restored.availableName(in: context), "MY CUSTOM (Copy)")
+        XCTAssertThrowsError(try restored.importInto(context, as: "My custom", keepLocalDefinitions: false))
+        _ = try restored.importInto(context, as: "Imported custom", keepLocalDefinitions: false)
+
+        let all = try context.fetch(PersistenceController.customSubstancesRequest())
+        let imported = try XCTUnwrap(all.first { $0.nameUnwrapped == "Imported custom" })
+        XCTAssertEqual(CustomSubstanceCodable(imported).roas, [oral])
+        XCTAssertEqual(existing.explanationUnwrapped, "Local definition")
+        XCTAssertEqual(try context.count(for: Experience.fetchRequest()), 0)
+    }
+
+    func testPaletteReviewPreservesConflictingColorsUnlessSelected() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let caffeine = CompanionCodable(substanceName: "Caffeine", color: .blue, isHiddenInTimeline: true)
+            .insert(into: context)
+        let preset = try JournalPreset(palette: [
+            .init(substanceName: "Caffeine", color: .orange),
+            .init(substanceName: "Missing custom substance", color: .purple),
+        ])
+        let data = try preset.exportFile().data
+        let restored = try JSONDecoder().decode(JournalPreset.self, from: data)
+        let review = try restored.reviewPalette(in: context)
+        XCTAssertTrue(review[0].hasConflict)
+        XCTAssertFalse(review[1].isKnownSubstance)
+        XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("isHiddenInTimeline"))
+        try restored.importPalette(review, replacing: [], in: context)
+        XCTAssertEqual(caffeine.color, .blue)
+        try restored.importPalette(review, replacing: ["Caffeine"], in: context)
+        XCTAssertEqual(caffeine.color, .orange)
+        XCTAssertTrue(caffeine.isHiddenInTimeline)
+        XCTAssertEqual(try context.count(for: SubstanceCompanion.fetchRequest()), 1)
+        XCTAssertThrowsError(try restored.importPalette(review, replacing: ["Caffeine"], in: context))
     }
 }
