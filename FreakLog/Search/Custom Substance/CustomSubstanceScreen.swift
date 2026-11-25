@@ -62,6 +62,11 @@ private struct CustomSubstanceList: View {
         }
       } else {
         let name = customSubstance.nameUnwrapped
+        SubstanceSourceComparisonLink(
+          substanceName: name,
+          anodyne: anodyneModel.substance,
+          isMissingOnAnodyne: anodyneModel.phase == .notFound
+        )
         ForEach(routes, id: \.self) { route in
           Section {
             RoaPreview(

@@ -31,11 +31,20 @@ struct SubstanceScreen: View {
       Group {
         let hasDoses = substance.dosageRemark != nil || !substance.doseInfos.isEmpty
           || customRoas.contains(where: { $0.roaDose != nil }) || anodyne?.dosing.isEmpty == false
+        let hasDurations = !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil })
+          || (anodyne != nil && hasAnodyneTimings)
+        if hasDoses || hasDurations {
+          SubstanceSourceComparisonLink(
+            substanceName: substance.name,
+            psychonautWiki: substance,
+            anodyne: anodyne,
+            isMissingOnAnodyne: anodyneModel.phase == .notFound
+          )
+        }
         if hasDoses {
           DosesSection(substance: substance, anodyne: anodyne)
         }
-        if !substance.durationInfos.isEmpty || customRoas.contains(where: { $0.roaDuration != nil })
-          || (anodyne != nil && hasAnodyneTimings) {
+        if hasDurations {
           DurationSection(substance: substance, anodyne: anodyne)
         } else if let anodyne {
           AnodyneDurationSection(anodyne: anodyne)
