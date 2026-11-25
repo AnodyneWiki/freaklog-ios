@@ -21,21 +21,38 @@ enum AssistantWebSearch {
       ],
       progress: "Searching the web…",
       run: { arguments in
-        guard isEnabled else { return AssistantToolbox.error("Web access is turned off in Assistant settings.") }
-        let query = arguments.string("query")
-        guard !query.isEmpty, query.count <= 600 else {
-          return AssistantToolbox.error("Use a nonempty web search query of up to 600 characters.")
-        }
-
-        let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query))
-        for try await event in events {
-          let reply = try AssistantHTTP.json(of: event)
-          if reply["id"]?.number == 1 {
-            return try result(from: reply, textLimit: textLimit)
-          }
-        }
-        throw AssistantError("The web search ended without a result.")
+        try await search(query: arguments.string("query"), textLimit: textLimit)
       })
+  }
+
+  @MainActor
+  static func search(query: String, textLimit: Int) async throws -> JSONValue {
+    guard isEnabled else { throw AssistantError("Web access is turned off in Assistant settings.") }
+    guard !query.isEmpty, query.count <= 600 else {
+      throw AssistantError("Use a nonempty web search query of up to 600 characters.")
+    }
+
+    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query))
+    for try await event in events {
+      let reply = try AssistantHTTP.json(of: event)
+      if reply["id"]?.number == 1 {
+        return try result(from: reply, textLimit: textLimit)
+      }
+    }
+    throw AssistantError("The web search ended without a result.")
+  }
+
+  static func markdown(from result: JSONValue) -> String {
+    let excerpts = result["results"]?.array?.compactMap(\.string) ?? []
+    guard !excerpts.isEmpty else { return "No web results found." }
+    return excerpts.map { excerpt in
+      excerpt.components(separatedBy: "\n").map { line in
+        guard line.hasPrefix("URL: "), let url = URL(string: String(line.dropFirst(5))),
+              let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme),
+              let host = url.host, url.user == nil, url.password == nil else { return line }
+        return "[\(host)](<\(url.absoluteString)>)"
+      }.joined(separator: "\n")
+    }.joined(separator: "\n\n---\n\n")
   }
 
   static func requestBody(query: String) -> JSONValue {

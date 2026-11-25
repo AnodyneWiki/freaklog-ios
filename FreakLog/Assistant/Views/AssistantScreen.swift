@@ -80,10 +80,12 @@ struct AssistantScreen: View {
   }
 
   @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
+  @AppStorage(PersistenceController.isAssistantWebAccessEnabledKey) private var isWebAccessEnabled = false
   @StateObject private var chat: AssistantChat
   @Environment(\.dismiss) private var dismiss
   @State private var noteSaveError: String?
   @State private var draft = ""
+  @State private var searchesWeb = false
   @State private var profileToSwitchTo: AssistantProfile?
   @State private var path = NavigationPath()
   @FocusState private var isInputFocused: Bool
@@ -232,9 +234,19 @@ struct AssistantScreen: View {
   }
 
   private var inputBar: some View {
-    VStack(spacing: 4) {
+    let searchWeb = isWebAccessEnabled && searchesWeb
+    return VStack(spacing: 4) {
       HStack(alignment: .bottom, spacing: 8) {
-        TextField("Ask the assistant", text: $draft, axis: .vertical)
+        if isWebAccessEnabled {
+          Toggle(isOn: $searchesWeb) {
+            Label("Search the Web", systemImage: "globe")
+              .labelStyle(.iconOnly)
+              .assistantTapTarget()
+          }
+          .toggleStyle(.button)
+          .disabled(chat.isBusy)
+        }
+        TextField(searchWeb ? "Search the web" : "Ask the assistant", text: $draft, axis: .vertical)
           .lineLimit(1 ... 6)
           .focused($isInputFocused)
           .padding(.horizontal, 12)
@@ -252,7 +264,7 @@ struct AssistantScreen: View {
           .accessibilityLabel("Stop")
         } else {
           Button {
-            chat.send(draft)
+            chat.send(draft, searchWeb: searchWeb)
             draft = ""
           } label: {
             Image(systemName: "arrow.up.circle.fill")
@@ -260,7 +272,7 @@ struct AssistantScreen: View {
               .assistantTapTarget()
           }
           .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-          .accessibilityLabel("Send")
+          .accessibilityLabel(searchWeb ? "Search" : "Send")
         }
       }
       Text("AI answers can be wrong. They are no medical advice.")

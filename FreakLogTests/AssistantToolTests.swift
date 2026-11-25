@@ -105,6 +105,10 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(sources.count, 2)
     XCTAssertTrue(sources[0].contains("https://example.com/one"))
     XCTAssertTrue(sources[1].contains("https://example.com/two"))
+    let markdown = AssistantWebSearch.markdown(from: result)
+    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/one>)"))
+    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/two>)"))
+    XCTAssertEqual(AssistantWebSearch.markdown(from: .object(["results": .array([])])), "No web results found.")
     XCTAssertThrowsError(try AssistantWebSearch.result(
       from: .object(["error": .object(["message": "Rate limited"])]), textLimit: 800))
   }

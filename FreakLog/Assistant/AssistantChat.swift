@@ -231,7 +231,7 @@ final class AssistantChat: ObservableObject {
 
   private var modelListTask: Task<Void, Never>?
 
-  func send(_ text: String) {
+  func send(_ text: String, searchWeb: Bool = false) {
     let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
     guard !text.isEmpty, !isBusy, let conversation, let toolbox else { return }
     let reply = AssistantChatItem.Message(isUser: false, text: "", state: .waiting)
@@ -239,11 +239,18 @@ final class AssistantChat: ObservableObject {
     items.append(.message(reply))
     isBusy = true
     canRetry = false
-    status = "Thinking…"
+    lastTurnWasWebSearch = searchWeb
+    status = searchWeb ? "Searching the web…" : "Thinking…"
     let chatID = chatID
     var turn = Turn(replyID: reply.id)
     turnTask = Task { [weak self] in
       do {
+        if searchWeb {
+          let result = try await AssistantWebSearch.search(query: text, textLimit: 800)
+          guard let self, self.chatID == chatID, !Task.isCancelled else { return }
+          handle(.completed(AssistantWebSearch.markdown(from: result)), in: &turn, toolbox: toolbox)
+          return
+        }
         for try await event in conversation.send(text) {
           guard let self, self.chatID == chatID, !Task.isCancelled else { return }
           handle(event, in: &turn, toolbox: toolbox)
@@ -286,10 +293,11 @@ final class AssistantChat: ObservableObject {
     guard
       !isBusy, let conversation,
       let index = items.lastIndex(where: { $0.message?.isUser == true }),
-      let question = conversation.rollBackLastTurn() ?? items[index].message?.text
+      let text = items[index].message?.text
     else { return }
+    let question = lastTurnWasWebSearch ? text : conversation.rollBackLastTurn() ?? text
     items.removeSubrange(index...)
-    send(question)
+    send(question, searchWeb: lastTurnWasWebSearch)
   }
 
   // Adds an answer to the end of the experience's notes
@@ -336,6 +344,7 @@ final class AssistantChat: ObservableObject {
 
   private var allowsWikiLookups = false
   private var allowsWebSearch = false
+  private var lastTurnWasWebSearch = false
   private var activeKey: String?
   private var hasStarted = false
 
