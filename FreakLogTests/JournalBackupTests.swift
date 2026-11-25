@@ -121,7 +121,7 @@ final class JournalBackupTests: XCTestCase {
       Set(source.persistentStoreCoordinator?.managedObjectModel.entities.compactMap(\.name) ?? []))
     XCTAssertTrue(backup.entities.values.allSatisfy { !$0.isEmpty }, "every entity has an object to compare")
 
-    let read = try XCTUnwrap(JournalBackup.read(backup.data()))
+    let read = try XCTUnwrap(JournalBackup.read(backup.fileData()))
     let target = PersistenceController(inMemory: true).viewContext
     try read.restore(into: target)
     try target.save()
@@ -189,6 +189,53 @@ final class JournalBackupTests: XCTestCase {
     let journalFile = JournalFile(experiences: [], customSubstances: [], customUnits: [])
     XCTAssertNil(try JournalBackup.read(JSONEncoder().encode(journalFile)))
     XCTAssertNil(try JournalBackup.read(Data("not json".utf8)))
+  }
+
+  func testBackupContainerFailsLegacyJSONParsingAndKeepsV1Payload() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    try Self.fillEveryEntity(in: context)
+    let backup = try JournalBackup(context: context, defaults: Self.emptyDefaults(), appVersion: "1")
+    let file = try backup.fileData()
+    XCTAssertThrowsError(try JSONSerialization.jsonObject(with: file))
+    XCTAssertThrowsError(try JournalFile.read(file))
+    let reopened = try XCTUnwrap(JournalBackup.read(file))
+    XCTAssertEqual(reopened.entities, backup.entities)
+    XCTAssertEqual(reopened.settings, backup.settings)
+    XCTAssertThrowsError(try JournalBackup.read(Data("FREAKLOG-BACKUP/2\n{}".utf8))) { error in
+      XCTAssertEqual(error as? JournalBackupError, .invalidContainer)
+    }
+  }
+
+  func testUnknownFormatNeverFallsThroughToJournal() {
+    for json in [#"{"format":"Other Backup","experiences":[]}"#, #"{"formatVersion":1,"experiences":[]}"#] {
+      let data = Data(json.utf8)
+      XCTAssertThrowsError(try JournalBackup.read(data)) { error in
+        XCTAssertEqual(error as? JournalBackupError, .unrecognizedFormat)
+      }
+      XCTAssertThrowsError(try JournalFile.read(data))
+    }
+  }
+
+  func testIncompleteBackupIsRejectedBeforeStagingDeletes() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    try Self.fillEveryEntity(in: context)
+    let original = try JournalBackup(context: context, defaults: Self.emptyDefaults(), appVersion: "1")
+    var missingEntity = original
+    missingEntity.entities.removeValue(forKey: "Ingestion")
+    for data in try [missingEntity.fileData(), missingEntity.data()] {
+      let imported = try XCTUnwrap(JournalBackup.read(data))
+      XCTAssertThrowsError(try imported.restore(into: context)) { error in
+        XCTAssertEqual(error as? JournalBackupError, .missingEntity("Ingestion"))
+      }
+    }
+    var missingField = original
+    missingField.entities["Ingestion"]?[0].attributes.removeValue(forKey: "substanceName")
+    let incomplete = try XCTUnwrap(JournalBackup.read(missingField.fileData()))
+    XCTAssertThrowsError(try incomplete.restore(into: context)) { error in
+      XCTAssertEqual(error as? JournalBackupError, .missingProperty(entity: "Ingestion", name: "substanceName"))
+    }
+    XCTAssertFalse(context.hasChanges)
+    XCTAssertGreaterThan(try context.count(for: Ingestion.fetchRequest()), 0)
   }
 
   func testABrokenBackupLeavesTheJournalAlone() throws {

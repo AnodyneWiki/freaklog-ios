@@ -16,7 +16,8 @@ struct IngestionCodable: Codable {
     let customUnitId: Int32?
     let administrationSite: String?
     let location: LocationCodable?
-    // The name of the formulation the ingestion was logged with, and the amount taken of it
+    // The ID is local to the file. Older files only have a name.
+    var formulationId: String?
     var formulationName: String?
     var formulationAmount: Double?
 
@@ -36,6 +37,7 @@ struct IngestionCodable: Codable {
         case administrationSite
         case location
         case formulationName
+        case formulationId
         case formulationAmount
     }
 
@@ -86,13 +88,14 @@ struct IngestionCodable: Codable {
         dose = try values.decodeIfPresent(Double.self, forKey: .dose)
         estimatedDoseStandardDeviation = try values.decodeIfPresent(Double.self, forKey: .estimatedDoseStandardDeviation)
         isDoseAnEstimate = try values.decode(Bool.self, forKey: .isDoseAnEstimate)
-        units = try values.decode(String.self, forKey: .units)
-        notes = try values.decode(String.self, forKey: .notes)
+        units = try values.decodeIfPresent(String.self, forKey: .units) ?? ""
+        notes = try values.decodeIfPresent(String.self, forKey: .notes) ?? ""
         consumerName = try values.decodeIfPresent(String.self, forKey: .consumerName)
         customUnitId = try values.decodeIfPresent(Int32.self, forKey: .customUnitId)
         administrationSite = try values.decodeIfPresent(String.self, forKey: .administrationSite)
         location = try values.decodeIfPresent(LocationCodable.self, forKey: .location)
         formulationName = try values.decodeIfPresent(String.self, forKey: .formulationName)
+        formulationId = try values.decodeIfPresent(String.self, forKey: .formulationId)
         formulationAmount = try values.decodeIfPresent(Double.self, forKey: .formulationAmount)
     }
 
@@ -113,6 +116,7 @@ struct IngestionCodable: Codable {
         try container.encode(administrationSite, forKey: .administrationSite)
         try container.encode(location, forKey: .location)
         try container.encodeIfPresent(formulationName, forKey: .formulationName)
+        try container.encodeIfPresent(formulationId, forKey: .formulationId)
         try container.encodeIfPresent(formulationAmount, forKey: .formulationAmount)
     }
 }

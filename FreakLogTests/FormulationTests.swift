@@ -95,8 +95,10 @@ final class FormulationTests: XCTestCase {
     XCTAssertEqual(pure.first?.dosesAndUnit.map(\.dose), [80])
   }
 
-  func testIngestionsKeepTheirFormulationThroughExport() throws {
+  func testIngestionsKeepTheirFormulationThroughExportWhenNamesMatch() throws {
     let source = PersistenceController(inMemory: true).viewContext
+    let other = sample.insert(into: source)
+    other.note = "Different formulation with the same name"
     let formulation = sample.insert(into: source)
     let experience = Experience.create(at: Date(timeIntervalSince1970: 5_000), title: "Test", in: source)
     let ingestion = Ingestion(context: source)
@@ -106,14 +108,27 @@ final class FormulationTests: XCTestCase {
     ingestion.formulation = formulation
     ingestion.formulationAmount = 2
     ingestion.experience = experience
-    let file = JournalFile(experiences: [experience], customSubstances: [], customUnits: [], formulations: [formulation])
+    let file = JournalFile(experiences: [experience], customSubstances: [], customUnits: [], formulations: [other, formulation])
     let decoded = try JSONDecoder().decode(JournalFile.self, from: JSONEncoder().encode(file))
     let target = PersistenceController(inMemory: true).viewContext
     decoded.insert(into: target)
 
     let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
     XCTAssertEqual(imported.formulation?.nameUnwrapped, "Party pill")
+    XCTAssertEqual(imported.formulation?.note, formulation.note)
     XCTAssertEqual(imported.formulationAmount, 2)
+
+    let data = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(decoded)) as? [String: Any])
+    var oldRecords = try XCTUnwrap(data["experiences"] as? [[String: Any]])
+    var oldIngestions = try XCTUnwrap(oldRecords[0]["ingestions"] as? [[String: Any]])
+    oldIngestions[0].removeValue(forKey: "formulationId")
+    oldRecords[0]["ingestions"] = oldIngestions
+    var oldJSON = data
+    oldJSON["experiences"] = oldRecords
+    let oldFile = try JournalFile.read(JSONSerialization.data(withJSONObject: oldJSON))
+    let oldTarget = PersistenceController(inMemory: true).viewContext
+    oldFile.insert(into: oldTarget)
+    XCTAssertNil(try oldTarget.fetch(Ingestion.fetchRequest()).first?.formulation)
   }
 
   private let sample = FormulationCodable(

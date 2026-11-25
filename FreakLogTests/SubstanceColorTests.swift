@@ -29,9 +29,8 @@ final class SubstanceColorTests: XCTestCase {
     XCTAssertEqual(custom?.name, "#123456")
   }
 
-  func testExportsPaletteNamesAndOtherwiseCodes() throws {
+  func testExportsPaletteNamesAndKeepsExactCustomColors() throws {
     XCTAssertEqual(SubstanceColor.blue.exportValue, "BLUE")
-    XCTAssertEqual(SubstanceColor(hex: "#123456")?.exportValue, "#123456")
     let json = try JSONEncoder().encode(CompanionCodable(substanceName: "MDMA", color: .hotPink))
     XCTAssertTrue(String(decoding: json, as: UTF8.self).contains(#""color":"HOT_PINK""#))
     let decoded = try JSONDecoder().decode(CompanionCodable.self, from: json)
@@ -40,6 +39,17 @@ final class SubstanceColorTests: XCTestCase {
       CompanionCodable.self,
       from: Data(##"{"substanceName": "MDMA", "color": "#123456"}"##.utf8))
     XCTAssertEqual(custom.color.hex, "#123456")
+    let companion = try JSONEncoder().encode(custom)
+    let note = TimedNoteCodable(creationDate: .now, time: .now, note: "Example", color: custom.color, isPartOfTimeline: true)
+    let noteData = try JSONEncoder().encode(note)
+    for data in [companion, noteData] {
+      let fields = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+      let paletteName = try XCTUnwrap(fields["color"] as? String)
+      XCTAssertTrue(SubstanceColor.palette.contains { $0.exportValue == paletteName })
+      XCTAssertEqual(fields["colorHex"] as? String, "#123456")
+    }
+    XCTAssertEqual(try JSONDecoder().decode(CompanionCodable.self, from: companion).color, custom.color)
+    XCTAssertEqual(try JSONDecoder().decode(TimedNoteCodable.self, from: noteData).color, custom.color)
   }
 
   func testConvertsPickedColors() {

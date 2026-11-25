@@ -3,14 +3,14 @@ import Foundation
 
 // MARK: - JournalBackup
 
-// A complete copy of the journal and its settings that restores exactly, written as JSON. Every entity and attribute
+// A complete copy of the journal and its settings that restores exactly. Every entity and attribute
 // of the data model is written as it is, so nothing is left out when the model grows, and relationships refer to the
 // ids the backup gives its objects. JournalFile stays for the format the Android app reads, which leaves things out.
 //
 // Compatibility: a backup names its format version, and newer versions of the app read older backups by running the
 // steps in `upgrades` on them first. When the data model or the settings written change, bump `formatVersion`, set
-// `dataModelVersion`, add a step if older backups need changing (added attributes, entities and settings need none;
-// removed or renamed ones do) and add a backup of the new version to the test fixtures. Fixtures are never edited,
+// `dataModelVersion`, add a step to fill in, remove or rename model keys as needed, and add a backup of the new
+// version to the test fixtures. Fixtures are never edited,
 // so every older version keeps importing.
 struct JournalBackup: Codable {
   struct Record: Codable, Equatable {
@@ -22,6 +22,8 @@ struct JournalBackup: Codable {
   }
 
   static let format = "FreakLog Backup"
+  private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
+  private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
   static let formatVersion = 2
   // The data model this format version mirrors; a test fails once the current one differs
   static let dataModelVersion = "PW Version 12"
@@ -74,29 +76,46 @@ struct JournalBackup: Codable {
   var settings: [String: JSONValue]
   // Records by entity name
   var entities: [String: [Record]]
+  private var requiresCompleteRecords = true
+
+  private enum CodingKeys: String, CodingKey {
+    case format, formatVersion, dataModel, appVersion, created, settings, entities
+  }
 }
 
 // MARK: - JournalBackupError
 
 enum JournalBackupError: LocalizedError, Equatable {
+  case invalidContainer
+  case unrecognizedFormat
   case newerFormat(Int)
   case unsupportedFormat(Int)
   case unknownEntity(String)
+  case missingEntity(String)
   case unknownProperty(entity: String, name: String)
+  case missingProperty(entity: String, name: String)
   case invalidValue(entity: String, name: String)
   case unknownObject(String)
   case duplicateObject(String)
 
   var errorDescription: String? {
     switch self {
+    case .invalidContainer:
+      "This FreakLog backup file is damaged or uses an unsupported container."
+    case .unrecognizedFormat:
+      "This file format isn't supported by FreakLog."
     case .newerFormat:
       "This backup is from a newer version of FreakLog. Update the app to import it."
     case .unsupportedFormat(let version):
       "Backups of format version \(version) can't be read."
     case .unknownEntity(let name):
       "The backup contains unknown data (\(name))."
+    case .missingEntity(let name):
+      "The backup is incomplete and is missing \(name)."
     case .unknownProperty(let entity, let name):
       "The backup contains unknown data (\(entity).\(name))."
+    case .missingProperty(let entity, let name):
+      "The backup is incomplete and is missing \(entity).\(name)."
     case .invalidValue(let entity, let name):
       "The backup has an invalid value for \(entity).\(name)."
     case .unknownObject(let id), .duplicateObject(let id):
@@ -159,6 +178,11 @@ extension JournalBackup {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
     return try encoder.encode(self)
+  }
+
+  // A non-JSON header keeps older journal importers from opening this as an empty journal.
+  func fileData() throws -> Data {
+    try Self.containerHeader + data()
   }
 
   private static func record(of object: NSManagedObject, ids: [NSManagedObjectID: String]) throws -> Record {
@@ -233,10 +257,15 @@ extension JournalBackup {
 extension JournalBackup {
   // The backup in the data, upgraded to the current format, or nil for other files such as a JournalFile
   static func read(_ data: Data) throws -> JournalBackup? {
-    guard
-      var json = try? JSONDecoder().decode(JSONValue.self, from: data),
-      json.object?["format"]?.string == format
-    else { return nil }
+    let wrapped = data.starts(with: containerPrefix)
+    if wrapped, !data.starts(with: containerHeader) { throw JournalBackupError.invalidContainer }
+    let payload = wrapped ? data.dropFirst(containerHeader.count) : data
+    guard var json = try? JSONDecoder().decode(JSONValue.self, from: payload), let root = json.object else {
+      if wrapped { throw JournalBackupError.invalidContainer }
+      return nil
+    }
+    guard root["format"] != nil || root["formatVersion"] != nil || wrapped else { return nil }
+    guard root["format"]?.string == format else { throw JournalBackupError.unrecognizedFormat }
     guard let version = json.object?["formatVersion"]?.number.flatMap({ Int(exactly: $0) }) else {
       throw JournalBackupError.unsupportedFormat(0)
     }
@@ -246,7 +275,10 @@ extension JournalBackup {
       try upgrades[step]?(&json)
       json = try replacing("formatVersion", with: .number(Double(step + 1)), in: json)
     }
-    return try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
+    var backup = try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
+    // Original v1 JSON backups can omit optional properties and use the model's defaults.
+    backup.requiresCompleteRecords = wrapped
+    return backup
   }
 
   // For upgrade steps: renames an attribute in every record of the entity
@@ -271,6 +303,7 @@ extension JournalBackup {
   // so on an error the context can be thrown away with the journal untouched.
   func restore(into context: NSManagedObjectContext) throws {
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
+    try validateCompleteness(in: model)
     for entity in model.entities {
       guard let name = entity.name else { continue }
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
@@ -310,7 +343,7 @@ extension JournalBackup {
             return related
           }
           switch json {
-          case .null:
+          case .null where !relationship.isToMany:
             object.setValue(nil, forKey: name)
           case .string where !relationship.isToMany:
             try object.setValue(related(json), forKey: name)
@@ -324,6 +357,21 @@ extension JournalBackup {
           default:
             throw JournalBackupError.invalidValue(entity: entityName, name: name)
           }
+        }
+      }
+    }
+  }
+
+  private func validateCompleteness(in model: NSManagedObjectModel) throws {
+    for (name, entity) in model.entitiesByName {
+      guard let records = entities[name] else { throw JournalBackupError.missingEntity(name) }
+      guard requiresCompleteRecords else { continue }
+      let attributes = Set(entity.attributesByName.values.filter { !$0.isTransient }.map(\.name))
+      let relationships = Set(entity.relationshipsByName.values.filter(Self.isWritten).map(\.name))
+      for record in records {
+        if let key = attributes.subtracting(record.attributes.keys).sorted().first
+          ?? relationships.subtracting(record.relationships.keys).sorted().first {
+          throw JournalBackupError.missingProperty(entity: name, name: key)
         }
       }
     }

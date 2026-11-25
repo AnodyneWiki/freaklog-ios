@@ -400,11 +400,3 @@ extension AssistantToolbox {
   }
 
 }
-
-extension JSONValue {
-  // The JSON form of an encodable value
-  init(encoding value: some Encodable) throws {
-    let data = try JSONEncoder().encode(value)
-    self = try JSONDecoder().decode(JSONValue.self, from: data)
-  }
-}

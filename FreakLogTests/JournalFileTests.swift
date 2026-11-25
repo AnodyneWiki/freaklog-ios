@@ -4,13 +4,75 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
-    func testJournalImportRequiresAnExperiencesArray() throws {
+    func testJournalImportRejectsAnEmptyUnidentifiedFile() throws {
         let decoder = JSONDecoder()
         for json in ["{}", #"{"customUnits":[]}"#, #"{"experiences":null}"#, #"{"experiences":{}}"#] {
             XCTAssertThrowsError(try decoder.decode(JournalFile.self, from: Data(json.utf8)), json)
         }
         let emptyJournal = try decoder.decode(JournalFile.self, from: Data(#"{"experiences":[]}"#.utf8))
         XCTAssertTrue(emptyJournal.experiences.isEmpty)
+    }
+
+    func testLegacyAndroidImportsCustomDataWithoutExperiencesAndOptionalFields() throws {
+        let customOnly = try JournalFile.read(Data(#"{"customSubstances":[{"name":"Example","units":"g","description":""}]}"#.utf8))
+        XCTAssertEqual(customOnly.customSubstances.map(\.name), ["Example"])
+        XCTAssertTrue(customOnly.experiences.isEmpty)
+
+        let legacy = try JournalFile.read(Data(#"""
+          {"experiences":[{"title":"Example","text":"","sortDate":1700000000000,
+          "ingestions":[{"substanceName":"Example","time":1700000000000,"administrationRoute":"ORAL","isDoseAnEstimate":false}],
+          "ratings":[{"option":"twoPlus","creationDate":null}]}]}
+          """#.utf8))
+        let experience = try XCTUnwrap(legacy.experiences.first)
+        let ingestion = try XCTUnwrap(experience.ingestions.first)
+        XCTAssertEqual(ingestion.units, "")
+        XCTAssertEqual(ingestion.notes, "")
+        XCTAssertEqual(experience.creationDate, Date(millisecondsSince1970: 1_700_000_000_000))
+        let context = PersistenceController(inMemory: true).viewContext
+        try legacy.replaceJournal(in: context)
+        XCTAssertEqual(try context.fetch(ShulginRating.fetchRequest()).first?.creationDate, experience.creationDate)
+    }
+
+    func testV12PreservesSingleUnitsAndAllMixtureComponents() throws {
+        let json = #"""
+          {"exportSource":"Android Journal",
+          "customSubstances":[{"name":"Existing custom","units":"g","description":"Original"}],
+          "customUnits":[
+            {"id":"7","name":"Single","unit":"scoop","doseComponents":[{"substanceName":"Ingredient A","dose":10,"units":"mg"}]},
+            {"id":"blend","name":"Blend","unit":"serving","doseComponents":[
+              {"customUnitId":7,"dose":2},{"substanceName":"Ingredient B","amount":5,"unit":"mg"},
+              {"substanceName":"Ingredient C","units":"mg"}]}],
+          "experiences":[{"title":"Example","text":"","creationDate":1700000000000,"ingestions":[
+            {"time":1700000000000,"administrationRoute":"ORAL","dose":2,"customUnitId":"7"},
+            {"time":1700000001000,"administrationRoute":"ORAL","dose":3,"customUnitId":"blend"}]}]}
+          """#
+        for source in ["Android Journal", "iOS Journal"] {
+            let journal = try JournalFile.read(Data(json.replacingOccurrences(of: "Android Journal", with: source).utf8))
+            XCTAssertEqual(journal.customSubstances.map(\.name), ["Existing custom"])
+            XCTAssertEqual(journal.customUnits.map(\.name), ["Single"])
+            XCTAssertEqual(journal.formulations.first?.components.map(\.substanceName), ["Ingredient A", "Ingredient B", "Ingredient C"])
+            let context = PersistenceController(inMemory: true).viewContext
+            try journal.replaceJournal(in: context)
+            let ingestions = try context.fetch(Ingestion.fetchRequest())
+            XCTAssertEqual(ingestions.count, 4)
+            let single = try XCTUnwrap(ingestions.first { $0.customUnit != nil })
+            XCTAssertEqual(single.customUnit?.name, "Single")
+            XCTAssertEqual(single.pureSubstanceDose, 20)
+            let blend = Dictionary(uniqueKeysWithValues: ingestions.filter { $0.formulation != nil }.map { ($0.substanceNameUnwrapped, $0) })
+            XCTAssertEqual(blend["Ingredient A"]?.doseUnwrapped, 60)
+            XCTAssertEqual(blend["Ingredient B"]?.doseUnwrapped, 15)
+            XCTAssertNil(blend["Ingredient C"]?.doseUnwrapped)
+            XCTAssertEqual(blend["Ingredient C"]?.formulationAmount, 3)
+        }
+    }
+
+    func testV12RejectsUnresolvableUnitReferences() {
+        let json = #"""
+          {"exportSource":"iOS Journal","experiences":[],"customUnits":[
+            {"id":7,"name":"Cycle","doseComponents":[{"customUnitId":"7","dose":1}]}]}
+          """#
+        XCTAssertThrowsError(try JournalFile.read(Data(json.utf8)))
+        XCTAssertThrowsError(try JournalFile.read(Data(#"{"exportSource":"Other Journal","experiences":[]}"#.utf8)))
     }
 
     func testFailedJournalReplacementKeepsSavedEntries() throws {

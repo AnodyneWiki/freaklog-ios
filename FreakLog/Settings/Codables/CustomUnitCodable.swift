@@ -64,7 +64,7 @@ struct CustomUnitCodable: Codable {
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        id = try values.decode(Int32.self, forKey: .id)
+        id = try values.decodeIfPresent(Int32.self, forKey: .id) ?? 0
         substanceName = try values.decode(String.self, forKey: .substanceName)
         name = try values.decode(String.self, forKey: .name)
         creationDate = try values.decodeMillis(forKey: .creationDate)

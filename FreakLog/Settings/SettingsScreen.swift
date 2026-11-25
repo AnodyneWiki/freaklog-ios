@@ -111,7 +111,7 @@ struct SettingsContent: View {
             }
             Section(
                 header: Text("Journal Data"),
-                footer: Text("A backup holds all your data and settings and restores them exactly, also in later versions of the app. It includes your webhook addresses and leaderboard servers, so keep it private. The JSON export leaves out settings, webhooks and more, and can be imported by the Android app. Importing reads both.")
+                footer: Text("Use a FreakLog backup to restore your journal and settings in FreakLog. Backups include webhook addresses and leaderboard servers, so keep them private. Export JSON to share your journal with compatible apps. FreakLog can import both formats.")
             ) {
                 Button {
                     exportBackup()
@@ -190,17 +190,17 @@ struct SettingsContent: View {
         }
         .fileImporter(
             isPresented: $isImporting,
-            allowedContentTypes: [.json]
+            allowedContentTypes: ExportedFile.readableContentTypes
         ) { result in
             do {
                 let selectedFile: URL = try result.get()
                 if selectedFile.startAccessingSecurityScopedResource() {
+                    defer { selectedFile.stopAccessingSecurityScopedResource() }
                     let data = try Data(contentsOf: selectedFile)
                     importData(data)
                 } else {
                     toastViewModel.showErrorToast(message: "Permission Denied")
                 }
-                selectedFile.stopAccessingSecurityScopedResource()
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
             }
@@ -208,7 +208,7 @@ struct SettingsContent: View {
         .fileExporter(
             isPresented: $isExporting,
             document: exportedFile,
-            contentType: .json,
+            contentType: exportedFile.contentType,
             defaultFilename: exportedFile.filename
         ) { result in
             if case .success = result {
