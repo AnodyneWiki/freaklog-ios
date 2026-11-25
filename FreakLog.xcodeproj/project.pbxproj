@@ -61,7 +61,6 @@
 		3E6D6FADB5224EE7B13BC761 /* DeviceIdDeriver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99E960C49DF142C08D445B01 /* DeviceIdDeriver.swift */; };
 		3FA0D3E0FD3A44A8AF23EDC2 /* ServerLeaderboardScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EBB5C00E5F24642847C8B0C /* ServerLeaderboardScreen.swift */; };
 		441481BF2E6CCE0F0057B1F4 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */; };
-		44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */; };
 		44E43DFD2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */; };
 		4CCA768DE6A14FBB8FB444DC /* AddEditServerScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = C253173B6F13411DBA2CCD03 /* AddEditServerScreen.swift */; };
 		798E9DFE70F94C93B5B5CC08 /* LeaderboardServersScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1239989AA492410B8215AAAA /* LeaderboardServersScreen.swift */; };
@@ -536,7 +535,6 @@
 		0DC49AD02EFB5C94000A9A0D /* WebhookArchiveScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebhookArchiveScreen.swift; sourceTree = "<group>"; };
 		1239989AA492410B8215AAAA /* LeaderboardServersScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardServersScreen.swift; sourceTree = "<group>"; };
 		441481BE2E6CCE0D0057B1F4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
-		44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LaunchAnimationWrapper.swift; sourceTree = "<group>"; };
 		44E43DFC2E6F9EEB008D7FDD /* AuthenticatorWrapper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthenticatorWrapper.swift; sourceTree = "<group>"; };
 		6EBB5C00E5F24642847C8B0C /* ServerLeaderboardScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerLeaderboardScreen.swift; sourceTree = "<group>"; };
 		99E960C49DF142C08D445B01 /* DeviceIdDeriver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceIdDeriver.swift; sourceTree = "<group>"; };
@@ -1519,7 +1517,6 @@
 		EA8AEA6F27E1CC3A00B30A16 /* Main */ = {
 			isa = PBXGroup;
 			children = (
-				44D6AF592E6F576400CD2BC0 /* LaunchAnimationWrapper.swift */,
 				EAF21C222BBB3A15000BFB0A /* Navigation */,
 				EA8AEA7027E1CC5100B30A16 /* Content */,
 				EA418A38296CEEBD00DEA663 /* Authenticator.swift */,
@@ -2398,7 +2395,6 @@
 				EA4189F12963219100DEA663 /* LiveActivityButton.swift in Sources */,
 				EA47E64927CA136C00F6E10F /* Tolerance.swift in Sources */,
 				EA48F89229DD50B8007DA8C5 /* RatingCodable.swift in Sources */,
-				44D6AF5A2E6F576700CD2BC0 /* LaunchAnimationWrapper.swift in Sources */,
 				EA527A8629427F56009C142D /* ToxicitySection.swift in Sources */,
 				EA47E65127CA136C00F6E10F /* RoaDose.swift in Sources */,
 				EA8A2CB22B468AEF0050554C /* CustomUnitDoseRow.swift in Sources */,
