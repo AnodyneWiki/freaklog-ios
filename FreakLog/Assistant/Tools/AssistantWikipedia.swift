@@ -34,7 +34,7 @@ enum AssistantWikipedia {
         let url = try requestURL(query: query, mode: mode, language: language, textLimit: textLimit)
         let response = try await AssistantHTTP.getJSON(from: url, headers: [
           "User-Agent": "\(appName)/\(getCurrentAppVersion()) (\(repoUrl))",
-        ])
+        ], isLookup: true)
         return try result(from: response, mode: mode, language: language, textLimit: textLimit)
       })
   }

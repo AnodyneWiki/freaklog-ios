@@ -155,10 +155,16 @@ final class AssistantToolTests: XCTestCase {
     XCTAssertEqual(sources.count, 2)
     XCTAssertTrue(sources[0].contains("https://example.com/one"))
     XCTAssertTrue(sources[1].contains("https://example.com/two"))
-    let markdown = AssistantWebSearch.markdown(from: result)
-    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/one>)"))
-    XCTAssertTrue(markdown.contains("[example.com](<https://example.com/two>)"))
-    XCTAssertEqual(AssistantWebSearch.markdown(from: .object(["results": .array([])])), "No web results found.")
+    let results = AssistantWebSearch.searchResults(from: result)
+    XCTAssertEqual(results.map(\.title), ["First", "Second"])
+    XCTAssertEqual(results.map { $0.url?.absoluteString }, ["https://example.com/one", "https://example.com/two"])
+    XCTAssertEqual(results.map(\.snippet), ["First excerpt.", "Second excerpt."])
+    XCTAssertTrue(AssistantWebSearch.searchResults(from: .object(["results": .array([])])).isEmpty)
+    let unsafe = AssistantWebSearch.searchResults(from: .object([
+      "results": .array(["Title: Unsafe\nURL: https://user:password@example.com\nText: Excerpt"]),
+    ]))
+    XCTAssertEqual(unsafe.first?.snippet, "Excerpt")
+    XCTAssertNil(unsafe.first?.url)
     XCTAssertThrowsError(try AssistantWebSearch.result(
       from: .object(["error": .object(["message": "Rate limited"])]), textLimit: 800))
   }

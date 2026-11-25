@@ -94,6 +94,7 @@ struct AssistantScreen: View {
     .onChange(of: isAssistantEnabled) { enabled in
       if !enabled { dismiss() }
     }
+    .sheet(isPresented: $showsWebSearch) { AssistantWebSearchScreen() }
     .onDisappear { chat.cancel() }
   }
 
@@ -103,7 +104,7 @@ struct AssistantScreen: View {
   @Environment(\.dismiss) private var dismiss
   @State private var noteSaveError: String?
   @State private var draft = ""
-  @State private var searchesWeb = false
+  @State private var showsWebSearch = false
   @State private var confirmsNewChat = false
   @State private var profileToSwitchTo: AssistantProfile?
   @State private var path = NavigationPath()
@@ -299,8 +300,10 @@ struct AssistantScreen: View {
   }
 
   private var inputBar: some View {
-    let searchWeb = isWebAccessEnabled && searchesWeb
-    return VStack(spacing: 4) {
+    VStack(spacing: 4) {
+      if isWebAccessEnabled {
+        webSearchButton.frame(maxWidth: .infinity, alignment: .leading)
+      }
       if chat.requiresRestart {
         VStack(alignment: .leading, spacing: 4) {
           Text("Assistant settings changed. Start a new chat to use them.")
@@ -311,16 +314,7 @@ struct AssistantScreen: View {
         .frame(maxWidth: .infinity, alignment: .leading)
       }
       HStack(alignment: .bottom, spacing: 8) {
-        if isWebAccessEnabled {
-          Toggle(isOn: $searchesWeb) {
-            Label("Search the Web", systemImage: "globe")
-              .labelStyle(.iconOnly)
-              .assistantTapTarget()
-          }
-          .toggleStyle(.button)
-          .disabled(chat.isBusy)
-        }
-        TextField(searchWeb ? "Search the web" : "Ask the assistant", text: $draft, axis: .vertical)
+        TextField("Ask the assistant", text: $draft, axis: .vertical)
           .lineLimit(1 ... 6)
           .focused($isInputFocused)
           .padding(.horizontal, 12)
@@ -340,7 +334,7 @@ struct AssistantScreen: View {
         } else {
           Button {
             followsLatest = true
-            chat.send(draft, searchWeb: searchWeb)
+            chat.send(draft)
             draft = ""
           } label: {
             Image(systemName: "arrow.up.circle.fill")
@@ -348,7 +342,7 @@ struct AssistantScreen: View {
               .assistantTapTarget()
           }
           .disabled(chat.requiresRestart || draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-          .accessibilityLabel(searchWeb ? "Search" : "Send")
+          .accessibilityLabel("Send")
         }
       }
       Text("AI answers can be wrong. They are no medical advice.")
@@ -359,6 +353,16 @@ struct AssistantScreen: View {
     .padding(.top, 8)
     .padding(.bottom, 4)
     .background(.bar)
+  }
+
+  private var webSearchButton: some View {
+    Button {
+      showsWebSearch = true
+    } label: {
+      Label("Search the Web", systemImage: "globe")
+        .font(.subheadline)
+        .assistantTapTarget()
+    }
   }
 
   private func setupNeeded(_ message: String) -> some View {
@@ -372,6 +376,7 @@ struct AssistantScreen: View {
         Text("Open Assistant Settings")
       }
       .buttonStyle(.borderedProminent)
+      if isWebAccessEnabled { webSearchButton }
     }
     .padding()
     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -396,6 +401,104 @@ struct AssistantScreen: View {
       retry: { chat.retry() })
   }
 
+}
+
+private struct AssistantWebSearchScreen: View {
+  @Environment(\.dismiss) private var dismiss
+  @State private var query = ""
+  @State private var submittedQuery: String?
+  @State private var results: [AssistantWebSearch.SearchResult] = []
+  @State private var error: String?
+  @State private var searchTask: Task<Void, Never>?
+  @State private var isSearching = false
+
+  var body: some View {
+    NavigationStack {
+      List {
+        Section {
+          TextField("Search query", text: $query)
+            .submitLabel(.search)
+            .onSubmit(search)
+            .disabled(isSearching)
+          Button("Search", action: search)
+            .disabled(!canSearch)
+        } footer: {
+          Text("Search queries are sent to Exa. Leave out personal details.")
+        }
+
+        if isSearching {
+          ProgressView("Searching…")
+        } else if let error {
+          Section {
+            Text(error).foregroundStyle(.secondary)
+            Button("Try Again") {
+              if let submittedQuery { runSearch(submittedQuery) }
+            }
+          }
+        } else if submittedQuery != nil {
+          Section("Results") {
+            if results.isEmpty {
+              Text("No results found.").foregroundStyle(.secondary)
+            }
+            ForEach(results.indices, id: \.self) { index in
+              let result = results[index]
+              if let url = result.url {
+                Link(destination: url) { resultLabel(result) }
+              } else {
+                resultLabel(result)
+              }
+            }
+          }
+        }
+      }
+      .navigationTitle("Search the Web")
+      .navigationBarTitleDisplayMode(.inline)
+      .toolbar {
+        ToolbarItem(placement: .cancellationAction) {
+          Button("Close") { dismiss() }
+        }
+      }
+    }
+    .onDisappear { searchTask?.cancel() }
+  }
+
+  private var trimmedQuery: String { query.trimmingCharacters(in: .whitespacesAndNewlines) }
+  private var canSearch: Bool { !isSearching && !trimmedQuery.isEmpty }
+
+  private func search() {
+    guard canSearch else { return }
+    runSearch(trimmedQuery)
+  }
+
+  private func runSearch(_ submitted: String) {
+    submittedQuery = submitted
+    isSearching = true
+    error = nil
+    results = []
+    searchTask = Task {
+      defer { isSearching = false }
+      do {
+        let response = try await AssistantWebSearch.search(query: submitted, textLimit: 800)
+        try Task.checkCancellation()
+        results = AssistantWebSearch.searchResults(from: response)
+      } catch {
+        if !Task.isCancelled { self.error = error.localizedDescription }
+      }
+    }
+  }
+
+  private func resultLabel(_ result: AssistantWebSearch.SearchResult) -> some View {
+    VStack(alignment: .leading, spacing: 4) {
+      Text(result.title).font(.headline)
+      if let host = result.url?.host {
+        Text(host).font(.caption).foregroundStyle(.secondary)
+      }
+      if !result.snippet.isEmpty {
+        Text(result.snippet).font(.subheadline).foregroundStyle(.primary)
+      }
+    }
+    .padding(.vertical, 3)
+  }
 }
 
 // MARK: - MessageView

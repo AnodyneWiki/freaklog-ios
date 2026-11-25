@@ -9,7 +9,7 @@ struct AssistantSettingsScreen: View {
         Toggle("Assistant", isOn: $isEnabled)
       } footer: {
         Text(
-          "Chat about your journal from the journal and from each experience, and have sessions summarized. Your messages, and the journal entries and substance data the assistant looks up, go to the provider you choose. Apple's on-device model keeps them on this device.")
+          "Chat about your journal from the journal and from each experience, and have sessions summarized. Your messages, and the journal entries and substance data the assistant looks up, go to the provider you choose. Apple’s on-device model generates answers on this device. Optional online lookups still send queries to those services.")
       }
       Section {
         ForEach(profiles) { profile in

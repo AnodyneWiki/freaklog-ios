@@ -90,7 +90,7 @@ enum AssistantPreset: String, Codable, CaseIterable, Identifiable {
 
   var hint: String {
     switch self {
-    case .onDevice: "Runs on this device with Apple Intelligence, so nothing leaves it. It is free and private, but its answers are simpler and it can only keep short chats."
+    case .onDevice: "Runs on this device with Apple Intelligence and works best for short chats. If you enable online lookups, those services receive the search queries."
     case .anthropic: "Create an API key at console.anthropic.com."
     case .openAI: "Create an API key at platform.openai.com, then fetch the models."
     case .gemini: "Create an API key at aistudio.google.com, then fetch the models."

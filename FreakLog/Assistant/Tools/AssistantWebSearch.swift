@@ -32,7 +32,7 @@ enum AssistantWebSearch {
       throw AssistantError("Use a nonempty web search query of up to 600 characters.")
     }
 
-    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query))
+    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query), isLookup: true)
     for try await event in events {
       let reply = try AssistantHTTP.json(of: event)
       if reply["id"]?.number == 1 {
@@ -42,17 +42,38 @@ enum AssistantWebSearch {
     throw AssistantError("The web search ended without a result.")
   }
 
-  static func markdown(from result: JSONValue) -> String {
+  struct SearchResult: Equatable {
+    let title: String
+    let url: URL?
+    let snippet: String
+  }
+
+  static func searchResults(from result: JSONValue) -> [SearchResult] {
     let excerpts = result["results"]?.array?.compactMap(\.string) ?? []
-    guard !excerpts.isEmpty else { return "No web results found." }
     return excerpts.map { excerpt in
-      excerpt.components(separatedBy: "\n").map { line in
-        guard line.hasPrefix("URL: "), let url = URL(string: String(line.dropFirst(5))),
-              let scheme = url.scheme?.lowercased(), ["https", "http"].contains(scheme),
-              let host = url.host, url.user == nil, url.password == nil else { return line }
-        return "[\(host)](<\(url.absoluteString)>)"
-      }.joined(separator: "\n")
-    }.joined(separator: "\n\n---\n\n")
+      var lines = excerpt.components(separatedBy: .newlines)
+      let title = lines.first.flatMap { $0.hasPrefix("Title: ") ? String($0.dropFirst(7)) : nil }
+      if title != nil { lines.removeFirst() }
+
+      var url: URL?
+      if let line = lines.first, line.hasPrefix("URL: ") {
+        let address = String(line.dropFirst(5))
+        if let candidate = URL(string: address),
+           let scheme = candidate.scheme?.lowercased(), ["http", "https"].contains(scheme),
+           candidate.host != nil, candidate.user == nil, candidate.password == nil {
+          url = candidate
+        }
+        lines.removeFirst()
+      }
+      while let line = lines.first,
+            line.hasPrefix("Published Date:") || line.hasPrefix("Author:") || line.isEmpty {
+        lines.removeFirst()
+      }
+      let snippet = lines.joined(separator: "\n")
+        .replacingOccurrences(of: #"^(Highlights|Text):\s*"#, with: "", options: .regularExpression)
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+      return SearchResult(title: title ?? url?.host ?? "Web Result", url: url, snippet: snippet)
+    }
   }
 
   static func requestBody(query: String) -> JSONValue {
