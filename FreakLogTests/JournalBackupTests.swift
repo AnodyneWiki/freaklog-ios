@@ -132,6 +132,21 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertEqual(
       try context.fetch(WebhookMessage.fetchRequest()).first?.destinationURL,
       "https://example.com/hook")
+    XCTAssertEqual(Set(backup.entities.keys).intersection(["RoutineRecord", "RoutineOccurrence", "StockContainer", "StockChange"]).count, 4)
+  }
+
+  func testImportsVersion3Backups() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v3", withExtension: "json"))
+    let backup = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let context = PersistenceController(inMemory: true).viewContext
+    try backup.restore(into: context)
+    try context.save()
+
+    let ingestion = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertEqual(ingestion.substanceName, "Example")
+    XCTAssertFalse(ingestion.isHiddenInTimeline)
+    XCTAssertTrue(ingestion.substanceCompanion?.isHiddenInTimeline == true)
+    XCTAssertEqual(ingestion.stomachFullness, "halfFull")
   }
 
   func testValidationUsesTheRestoreAndLeavesTheJournalUntouched() throws {
@@ -159,7 +174,7 @@ final class JournalBackupTests: XCTestCase {
     backup.entities["WebhookMessage"]?[0].attributes.removeValue(forKey: "destinationURL")
 
     let upgraded = try XCTUnwrap(JournalBackup.read(backup.fileData()))
-    XCTAssertEqual(upgraded.formatVersion, 2)
+    XCTAssertEqual(upgraded.formatVersion, JournalBackup.formatVersion)
     let context = PersistenceController(inMemory: true).viewContext
     try upgraded.restore(into: context)
     try context.save()
@@ -446,6 +461,7 @@ final class JournalBackupTests: XCTestCase {
     let companion = SubstanceCompanion(context: context)
     companion.substanceName = "MDMA"
     companion.colorAsText = SubstanceColor.pink.rawValue
+    companion.isHiddenInTimeline = true
     let unusedCompanion = SubstanceCompanion(context: context)
     unusedCompanion.substanceName = "Caffeine"
     unusedCompanion.colorAsText = "#123456"
@@ -477,6 +493,7 @@ final class JournalBackupTests: XCTestCase {
           isEstimate: false,
           estimatedDoseStandardDeviation: nil),
       ]).insert(into: context)
+    formulation.componentsSorted.first?.isHiddenInTimeline = true
 
     let ingestion = Ingestion(context: context)
     ingestion.identifier = UUID()
@@ -489,6 +506,7 @@ final class JournalBackupTests: XCTestCase {
     ingestion.estimatedDoseStandardDeviation = 12.5
     ingestion.units = "mg"
     ingestion.administrationRoute = AdministrationRoute.oral.rawValue
+    ingestion.isHiddenInTimeline = true
     ingestion.consumerName = "Alex"
     ingestion.note = "Line\nbreak and \"quotes\""
     ingestion.formulation = formulation
@@ -496,6 +514,24 @@ final class JournalBackupTests: XCTestCase {
     ingestion.customUnit = unit
     ingestion.substanceCompanion = companion
     ingestion.experience = experience
+    let routine = RoutineRecord(context: context)
+    routine.id = UUID()
+    routine.customUnit = unit
+    let occurrence = RoutineOccurrence(context: context)
+    occurrence.key = "morning"
+    occurrence.scheduledAt = start
+    occurrence.routine = routine
+    ingestion.routineOccurrence = occurrence
+    let container = StockContainer(context: context)
+    container.name = "Home"
+    container.unit = "units"
+    container.formulation = formulation
+    let change = StockChange(context: context)
+    change.date = start
+    change.kind = "use"
+    change.quantity = -1.5
+    change.container = container
+    ingestion.stockChange = change
     let location = ExperienceLocation(context: context)
     location.name = "Home"
     location.latitude = 52.520008
@@ -505,6 +541,7 @@ final class JournalBackupTests: XCTestCase {
     let rating = ShulginRating(context: context)
     rating.option = ShulginRatingOption.threePlus.rawValue
     rating.creationDate = start
+    rating.isHiddenInTimeline = true
     rating.experience = experience
     let note = TimedNote(context: context)
     note.note = "Peaking"

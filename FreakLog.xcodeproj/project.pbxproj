@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
@@ -486,6 +487,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
+		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
@@ -1753,6 +1756,7 @@
 			children = (
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
+				050CB115A621D9CF84A3F1BC /* Backup v3.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */,
 				4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */,
@@ -2191,6 +2195,7 @@
 			files = (
 				9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */,
 				5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */,
+				A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
@@ -3124,6 +3129,7 @@
 			isa = XCVersionGroup;
 			children = (
 				8465BDFDBAAD424484E05932 /* PW Version 13.xcdatamodel */,
+				B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */,
 				7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */,
 				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
@@ -3138,7 +3144,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = 8465BDFDBAAD424484E05932 /* PW Version 13.xcdatamodel */;
+			currentVersion = B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
