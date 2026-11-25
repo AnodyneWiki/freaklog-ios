@@ -23,7 +23,11 @@ struct StatsScreen: View {
     var body: some View {
         StatsJournal { entries, tags in
             let selection = overviewSelection
-            let records = StatsRecords(entries: entries, selection: selection, dayStartHour: dayStartHour, tags: tags)
+            let now = Date.now
+            let records = StatsRecords(entries: entries, selection: selection, now: now, dayStartHour: dayStartHour, tags: tags)
+            let neighboring = StatsAdjacentPeriods(
+                entries: entries, selection: selection, now: now, dayStartHour: dayStartHour, tags: tags
+            )
             let pins = StatsPreferences.decode(pinnedStatsData)
 
             List {
@@ -40,7 +44,7 @@ struct StatsScreen: View {
                 }
 
                 Section("Summary") {
-                    ingestionOverview(records: records, selection: selection)
+                    ingestionOverview(records: records, selection: selection, neighboring: neighboring)
                     NavigationLink {
                         StatsDetailScreen(metric: .experiences, selection: selection)
                     } label: {
@@ -180,10 +184,10 @@ struct StatsScreen: View {
                    uniquingKeysWith: { first, _ in first })
     }
 
-    private func ingestionOverview(records: StatsRecords, selection: StatsSelection) -> some View {
-        let contributions = records.ingestionContributions
-        let buckets = records.buckets(for: .ingestions)
-        return NavigationLink {
+    private func ingestionOverview(
+        records: StatsRecords, selection: StatsSelection, neighboring: StatsAdjacentPeriods
+    ) -> some View {
+        NavigationLink {
             StatsDetailScreen(metric: .ingestions, selection: selection)
         } label: {
             VStack(alignment: .leading, spacing: 6) {
@@ -192,23 +196,37 @@ struct StatsScreen: View {
                     .foregroundStyle(Color.accentColor)
                 Text(records.entries.count, format: .number)
                     .font(.title2.weight(.semibold).monospacedDigit())
-                if let domain = records.chartDomain(covering: buckets) {
-                    Chart(contributions) { item in
-                        BarMark(x: .value("Period", records.journalDay.label(for: item.id.date), unit: records.bucketComponent),
-                                y: .value("Count", item.count))
-                            .foregroundStyle(by: .value("Substance", item.id.substance))
+                StatsPeriodPager(
+                    step: selection.period.canBrowse ? $periodStep : nil,
+                    oldestStep: selection.period.oldestOffset, height: 54
+                ) { direction in
+                    if let page = direction == 0 ? records : neighboring[direction] {
+                        overviewChart(page)
                     }
-                    .chartXScale(domain: domain)
-                    .chartForegroundStyleScale(mapping: { colors[$0] ?? Color.accentColor })
-                    .chartLegend(.hidden)
-                    .chartXAxis(.hidden)
-                    .chartYAxis(.hidden)
-                    .frame(height: 54)
-                    .accessibilityHidden(true)
                 }
+                .accessibilityHidden(true)
             }
             .padding(.vertical, 6)
             .accessibilityElement(children: .combine)
+        }
+    }
+
+    @ViewBuilder
+    private func overviewChart(_ records: StatsRecords) -> some View {
+        let buckets = records.buckets(for: .ingestions)
+        if let domain = records.chartDomain(covering: buckets) {
+            Chart(records.ingestionContributions) { item in
+                BarMark(x: .value("Period", records.journalDay.label(for: item.id.date), unit: records.bucketComponent),
+                        y: .value("Count", item.count))
+                    .foregroundStyle(by: .value("Substance", item.id.substance))
+            }
+            .chartXScale(domain: domain)
+            .chartForegroundStyleScale(mapping: { colors[$0] ?? Color.accentColor })
+            .chartLegend(.hidden)
+            .chartXAxis(.hidden)
+            .chartYAxis(.hidden)
+        } else {
+            Text("No Ingestions").font(.caption).foregroundStyle(.secondary)
         }
     }
 

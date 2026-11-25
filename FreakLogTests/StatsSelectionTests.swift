@@ -44,10 +44,10 @@ final class StatsSelectionTests: XCTestCase {
     }
 
     func testPreviousPeriodSharesBoundaryAndCanBePinnedAsExactDates() {
-        for period: StatsPeriod in [.last7Days, .last30Days, .thisMonth, .last12Months] {
+        for period: StatsPeriod in [.last7Days, .last30Days, .thisMonth] {
             let current = StatsSelection(period: period).dateRange(now: now, calendar: calendar)
             var previousSelection = StatsSelection(period: period)
-            previousSelection.periodStep = -1
+            previousSelection.periodStep = period == .thisMonth ? -1 : -period.largeStep
             let previous = previousSelection.dateRange(now: now, calendar: calendar)
             XCTAssertEqual(previous.end, current.start)
 
@@ -55,6 +55,58 @@ final class StatsSelectionTests: XCTestCase {
             XCTAssertEqual(pinned.period, .custom)
             XCTAssertEqual(pinned.dateRange(now: now.addingTimeInterval(86_400), calendar: calendar), previous)
         }
+    }
+
+    func testDailyStepAndWindowJumpUseTheSameRollingRange() throws {
+        let today = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25, hour: 12)))
+        for period: StatsPeriod in [.last7Days, .last30Days] {
+            var selection = StatsSelection(period: period)
+            let current = selection.dateRange(now: today, calendar: calendar)
+            selection.periodStep = -1
+            let yesterday = selection.dateRange(now: today, calendar: calendar)
+            XCTAssertEqual(calendar.dateComponents([.day], from: yesterday.start, to: current.start).day, 1)
+            selection.periodStep = -period.largeStep
+            let priorWindow = selection.dateRange(now: today, calendar: calendar)
+            XCTAssertEqual(priorWindow.end, current.start)
+        }
+    }
+
+    func testDecodesOlderDayWindowOffsetsAndKeepsNewDayOffsets() throws {
+        var selection = StatsSelection(period: .last30Days)
+        selection.periodStep = -2
+        let encoded = try JSONEncoder().encode(selection)
+        XCTAssertEqual(try JSONDecoder().decode(StatsSelection.self, from: encoded).periodStep, -2)
+
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        legacy.removeValue(forKey: "periodOffset")
+        legacy["periodStep"] = -2
+        let restored = try JSONDecoder().decode(StatsSelection.self, from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertEqual(restored.periodStep, -60)
+    }
+
+    func testTwelveMonthPeriodMovesOneCalendarMonthAndPinsTheVisibleDates() throws {
+        let journalDay = JournalDay(startHour: 4, calendar: calendar)
+        let march31 = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 3, day: 31, hour: 14)))
+        let april1 = try XCTUnwrap(calendar.date(from: DateComponents(year: 2025, month: 4, day: 1, hour: 4)))
+        let february28 = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 2, day: 28)))
+        let march1 = try XCTUnwrap(calendar.date(from: DateComponents(year: 2025, month: 3, day: 1, hour: 4)))
+        var selection = StatsSelection(period: .last12Months)
+
+        let current = selection.dateRange(now: march31, calendar: calendar, dayStartHour: 4)
+        XCTAssertEqual(current.start, april1)
+        XCTAssertEqual(current.end, march31.addingTimeInterval(0.001))
+
+        selection.periodStep = -1
+        let previous = selection.dateRange(now: march31, calendar: calendar, dayStartHour: 4)
+        XCTAssertEqual(previous.start, march1)
+        XCTAssertEqual(journalDay.lastLabel(in: previous), february28)
+        XCTAssertGreaterThan(previous.end, current.start)
+
+        let pin = selection.anchored(now: march31, calendar: calendar, dayStartHour: 4)
+        XCTAssertEqual(pin.period, .custom)
+        XCTAssertEqual(pin.dateRange(now: march31, calendar: calendar, dayStartHour: 4), previous)
+        selection.periodStep = 0
+        XCTAssertEqual(selection.dateRange(now: march31, calendar: calendar, dayStartHour: 4), current)
     }
 
     func testOvernightBoundaryGroupsCalendarAndStatsAndLimitsCustomDates() throws {
@@ -85,7 +137,7 @@ final class StatsSelectionTests: XCTestCase {
 
         var currentWeek = StatsSelection(period: .last7Days)
         let current = currentWeek.dateRange(now: earlyMorning, calendar: calendar, dayStartHour: 4)
-        currentWeek.periodStep = -1
+        currentWeek.periodStep = -currentWeek.period.largeStep
         let previousWeek = currentWeek.dateRange(now: earlyMorning, calendar: calendar, dayStartHour: 4)
         XCTAssertEqual(previousWeek.end, current.start)
         let pin = currentWeek.anchored(now: earlyMorning, calendar: calendar, dayStartHour: 4)

@@ -29,7 +29,13 @@ struct StatsDetailScreen: View {
 
     var body: some View {
         StatsJournal { entries, tags in
-            let records = StatsRecords(entries: entries, selection: effectiveSelection, dayStartHour: dayStartHour, tags: tags)
+            let now = Date.now
+            let records = StatsRecords(
+                entries: entries, selection: effectiveSelection, now: now, dayStartHour: dayStartHour, tags: tags
+            )
+            let neighboring = StatsAdjacentPeriods(
+                entries: entries, selection: effectiveSelection, now: now, dayStartHour: dayStartHour, tags: tags
+            )
             let buckets = records.buckets(for: metric)
             let focused = selectedInterval.map { records.selecting($0, for: metric) } ?? records
             let scopedSelection = selectedInterval.map { _ in
@@ -46,9 +52,12 @@ struct StatsDetailScreen: View {
 
                 if metric != .gaps {
                     if showsAmounts {
-                        amountsSection(records, focused: focused, selection: scopedSelection)
+                        amountsSection(records, focused: focused, selection: scopedSelection, neighboring: neighboring)
                     } else {
-                        chartSection(records: records, buckets: buckets, focused: focused, selection: scopedSelection, tags: tags)
+                        chartSection(
+                            records: records, buckets: buckets, focused: focused, selection: scopedSelection,
+                            tags: tags, neighboring: neighboring
+                        )
                     }
                     if let historySubstance {
                         historySections(focused, selection: scopedSelection, substance: historySubstance)
@@ -162,6 +171,10 @@ struct StatsDetailScreen: View {
         return result
     }
 
+    private var chartPeriodStep: Binding<Int>? {
+        selection.focus == nil && selection.period.canBrowse ? $selection.periodStep : nil
+    }
+
     private var detailTitle: Text {
         if let historySubstance {
             return Text(PersistenceController.shared.displayName(for: historySubstance))
@@ -226,7 +239,7 @@ struct StatsDetailScreen: View {
     @ViewBuilder
     private func chartSection(
         records: StatsRecords, buckets: [StatsRecords.Bucket], focused: StatsRecords,
-        selection scoped: StatsSelection, tags: [String: PersonalSubstanceTags]
+        selection scoped: StatsSelection, tags: [String: PersonalSubstanceTags], neighboring: StatsAdjacentPeriods
     ) -> some View {
         Section {
             if metric == .ingestions { chartMetricPicker }
@@ -237,7 +250,7 @@ struct StatsDetailScreen: View {
                 }
             }
             let selectedBucket = buckets.first { $0.id == selectedInterval?.start }
-            if let domain = records.chartDomain(covering: buckets) {
+            if !buckets.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
                     if metric == .ingestions, effectiveSelection.singleSubstance != nil {
                         Text("Ingestions")
@@ -260,40 +273,11 @@ struct StatsDetailScreen: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                let tagNames = Dictionary(records.entries.compactMap { entry -> (String, String)? in
-                    guard let name = tags[entry.substanceNameUnwrapped]?.primary else { return nil }
-                    return (PersonalSubstanceTags.key(name), name)
-                }, uniquingKeysWith: { first, _ in first })
-                let untagged = "\u{0}untagged"
-                let mixed = "\u{0}mixed"
-                let contributions = selection.groupsByPrimaryTag ? records.contributions(
-                    for: metric, group: { entry in
-                        tags[entry.substanceNameUnwrapped]?.primary.map(PersonalSubstanceTags.key) ?? untagged
-                    }, mixedGroup: mixed
-                ) : (metric == .ingestions ? records.ingestionContributions : [])
-                let substanceColors = Dictionary(records.entries.map {
-                    ($0.substanceNameUnwrapped, $0.substanceColor.swiftUIColor)
-                }, uniquingKeysWith: { first, _ in first })
-                let seriesColors = selection.groupsByPrimaryTag
-                    ? tagColors(tagNames).merging([untagged: .gray, mixed: .secondary]) { first, _ in first }
-                    : substanceColors
-                let labels = selection.groupsByPrimaryTag
-                    ? tagNames.merging([
-                        untagged: String(localized: "No Primary Tag"), mixed: String(localized: "Multiple Groups")
-                    ]) { first, _ in first }
-                    : Dictionary(uniqueKeysWithValues: substanceColors.keys.map {
-                        ($0, PersistenceController.shared.displayName(for: $0))
-                    })
-                StatsPeriodChart(
-                    buckets: buckets, component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
-                    contributions: contributions, colors: seriesColors, labels: labels, selection: Binding(
-                        get: { selectedBucket?.id },
-                        set: { id in
-                            selectedInterval = buckets.first { $0.id == id }?.interval
-                        }
-                    )
+                let (contributions, seriesColors, labels) = countSeries(records, tags: tags)
+                countChart(
+                    records, buckets: buckets, contributions: contributions, colors: seriesColors,
+                    labels: labels, tags: tags, neighboring: neighboring
                 )
-
                 if selection.groupsByPrimaryTag {
                     let visible = contributions.filter { selectedBucket == nil || $0.id.date == selectedBucket?.id }
                     let series = Dictionary(grouping: visible, by: \.id.substance).mapValues {
@@ -315,6 +299,10 @@ struct StatsDetailScreen: View {
                                   value: item.count.formatted(), color: seriesColors[item.id.substance] ?? .accentColor)
                     }
                 }
+            } else if chartPeriodStep != nil {
+                countChart(
+                    records, buckets: [], contributions: [], colors: [:], labels: [:], tags: tags, neighboring: neighboring
+                )
             } else {
                 Text("No entries match this period and filters.")
                     .foregroundStyle(.secondary)
@@ -338,6 +326,72 @@ struct StatsDetailScreen: View {
             if selection.groupsByPrimaryTag, metric == .experiences, !buckets.isEmpty {
                 Text("An experience contributes once to the chart. Experiences spanning multiple primary tag groups are grouped together.")
             }
+        }
+    }
+
+    private func countSeries(
+        _ records: StatsRecords, tags: [String: PersonalSubstanceTags]
+    ) -> ([StatsRecords.Contribution], [String: Color], [String: String]) {
+        if selection.groupsByPrimaryTag {
+            let names = Dictionary(records.entries.compactMap { entry -> (String, String)? in
+                guard let name = tags[entry.substanceNameUnwrapped]?.primary else { return nil }
+                return (PersonalSubstanceTags.key(name), name)
+            }, uniquingKeysWith: { first, _ in first })
+            let untagged = "\u{0}untagged"
+            let mixed = "\u{0}mixed"
+            let contributions = records.contributions(for: metric, group: { entry in
+                tags[entry.substanceNameUnwrapped]?.primary.map(PersonalSubstanceTags.key) ?? untagged
+            }, mixedGroup: mixed)
+            let colors = tagColors(names).merging([untagged: .gray, mixed: .secondary]) { first, _ in first }
+            let labels = names.merging([
+                untagged: String(localized: "No Primary Tag"), mixed: String(localized: "Multiple Groups")
+            ]) { first, _ in first }
+            return (contributions, colors, labels)
+        }
+        let colors = Dictionary(records.entries.map {
+            ($0.substanceNameUnwrapped, $0.substanceColor.swiftUIColor)
+        }, uniquingKeysWith: { first, _ in first })
+        let labels = Dictionary(uniqueKeysWithValues: colors.keys.map {
+            ($0, PersistenceController.shared.displayName(for: $0))
+        })
+        return (metric == .ingestions ? records.ingestionContributions : [], colors, labels)
+    }
+
+    private func countChart(
+        _ records: StatsRecords, buckets: [StatsRecords.Bucket], contributions: [StatsRecords.Contribution],
+        colors: [String: Color], labels: [String: String], tags: [String: PersonalSubstanceTags],
+        neighboring: StatsAdjacentPeriods
+    ) -> some View {
+        StatsPeriodPager(step: chartPeriodStep, oldestStep: selection.period.oldestOffset, height: 180) { direction in
+            if direction == 0 {
+                countPage(records, buckets: buckets, contributions: contributions, colors: colors, labels: labels,
+                          selection: Binding(
+                              get: { selectedInterval?.start },
+                              set: { id in selectedInterval = buckets.first { $0.id == id }?.interval }
+                          ))
+            } else if let page = neighboring[direction] {
+                let (contributions, colors, labels) = countSeries(page, tags: tags)
+                countPage(page, buckets: page.buckets(for: metric), contributions: contributions, colors: colors,
+                          labels: labels, selection: .constant(nil))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func countPage(
+        _ records: StatsRecords, buckets: [StatsRecords.Bucket], contributions: [StatsRecords.Contribution],
+        colors: [String: Color], labels: [String: String], selection: Binding<Date?>
+    ) -> some View {
+        if let domain = records.chartDomain(covering: buckets) {
+            StatsPeriodChart(
+                buckets: buckets, component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
+                contributions: contributions, colors: colors, labels: labels, selection: selection
+            )
+        } else {
+            Text("No entries match this period and filters.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
 
@@ -457,9 +511,13 @@ struct StatsDetailScreen: View {
         return result
     }
 
-    private func amountsSection(_ records: StatsRecords, focused: StatsRecords, selection scoped: StatsSelection) -> some View {
+    private func amountsSection(
+        _ records: StatsRecords, focused: StatsRecords, selection scoped: StatsSelection, neighboring: StatsAdjacentPeriods
+    ) -> some View {
         let amounts = records.amounts
         let trends = records.amountTrends
+        let previousTrends = neighboring[-1]?.amountTrends
+        let nextTrends = neighboring[1]?.amountTrends
         let domain = records.chartDomain(covering: records.buckets(for: .ingestions))
         let colors = Dictionary(records.entries.map {
             ($0.substanceNameUnwrapped, $0.substanceColor.swiftUIColor)
@@ -483,14 +541,21 @@ struct StatsDetailScreen: View {
 
                     if amounts.count == 1 {
                         amountTotal(summary, prominent: true)
-                        amountChart(amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color)
+                        amountChart(
+                            amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color,
+                            neighboring: neighboring, previous: previousTrends?[amount.key] ?? [], next: nextTrends?[amount.key] ?? []
+                        )
                         matchingAmountsLink(summary, selection: isSelected ? scoped : effectiveSelection)
                         DisclosureGroup("Amount Details") {
                             amountDetails(summary)
                         }
                     } else {
                         DisclosureGroup(isExpanded: amountExpansion(for: amount.key)) {
-                            amountChart(amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color)
+                            amountChart(
+                                amount, buckets: buckets, domain: domain, records: records, focused: focused, color: color,
+                                neighboring: neighboring, previous: previousTrends?[amount.key] ?? [],
+                                next: nextTrends?[amount.key] ?? []
+                            )
                             matchingAmountsLink(summary, selection: isSelected ? scoped : effectiveSelection)
                             amountDetails(summary)
                         } label: {
@@ -552,29 +617,51 @@ struct StatsDetailScreen: View {
     @ViewBuilder
     private func amountChart(
         _ amount: StatsRecords.Amount, buckets: [StatsRecords.AmountBucket], domain: ClosedRange<Date>?,
-        records: StatsRecords, focused: StatsRecords, color: Color
+        records: StatsRecords, focused: StatsRecords, color: Color, neighboring: StatsAdjacentPeriods,
+        previous: [StatsRecords.AmountBucket], next: [StatsRecords.AmountBucket]
     ) -> some View {
         if selectedAmountKey == amount.key, selectedInterval != nil {
             Text(statsRangeLabel(focused.range, journalDay: records.journalDay))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
         }
+        StatsPeriodPager(step: chartPeriodStep, oldestStep: selection.period.oldestOffset, height: 180) { direction in
+            if direction == 0 {
+                amountPage(amount, buckets: buckets, domain: domain, records: records, color: color, selection: Binding(
+                    get: { selectedAmountKey == amount.key ? selectedInterval?.start : nil },
+                    set: { id in
+                        selectedAmountKey = amount.key
+                        selectedInterval = buckets.first { $0.id == id }?.interval
+                    }
+                ))
+            } else if let page = neighboring[direction] {
+                amountPage(
+                    amount, buckets: direction < 0 ? previous : next,
+                    domain: page.chartDomain(covering: page.buckets(for: .ingestions)),
+                    records: page, color: color, selection: .constant(nil)
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func amountPage(
+        _ amount: StatsRecords.Amount, buckets: [StatsRecords.AmountBucket], domain: ClosedRange<Date>?,
+        records: StatsRecords, color: Color, selection: Binding<Date?>
+    ) -> some View {
         if let domain, !buckets.isEmpty {
             StatsPeriodChart(
                 buckets: buckets.map { StatsRecords.Bucket(interval: $0.interval, count: 0) },
                 component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
                 contributions: [], colors: [:], labels: [:],
                 amounts: Dictionary(uniqueKeysWithValues: buckets.map { ($0.id, $0.total) }),
-                amountUnit: amount.key.unit, amountColor: color,
-                selection: Binding(
-                    get: { selectedAmountKey == amount.key ? selectedInterval?.start : nil },
-                    set: { id in
-                        selectedAmountKey = amount.key
-                        selectedInterval = buckets.first { $0.id == id }?.interval
-                    }
-                )
+                amountUnit: amount.key.unit, amountColor: color, selection: selection
             )
-
+        } else {
+            Text("No amounts recorded for this period.")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
         }
     }
 

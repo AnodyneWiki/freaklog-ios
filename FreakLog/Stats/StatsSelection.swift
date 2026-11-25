@@ -50,6 +50,8 @@ struct JournalDay {
 }
 
 enum StatsPeriod: String, CaseIterable, Codable {
+    static let oldestStep = -1_000
+
     case last7Days
     case last30Days
     case thisMonth
@@ -67,6 +69,50 @@ enum StatsPeriod: String, CaseIterable, Codable {
         case .custom: "Custom Dates"
         }
     }
+
+    var canBrowse: Bool { self != .allTime && self != .custom }
+
+    var largeStep: Int {
+        switch self {
+        case .last7Days: 7
+        case .last30Days: 30
+        default: 12
+        }
+    }
+
+    var oldestOffset: Int {
+        switch self {
+        case .last7Days, .last30Days: Self.oldestStep * largeStep
+        default: Self.oldestStep
+        }
+    }
+
+    func stepLabel(backward: Bool, large: Bool) -> LocalizedStringKey {
+        if large {
+            switch self {
+            case .last7Days: return backward ? "Back 7 Days" : "Forward 7 Days"
+            case .last30Days: return backward ? "Back 30 Days" : "Forward 30 Days"
+            default: return backward ? "Back One Year" : "Forward One Year"
+            }
+        }
+        switch self {
+        case .last7Days, .last30Days: return backward ? "Back One Day" : "Forward One Day"
+        default: return backward ? "Back One Month" : "Forward One Month"
+        }
+    }
+
+    func clampedStep(_ step: Int) -> Int {
+        min(0, max(oldestOffset, step))
+    }
+
+    func offset(fromLegacyStep step: Int) -> Int {
+        let bounded = min(0, max(Self.oldestStep, step))
+        switch self {
+        case .last7Days, .last30Days: return bounded * largeStep
+        default: return bounded
+        }
+    }
+
 }
 
 enum StatsMetric: String, Codable {
@@ -178,11 +224,12 @@ struct StatsSelection: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case period, customStart, customEnd, substances, route, person, tags, matchesPrimaryTagOnly, requiredPrimaryTag
-        case alongside, alongsideFilter, focus, periodStep, groupsByPrimaryTag
+        case alongside, alongsideFilter, focus, groupsByPrimaryTag
+        case periodStep = "periodOffset"
     }
 
     private enum LegacyKeys: String, CodingKey {
-        case substance, tag
+        case substance, tag, periodStep
     }
 
     init(from decoder: Decoder) throws {
@@ -204,7 +251,8 @@ struct StatsSelection: Codable, Equatable {
         alongside = try fields.decodeIfPresent(String.self, forKey: .alongside)
         alongsideFilter = try fields.decodeIfPresent(EntryFilter.self, forKey: .alongsideFilter)
         focus = try fields.decodeIfPresent(Focus.self, forKey: .focus)
-        periodStep = min(0, max(-1_000, try fields.decodeIfPresent(Int.self, forKey: .periodStep) ?? 0))
+        let oldStep = try legacy.decodeIfPresent(Int.self, forKey: .periodStep) ?? 0
+        periodStep = period.clampedStep(try fields.decodeIfPresent(Int.self, forKey: .periodStep) ?? period.offset(fromLegacyStep: oldStep))
         groupsByPrimaryTag = try fields.decodeIfPresent(Bool.self, forKey: .groupsByPrimaryTag) ?? false
     }
 
@@ -240,8 +288,8 @@ struct StatsSelection: Codable, Equatable {
         switch period {
         case .last7Days, .last30Days:
             let days = period == .last7Days ? 7 : 30
-            let start = calendar.date(byAdding: .day, value: days * periodStep - days + 1, to: today) ?? today
-            let end = calendar.date(byAdding: .day, value: days * periodStep + 1, to: today) ?? until
+            let start = calendar.date(byAdding: .day, value: periodStep - days + 1, to: today) ?? today
+            let end = calendar.date(byAdding: .day, value: periodStep + 1, to: today) ?? until
             return DateInterval(start: journalDay.start(of: start), end: min(journalDay.start(of: end), until))
         case .thisMonth:
             let date = calendar.date(byAdding: .month, value: periodStep, to: today) ?? today
@@ -250,9 +298,9 @@ struct StatsSelection: Codable, Equatable {
             let end = month.map { journalDay.start(of: $0.end) } ?? until
             return DateInterval(start: start, end: min(end, until))
         case .last12Months:
-            let boundary = calendar.date(byAdding: .day, value: 1, to: today) ?? until
-            let start = calendar.date(byAdding: .month, value: (periodStep - 1) * 12, to: boundary) ?? today
-            let end = calendar.date(byAdding: .month, value: periodStep * 12, to: boundary) ?? until
+            let lastDay = calendar.date(byAdding: .month, value: periodStep, to: today) ?? today
+            let end = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? until
+            let start = calendar.date(byAdding: .month, value: -12, to: end) ?? lastDay
             return DateInterval(start: journalDay.start(of: start), end: min(journalDay.start(of: end), until))
         case .allTime:
             return DateInterval(start: .distantPast, end: .distantFuture)
@@ -265,7 +313,7 @@ struct StatsSelection: Codable, Equatable {
     }
 
     func anchored(now: Date, calendar: Calendar = .current, dayStartHour: Int = 0) -> Self {
-        guard periodStep < 0, period != .allTime, period != .custom else { return self }
+        guard periodStep < 0, period.canBrowse else { return self }
         var copy = self
         let journalDay = JournalDay(startHour: dayStartHour, calendar: calendar)
         let interval = dateRange(now: now, calendar: calendar, dayStartHour: dayStartHour)
@@ -652,41 +700,178 @@ struct StatsPeriodControls: View {
                     }
                 }
             ), in: ...today, displayedComponents: .date)
-        } else if period != .allTime {
+        } else if period.canBrowse {
             let now = Date.now
             var selection: StatsSelection {
                 var selection = StatsSelection(period: period)
                 selection.periodStep = step
                 return selection
             }
-            HStack {
-                Button {
-                    step -= 1
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .frame(minWidth: 44, minHeight: 44)
+            let dates = Text(statsRangeLabel(
+                selection.dateRange(now: now, dayStartHour: dayStartHour), journalDay: .init(startHour: dayStartHour)
+            ))
+                .font(.subheadline)
+                .multilineTextAlignment(.center)
+                .accessibilityIdentifier("stats-range")
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 0) {
+                    periodButton(backward: true, large: true)
+                    periodButton(backward: true, large: false)
+                    dates.fixedSize(horizontal: true, vertical: false)
+                        .frame(maxWidth: .infinity)
+                    periodButton(backward: false, large: false)
+                    periodButton(backward: false, large: true)
                 }
-                .accessibilityLabel("Previous Period")
-                .disabled(step <= -1_000)
-
-                Text(statsRangeLabel(
-                    selection.dateRange(now: now, dayStartHour: dayStartHour), journalDay: .init(startHour: dayStartHour)
-                ))
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity)
-                    .multilineTextAlignment(.center)
-
-                Button {
-                    step += 1
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .frame(minWidth: 44, minHeight: 44)
+                VStack(spacing: 0) {
+                    dates.frame(maxWidth: .infinity)
+                    HStack(spacing: 0) {
+                        periodButton(backward: true, large: true)
+                        periodButton(backward: true, large: false)
+                        Spacer()
+                        periodButton(backward: false, large: false)
+                        periodButton(backward: false, large: true)
+                    }
                 }
-                .accessibilityLabel("Next Period")
-                .disabled(step == 0)
             }
             .buttonStyle(.borderless)
         }
+    }
+
+    private func periodButton(backward: Bool, large: Bool) -> some View {
+        let direction = backward ? -1 : 1
+        let destination = period.clampedStep(step + direction * (large ? period.largeStep : 1))
+        let symbol = backward ? "chevron.backward" : "chevron.forward"
+        return Button {
+            step = destination
+        } label: {
+            Image(systemName: large ? symbol + ".2" : symbol)
+                .frame(width: 44, height: 44)
+        }
+        .accessibilityLabel(Text(period.stepLabel(backward: backward, large: large)))
+        .disabled(destination == step)
+    }
+}
+
+struct StatsAdjacentPeriods {
+    private var records: [Int: StatsRecords] = [:]
+
+    init(entries: [Ingestion], selection: StatsSelection, now: Date, dayStartHour: Int, tags: [String: PersonalSubstanceTags]) {
+        guard selection.period.canBrowse, selection.focus == nil else { return }
+        for direction in [-1, 1] {
+            var adjacent = selection
+            adjacent.periodStep = selection.period.clampedStep(selection.periodStep + direction)
+            guard adjacent.periodStep != selection.periodStep else { continue }
+            records[direction] = StatsRecords(
+                entries: entries, selection: adjacent, now: now, dayStartHour: dayStartHour, tags: tags
+            )
+        }
+    }
+
+    subscript(direction: Int) -> StatsRecords? { records[direction] }
+}
+
+struct StatsPeriodPager<Page: View>: View {
+    let step: Binding<Int>?
+    let height: CGFloat
+    let oldestStep: Int
+    private let previous: Page
+    private let current: Page
+    private let next: Page
+    @GestureState(resetTransaction: Transaction(animation: .easeOut(duration: 0.18))) private var translation: CGFloat = 0
+    @State private var target: Int?
+    @Environment(\.layoutDirection) private var layoutDirection
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    init(step: Binding<Int>?, oldestStep: Int, height: CGFloat, @ViewBuilder page: (Int) -> Page) {
+        self.step = step
+        self.height = height
+        self.oldestStep = oldestStep
+        previous = page(-1)
+        current = page(0)
+        next = page(1)
+    }
+
+    var body: some View {
+        if let step {
+            GeometryReader { geometry in
+                let width = max(geometry.size.width, 1)
+                let sign: CGFloat = layoutDirection == .leftToRight ? 1 : -1
+                let distance = target.map { -CGFloat($0 - step.wrappedValue) * width * sign } ?? translation
+                ZStack {
+                    if hasPrevious, distance * sign > 0 {
+                        previous
+                            .frame(width: width, height: height)
+                            .offset(x: distance - width * sign)
+                            .accessibilityHidden(true)
+                            .allowsHitTesting(false)
+                    }
+                    if hasNext, distance * sign < 0 {
+                        next
+                            .frame(width: width, height: height)
+                            .offset(x: distance + width * sign)
+                            .accessibilityHidden(true)
+                            .allowsHitTesting(false)
+                    }
+                    current
+                        .frame(width: width, height: height)
+                        .offset(x: distance)
+                }
+                .frame(width: width, height: height)
+                .clipped()
+                .contentShape(Rectangle())
+                .simultaneousGesture(
+                    DragGesture(minimumDistance: 14, coordinateSpace: .global)
+                        .updating($translation) { drag, state, transaction in
+                            guard target == nil, isHorizontal(drag) else { return }
+                            let distance = drag.translation.width
+                            let direction = distance * sign > 0 ? -1 : 1
+                            let canMove = direction == -1 ? hasPrevious : hasNext
+                            transaction.animation = nil
+                            state = canMove ? max(-width, min(width, distance)) : max(-24, min(24, distance * 0.2))
+                        }
+                        .onEnded { drag in
+                            guard target == nil, isHorizontal(drag) else { return }
+                            let distance = drag.translation.width
+                            let projected = drag.predictedEndTranslation.width
+                            let direction = distance * sign > 0 ? -1 : 1
+                            guard direction == -1 ? hasPrevious : hasNext,
+                                  abs(distance) >= max(28, width * 0.25)
+                                      || (abs(distance) >= 32 && abs(projected) >= width * 0.5)
+                            else { return }
+                            if reduceMotion {
+                                step.wrappedValue += direction
+                            } else {
+                                withAnimation(.easeOut(duration: 0.18)) {
+                                    target = step.wrappedValue + direction
+                                }
+                            }
+                        }
+                )
+            }
+            .frame(height: height)
+            .task(id: target) {
+                guard let target else { return }
+                let start = step.wrappedValue
+                do { try await Task.sleep(for: .milliseconds(180)) } catch { return }
+                guard step.wrappedValue == start else { return }
+                var transaction = Transaction()
+                transaction.disablesAnimations = true
+                withTransaction(transaction) {
+                    step.wrappedValue = target
+                    self.target = nil
+                }
+            }
+            .onChange(of: step.wrappedValue) { _ in target = nil }
+        } else {
+            current.frame(height: height)
+        }
+    }
+
+    private var hasPrevious: Bool { (step?.wrappedValue ?? oldestStep) > oldestStep }
+    private var hasNext: Bool { (step?.wrappedValue ?? 0) < 0 }
+
+    private func isHorizontal(_ drag: DragGesture.Value) -> Bool {
+        abs(drag.translation.width) > abs(drag.translation.height) * 1.4
     }
 }
 
