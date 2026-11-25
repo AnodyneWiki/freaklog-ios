@@ -30,6 +30,9 @@ struct FreakLog: App {
                         .environmentObject(locationManager)
                         .environmentObject(LeaderboardServerStore.shared)
                         .accentColor(Color.blue)
+                        .task(id: scenePhase) {
+                            if scenePhase == .active { await JournalAutomaticBackups.shared.save() }
+                        }
                         .onReceive(NotificationCenter.default.publisher(for: IngestionDeletion.failureNotification)) { notification in
                             if let message = notification.object as? String {
                                 toastViewModel.showErrorToast(message: message)

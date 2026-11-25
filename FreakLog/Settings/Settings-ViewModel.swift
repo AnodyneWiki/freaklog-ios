@@ -32,6 +32,11 @@ extension SettingsScreen {
             return false
         }
 
+        var transferOmissions: [String] {
+            if case .journal(let journal) = contents { return journal.transferOmissions }
+            return []
+        }
+
         var isEmptyJournal: Bool {
             counts.experiences == 0 && counts.ingestions == 0 && counts.timedNotes == 0
         }
@@ -127,7 +132,7 @@ extension SettingsScreen {
         let counts: JournalCounts
     }
 
-    enum ImportPurpose: Sendable {
+    enum ImportPurpose: Hashable, Sendable {
         case restore, verify
     }
 
@@ -135,6 +140,7 @@ extension SettingsScreen {
         let data: Data
         let filename: String
         let purpose: ImportPurpose
+        let isAndroid: Bool
     }
 
     @MainActor
@@ -146,13 +152,14 @@ extension SettingsScreen {
         @Published private(set) var lockedImport: LockedImport?
         @Published private(set) var recoveryCopies: [JournalRecoveryBackups.Entry] = []
         @Published var isShowingImportDetails = false
-        @Published var importError: String?
+        @Published private(set) var importError: String?
+        @Published private(set) var fileErrors: [ImportPurpose: String] = [:]
         @Published private(set) var isApplyingImport = false
-        @Published private(set) var isPreparingImport = false
+        @Published private(set) var preparingImportFor: ImportPurpose?
+        var isPreparingImport: Bool { preparingImportFor != nil }
         weak var toastViewModel: ToastViewModel?
 
-        // The journal in the format the Android app reads
-        func exportData() async throws -> PreparedExport {
+        func exportData(forAndroid: Bool = false) async throws -> PreparedExport {
             try await export(contentType: .json, suffix: "") { context in
                 let journal = try JournalFile(
                     experiences: context.fetch(PersistenceController.experiencesRequest(prefetchingIngestions: true)),
@@ -161,6 +168,10 @@ extension SettingsScreen {
                     substanceOverrideRoas: context.fetch(PersistenceController.standaloneCustomRoasRequest()),
                     substanceOverrides: context.fetch(PersistenceController.substanceOverridesRequest()),
                     formulations: context.fetch(PersistenceController.formulationsRequest()))
+                if forAndroid {
+                    let data = try journal.androidTransferData()
+                    return (data, JournalCounts(try JournalFile.read(data)))
+                }
                 return (try JSONEncoder().encode(journal), JournalCounts(journal))
             }
         }
@@ -173,10 +184,15 @@ extension SettingsScreen {
             }
         }
 
-        func protectBackup(_ file: ExportedFile, passphrase: String) async throws -> ExportedFile {
+        func protectBackup(_ file: ExportedFile, passphrase: String, forAndroid: Bool = false) async throws -> ExportedFile {
             let data = try await Task.detached(priority: .userInitiated) {
-                try JournalBackupProtection.protect(file.data, passphrase: passphrase)
+                try forAndroid
+                    ? JournalBackupProtection.protectAndroid(file.data, passphrase: passphrase)
+                    : JournalBackupProtection.protect(file.data, passphrase: passphrase)
             }.value
+            if forAndroid {
+                return ExportedFile(data: data, filename: file.filename + ".enc", contentType: .androidEncryptedJournal)
+            }
             return ExportedFile(data: data, filename: file.filename, contentType: file.contentType)
         }
 
@@ -205,11 +221,11 @@ extension SettingsScreen {
 
         func prepareImport(_ url: URL, purpose: ImportPurpose = .restore) {
             guard !isPreparingImport, !isApplyingImport else { return }
-            importError = nil
-            isPreparingImport = true
+            fileErrors[purpose] = nil
+            preparingImportFor = purpose
             let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
             Task {
-                defer { isPreparingImport = false }
+                defer { preparingImportFor = nil }
                 do {
                     let data = try await Task.detached(priority: .userInitiated) {
                         let scoped = url.startAccessingSecurityScopedResource()
@@ -218,7 +234,12 @@ extension SettingsScreen {
                     }.value
                     if JournalBackupProtection.isProtected(data) {
                         try JournalBackupProtection.validateEnvelope(data)
-                        lockedImport = LockedImport(data: data, filename: url.lastPathComponent, purpose: purpose)
+                        lockedImport = LockedImport(data: data, filename: url.lastPathComponent, purpose: purpose, isAndroid: false)
+                        isShowingImportDetails = true
+                    } else if url.pathExtension.lowercased() == "enc" {
+                        guard purpose == .restore else { throw JournalBackupError.unrecognizedFormat }
+                        try JournalBackupProtection.validateAndroidEnvelope(data)
+                        lockedImport = LockedImport(data: data, filename: url.lastPathComponent, purpose: purpose, isAndroid: true)
                         isShowingImportDetails = true
                     } else {
                         let review = try await Task.detached(priority: .userInitiated) {
@@ -227,7 +248,7 @@ extension SettingsScreen {
                         present(review, for: purpose)
                     }
                 } catch {
-                    reportOpenError(error)
+                    fileErrors[purpose] = openErrorMessage(error)
                 }
             }
         }
@@ -235,33 +256,35 @@ extension SettingsScreen {
         func unlockImport(passphrase: String) {
             guard let lockedImport, !isPreparingImport, !isApplyingImport else { return }
             importError = nil
-            isPreparingImport = true
+            preparingImportFor = lockedImport.purpose
             let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
             Task {
-                defer { isPreparingImport = false }
+                defer { preparingImportFor = nil }
                 do {
                     let review = try await Task.detached(priority: .userInitiated) {
-                        let data = try JournalBackupProtection.open(lockedImport.data, passphrase: passphrase)
+                        let data = try lockedImport.isAndroid
+                            ? JournalBackupProtection.openAndroid(lockedImport.data, passphrase: passphrase)
+                            : JournalBackupProtection.open(lockedImport.data, passphrase: passphrase)
                         return try Self.readImport(
                             data, filename: lockedImport.filename, purpose: lockedImport.purpose,
-                            model: model, isProtected: true)
+                            model: model, isProtected: true, allowProtectedJournal: lockedImport.isAndroid)
                     }.value
                     self.lockedImport = nil
                     present(review, for: lockedImport.purpose)
                 } catch {
-                    reportOpenError(error)
+                    importError = openErrorMessage(error)
                 }
             }
         }
 
         func prepareRecoveryBackup(_ entry: JournalRecoveryBackups.Entry) {
             guard !isPreparingImport, !isApplyingImport else { return }
-            importError = nil
-            isPreparingImport = true
+            fileErrors[.restore] = nil
+            preparingImportFor = .restore
             let model = PersistenceController.shared.container.persistentStoreCoordinator.managedObjectModel
             let name = entry.created.formatted(date: .abbreviated, time: .shortened)
             Task {
-                defer { isPreparingImport = false }
+                defer { preparingImportFor = nil }
                 do {
                     let review = try await Task.detached(priority: .userInitiated) {
                         let data = try JournalRecoveryBackups.open(entry.url)
@@ -269,7 +292,7 @@ extension SettingsScreen {
                     }.value
                     present(review, for: .restore)
                 } catch {
-                    reportOpenError(error)
+                    fileErrors[.restore] = openErrorMessage(error)
                 }
             }
         }
@@ -293,23 +316,29 @@ extension SettingsScreen {
             isShowingImportDetails = true
         }
 
-        private func reportOpenError(_ error: Error) {
+        func reportFileSelectionFailure(for purpose: ImportPurpose) {
+            fileErrors[purpose] = "The file couldn’t be opened. Choose it again to retry."
+        }
+
+        private func openErrorMessage(_ error: Error) -> String {
             if error is DecodingError {
-                importError = "This file couldn’t be read as a journal. It may be damaged or incomplete."
-            } else {
-                importError = (error as? LocalizedError)?.errorDescription ?? "This journal file couldn’t be opened or validated."
+                return "This file couldn’t be read as a journal. It may be damaged or incomplete."
             }
+            return (error as? LocalizedError)?.errorDescription ?? "This journal file couldn’t be opened or validated."
         }
 
         private nonisolated static func readImport(
-            _ data: Data, filename: String, purpose: ImportPurpose, model: NSManagedObjectModel, isProtected: Bool = false
+            _ data: Data, filename: String, purpose: ImportPurpose, model: NSManagedObjectModel, isProtected: Bool = false,
+            allowProtectedJournal: Bool = false
         ) throws -> ImportReview {
             let contents: ImportReview.Contents
             if let backup = try JournalBackup.read(data) {
                 try backup.validateContents(in: model)
                 contents = .backup(backup)
             } else {
-                guard purpose == .restore, !isProtected else { throw JournalBackupError.unrecognizedFormat }
+                guard purpose == .restore, !isProtected || allowProtectedJournal else {
+                    throw JournalBackupError.unrecognizedFormat
+                }
                 contents = .journal(try JournalFile.read(data))
             }
             return ImportReview(filename: filename, contents: contents, isProtected: isProtected)

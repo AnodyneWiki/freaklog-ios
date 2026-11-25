@@ -4,6 +4,88 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testAndroid1136HeaderlessTransferAndPortableExport() throws {
+        // Shape follows Android JournalExport, AdaptiveColorSerializer and InstantSerializer
+        // at ae3419d. The example uses the Kotlin serializer's omitted default fields.
+        let fixture = #"""
+          {
+            "experiences":[{
+              "title":"Example","text":"note","sortDate":1700000000000,
+              "location":{"name":"Library","latitude":0,"longitude":0},
+              "ingestions":[{
+                "substanceName":"Caffeine","time":1700000000000,"endTime":null,"administrationRoute":"ORAL",
+                "dose":1,"isDoseAnEstimate":false,"units":"cup","customUnitId":7,
+                "customFormulationId":8,"formulationName":"Example release profile","category":"MEDICINAL"
+              }],
+              "ratings":[{"option":"twoPlus"}],
+              "timedNotes":[{"creationDate":1700000000000,"time":1700000000000,
+                "note":"A note","isPartOfTimeline":true,"color":"CUSTOM_FF123456"}],
+              "bloodPressure":[{"time":1700000000000,"systolic":120,"diastolic":80}]
+            }],
+            "substanceCompanions":[{"substanceName":"Caffeine"}],
+            "customUnits":[{"id":7,"substanceName":"Caffeine","name":"Example cup",
+                "administrationRoute":"ORAL","dose":20,"isEstimate":false,"isArchived":false,
+                "unit":"cup","unitPlural":null,"originalUnit":"mg","note":""}],
+            "customFormulations":[{"id":8,"substanceName":"Caffeine","baseRoa":"ORAL","name":"Example release profile"}]
+          }
+          """#
+        let journal = try JournalFile.read(Data(fixture.utf8))
+        let experience = try XCTUnwrap(journal.experiences.first)
+        let ingestion = try XCTUnwrap(experience.ingestions.first)
+        XCTAssertEqual(ingestion.customUnitId, 7)
+        XCTAssertNil(ingestion.formulationName)
+        XCTAssertEqual(experience.location?.latitude, 0)
+        XCTAssertEqual(experience.timedNotes.first?.color.rawValue, "#123456")
+        XCTAssertEqual(journal.substanceCompanions.first?.color, .blue)
+        XCTAssertEqual(Set(journal.transferOmissions), [
+            "Release profiles", "Blood pressure records", "Ingestion release profiles, salt forms or categories"
+        ])
+
+        let transfer = try journal.androidTransferData()
+        let fields = try JSONDecoder().decode(JSONValue.self, from: transfer)
+        let transferredExperience = try XCTUnwrap(fields["experiences"]?.array?.first)
+        let transferredIngestion = try XCTUnwrap(transferredExperience["ingestions"]?.array?.first)
+        XCTAssertNil(fields["formulations"])
+        XCTAssertEqual(transferredIngestion["customUnitId"]?.number, 7)
+        XCTAssertEqual(transferredIngestion["endTime"], .null)
+        XCTAssertNil(transferredIngestion["formulationId"])
+        XCTAssertEqual(transferredExperience["timedNotes"]?.array?.first?["color"]?.string, "CUSTOM_FF123456")
+        let roundTrip = try JournalFile.read(transfer)
+        XCTAssertEqual(roundTrip.experiences.first?.ingestions.first?.units, "cup")
+        XCTAssertTrue(roundTrip.transferOmissions.isEmpty)
+    }
+
+    func testPW18HeaderUsesSupportedTransferSubset() throws {
+        let fixture = #"""
+          {"exportSource":"iOS Journal 18.0","experiences":[{"title":"Example","text":"",
+              "creationDate":1700000000000,"location":{"name":"Library"},"ingestions":[
+              {"substanceName":"Caffeine","time":1700000000000,"administrationRoute":"ORAL",
+               "dose":1,"units":"cup","isDoseAnEstimate":false,"isUnconfirmed":true}
+              ]}]}
+          """#
+        let journal = try JournalFile.read(Data(fixture.utf8))
+        XCTAssertEqual(journal.experiences.first?.location?.name, "Library")
+        XCTAssertEqual(journal.experiences.first?.ingestions.first?.isUnconfirmed, true)
+        XCTAssertFalse(journal.transferOmissions.isEmpty)
+        let exported = try JournalFile.read(journal.androidTransferData())
+        XCTAssertTrue(exported.experiences.first?.ingestions.isEmpty == true)
+    }
+
+    func testAndroidEncryptedTransferAuthenticatesIndependentFixture() throws {
+        // Generated with Java's SecretKeyFactory and Cipher using Android's v1 parameters.
+        let fixture = try XCTUnwrap(Data(base64Encoded:
+            "EREREREREREREREREREREREREREREREREREREREREREzMzMzMzMzMzMzMzN7k12IW751c8QxnHm4qUkCNgawKZgrLivMNHBhFKV2EXm8"))
+        let passphrase = "freaklog-fixture"
+        let plaintext = Data(#"{"experiences":[]}"#.utf8)
+        XCTAssertEqual(try JournalBackupProtection.openAndroid(fixture, passphrase: passphrase), plaintext)
+        XCTAssertEqual(try JournalBackupProtection.openAndroid(fixture, passphrase: "  " + passphrase + "  "), plaintext)
+        XCTAssertThrowsError(try JournalBackupProtection.openAndroid(fixture, passphrase: "other"))
+        let encrypted = try JournalBackupProtection.protectAndroid(plaintext, passphrase: passphrase)
+        XCTAssertEqual(try JournalBackupProtection.openAndroid(encrypted, passphrase: passphrase), plaintext)
+        var damaged = encrypted
+        damaged[damaged.index(before: damaged.endIndex)] ^= 1
+        XCTAssertThrowsError(try JournalBackupProtection.openAndroid(damaged, passphrase: passphrase))
+    }
     func testAbortedReplacementLeavesJournalIntactAfterAnotherSave() throws {
         enum TestError: Error { case abort }
 

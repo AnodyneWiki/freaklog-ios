@@ -37,6 +37,7 @@ struct JournalFile: FileDocument, Codable {
     let customUnits: [CustomUnitCodable]
     let substanceDataOverrides: [SubstanceDataOverrideCodable]
     let formulations: [FormulationCodable]
+    private(set) var transferOmissions: [String] = []
 
     init(
         experiences: [Experience],
@@ -222,11 +223,30 @@ struct JournalFile: FileDocument, Codable {
     static func read(_ data: Data) throws -> Self {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
-        guard let source = header.exportSource else { return try decoder.decode(Self.self, from: data) }
+        guard let source = header.exportSource else {
+            let raw = try decoder.decode([String: JSONValue].self, from: data)
+            let converted = try AndroidJournalTransfer.imported(raw)
+            var journal = try decoder.decode(Self.self, from: JSONEncoder().encode(converted.fields))
+            journal.transferOmissions = converted.omissions
+            return journal
+        }
         guard supportsModernJournalSource(source) else {
             throw JournalBackupError.unrecognizedFormat
         }
-        return try decoder.decode(Self.self, from: Version12Journal.convert(data))
+        var journal = try decoder.decode(Self.self, from: Version12Journal.convert(data))
+        if source.hasPrefix("iOS Journal 18.") {
+            journal.transferOmissions = [
+                "PW Journal 18 tag definitions, blend policies and other version-specific settings may be unavailable."
+            ]
+        }
+        return journal
+    }
+
+    func androidTransferData() throws -> Data {
+        let fields = try JSONDecoder().decode([String: JSONValue].self, from: JSONEncoder().encode(self))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(AndroidJournalTransfer.exported(fields))
     }
 
     private static func supportsModernJournalSource(_ source: String) -> Bool {
@@ -258,6 +278,132 @@ struct JournalFile: FileDocument, Codable {
             throw JournalFileError.noJournalData
         }
         try validateReferences()
+    }
+}
+
+/// The headerless JournalExport shape used by FreakLog Android 11.36.
+private enum AndroidJournalTransfer {
+    typealias Fields = [String: JSONValue]
+
+    private static let fullnessValues: Set<String> = ["EMPTY", "QUARTERFULL", "HALFFULL", "FULL", "VERYFULL"]
+
+    static func imported(_ fields: Fields) throws -> (fields: Fields, omissions: [String]) {
+        var fields = fields
+        var omissions: [String] = []
+        let unsupported: [(String, String)] = [
+            ("customRecipes", "Recipes"), ("customFormulations", "Release profiles"), ("reminders", "Reminders"),
+            ("webhooks", "Webhooks"), ("intakeLimits", "Intake limits"), ("substanceGroups", "Substance groups"),
+            ("customSubstanceDetails", "Advanced substance profiles")
+        ]
+        for (key, label) in unsupported where fields[key]?.array?.isEmpty == false {
+            omissions.append(label)
+        }
+        let importedAt = Double(Date.now.millisecondsSince1970)
+        fields["customUnits"] = try rewrite(fields["customUnits"]) { unit in
+            var unit = unit
+            // Kotlin defaults an omitted creation date to the time the record is decoded.
+            if unit["creationDate"] == nil { unit["creationDate"] = .number(importedAt) }
+            return unit
+        }
+        fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"]) { companion in
+            var companion = companion
+            // Android omits its default BLUE value when encoding a companion.
+            if companion["color"] == nil, companion["colorHex"] == nil { companion["color"] = .string("BLUE") }
+            return importedColor(companion)
+        }
+        var omittedPressure = false
+        var omittedIngestionDetails = false
+        fields["experiences"] = try rewrite(fields["experiences"]) { experience in
+            var experience = experience
+            if experience["bloodPressure"]?.array?.isEmpty == false { omittedPressure = true }
+            experience["timedNotes"] = try rewrite(experience["timedNotes"], importedColor)
+            experience["ingestions"] = try rewrite(experience["ingestions"]) { ingestion in
+                var ingestion = ingestion
+                if ["customFormulationId", "saltForm", "category"].contains(where: {
+                    ingestion[$0].map { $0 != .null } == true
+                }) {
+                    omittedIngestionDetails = true
+                }
+                // A named release profile is not a FreakLog iOS blend.
+                if ingestion["customFormulationId"] != nil {
+                    ingestion.removeValue(forKey: "formulationName")
+                }
+                return ingestion
+            }
+            return experience
+        }
+        if omittedPressure { omissions.append("Blood pressure records") }
+        if omittedIngestionDetails { omissions.append("Ingestion release profiles, salt forms or categories") }
+        if fields["customUnits"]?.array?.contains(where: { $0["defaultCategory"]?.string != nil }) == true
+            || fields["substanceCompanions"]?.array?.contains(where: { $0["defaultCategory"]?.string != nil }) == true {
+            omissions.append("Default ingestion categories")
+        }
+        return (fields, omissions)
+    }
+
+    static func exported(_ fields: Fields) throws -> Fields {
+        var fields = fields
+        fields.removeValue(forKey: "substanceDataOverrides")
+        fields.removeValue(forKey: "formulations")
+        fields["customSubstances"] = try rewrite(fields["customSubstances"]) { substance in
+            var substance = substance
+            substance.removeValue(forKey: "roas")
+            return substance
+        }
+        fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"], exportedColor)
+        fields["experiences"] = try rewrite(fields["experiences"]) { experience in
+            var experience = experience
+            experience["timedNotes"] = try rewrite(experience["timedNotes"], exportedColor)
+            experience["ratings"] = try rewrite(experience["ratings"]) { rating in
+                var rating = rating
+                rating.removeValue(forKey: "isHiddenInTimeline")
+                return rating
+            }
+            if let ingestions = experience["ingestions"]?.array {
+                experience["ingestions"] = .array(ingestions.filter { $0["isUnconfirmed"]?.bool != true })
+            }
+            experience["ingestions"] = try rewrite(experience["ingestions"]) { ingestion in
+                var ingestion = ingestion
+                for key in ["location", "formulationId", "formulationName", "formulationAmount",
+                            "isHiddenInTimeline", "isUnconfirmed"] {
+                    ingestion.removeValue(forKey: key)
+                }
+                if let fullness = ingestion["stomachFullness"]?.string {
+                    let name = fullness.uppercased().filter(\.isLetter)
+                    ingestion["stomachFullness"] = fullnessValues.contains(name) ? .string(name) : nil
+                }
+                return ingestion
+            }
+            return experience
+        }
+        return fields
+    }
+
+    private static func importedColor(_ fields: Fields) -> Fields {
+        guard let color = fields["color"]?.string,
+              color.hasPrefix("CUSTOM_"), color.utf8.count == 15,
+              color.dropFirst(7).allSatisfy(\.isHexDigit),
+              let exact = SubstanceColor(hex: String(color.suffix(6))) else { return fields }
+        var fields = fields
+        fields["color"] = .string(exact.rawValue)
+        return fields
+    }
+
+    private static func exportedColor(_ fields: Fields) -> Fields {
+        var fields = fields
+        if let exact = fields.removeValue(forKey: "colorHex")?.string {
+            fields["color"] = .string("CUSTOM_FF" + exact.dropFirst())
+        }
+        fields.removeValue(forKey: "isHiddenInTimeline")
+        return fields
+    }
+
+    private static func rewrite(_ value: JSONValue?, _ transform: (Fields) throws -> Fields) throws -> JSONValue? {
+        guard let value, let rows = value.array else { return value }
+        return .array(try rows.map { row in
+            guard let fields = row.object else { return row }
+            return .object(try transform(fields))
+        })
     }
 }
 

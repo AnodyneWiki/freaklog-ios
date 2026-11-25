@@ -244,20 +244,20 @@ private struct JournalDataSettings: View {
             } footer: {
                 Text("Sync your journal across devices using iCloud.")
             }
-            Section("Restore") {
-                if let error = viewModel.importError, !viewModel.isShowingImportDetails {
-                    Label(error, systemImage: "exclamationmark.circle")
-                }
+            Section {
                 Button {
                     chooseFile(for: .restore)
                 } label: {
-                    if viewModel.isPreparingImport {
+                    if viewModel.preparingImportFor == .restore {
                         ProgressView("Reading File…")
                     } else {
-                        Label("Import Data", systemImage: "arrow.down.doc")
+                        Label("Restore from File…", systemImage: "arrow.down.doc")
                     }
                 }
                 .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+                if let error = viewModel.fileErrors[.restore] {
+                    Label(error, systemImage: "exclamationmark.circle")
+                }
                 if !viewModel.recoveryCopies.isEmpty {
                     Menu {
                         ForEach(viewModel.recoveryCopies) { entry in
@@ -270,6 +270,10 @@ private struct JournalDataSettings: View {
                     }
                     .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
                 }
+            } header: {
+                Text("Restore")
+            } footer: {
+                Text("Preview a backup or journal file before replacing your current journal.")
             }
             Section("Export") {
                 NavigationLink {
@@ -290,12 +294,14 @@ private struct JournalDataSettings: View {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Journal JSON")
-                            Text("For compatible apps").font(.subheadline).foregroundStyle(.secondary)
+                            Text("Entries and substance definitions").font(.subheadline).foregroundStyle(.secondary)
                         }
                     } icon: {
                         Image(systemName: "doc.text")
                     }
                 }
+            }
+            Section("Reports") {
                 NavigationLink {
                     SelectiveExportScreen()
                 } label: {
@@ -306,6 +312,8 @@ private struct JournalDataSettings: View {
                 } label: {
                     Label("Clinician Summary", systemImage: "stethoscope")
                 }
+            }
+            Section("Compatibility") {
                 NavigationLink {
                     JournalTransferCompatibilityScreen(viewModel: viewModel)
                 } label: {
@@ -320,25 +328,37 @@ private struct JournalDataSettings: View {
                 }
             }
             Section {
+                NavigationLink {
+                    JournalAutomaticBackupScreen()
+                } label: {
+                    Label("Automatic Backups", systemImage: "clock.arrow.circlepath")
+                }
                 Button {
                     chooseFile(for: .verify)
                 } label: {
-                    Label("Verify Backup", systemImage: "checkmark.shield")
+                    if viewModel.preparingImportFor == .verify {
+                        ProgressView("Verifying Backup…")
+                    } else {
+                        Label("Verify Backup…", systemImage: "checkmark.shield")
+                    }
                 }
                 .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
+                if let error = viewModel.fileErrors[.verify] {
+                    Label(error, systemImage: "exclamationmark.circle")
+                }
                 if lastBackupTime > 0 {
                     LabeledContent(
                         "Last Saved Backup",
                         value: Date(timeIntervalSince1970: lastBackupTime).formatted(date: .abbreviated, time: .shortened))
                 }
             } header: {
-                Text("Backup Status")
+                Text("Manage Backups")
             }
             Section {
                 Button(role: .destructive) {
                     isConfirmingDeletion = true
                 } label: {
-                    Label("Delete Everything", systemImage: "trash")
+                    Label("Delete Journal Data…", systemImage: "trash")
                 }
                 .disabled(viewModel.isPreparingImport || viewModel.isApplyingImport)
             }
@@ -347,7 +367,7 @@ private struct JournalDataSettings: View {
         .fileImporter(isPresented: $isChoosingFile, allowedContentTypes: ExportedFile.readableContentTypes) { result in
             switch result {
             case .success(let url): viewModel.prepareImport(url, purpose: filePurpose)
-            case .failure: viewModel.importError = "The file couldn’t be opened. Choose it again to retry."
+            case .failure: viewModel.reportFileSelectionFailure(for: filePurpose)
             }
         }
         .sheet(isPresented: $viewModel.isShowingImportDetails, onDismiss: {
@@ -357,7 +377,7 @@ private struct JournalDataSettings: View {
             JournalImportDetails(viewModel: viewModel)
         }
         .onAppear(perform: viewModel.refreshRecoveryCopies)
-        .confirmationDialog("Delete Everything?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
+        .confirmationDialog("Delete Journal Data?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
             Button("Delete", role: .destructive, action: viewModel.deleteEverything)
         } message: {
             Text("This will delete your journal and its on-device recovery copies.")
@@ -366,7 +386,6 @@ private struct JournalDataSettings: View {
 
     private func chooseFile(for purpose: SettingsScreen.ImportPurpose) {
         filePurpose = purpose
-        viewModel.importError = nil
         isChoosingFile = true
     }
 }
@@ -410,12 +429,12 @@ private struct JournalImportDetails: View {
                                 .onSubmit(unlock)
                         }
                         if viewModel.isPreparingImport {
-                            ProgressView("Opening Backup…")
+                            ProgressView("Opening File…")
                         } else if let error = viewModel.importError {
                             Label(error, systemImage: "exclamationmark.circle")
                         }
                     }
-                    .navigationTitle("Protected Backup")
+                    .navigationTitle("Protected File")
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
@@ -459,7 +478,7 @@ private struct JournalImportReview: View {
         }
         return review.isBackup
             ? "Restoring this backup replaces your current journal and backed-up settings."
-            : "Importing this file replaces your current journal."
+            : "Restoring this file replaces your current journal."
     }
 
     var body: some View {
@@ -483,6 +502,16 @@ private struct JournalImportReview: View {
                     }
                     if review.isEmptyJournal {
                         Label("This file contains no experiences, ingestions, or timed notes.", systemImage: "exclamationmark.triangle")
+                    }
+                    Text(replacementImpact)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                if !review.transferOmissions.isEmpty {
+                    Section("Transfer Notes") {
+                        ForEach(review.transferOmissions, id: \.self) { omission in
+                            Text(omission)
+                        }
                     }
                 }
                 Section {
@@ -513,12 +542,10 @@ private struct JournalImportReview: View {
                             isConfirmingReplacement = true
                         }
                     }
-                } footer: {
-                    Text(replacementImpact)
                 }
             }
             .disabled(viewModel.isApplyingImport)
-            .navigationTitle("Review Import")
+            .navigationTitle("Review Restore")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -558,6 +585,7 @@ struct JournalExportReview: View {
     let viewModel: SettingsScreen.ViewModel
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let isBackup: Bool
+    var isAndroidTransfer = false
     @State private var preparation = UUID()
     @State private var prepared: SettingsScreen.PreparedExport?
     @State private var exportError: String?
@@ -569,8 +597,11 @@ struct JournalExportReview: View {
     @State private var isProtecting = false
     @AppStorage(SettingsScreen.ViewModel.lastBackupDateKey) private var lastBackupTime = 0.0
 
-    private var formatName: String { isBackup ? "FreakLog Backup" : "Journal JSON" }
-    private var requiresPassphrase: Bool { isBackup && protectsBackup }
+    private var formatName: String {
+        if isAndroidTransfer { return "Android Transfer" }
+        return isBackup ? "FreakLog Backup" : "Journal JSON"
+    }
+    private var requiresPassphrase: Bool { (isBackup || isAndroidTransfer) && protectsBackup }
     private var passphraseIsValid: Bool {
         !passphrase.isEmpty && passphrase == confirmedPassphrase
             && passphrase.precomposedStringWithCanonicalMapping.utf8.count <= JournalBackupProtection.maximumPassphraseBytes
@@ -595,7 +626,7 @@ struct JournalExportReview: View {
                     ProgressView("Preparing Export…")
                 }
             }
-            if isBackup {
+            if isBackup || isAndroidTransfer {
                 Section {
                     Toggle("Protect with Passphrase", isOn: $protectsBackup)
                     if protectsBackup {
@@ -631,8 +662,13 @@ struct JournalExportReview: View {
             }
             Section {
                 Text("Journal entries, notes and ratings")
-                Text("Locations saved on experiences and individual ingestions")
-                Text("Custom substances, units, formulations and overrides")
+                if isAndroidTransfer {
+                    Text("Experience locations")
+                    Text("Custom substances and custom units")
+                } else {
+                    Text("Locations saved on experiences and individual ingestions")
+                    Text("Custom substances, units, formulations and overrides")
+                }
                 if isBackup {
                     Text("Routines, inventory and stock history")
                     Text("Journal preferences and integration settings")
@@ -652,6 +688,10 @@ struct JournalExportReview: View {
                     Text("App settings, webhooks and leaderboard history")
                     Text("Routines, inventory and stock history")
                     Text("Spray calculator data, assistant data and cached references")
+                    if isAndroidTransfer {
+                        Text("Unconfirmed entries, individual ingestion locations and timeline visibility")
+                        Text("Formulation definitions and links, custom route overrides and advanced substance profiles")
+                    }
                 }
             }
         }
@@ -671,7 +711,7 @@ struct JournalExportReview: View {
         .task(id: preparation) {
             guard prepared == nil else { return }
             do {
-                let export = try await (isBackup ? viewModel.exportBackup() : viewModel.exportData())
+                let export = try await (isBackup ? viewModel.exportBackup() : viewModel.exportData(forAndroid: isAndroidTransfer))
                 if !Task.isCancelled { prepared = export }
             } catch {
                 if !Task.isCancelled {
@@ -706,7 +746,8 @@ struct JournalExportReview: View {
             Task {
                 defer { isProtecting = false }
                 do {
-                    exportDocument = try await viewModel.protectBackup(prepared.file, passphrase: secret)
+                    exportDocument = try await viewModel.protectBackup(
+                        prepared.file, passphrase: secret, forAndroid: isAndroidTransfer)
                     isExporting = true
                 } catch {
                     exportError = (error as? LocalizedError)?.errorDescription ?? "The backup couldn’t be protected."
@@ -728,7 +769,7 @@ struct JournalExportReview: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 3) {
                 Text(formatName).font(.headline)
-                Text(isBackup ? "Restore in FreakLog" : "For compatible apps")
+                Text(isAndroidTransfer ? "For FreakLog Android 11.36" : isBackup ? "Restore in FreakLog" : "Portable journal data")
                     .foregroundStyle(.secondary)
                 if let prepared {
                     Text(prepared.file.data.count.formatted(.byteCount(style: .file)))
