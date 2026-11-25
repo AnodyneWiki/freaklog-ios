@@ -312,6 +312,45 @@ struct AnodyneIndexEntry: Codable, Hashable, Identifiable {
   }
 }
 
+extension AnodyneIndexEntry {
+  static func classKey(_ name: String) -> String {
+    name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+  }
+
+  static func classOptions(in entries: [Self]) -> [String] {
+    var names: [String: String] = [:]
+    for entry in entries {
+      for name in entry.classes {
+        let key = classKey(name)
+        if !key.isEmpty, names[key] == nil {
+          names[key] = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+      }
+    }
+    return names.values.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+  }
+
+  static func search(_ entries: [Self], text: String, classKeys: Set<String>) -> [Self] {
+    let matchingClass = classKeys.isEmpty ? entries : entries.filter { entry in
+      entry.classes.contains { classKeys.contains(classKey($0)) }
+    }
+    let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+    guard !text.isEmpty else { return matchingClass }
+
+    var prefixes: [Self] = []
+    var otherMatches: [Self] = []
+    for entry in matchingClass {
+      let names = [entry.title] + entry.abbreviations
+      if names.contains(where: { $0.range(of: text, options: [.anchored, .caseInsensitive, .diacriticInsensitive], locale: .current) != nil }) {
+        prefixes.append(entry)
+      } else if (names + entry.classes).contains(where: { $0.localizedStandardContains(text) }) {
+        otherMatches.append(entry)
+      }
+    }
+    return prefixes + otherMatches
+  }
+}
+
 extension String {
   // AnodyneWiki texts carry some HTML, tags such as <sub> and entities such as &nbsp;, and some
   // Wikipedia footnote templates such as {-{Efn|...|group=note}-}

@@ -55,6 +55,27 @@ final class AnodyneTests: XCTestCase {
         XCTAssertTrue(amphetamine.effectGroups.contains { $0.name == "Physical Effects" && $0.effects.contains("Stimulation") })
     }
 
+    func testIndexClassFiltersCombineWithTextSearchAndPreservePrefixRanking() throws {
+        let entries = try [
+            ["Title": "Sample extract", "Classes": ["Plant"]],
+            ["Title": "First", "Abr": "Sample", "Classes": [" Extract ", "Plant"]],
+            ["Title": "Other sample", "Classes": ["extract"]],
+            ["Title": "Sample blend", "Classes": ["Blend"]],
+            ["Title": "Sample", "Classes": []],
+        ].map { try XCTUnwrap(AnodyneIndexEntry(apiJSON: $0)) }
+
+        XCTAssertEqual(AnodyneIndexEntry.classOptions(in: entries), ["Blend", "Extract", "Plant"])
+        XCTAssertEqual(
+            AnodyneIndexEntry.search(entries, text: " sample\n", classKeys: ["extract", "blend"]).map(\.title),
+            ["First", "Sample blend", "Other sample"]
+        )
+        XCTAssertEqual(
+            AnodyneIndexEntry.search(entries, text: "plant", classKeys: ["extract"]).map(\.title),
+            ["First"]
+        )
+        XCTAssertEqual(AnodyneIndexEntry.search(entries, text: "", classKeys: []), entries)
+    }
+
     func testRemovesWikiMarkup() throws {
         let json: [String: Any] = [
             "Title": "Methylhexanamine",
