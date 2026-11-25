@@ -1,87 +1,161 @@
+import Combine
 import Foundation
 import WatchConnectivity
 
-// MARK: - LogOutcome
-
 enum LogOutcome: Equatable {
-  // The iPhone saved it
   case logged
-  // Queued until the iPhone is reachable
   case queued
+  case undone
+  case undoQueued
   case failed(String)
 }
 
-// MARK: - WatchSession
-
-// The watch's link to the iPhone app, which owns the journal. It holds the quick log suggestions the iPhone
-// last sent and sends log requests: as a message when the iPhone is reachable, else queued as a transfer.
+// The iPhone owns the journal. The Watch retains requests through reconnects and relaunches.
 @MainActor
 final class WatchSession: NSObject, ObservableObject {
   static let shared = WatchSession()
 
   @Published private(set) var suggestions: [WatchSuggestion] = []
-  // False until the iPhone sent its suggestions once
   @Published private(set) var hasSuggestionsFromPhone = false
   @Published private(set) var queuedCount = 0
+  @Published private(set) var rejections: [WatchRequestOutbox.Rejection] = []
+  @Published private(set) var latestAcknowledgement: WatchAcknowledgement?
+  @Published private(set) var queueError: String?
 
   func activate() {
+    loadOutbox()
     guard WCSession.isSupported() else { return }
     WCSession.default.delegate = self
     WCSession.default.activate()
   }
 
-  // Asks the iPhone for its current suggestions, launching its app in the background if needed
   func refresh() {
+    loadOutbox()
+    flush()
+    guard WCSession.isSupported() else { return }
     let session = WCSession.default
     guard session.activationState == .activated, session.isReachable else { return }
     session.sendMessage([WatchQuickLog.refreshKey: true]) { reply in
       Task { @MainActor in
-        self.receive(reply)
+        self.receiveSuggestions(reply)
       }
     } errorHandler: { _ in }
   }
 
   func log(_ request: WatchLogRequest) async -> LogOutcome {
-    guard let data = try? WatchQuickLog.encode(request) else { return .failed("The dose couldn't be read") }
-    let message = [WatchQuickLog.logKey: data]
-    guard let reply = await send(message) else {
-      // The iPhone logs a request only once, in case the message arrived after all
-      WCSession.default.transferUserInfo(message)
-      updateQueuedCount()
-      return .queued
-    }
-    if let error = reply[WatchQuickLog.errorKey] as? String {
-      return .failed(error)
-    }
-    return .logged
+    await submit(.log(request))
   }
 
-  func undo(_ request: WatchLogRequest) async {
+  func undo(_ request: WatchLogRequest) async -> LogOutcome {
+    await submit(.undo(WatchUndoRequest(log: request)))
+  }
+
+  func dismissRejection(_ id: UUID) {
+    do {
+      try outbox?.dismissRejection(id)
+      updateQueue()
+    } catch {
+      reportQueueError(error)
+    }
+  }
+
+  func handleBackgroundDelivery() async {
+    guard WCSession.isSupported() else { return }
     let session = WCSession.default
-    for transfer in session.outstandingUserInfoTransfers {
-      if WatchQuickLog.decode(WatchLogRequest.self, from: transfer.userInfo[WatchQuickLog.logKey])?.id == request.id {
-        transfer.cancel()
+    while !Task.isCancelled && (session.activationState == .notActivated || session.hasContentPending) {
+      try? await Task.sleep(for: .milliseconds(100))
+    }
+    await Task.yield()
+  }
+
+  static func outcome(for acknowledgement: WatchAcknowledgement) -> LogOutcome {
+    switch acknowledgement.status {
+    case .saved: .logged
+    case .undone: .undone
+    case .retry: queuedOutcome(for: acknowledgement.kind)
+    case .rejected: .failed(acknowledgement.message ?? "Your iPhone rejected the request")
+    }
+  }
+
+  private static let outboxFile = URL.applicationSupportDirectory.appendingPathComponent("WatchQuickLogOutbox.json")
+  private var outbox: WatchRequestOutbox?
+  private var inFlight: [UUID: WatchRequestKind] = [:]
+  private var lastTransfer: [UUID: (kind: WatchRequestKind, date: Date)] = [:]
+  private var retryTask: Task<Void, Never>?
+  private static let retryInterval: TimeInterval = 15
+
+  private static func queuedOutcome(for kind: WatchRequestKind) -> LogOutcome {
+    kind == .log ? .queued : .undoQueued
+  }
+
+  private func loadOutbox() {
+    guard outbox == nil else { return }
+    do {
+      outbox = try WatchRequestOutbox(file: Self.outboxFile)
+      updateQueue()
+    } catch {
+      reportQueueError(error)
+    }
+  }
+
+  private func submit(_ request: WatchRequest) async -> LogOutcome {
+    loadOutbox()
+    guard outbox != nil else { return .failed("The Watch queue couldn't be opened") }
+    do {
+      try outbox?.enqueue(request)
+      updateQueue()
+    } catch {
+      reportQueueError(error)
+      return .failed("The request couldn't be saved on your Watch")
+    }
+    if request.kind == .undo, WCSession.isSupported(), WCSession.default.activationState == .activated {
+      cancelTransfers(id: request.id, kind: .log)
+    }
+    return await deliver(request)
+  }
+
+  private func deliver(_ request: WatchRequest) async -> LogOutcome {
+    let queued = Self.queuedOutcome(for: request.kind)
+    guard WCSession.isSupported(), outbox?.pending[request.id] == request else { return queued }
+    let session = WCSession.default
+    guard session.activationState == .activated, inFlight[request.id] != request.kind else { return queued }
+    guard let message = try? request.message() else {
+      let acknowledgement = WatchAcknowledgement(
+        id: request.id, kind: request.kind, status: .rejected, message: "The request couldn't be encoded")
+      return receive(acknowledgement) ?? queued
+    }
+
+    inFlight[request.id] = request.kind
+    defer {
+      if inFlight[request.id] == request.kind {
+        inFlight[request.id] = nil
       }
+      scheduleRetry()
     }
-    // The original message may have been saved even if its reply was lost.
-    let message = [WatchQuickLog.undoKey: request.ingestionIdentifiers.map(\.uuidString)]
-    let reply = await send(message)
-    if reply == nil || reply?[WatchQuickLog.errorKey] != nil {
+    if session.isReachable,
+       let reply = await send(message),
+       let acknowledgement = WatchQuickLog.decode(WatchAcknowledgement.self, from: reply[WatchQuickLog.acknowledgementKey]),
+       acknowledgement.id == request.id, acknowledgement.kind == request.kind
+    {
+      return receive(acknowledgement) ?? queued
+    }
+
+    // The interactive message may have committed with its reply lost. Keep the same request ID.
+    guard outbox?.pending[request.id] == request else { return queued }
+    let last = lastTransfer[request.id]
+    let canTransfer = last?.kind != request.kind || last.map { Date().timeIntervalSince($0.date) >= Self.retryInterval } == true
+    if canTransfer, session.activationState == .activated,
+       !session.outstandingUserInfoTransfers.contains(where: { Self.request(in: $0.userInfo) == request })
+    {
       session.transferUserInfo(message)
+      lastTransfer[request.id] = (request.kind, Date())
     }
-    updateQueuedCount()
+    return queued
   }
 
-  // The reply, or nil if the iPhone isn't reachable or didn't answer
   private func send(_ message: [String: Any]) async -> [String: Any]? {
-    let session = WCSession.default
-    // Right after the app opens the iPhone shows as unreachable for a moment
-    for _ in 0 ..< 10 where !session.isReachable {
-      try? await Task.sleep(nanoseconds: 200_000_000)
-    }
-    guard session.activationState == .activated, session.isReachable else { return nil }
-    return await withCheckedContinuation { continuation in
-      session.sendMessage(message) { reply in
+    await withCheckedContinuation { continuation in
+      WCSession.default.sendMessage(message) { reply in
         continuation.resume(returning: reply)
       } errorHandler: { _ in
         continuation.resume(returning: nil)
@@ -89,39 +163,137 @@ final class WatchSession: NSObject, ObservableObject {
     }
   }
 
-  private func receive(_ context: [String: Any]) {
+  @discardableResult
+  private func receive(_ acknowledgement: WatchAcknowledgement) -> LogOutcome? {
+    loadOutbox()
+    guard outbox?.pending[acknowledgement.id]?.kind == acknowledgement.kind else { return nil }
+    if acknowledgement.status == .retry {
+      scheduleRetry()
+      return Self.outcome(for: acknowledgement)
+    }
+
+    do {
+      guard try outbox?.acknowledge(acknowledgement) == true else { return nil }
+      lastTransfer[acknowledgement.id] = nil
+      cancelTransfers(id: acknowledgement.id, kind: acknowledgement.kind)
+      updateQueue()
+      latestAcknowledgement = acknowledgement
+      return Self.outcome(for: acknowledgement)
+    } catch {
+      reportQueueError(error)
+      scheduleRetry()
+      return nil
+    }
+  }
+
+  private func cancelTransfers(id: UUID, kind: WatchRequestKind) {
+    guard WCSession.isSupported(), WCSession.default.activationState == .activated else { return }
+    for transfer in WCSession.default.outstandingUserInfoTransfers {
+      if Self.requestID(in: transfer.userInfo, kind: kind) == id {
+        transfer.cancel()
+      }
+    }
+  }
+
+  private func flush() {
+    guard let pending = outbox?.pending.values else { return }
+    for request in pending {
+      Task { await deliver(request) }
+    }
+    scheduleRetry()
+  }
+
+  private func scheduleRetry() {
+    guard retryTask == nil, outbox?.pending.isEmpty == false else { return }
+    retryTask = Task { [weak self] in
+      try? await Task.sleep(for: .seconds(Self.retryInterval))
+      guard !Task.isCancelled, let self else { return }
+      retryTask = nil
+      flush()
+    }
+  }
+
+  private func receiveSuggestions(_ context: [String: Any]) {
     guard let suggestions = WatchQuickLog.decode([WatchSuggestion].self, from: context[WatchQuickLog.suggestionsKey])
     else { return }
     self.suggestions = suggestions
     hasSuggestionsFromPhone = true
   }
 
-  private func updateQueuedCount() {
-    queuedCount = WCSession.default.outstandingUserInfoTransfers.filter(\.isTransferring).count
+  private func updateQueue() {
+    queuedCount = outbox?.pending.count ?? 0
+    rejections = outbox?.rejections ?? []
+    queueError = nil
+    if queuedCount == 0 {
+      retryTask?.cancel()
+      retryTask = nil
+    }
+  }
+
+  private func reportQueueError(_ error: Error) {
+    print("Watch quick log queue: \(error)")
+    queueError = "Your Watch couldn't update the quick log queue."
+  }
+
+  private func recoverLegacyTransfers(_ transfers: [WCSessionUserInfoTransfer]) {
+    guard outbox != nil else { return }
+    for transfer in transfers {
+      let info = transfer.userInfo
+      guard info[WatchQuickLog.requestIDKey] == nil, let request = Self.request(in: info) else { continue }
+      if outbox?.pending[request.id]?.kind == .undo || outbox?.rejections.contains(where: { $0.id == request.id }) == true {
+        continue
+      }
+      do {
+        try outbox?.enqueue(request)
+      } catch {
+        reportQueueError(error)
+        return
+      }
+    }
+    updateQueue()
+  }
+
+  private static func request(in info: [String: Any]) -> WatchRequest? {
+    WatchRequest(kind: .log, payload: info[WatchQuickLog.logKey])
+      ?? WatchRequest(kind: .undo, payload: info[WatchQuickLog.undoKey])
+  }
+
+  private static func requestID(in info: [String: Any], kind: WatchRequestKind) -> UUID? {
+    guard info[kind.messageKey] != nil else { return nil }
+    return (info[WatchQuickLog.requestIDKey] as? String).flatMap(UUID.init(uuidString:))
+      ?? WatchRequest(kind: kind, payload: info[kind.messageKey])?.id
   }
 }
-
-// MARK: WCSessionDelegate
 
 extension WatchSession: WCSessionDelegate {
   nonisolated func session(_ session: WCSession, activationDidCompleteWith _: WCSessionActivationState, error _: Error?) {
     let context = session.receivedApplicationContext
     Task { @MainActor in
-      receive(context)
-      updateQueuedCount()
+      loadOutbox()
+      receiveSuggestions(context)
+      recoverLegacyTransfers(session.outstandingUserInfoTransfers)
       refresh()
     }
   }
 
   nonisolated func session(_: WCSession, didReceiveApplicationContext applicationContext: [String: Any]) {
     Task { @MainActor in
-      receive(applicationContext)
+      receiveSuggestions(applicationContext)
+    }
+  }
+
+  nonisolated func session(_: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+    guard let acknowledgement = WatchQuickLog.decode(
+      WatchAcknowledgement.self, from: userInfo[WatchQuickLog.acknowledgementKey])
+    else { return }
+    Task { @MainActor in
+      receive(acknowledgement)
     }
   }
 
   nonisolated func session(_: WCSession, didFinish _: WCSessionUserInfoTransfer, error _: Error?) {
     Task { @MainActor in
-      updateQueuedCount()
+      scheduleRetry()
     }
   }
 

@@ -10,15 +10,19 @@ enum WatchQuickLog {
   static let suggestionsKey = "suggestions"
   // Message or user info: an encoded WatchLogRequest
   static let logKey = "log"
-  // Message or user info: the identifiers of the ingestions a request logged, to delete them again
+  // Message or user info: an encoded WatchUndoRequest (older watches send an array of UUID strings)
   static let undoKey = "undo"
+  static let requestIDKey = "requestID"
+  static let acknowledgementKey = "acknowledgement"
   // Message asking for the current suggestions; the reply carries them under suggestionsKey
   static let refreshKey = "refresh"
-  // Reply to a log or undo message that the iPhone could not save
+  // Error reply understood by older watches
   static let errorKey = "error"
 
   static func encode(_ value: some Encodable) throws -> Data {
-    try JSONEncoder().encode(value)
+    let encoder = JSONEncoder()
+    encoder.outputFormatting = .sortedKeys
+    return try encoder.encode(value)
   }
 
   static func decode<T: Decodable>(_ type: T.Type, from data: Any?) -> T? {
@@ -45,6 +49,8 @@ enum WatchQuickLog {
     bytes.14 = bytes.14 &+ UInt8(truncatingIfNeeded: index >> 8)
     return UUID(uuid: bytes)
   }
+
+  static let maximumComponents = 65_536
 }
 
 // MARK: - WatchSuggestion
@@ -183,5 +189,166 @@ struct WatchLogRequest: Codable, Hashable, Identifiable {
   var ingestionIdentifiers: [UUID] {
     let count = suggestion.formulation?.components.count ?? 1
     return (0 ..< count).map { WatchQuickLog.ingestionIdentifier(for: id, component: $0) }
+  }
+}
+
+struct WatchUndoRequest: Codable, Equatable, Identifiable {
+  let id: UUID
+  let ingestionIdentifiers: [UUID]
+
+  init(log: WatchLogRequest) {
+    id = log.id
+    ingestionIdentifiers = log.ingestionIdentifiers
+  }
+
+  init?(legacyIdentifiers: [String]) {
+    guard let id = legacyIdentifiers.first.flatMap(UUID.init(uuidString:)) else { return nil }
+    let identifiers = legacyIdentifiers.compactMap(UUID.init(uuidString:))
+    guard identifiers.count == legacyIdentifiers.count else { return nil }
+    self.id = id
+    ingestionIdentifiers = identifiers
+  }
+
+  var hasValidIdentifiers: Bool {
+    !ingestionIdentifiers.isEmpty
+      && ingestionIdentifiers.count <= WatchQuickLog.maximumComponents
+      && ingestionIdentifiers.enumerated().allSatisfy {
+        $0.element == WatchQuickLog.ingestionIdentifier(for: id, component: $0.offset)
+      }
+  }
+}
+
+enum WatchRequestKind: String, Codable {
+  case log
+  case undo
+
+  var messageKey: String {
+    switch self {
+    case .log: WatchQuickLog.logKey
+    case .undo: WatchQuickLog.undoKey
+    }
+  }
+}
+
+enum WatchRequest: Codable, Equatable, Identifiable {
+  case log(WatchLogRequest)
+  case undo(WatchUndoRequest)
+
+  var id: UUID {
+    switch self {
+    case .log(let request): request.id
+    case .undo(let request): request.id
+    }
+  }
+
+  var kind: WatchRequestKind {
+    switch self {
+    case .log: .log
+    case .undo: .undo
+    }
+  }
+
+  init?(kind: WatchRequestKind, payload: Any?) {
+    switch kind {
+    case .log:
+      guard let request = WatchQuickLog.decode(WatchLogRequest.self, from: payload) else { return nil }
+      self = .log(request)
+    case .undo:
+      let request = WatchQuickLog.decode(WatchUndoRequest.self, from: payload)
+        ?? (payload as? [String]).flatMap(WatchUndoRequest.init(legacyIdentifiers:))
+      guard let request else { return nil }
+      self = .undo(request)
+    }
+  }
+
+  func message() throws -> [String: Any] {
+    let payload = switch self {
+    case .log(let request): try WatchQuickLog.encode(request)
+    case .undo(let request): try WatchQuickLog.encode(request)
+    }
+    return [kind.messageKey: payload, WatchQuickLog.requestIDKey: id.uuidString]
+  }
+}
+
+struct WatchAcknowledgement: Codable, Equatable {
+  enum Status: String, Codable {
+    case saved
+    case undone
+    case retry
+    case rejected
+  }
+
+  let id: UUID
+  let kind: WatchRequestKind
+  let status: Status
+  var message: String? = nil
+}
+
+// WatchConnectivity finishing a transfer only means it reached the phone.
+// The outbox keeps it until the phone confirms the outcome of the journal transaction.
+struct WatchRequestOutbox {
+  struct Rejection: Codable, Identifiable {
+    let request: WatchRequest
+    let message: String
+
+    var id: UUID { request.id }
+  }
+
+  private struct State: Codable {
+    var pending: [UUID: WatchRequest] = [:]
+    var rejections: [Rejection] = []
+  }
+
+  let file: URL
+  private var state = State()
+
+  var pending: [UUID: WatchRequest] { state.pending }
+  var rejections: [Rejection] { state.rejections }
+
+  init(file: URL) throws {
+    self.file = file
+    do {
+      state = try JSONDecoder().decode(State.self, from: Data(contentsOf: file))
+    } catch let error as CocoaError where error.code == .fileReadNoSuchFile {
+      // The first operation creates the file.
+    }
+  }
+
+  mutating func enqueue(_ request: WatchRequest) throws {
+    var updated = state
+    updated.pending[request.id] = request
+    updated.rejections.removeAll { $0.id == request.id }
+    try save(updated)
+  }
+
+  @discardableResult
+  mutating func acknowledge(_ acknowledgement: WatchAcknowledgement) throws -> Bool {
+    guard let request = pending[acknowledgement.id], request.kind == acknowledgement.kind else { return false }
+    var updated = state
+    switch acknowledgement.status {
+    case .retry:
+      return false
+    case .saved:
+      guard request.kind == .log else { return false }
+    case .undone:
+      break
+    case .rejected:
+      updated.rejections.append(Rejection(request: request, message: acknowledgement.message ?? "Your iPhone rejected the request"))
+    }
+    updated.pending[request.id] = nil
+    try save(updated)
+    return true
+  }
+
+  mutating func dismissRejection(_ id: UUID) throws {
+    var updated = state
+    updated.rejections.removeAll { $0.id == id }
+    try save(updated)
+  }
+
+  private mutating func save(_ updated: State) throws {
+    try FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+    try WatchQuickLog.encode(updated).write(to: file, options: .atomic)
+    state = updated
   }
 }
