@@ -4,6 +4,7 @@ import CoreData
 struct EditWebhookPresetScreen: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var toastViewModel: ToastViewModel
 
     private let presetToEdit: WebhookPreset?
     private let onSaveNew: ((WebhookPreset) -> Void)?
@@ -131,6 +132,14 @@ struct EditWebhookPresetScreen: View {
             site: "",
             note: "This is a test note."
         )
-        _ = await WebhookService.sendWebhookWithRetry(url: presetURL, content: WebhookService.content(for: data, settings: .current))
+        let content = WebhookService.content(for: data, settings: .current)
+        let result = await WebhookService.sendWebhookWithRetry(url: presetURL, content: content)
+        if result.success {
+            toastViewModel.showSuccessToast(message: "Test message sent.")
+        } else if result.error as? WebhookService.DeliveryError == .unknownDelivery {
+            toastViewModel.showErrorToast(message: "Couldn't confirm delivery. Check the webhook destination.")
+        } else {
+            toastViewModel.showErrorToast(message: "Couldn't send the test message.")
+        }
     }
 }
