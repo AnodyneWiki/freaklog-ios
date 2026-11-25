@@ -2,11 +2,12 @@ import SwiftUI
 
 // MARK: - EditFormulationScreen
 
-// Adds a formulation, or edits one when given. Changes are only saved with Done.
+// Edits a saved formulation or returns a draft for the calling form to save.
 struct EditFormulationScreen: View {
 
   init(formulation: Formulation?) {
     self.formulation = formulation
+    self.onDraft = nil
     _values = State(initialValue: formulation.map(FormulationCodable.init) ?? FormulationCodable(
       name: "",
       note: "",
@@ -14,7 +15,14 @@ struct EditFormulationScreen: View {
       components: []))
   }
 
+  init(draft: FormulationCodable, onDraft: @escaping (FormulationCodable) -> Void) {
+    self.formulation = nil
+    self.onDraft = onDraft
+    _values = State(initialValue: draft)
+  }
+
   let formulation: Formulation?
+  private let onDraft: ((FormulationCodable) -> Void)?
   @State private var isShowingSaveError = false
 
   var body: some View {
@@ -83,7 +91,7 @@ struct EditFormulationScreen: View {
   @State private var isAddingComponent = false
 
   private var canSave: Bool {
-    !values.name.trimmingCharacters(in: .whitespaces).isEmpty && !values.components.isEmpty
+    !values.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !values.components.isEmpty
   }
 
   private var form: some View {
@@ -142,10 +150,16 @@ struct EditFormulationScreen: View {
   }
 
   private func save() {
+    var trimmed = values
+    trimmed.name = values.name.trimmingCharacters(in: .whitespacesAndNewlines)
+    if let onDraft {
+      onDraft(trimmed)
+      dismiss()
+      return
+    }
+
     do {
       let context = try PersistenceController.shared.journalEditContext()
-      var trimmed = values
-      trimmed.name = values.name.trimmingCharacters(in: .whitespaces)
       if let formulation {
         trimmed.apply(to: try PersistenceController.journalObject(formulation, in: context))
       } else {

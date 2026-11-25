@@ -128,8 +128,17 @@ private extension StockContainer {
 struct StockContainerDetail: View {
     @ObservedObject var container: StockContainer
     @State private var editingContainer = false
+    @State private var addingRoutine = false
     @State private var adjustment: StockAdjustment?
     @State private var errorMessage: String?
+
+    private var routineProductID: NSManagedObjectID? {
+        if let unit = container.customUnit, !unit.isArchived {
+            return unit.objectID
+        }
+        guard let formulation = container.formulation, !formulation.componentsSorted.isEmpty else { return nil }
+        return formulation.objectID
+    }
 
     var body: some View {
         List {
@@ -180,6 +189,16 @@ struct StockContainerDetail: View {
                         Label("Record Disposal", systemImage: "minus.circle")
                     }
                 }
+
+                if routineProductID != nil {
+                    Section {
+                        Button {
+                            addingRoutine = true
+                        } label: {
+                            Label("Add Routine", systemImage: "calendar.badge.plus")
+                        }
+                    }
+                }
             }
 
             Section("History") {
@@ -215,6 +234,19 @@ struct StockContainerDetail: View {
         }
         .sheet(isPresented: $editingContainer) {
             NavigationStack { StockContainerEditor(container: container) }
+        }
+        .sheet(isPresented: $addingRoutine) {
+            if let productID = routineProductID {
+                RoutineScheduleEditor(
+                    schedule: .draft(
+                        named: container.customUnit?.nameUnwrapped ?? container.formulation?.nameUnwrapped ?? "",
+                        calendar: RoutineSchedules.calendar
+                    ),
+                    isNew: true,
+                    store: RoutineSchedules.shared,
+                    initialProductID: productID
+                )
+            }
         }
         .sheet(item: $adjustment) { action in
             NavigationStack { StockAdjustmentEditor(container: container, action: action) }
@@ -285,6 +317,8 @@ private struct StockContainerEditor: View {
 
     let container: StockContainer?
     @State private var productID: NSManagedObjectID?
+    @State private var formulationDraft: FormulationCodable?
+    @State private var editingFormulationDraft = false
     @State private var name: String
     @State private var productName: String
     @State private var location: String
@@ -311,47 +345,70 @@ private struct StockContainerEditor: View {
     private var chosenCustomUnit: CustomUnit? { customUnits.first { $0.objectID == productID } }
     private var chosenFormulation: Formulation? { formulations.first { $0.objectID == productID } }
 
+    private var chosenProductName: String? {
+        chosenCustomUnit?.nameUnwrapped ?? chosenFormulation?.nameUnwrapped
+            ?? formulationDraft?.name ?? productName.nonemptyTrimmed
+    }
+
+    private var containerName: String {
+        name.nonemptyTrimmed ?? (container == nil ? chosenProductName ?? "" : "")
+    }
+
     private var chosenUnit: String {
         if container != nil { return unit }
         if let chosenCustomUnit { return chosenCustomUnit.unitUnwrapped }
-        if chosenFormulation != nil { return Inventory.Use.formulationUnit }
+        if chosenFormulation != nil || formulationDraft != nil { return Inventory.Use.formulationUnit }
+        if productID != nil { return "" }
         return unit.trimmed
     }
 
     var body: some View {
         Form {
+            if container == nil {
+                Section("Product") {
+                    if let formulationDraft {
+                        LabeledContent("New Formulation", value: formulationDraft.name)
+                        Button("Edit Formulation") { editingFormulationDraft = true }
+                        Button("Remove Draft", role: .destructive) { self.formulationDraft = nil }
+                    } else {
+                        if !customUnits.isEmpty || !formulations.isEmpty {
+                            Picker("Linked Product", selection: $productID) {
+                                Text("None").tag(Optional<NSManagedObjectID>.none)
+                                ForEach(customUnits, id: \.objectID) { product in
+                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
+                                }
+                                ForEach(formulations, id: \.objectID) { product in
+                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
+                                }
+                            }
+                        }
+                        if productID == nil {
+                            TextField("Product Name (Optional)", text: $productName)
+                            PackageLabelDraftButton { productName = $0 }
+                            Button {
+                                editingFormulationDraft = true
+                            } label: {
+                                Label("Create Formulation", systemImage: "plus.circle")
+                            }
+                        }
+                    }
+                }
+            }
             Section("Container") {
-                TextField("Name", text: $name)
+                TextField("Name", text: $name, prompt: container == nil ? chosenProductName.map { Text($0) } : nil)
                 TextField("Storage Location", text: $location)
                 Toggle("Track Expiry", isOn: $hasExpiry)
                 if hasExpiry {
                     DatePicker("Expiry", selection: $expiresAt, displayedComponents: .date)
                 }
             }
-            if container == nil {
-                Section("Product") {
-                    if !customUnits.isEmpty || !formulations.isEmpty {
-                        Picker("Linked Product", selection: $productID) {
-                            Text("None").tag(Optional<NSManagedObjectID>.none)
-                            ForEach(customUnits, id: \.objectID) { product in
-                                Text(product.nameUnwrapped).tag(Optional(product.objectID))
-                            }
-                            ForEach(formulations, id: \.objectID) { product in
-                                Text(product.nameUnwrapped).tag(Optional(product.objectID))
-                            }
-                        }
-                    }
-                    if productID == nil {
-                        TextField("Product Name (Optional)", text: $productName)
-                        PackageLabelDraftButton { productName = $0 }
+            Section("Stock") {
+                if container == nil {
+                    if productID == nil, formulationDraft == nil {
                         TextField("Counting Unit", text: $unit)
                     } else {
                         LabeledContent("Counting Unit", value: chosenUnit)
                     }
-                }
-            }
-            Section("Stock") {
-                if container == nil {
                     TextField("Opening Quantity", text: $opening)
                         .keyboardType(.decimalPad)
                 }
@@ -369,12 +426,20 @@ private struct StockContainerEditor: View {
         .toolbar {
             ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
             ToolbarItem(placement: .confirmationAction) {
-                Button("Save", action: save).disabled(name.trimmed.isEmpty || chosenUnit.isEmpty)
+                Button("Save", action: save).disabled(containerName.isEmpty || chosenUnit.isEmpty)
+            }
+        }
+        .sheet(isPresented: $editingFormulationDraft) {
+            EditFormulationScreen(draft: formulationDraft ?? FormulationCodable(
+                name: productName.trimmed, note: "", creationDate: .now, components: []
+            )) { draft in
+                formulationDraft = draft
             }
         }
     }
 
     private func save() {
+        guard !containerName.isEmpty, !chosenUnit.isEmpty else { return }
         guard let initial = opening.isEmpty ? 0 : opening.stockQuantity,
               let threshold = lowThreshold.isEmpty ? 0 : lowThreshold.stockQuantity else {
             errorMessage = InventoryError.invalidQuantity.localizedDescription
@@ -390,11 +455,12 @@ private struct StockContainerEditor: View {
                     record = StockContainer(context: context)
                     record.customUnit = try chosenCustomUnit.map { try PersistenceController.journalObject($0, in: context) }
                     record.formulation = try chosenFormulation.map { try PersistenceController.journalObject($0, in: context) }
-                    record.productName = chosenCustomUnit?.nameUnwrapped ?? chosenFormulation?.nameUnwrapped ?? productName.nonemptyTrimmed
+                        ?? formulationDraft?.insert(into: context)
+                    record.productName = chosenProductName
                     record.unit = chosenUnit
                     try Inventory.stage(.opening, quantity: initial, in: record)
                 }
-                record.name = name.trimmed
+                record.name = containerName
                 record.storageLocation = location.nonemptyTrimmed
                 record.lowThreshold = threshold
                 record.expiresAt = hasExpiry ? expiresAt : nil

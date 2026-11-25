@@ -52,6 +52,15 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     var anchorDay: AnchorDay?
     var additionalTimes: [ClockTime]?
 
+    static func draft(named name: String = "", at date: Date = .now, calendar: Calendar) -> Self {
+        Self(
+            name: name,
+            hour: calendar.component(.hour, from: date),
+            minute: calendar.component(.minute, from: date),
+            anchorDay: AnchorDay(date, calendar: calendar)
+        )
+    }
+
     var times: [ClockTime] {
         [ClockTime(id: id, hour: hour, minute: minute)] + (additionalTimes ?? [])
     }

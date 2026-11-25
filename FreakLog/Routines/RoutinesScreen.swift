@@ -81,11 +81,7 @@ struct RoutinesScreen: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    let calendar = RoutineSchedules.calendar
-                    let time = calendar.dateComponents([.hour, .minute], from: .now)
-                    selection = RoutineSchedule(
-                        name: "", hour: time.hour ?? 0, minute: time.minute ?? 0,
-                        anchorDay: .init(.now, calendar: calendar))
+                    selection = .draft(calendar: RoutineSchedules.calendar)
                 } label: {
                     Label("Add Routine", systemImage: "plus")
                 }
@@ -224,6 +220,8 @@ struct RoutineScheduleEditor: View {
                                 .keyboardType(.decimalPad)
                             if let unit = customUnits.first(where: { $0.objectID == productID })?.unitUnwrapped {
                                 Text(unit).foregroundStyle(.secondary)
+                            } else if formulations.contains(where: { $0.objectID == productID }) {
+                                Text(Inventory.Use.formulationUnit).foregroundStyle(.secondary)
                             }
                         }
                     } else if schedule.productKind != nil {
