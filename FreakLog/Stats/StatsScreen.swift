@@ -62,8 +62,8 @@ struct StatsScreen: View {
         ingestionData = Self.experienceData(from: ingestionEntries, colors: colors)
         experienceData = Self.experienceData(from: experienceEntries, colors: colors)
         substanceData = SubstanceData(
-            last30Days: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast30Days),
-            last12Months: Self.substanceCounts(of: experienceEntries, where: Self.isWithinLast12Months),
+            last30Days: Self.substanceCounts(of: experienceEntries, where: { TimeRange.last30Days.includes($0) }),
+            last12Months: Self.substanceCounts(of: experienceEntries, where: { TimeRange.last12Months.includes($0) }),
             years: Self.substanceCounts(of: experienceEntries, where: { _ in true }),
             colors: colors
         )
@@ -89,18 +89,10 @@ struct StatsScreen: View {
         let period: DateComponents
     }
 
-    private static func isWithinLast30Days(_ date: Date) -> Bool {
-        Calendar.current.numberOfDaysBetween(date, and: Date()) <= 30
-    }
-
-    private static func isWithinLast12Months(_ date: Date) -> Bool {
-        Calendar.current.numberOfMonthsBetween(date, and: Date()) <= 12
-    }
-
     private static func experienceData(from entries: [WeightedSubstanceDate], colors: [String: Color]) -> ExperienceData {
         ExperienceData(
-            last30Days: counts(of: entries, in: .last30Days, where: isWithinLast30Days),
-            last12Months: counts(of: entries, in: .last12Months, where: isWithinLast12Months),
+            last30Days: counts(of: entries, in: .last30Days, where: { TimeRange.last30Days.includes($0) }),
+            last12Months: counts(of: entries, in: .last12Months, where: { TimeRange.last12Months.includes($0) }),
             years: counts(of: entries, in: .years, where: { _ in true }),
             colors: colors
         )
@@ -159,30 +151,40 @@ struct StatsScreenContent: View {
 
     var body: some View {
         List {
+            Section("Last 12 Months") {
+                NavigationLink(
+                    value: GlobalNavigationDestination.experienceDetails(
+                        experienceData: experienceData,
+                        ingestionData: ingestionData,
+                        showIngestions: false
+                    )
+                ) {
+                    ExperienceOverview(experienceData: experienceData)
+                }
+                NavigationLink(
+                    value: GlobalNavigationDestination.experienceDetails(
+                        experienceData: experienceData,
+                        ingestionData: ingestionData,
+                        showIngestions: true
+                    )
+                ) {
+                    ExperienceOverview(experienceData: ingestionData, showIngestions: true)
+                }
+                NavigationLink(value: GlobalNavigationDestination.substanceDetails(substanceData: substanceData)) {
+                    SubstanceOverview(substanceData: substanceData)
+                }
+            }
             if isEyeOpen {
                 Section {
                     NavigationLink(value: GlobalNavigationDestination.toleranceChart) {
                         ToleranceChartOverView(toleranceWindows: toleranceWindows)
                     }
+                } header: {
+                    Text("Tolerance")
                 } footer: {
                     if !substancesInIngestionsButNotChart.isEmpty {
                         Text("Excluding ") + Text(substancesInIngestionsButNotChart, format: .list(type: .and))
                     }
-                }
-            }
-            Section {
-                NavigationLink(
-                    value: GlobalNavigationDestination.experienceDetails(
-                        experienceData: experienceData,
-                        ingestionData: ingestionData
-                    )
-                ) {
-                    ExperienceOverview(experienceData: experienceData)
-                }
-            }
-            Section {
-                NavigationLink(value: GlobalNavigationDestination.substanceDetails(substanceData: substanceData)) {
-                    SubstanceOverview(substanceData: substanceData)
                 }
             }
         }.navigationTitle("Your Stats")

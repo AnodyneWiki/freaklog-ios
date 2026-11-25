@@ -45,6 +45,11 @@ struct SubstanceDetailsScreen: View {
             } footer: {
                 Text("Each occurence of the substance in an experience is counted as 1.")
             }
+            Section {
+                NavigationLink("View Entries") {
+                    StatsEntriesScreen(timeRange: timeRange)
+                }
+            }
         }
         .navigationTitle("Substances")
     }

@@ -1,13 +1,20 @@
 import Charts
+import CoreData
 import SwiftUI
 
 struct ExperienceDetailsScreen: View {
   let experienceData: ExperienceData
   let ingestionData: ExperienceData
   @State private var timeRange: TimeRange = .last12Months
-  @State private var showIngestions = false
+  @State private var showIngestions: Bool
   @State private var isShowingAverageLine: Bool = false
   @State private var highlightedSubstanceNames: [String] = []
+
+  init(experienceData: ExperienceData, ingestionData: ExperienceData, showIngestions: Bool = false) {
+    self.experienceData = experienceData
+    self.ingestionData = ingestionData
+    _showIngestions = State(initialValue: showIngestions)
+  }
 
   private var activeData: ExperienceData {
     showIngestions ? ingestionData : experienceData
@@ -43,6 +50,11 @@ struct ExperienceDetailsScreen: View {
         Section("Options") {
           Toggle(timeRange == .years ? "Show Yearly Average" : "Show Monthly Average", isOn: $isShowingAverageLine)
             .tint(.accentColor)
+        }
+      }
+      Section {
+        NavigationLink("View Entries") {
+          StatsEntriesScreen(timeRange: timeRange, showsIngestions: showIngestions)
         }
       }
       let substanceCounts = activeData.getSubstanceExperienceCounts(in: timeRange)
@@ -89,7 +101,7 @@ struct ExperienceDetailsScreen: View {
         }
       }
     }
-    .navigationTitle("Statistics")
+    .navigationTitle(unitLabel)
   }
 
   private func getColor(name: String) -> Color {
@@ -98,6 +110,45 @@ struct ExperienceDetailsScreen: View {
     } else {
       return Color.gray.opacity(0.3)
     }
+  }
+}
+
+struct StatsEntriesScreen: View {
+  let timeRange: TimeRange
+  var showsIngestions = false
+
+  @FetchRequest(fetchRequest: PersistenceController.personalIngestionsRequest())
+  private var ingestions: FetchedResults<Ingestion>
+  @FetchRequest(fetchRequest: PersistenceController.experiencesRequest(prefetchingIngestions: true))
+  private var experiences: FetchedResults<Experience>
+
+  var body: some View {
+    let now = Date.now
+    List {
+      if showsIngestions {
+        let entries = ingestions.filter {
+          timeRange.includes($0.timeUnwrapped, relativeTo: now)
+        }
+        if entries.isEmpty {
+          Text("No ingestions in this period").foregroundStyle(.secondary)
+        }
+        ForEach(entries) { ingestion in
+          JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.month().day().year().hour().minute())
+        }
+      } else {
+        let entries = experiences.filter { experience in
+          timeRange.includes(experience.sortDateUnwrapped, relativeTo: now)
+            && !experience.myIngestionsSorted.isEmpty
+        }
+        if entries.isEmpty {
+          Text("No experiences in this period").foregroundStyle(.secondary)
+        }
+        ForEach(entries) { experience in
+          ExperienceRow(experience: experience, timeDisplayStyle: .regular)
+        }
+      }
+    }
+    .navigationTitle(showsIngestions ? "Ingestions" : "Experiences")
   }
 }
 

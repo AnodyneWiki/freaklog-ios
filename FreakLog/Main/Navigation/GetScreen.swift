@@ -59,8 +59,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             ToleranceChartExplanationScreen()
         case .toleranceChart:
             ToleranceChartScreen()
-        case let .experienceDetails(experienceData, ingestionData):
-            ExperienceDetailsScreen(experienceData: experienceData, ingestionData: ingestionData)
+        case let .experienceDetails(experienceData, ingestionData, showIngestions):
+            ExperienceDetailsScreen(experienceData: experienceData, ingestionData: ingestionData, showIngestions: showIngestions)
         case let .substanceDetails(substanceData):
             SubstanceDetailsScreen(substanceData: substanceData)
         case .saferRoutes:

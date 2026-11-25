@@ -29,7 +29,7 @@ enum GlobalNavigationDestination: Hashable {
     // stats tab mainly
     case toleranceChart
     case toleranceChartExplanation
-    case experienceDetails(experienceData: ExperienceData, ingestionData: ExperienceData)
+    case experienceDetails(experienceData: ExperienceData, ingestionData: ExperienceData, showIngestions: Bool)
     case substanceDetails(substanceData: SubstanceData)
     case dosageStat(substanceName: String)
 
