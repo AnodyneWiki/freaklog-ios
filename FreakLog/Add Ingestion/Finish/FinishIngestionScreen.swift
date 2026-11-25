@@ -12,6 +12,7 @@ struct FinishIngestionScreen: View {
     enum SheetOption: Identifiable, Hashable {
         case editLocation
         case editConsumer
+        case editMeasurement
         case setUpRoutine(RoutineDraft)
 
         var id: Self {
@@ -21,7 +22,7 @@ struct FinishIngestionScreen: View {
 
     // Logged together with the same time, experience, consumer, location and note,
     // like the substances of a formulation
-    let ingestions: [FinishIngestionScreenArguments]
+    @State private var ingestions: [FinishIngestionScreenArguments]
     let dismiss: () -> Void
 
     init(arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void) {
@@ -29,7 +30,7 @@ struct FinishIngestionScreen: View {
     }
 
     init(ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void) {
-        self.ingestions = ingestions
+        _ingestions = State(initialValue: ingestions)
         self.dismiss = dismiss
     }
 
@@ -192,6 +193,10 @@ struct FinishIngestionScreen: View {
                 ChooseLocationScreen(locationManager: locationManager, onDone: { })
             case .editConsumer:
                 EditConsumerScreen(consumerName: $consumerName)
+            case .editMeasurement:
+                if let ingestion = ingestions.first {
+                    IngestionMeasurementEditor(ingestion: ingestion, onDone: updateMeasurement)
+                }
             case .setUpRoutine(let draft):
                 RoutineScheduleEditor(
                     schedule: draft.schedule, isNew: true, store: .shared, initialProductID: draft.productID)
@@ -225,20 +230,47 @@ struct FinishIngestionScreen: View {
         Section {
             ForEach(ingestions.indices, id: \.self) { index in
                 let ingestion = ingestions[index]
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
-                        .font(.headline)
-                    Text(doseDescription(for: ingestion))
-                        .font(.title3.weight(.semibold))
-                        .monospacedDigit()
-                    Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                if ingestions.count == 1, ingestion.formulation == nil, routineSlot == nil {
+                    Button {
+                        sheetToShow = .editMeasurement
+                    } label: {
+                        summary(for: ingestion)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens the ingestion details editor")
+                } else {
+                    summary(for: ingestion)
                 }
-                .padding(.vertical, 4)
-                .accessibilityElement(children: .combine)
             }
         }
+    }
+
+    private func summary(for ingestion: FinishIngestionScreenArguments) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
+                .font(.headline)
+            Text(doseDescription(for: ingestion))
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+            Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func updateMeasurement(_ updated: FinishIngestionScreenArguments) {
+        let previous = ingestions[0]
+        if updated.administrationRoute != previous.administrationRoute {
+            siteSelection = AdministrationSiteSelection()
+            stockContainerID = nil
+        } else if updated.customUnit != previous.customUnit || updated.units != previous.units || updated.dose == nil {
+            stockContainerID = nil
+        }
+        ingestions[0] = updated
     }
 
     private var experienceSection: some View {
@@ -527,4 +559,118 @@ struct FinishIngestionScreen: View {
 
 // swiftlint:enable type_body_length function_body_length file_length
 
+private struct IngestionMeasurementEditor: View {
+    let ingestion: FinishIngestionScreenArguments
+    let onDone: (FinishIngestionScreenArguments) -> Void
+    private let initialAmountText: String
 
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @State private var route: AdministrationRoute
+    @State private var amountText: String
+    @State private var didChangeRoute = false
+    @State private var units: String
+    @State private var isEstimate: Bool
+    @State private var deviation: Double?
+
+    init(ingestion: FinishIngestionScreenArguments, onDone: @escaping (FinishIngestionScreenArguments) -> Void) {
+        self.ingestion = ingestion
+        self.onDone = onDone
+        _route = State(initialValue: ingestion.administrationRoute)
+        let formattedAmount = ingestion.dose?.formatted() ?? ""
+        _amountText = State(initialValue: formattedAmount)
+        initialAmountText = formattedAmount
+        _units = State(initialValue: ingestion.units ?? "")
+        _isEstimate = State(initialValue: ingestion.isEstimate)
+        _deviation = State(initialValue: ingestion.estimatedDoseStandardDeviation)
+    }
+
+    private var customUnit: CustomUnit? {
+        route == ingestion.administrationRoute ? ingestion.customUnit : nil
+    }
+
+    private var amount: Double? {
+        if !didChangeRoute, amountText == initialAmountText { return ingestion.dose }
+        return getDouble(from: amountText)
+    }
+    private var amountIsValid: Bool {
+        amountText.isEmpty || (amount.map { $0.isFinite && $0 > 0 } ?? false)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if isEyeOpen {
+                    Section {
+                        Picker("Route", selection: $route) {
+                            ForEach(AdministrationRoute.allCases) { route in
+                                Text(route.rawValue.localizedCapitalized).tag(route)
+                            }
+                        }
+                        .pickerStyle(.navigationLink)
+                        .onChange(of: route, perform: resetAmount)
+                    } footer: {
+                        Text("Changing the route clears the amount.")
+                    }
+                }
+                Section {
+                    if let customUnit {
+                        LabeledContent("Unit", value: customUnit.unitUnwrapped)
+                    } else {
+                        UnitsPicker(units: $units).id(route)
+                    }
+                    TextField("Amount", text: $amountText)
+                        .keyboardType(.decimalPad)
+                    if amount != nil {
+                        EstimateFields(
+                            isEstimate: $isEstimate,
+                            standardDeviation: $deviation,
+                            units: customUnit?.unitUnwrapped ?? units,
+                            mean: amount
+                        )
+                    }
+                } footer: {
+                    Text("Leave the amount blank to log it as unknown.")
+                }
+            }
+            .navigationTitle("Edit Ingestion")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: apply)
+                        .disabled(!amountIsValid || (amount != nil && customUnit == nil && units.isEmpty))
+                }
+            }
+        }
+    }
+
+    private func resetAmount(for route: AdministrationRoute) {
+        didChangeRoute = true
+        amountText = ""
+        isEstimate = false
+        deviation = nil
+        units = route == ingestion.administrationRoute
+            ? ingestion.units ?? ""
+            : PersistenceController.shared.getCustomSubstance(name: ingestion.substanceName)?.unitsUnwrapped
+                ?? PersistenceController.shared.resolvedDose(for: ingestion.substanceName, route: route)?.units
+                ?? UnitPickerOptions.mg.rawValue
+    }
+
+    private func apply() {
+        var updated = FinishIngestionScreenArguments(
+            substanceName: ingestion.substanceName,
+            administrationRoute: route,
+            dose: amount,
+            units: units.isEmpty ? nil : units,
+            isEstimate: amount != nil && isEstimate,
+            estimatedDoseStandardDeviation: amount != nil && isEstimate ? deviation : nil,
+            customUnit: customUnit
+        )
+        updated.isHiddenInTimeline = ingestion.isHiddenInTimeline
+        onDone(updated)
+        dismiss()
+    }
+}
