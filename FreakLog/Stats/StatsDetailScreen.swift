@@ -15,6 +15,7 @@ struct StatsDetailScreen: View {
     @State private var pinName = ""
     @State private var selectionToPin: StatsSelection?
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @AppStorage(StatsPreferences.pinnedViewsKey) private var pinnedStatsData = Data()
 
     init(metric: StatsMetric, selection: StatsSelection, isSubstanceHistory: Bool = false) {
@@ -26,7 +27,7 @@ struct StatsDetailScreen: View {
 
     var body: some View {
         StatsJournal { entries, tags in
-            let records = StatsRecords(entries: entries, selection: effectiveSelection, tags: tags)
+            let records = StatsRecords(entries: entries, selection: effectiveSelection, dayStartHour: dayStartHour, tags: tags)
             let buckets = records.buckets(for: metric)
             let focused = selectedInterval.map { records.selecting($0, for: metric) } ?? records
             let scopedSelection = selectedInterval.map { _ in
@@ -95,7 +96,7 @@ struct StatsDetailScreen: View {
                         .disabled(focused.entries.isEmpty)
                         Button {
                             pinName = ""
-                            selectionToPin = scopedSelection.anchored(now: .now)
+                            selectionToPin = scopedSelection.anchored(now: .now, dayStartHour: dayStartHour)
                             isNamingView = true
                         } label: {
                             Label("Pin View", systemImage: "pin")
@@ -137,6 +138,7 @@ struct StatsDetailScreen: View {
         .onChange(of: selection.customEnd) { _ in clearFocusedPeriod() }
         .onChange(of: selection.periodStep) { _ in clearFocusedPeriod() }
         .onChange(of: selection.substances) { _ in selectedInterval = nil }
+        .onChange(of: dayStartHour) { _ in selectedInterval = nil }
         .onChange(of: showsAmounts) { _ in selectedInterval = nil }
         .onChange(of: isEyeOpen) { _ in clearHiddenRoute() }
         .alert("Pin Stats View", isPresented: $isNamingView) {
@@ -180,7 +182,7 @@ struct StatsDetailScreen: View {
                 } label: {
                     LabeledContent {
                         HStack(spacing: 6) {
-                            Text(statsRangeLabel(focus.interval))
+                            Text(statsRangeLabel(focus.interval, journalDay: .init(startHour: dayStartHour)))
                             Image(systemName: "chevron.up.chevron.down")
                                 .imageScale(.small)
                                 .accessibilityHidden(true)
@@ -247,7 +249,7 @@ struct StatsDetailScreen: View {
                         .accessibilityLabel(Text(metric.title))
                         .accessibilityValue(Text(entryCount(focused), format: .number))
                     if selectedInterval != nil || selection.period == .custom {
-                        Text(statsRangeLabel(focused.range))
+                        Text(statsRangeLabel(focused.range, journalDay: records.journalDay))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -282,7 +284,7 @@ struct StatsDetailScreen: View {
                         ($0, PersistenceController.shared.displayName(for: $0))
                     })
                 StatsPeriodChart(
-                    buckets: buckets, component: records.bucketComponent, domain: domain,
+                    buckets: buckets, component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
                     contributions: contributions, colors: seriesColors, labels: labels, selection: Binding(
                         get: { selectedBucket?.id },
                         set: { id in
@@ -482,7 +484,7 @@ struct StatsDetailScreen: View {
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     if selectedInterval != nil {
-                        Text(statsRangeLabel(focused.range))
+                        Text(statsRangeLabel(focused.range, journalDay: records.journalDay))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -490,7 +492,7 @@ struct StatsDetailScreen: View {
                 if let domain = records.chartDomain(covering: buckets) {
                     let values = Dictionary(uniqueKeysWithValues: amountBuckets.map { ($0.id, $0.total) })
                     StatsPeriodChart(
-                        buckets: buckets, component: records.bucketComponent, domain: domain,
+                        buckets: buckets, component: records.bucketComponent, domain: domain, journalDay: records.journalDay,
                         contributions: [], colors: [:], labels: [:], amounts: values, amountUnit: available.key.unit,
                         selection: Binding(
                             get: { selectedInterval?.start },
@@ -786,15 +788,17 @@ struct StatsDetailScreen: View {
     }
 }
 
-func statsRangeLabel(_ interval: DateInterval) -> String {
-    let end = max(interval.start, interval.end.addingTimeInterval(-0.001))
-    return (interval.start..<end).formatted(.interval.year().month(.abbreviated).day())
+func statsRangeLabel(_ interval: DateInterval, journalDay: JournalDay) -> String {
+    let start = journalDay.label(for: interval.start)
+    let end = journalDay.lastLabel(in: interval)
+    return (start..<end).formatted(.interval.year().month(.abbreviated).day())
 }
 
 private struct StatsPeriodChart: View {
     let buckets: [StatsRecords.Bucket]
     let component: Calendar.Component
     let domain: ClosedRange<Date>
+    let journalDay: JournalDay
     let contributions: [StatsRecords.Contribution]
     let colors: [String: Color]
     let labels: [String: String]
@@ -808,30 +812,30 @@ private struct StatsPeriodChart: View {
                 ForEach(buckets) { bucket in
                     if let amount = amounts[bucket.id] {
                         BarMark(
-                            x: .value("Period", bucket.id, unit: component),
+                            x: .value("Period", journalDay.label(for: bucket.id), unit: component),
                             y: .value("Amount", amount)
                         )
                         .foregroundStyle(Color.accentColor)
                         .opacity(opacity(for: bucket.id))
-                        .accessibilityLabel(Text(statsRangeLabel(bucket.interval)))
+                        .accessibilityLabel(Text(statsRangeLabel(bucket.interval, journalDay: journalDay)))
                         .accessibilityValue(Text(amountValue(amount)))
                     }
                 }
             } else if contributions.isEmpty {
                 ForEach(buckets) { bucket in
                     BarMark(
-                        x: .value("Period", bucket.id, unit: component),
+                        x: .value("Period", journalDay.label(for: bucket.id), unit: component),
                         y: .value("Count", bucket.count)
                     )
                     .foregroundStyle(Color.accentColor)
                     .opacity(opacity(for: bucket.id))
-                    .accessibilityLabel(Text(statsRangeLabel(bucket.interval)))
+                    .accessibilityLabel(Text(statsRangeLabel(bucket.interval, journalDay: journalDay)))
                     .accessibilityValue(Text(bucket.count, format: .number))
                 }
             } else {
                 ForEach(contributions) { item in
                     BarMark(
-                        x: .value("Period", item.id.date, unit: component),
+                        x: .value("Period", journalDay.label(for: item.id.date), unit: component),
                         y: .value("Count", item.count)
                     )
                     .foregroundStyle(by: .value("Substance", item.id.substance))
@@ -854,7 +858,8 @@ private struct StatsPeriodChart: View {
                     .gesture(SpatialTapGesture().onEnded { tap in
                         let x = tap.location.x - geometry[proxy.plotAreaFrame].origin.x
                         guard let date: Date = proxy.value(atX: x) else { return }
-                        let id = buckets.first { $0.interval.start <= date && date < $0.interval.end }?.id
+                        let day = journalDay.start(of: date)
+                        let id = buckets.first { $0.interval.start <= day && day < $0.interval.end }?.id
                         selection = selection == id ? nil : id
                     })
             }
@@ -886,13 +891,13 @@ private struct StatsPeriodChart: View {
             return String(localized: "Full Period")
         }
         let value = amounts?[bucket.id].map(amountValue) ?? bucket.count.formatted()
-        return "\(statsRangeLabel(bucket.interval)), \(value)"
+        return "\(statsRangeLabel(bucket.interval, journalDay: journalDay)), \(value)"
     }
 
     private func seriesLabel(_ item: StatsRecords.Contribution) -> String {
         let name = labels[item.id.substance] ?? item.id.substance
         guard let bucket = buckets.first(where: { $0.id == item.id.date }) else { return name }
-        return "\(name), \(statsRangeLabel(bucket.interval))"
+        return "\(name), \(statsRangeLabel(bucket.interval, journalDay: journalDay))"
     }
 
     private func amountValue(_ amount: Double) -> String {
@@ -909,10 +914,11 @@ struct StatsSelectedEntriesScreen: View {
     let metric: StatsMetric
     let selection: StatsSelection
     var amountKey: StatsRecords.Amount.Key? = nil
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
 
     var body: some View {
         StatsJournal { entries, tags in
-            let records = StatsRecords(entries: entries, selection: selection, tags: tags)
+            let records = StatsRecords(entries: entries, selection: selection, dayStartHour: dayStartHour, tags: tags)
             let matchingEntries = amountKey.map { key in
                 records.entries.filter { StatsRecords.Amount.Key($0) == key && key.value(for: $0) != nil }
             } ?? records.entries
@@ -949,7 +955,7 @@ struct StatsSelectedEntriesScreen: View {
                             StatsCoverageRows(records: records)
                         }
                     }
-                    let days = Dictionary(grouping: matchingEntries) { records.calendar.startOfDay(for: $0.timeUnwrapped) }
+                    let days = Dictionary(grouping: matchingEntries) { records.journalDay.label(for: $0.timeUnwrapped) }
                     ForEach(days.keys.sorted(by: >), id: \.self) { day in
                         Section {
                             ForEach(days[day] ?? []) { entry in

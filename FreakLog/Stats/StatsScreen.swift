@@ -5,6 +5,7 @@ import SwiftUI
 
 struct StatsScreen: View {
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @AppStorage(StatsPreferences.periodKey) private var period: StatsPeriod = .last12Months
     @AppStorage(StatsPreferences.customStartKey)
     private var customStart = StatsSelection().customStart.timeIntervalSinceReferenceDate
@@ -22,7 +23,7 @@ struct StatsScreen: View {
     var body: some View {
         StatsJournal { entries, tags in
             let selection = overviewSelection
-            let records = StatsRecords(entries: entries, selection: selection, tags: tags)
+            let records = StatsRecords(entries: entries, selection: selection, dayStartHour: dayStartHour, tags: tags)
             let pins = StatsPreferences.decode(pinnedStatsData)
 
             List {
@@ -92,11 +93,14 @@ struct StatsScreen: View {
                                 VStack(alignment: .leading, spacing: 4) {
                                     Label(pin.name, systemImage: "pin")
                                     if let focus = pin.selection.focus {
-                                        Text(statsRangeLabel(focus.interval))
+                                        Text(statsRangeLabel(focus.interval, journalDay: records.journalDay))
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     } else if pin.selection.period == .custom {
-                                        Text(statsRangeLabel(pin.selection.dateRange(now: .now)))
+                                        Text(statsRangeLabel(
+                                            pin.selection.dateRange(now: .now, dayStartHour: dayStartHour),
+                                            journalDay: records.journalDay
+                                        ))
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     } else {
@@ -190,7 +194,7 @@ struct StatsScreen: View {
                     .font(.title2.weight(.semibold).monospacedDigit())
                 if let domain = records.chartDomain(covering: buckets) {
                     Chart(contributions) { item in
-                        BarMark(x: .value("Period", item.id.date, unit: records.bucketComponent),
+                        BarMark(x: .value("Period", records.journalDay.label(for: item.id.date), unit: records.bucketComponent),
                                 y: .value("Count", item.count))
                             .foregroundStyle(by: .value("Substance", item.id.substance))
                     }
@@ -323,6 +327,7 @@ struct StatsGoalsSection: View {
     var substance: String?
 
     @AppStorage(StatsPreferences.goalsKey) private var data = Data()
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @State private var draft: StatsGoalDraft?
 
     var body: some View {
@@ -336,7 +341,9 @@ struct StatsGoalsSection: View {
                 } label: {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(PersistenceController.shared.displayName(for: goal.substance))
-                        StatsGoalSummary(goal: goal, progress: goal.progress(in: entries, endingAt: .now))
+                        StatsGoalSummary(
+                            goal: goal, progress: goal.progress(in: entries, endingAt: .now, dayStartHour: dayStartHour)
+                        )
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -377,6 +384,7 @@ private struct StatsGoalDetail: View {
     let goalID: UUID
     let fixedSubstance: Bool
     @AppStorage(StatsPreferences.goalsKey) private var data = Data()
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
     @State private var draft: StatsGoalDraft?
 
     var body: some View {
@@ -385,7 +393,7 @@ private struct StatsGoalDetail: View {
             let goal = goals.first { $0.id == goalID }
             List {
                 if let current = goal {
-                    let progress = current.progress(in: entries, endingAt: .now)
+                    let progress = current.progress(in: entries, endingAt: .now, dayStartHour: dayStartHour)
                     Section {
                         StatsGoalSummary(goal: current, progress: progress)
                         ProgressView(value: min(progress.value / current.target, 1))
@@ -605,6 +613,7 @@ struct StatsGoalLoggingSection: View {
     let substanceName: String
     let at: Date
     @AppStorage(StatsPreferences.goalsKey) private var data = Data()
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
 
     var body: some View {
         let goals = StatsPreferences.decodeGoals(data).filter { $0.substance == substanceName && $0.showsWhenLogging }
@@ -613,7 +622,9 @@ struct StatsGoalLoggingSection: View {
                 Section {
                     ForEach(goals) { goal in
                         LabeledContent {
-                            StatsGoalSummary(goal: goal, progress: goal.progress(in: entries, endingAt: at))
+                            StatsGoalSummary(
+                                goal: goal, progress: goal.progress(in: entries, endingAt: at, dayStartHour: dayStartHour)
+                            )
                         } label: {
                             Text("Last \(goal.days) Days")
                         }

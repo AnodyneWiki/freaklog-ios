@@ -50,6 +50,7 @@ struct JournalBackup: Codable {
     PersistenceController.fabButtonPositionKey,
     PersistenceController.dynamicExperienceRangeHoursKey,
     PersistenceController.showsDueTodayKey,
+    JournalDay.startHourKey,
     StatsPreferences.periodKey,
     StatsPreferences.customStartKey,
     StatsPreferences.customEndKey,

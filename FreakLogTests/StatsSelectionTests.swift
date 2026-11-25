@@ -57,6 +57,59 @@ final class StatsSelectionTests: XCTestCase {
         }
     }
 
+    func testOvernightBoundaryGroupsCalendarAndStatsAndLimitsCustomDates() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let midnight = calendar.startOfDay(for: now)
+        let previous = try XCTUnwrap(calendar.date(byAdding: .day, value: -1, to: midnight))
+        let priorEvening = previous.addingTimeInterval(23 * 3_600)
+        let earlyMorning = midnight.addingTimeInterval(2 * 3_600)
+        let boundary = midnight.addingTimeInterval(4 * 3_600)
+        let experience = Experience.create(at: priorEvening, in: context)
+        let evening = makeIngestion(in: experience, at: priorEvening, context: context)
+        let morning = makeIngestion(in: experience, at: earlyMorning, context: context)
+        let following = makeIngestion(in: experience, at: boundary, context: context)
+        let selection = StatsSelection(period: .custom, customStart: previous, customEnd: previous)
+        let records = StatsRecords(
+            entries: [evening, morning, following], selection: selection, now: boundary,
+            calendar: calendar, dayStartHour: 4
+        )
+        XCTAssertEqual(records.entries, [evening, morning])
+        XCTAssertEqual(records.journalDay.label(for: earlyMorning), previous)
+        XCTAssertEqual(records.journalDay.label(for: boundary), midnight)
+        XCTAssertEqual(records.daysLogged, 1)
+        let bucket = try XCTUnwrap(records.buckets(for: .ingestions).first)
+        XCTAssertEqual(bucket.count, 2)
+        XCTAssertEqual(bucket.interval, DateInterval(start: previous.addingTimeInterval(4 * 3_600), end: boundary))
+        XCTAssertEqual(records.chartDomain(covering: [bucket]), previous...midnight)
+        XCTAssertEqual(records.ingestionContributions.map(\.id.date), [bucket.id])
+
+        var currentWeek = StatsSelection(period: .last7Days)
+        let current = currentWeek.dateRange(now: earlyMorning, calendar: calendar, dayStartHour: 4)
+        currentWeek.periodStep = -1
+        let previousWeek = currentWeek.dateRange(now: earlyMorning, calendar: calendar, dayStartHour: 4)
+        XCTAssertEqual(previousWeek.end, current.start)
+        let pin = currentWeek.anchored(now: earlyMorning, calendar: calendar, dayStartHour: 4)
+        XCTAssertEqual(pin.dateRange(now: boundary, calendar: calendar, dayStartHour: 4), previousWeek)
+    }
+
+    func testBoundaryAdvancesAtTheFirstAvailableLocalTimeAcrossDST() throws {
+        var calendar = self.calendar
+        calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/New_York"))
+        let iso = ISO8601DateFormatter()
+        let beforeSpringBoundary = try XCTUnwrap(iso.date(from: "2026-03-08T06:59:59Z"))
+        let springBoundary = try XCTUnwrap(iso.date(from: "2026-03-08T07:00:00Z"))
+        let spring = JournalDay(startHour: 2, calendar: calendar)
+        XCTAssertEqual(spring.interval(of: .day, containing: beforeSpringBoundary)?.end, springBoundary)
+        XCTAssertEqual(spring.interval(of: .day, containing: springBoundary)?.start, springBoundary)
+
+        let firstFallBoundary = try XCTUnwrap(iso.date(from: "2026-11-01T05:00:00Z"))
+        let secondFallBoundary = try XCTUnwrap(iso.date(from: "2026-11-01T06:00:00Z"))
+        let fall = JournalDay(startHour: 1, calendar: calendar)
+        XCTAssertEqual(fall.interval(of: .day, containing: firstFallBoundary)?.start, firstFallBoundary)
+        XCTAssertEqual(fall.interval(of: .day, containing: secondFallBoundary)?.start, firstFallBoundary)
+        XCTAssertEqual(fall.interval(of: .day, containing: secondFallBoundary)?.duration, 25 * 3_600)
+    }
+
     func testPrimaryTagStacksAssignOneGroupToEachExperience() {
         let context = PersistenceController(inMemory: true).viewContext
         let first = Experience.create(at: now, in: context)

@@ -1,6 +1,54 @@
 import CoreData
 import SwiftUI
 
+struct JournalDay {
+    static let startHourKey = "journalDayStartHour"
+
+    let calendar: Calendar
+    private let startHour: Int
+
+    init(startHour: Int = 0, calendar: Calendar = .current) {
+        self.calendar = calendar
+        self.startHour = (0..<24).contains(startHour) ? startHour : 0
+    }
+
+    func start(of label: Date) -> Date {
+        let midnight = calendar.startOfDay(for: label)
+        guard startHour != 0 else { return midnight }
+        let start = calendar.date(
+            bySettingHour: startHour, minute: 0, second: 0, of: midnight,
+            matchingPolicy: .nextTime, repeatedTimePolicy: .first
+        )
+        return start.flatMap { calendar.isDate($0, inSameDayAs: midnight) ? $0 : nil } ?? midnight
+    }
+
+    func label(for time: Date) -> Date {
+        let today = calendar.startOfDay(for: time)
+        guard time < start(of: today) else { return today }
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today) ?? today
+        return calendar.startOfDay(for: yesterday)
+    }
+
+    func interval(of component: Calendar.Component, containing time: Date) -> DateInterval? {
+        calendar.dateInterval(of: component, for: label(for: time)).map {
+            DateInterval(start: start(of: $0.start), end: start(of: $0.end))
+        }
+    }
+
+    func lastLabel(in interval: DateInterval) -> Date {
+        label(for: max(interval.start, interval.end.addingTimeInterval(-0.001)))
+    }
+
+    // Swift Charts bins dates at civil boundaries. Keep its labels and tap targets on that same axis.
+    func chartDomain(_ range: ClosedRange<Date>) -> ClosedRange<Date> {
+        guard startHour != 0 else { return range }
+        let interval = DateInterval(start: range.lowerBound, end: range.upperBound)
+        let lastDay = lastLabel(in: interval)
+        let end = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? lastDay
+        return label(for: range.lowerBound)...calendar.startOfDay(for: end)
+    }
+}
+
 enum StatsPeriod: String, CaseIterable, Codable {
     case last7Days
     case last30Days
@@ -185,42 +233,46 @@ struct StatsSelection: Codable, Equatable {
         !substances.isEmpty || route != nil || !tags.isEmpty || requiredPrimaryTag != nil || person != .me
     }
 
-    func dateRange(now: Date, calendar: Calendar = .current) -> DateInterval {
-        let today = calendar.startOfDay(for: now)
+    func dateRange(now: Date, calendar: Calendar = .current, dayStartHour: Int = 0) -> DateInterval {
+        let journalDay = JournalDay(startHour: dayStartHour, calendar: calendar)
+        let today = journalDay.label(for: now)
         let until = now.addingTimeInterval(0.001)
         switch period {
         case .last7Days, .last30Days:
             let days = period == .last7Days ? 7 : 30
             let start = calendar.date(byAdding: .day, value: days * periodStep - days + 1, to: today) ?? today
             let end = calendar.date(byAdding: .day, value: days * periodStep + 1, to: today) ?? until
-            return DateInterval(start: start, end: min(end, until))
+            return DateInterval(start: journalDay.start(of: start), end: min(journalDay.start(of: end), until))
         case .thisMonth:
             let date = calendar.date(byAdding: .month, value: periodStep, to: today) ?? today
             let month = calendar.dateInterval(of: .month, for: date)
-            return DateInterval(start: month?.start ?? today, end: min(month?.end ?? until, until))
+            let start = journalDay.start(of: month?.start ?? today)
+            let end = month.map { journalDay.start(of: $0.end) } ?? until
+            return DateInterval(start: start, end: min(end, until))
         case .last12Months:
             let boundary = calendar.date(byAdding: .day, value: 1, to: today) ?? until
             let start = calendar.date(byAdding: .month, value: (periodStep - 1) * 12, to: boundary) ?? today
             let end = calendar.date(byAdding: .month, value: periodStep * 12, to: boundary) ?? until
-            return DateInterval(start: start, end: min(end, until))
+            return DateInterval(start: journalDay.start(of: start), end: min(journalDay.start(of: end), until))
         case .allTime:
             return DateInterval(start: .distantPast, end: .distantFuture)
         case .custom:
-            let firstDay = calendar.startOfDay(for: min(customStart, customEnd, now))
-            let lastDay = calendar.startOfDay(for: min(max(customStart, customEnd), now))
+            let firstDay = calendar.startOfDay(for: min(customStart, customEnd, today))
+            let lastDay = calendar.startOfDay(for: min(max(customStart, customEnd), today))
             let nextDay = calendar.date(byAdding: .day, value: 1, to: lastDay) ?? until
-            return DateInterval(start: firstDay, end: min(nextDay, until))
+            return DateInterval(start: journalDay.start(of: firstDay), end: min(journalDay.start(of: nextDay), until))
         }
     }
 
-    func anchored(now: Date, calendar: Calendar = .current) -> Self {
+    func anchored(now: Date, calendar: Calendar = .current, dayStartHour: Int = 0) -> Self {
         guard periodStep < 0, period != .allTime, period != .custom else { return self }
         var copy = self
-        let interval = dateRange(now: now, calendar: calendar)
+        let journalDay = JournalDay(startHour: dayStartHour, calendar: calendar)
+        let interval = dateRange(now: now, calendar: calendar, dayStartHour: dayStartHour)
         copy.period = .custom
         copy.periodStep = 0
-        copy.customStart = interval.start
-        copy.customEnd = interval.end.addingTimeInterval(-0.001)
+        copy.customStart = journalDay.label(for: interval.start)
+        copy.customEnd = journalDay.lastLabel(in: interval)
         return copy
     }
 
@@ -280,7 +332,7 @@ struct StatsRecords {
     ) -> [Contribution] {
         var counts: [Contribution.Key: Int] = [:]
         func count(at date: Date, in category: String) {
-            guard let start = calendar.dateInterval(of: bucketComponent, for: date)?.start else { return }
+            guard let start = journalDay.interval(of: bucketComponent, containing: date)?.start else { return }
             counts[.init(date: start, substance: category), default: 0] += 1
         }
         switch metric {
@@ -366,16 +418,19 @@ struct StatsRecords {
     let range: DateInterval
     let entries: [Ingestion]
     let experiences: [ExperienceMatch]
-    let calendar: Calendar
+    let journalDay: JournalDay
 
     init(
         entries: [Ingestion],
         selection: StatsSelection,
         now: Date = .now,
         calendar: Calendar = .current,
+        dayStartHour: Int = 0,
         tags: [String: PersonalSubstanceTags] = [:]
     ) {
-        let range = selection.focus?.sourceInterval ?? selection.dateRange(now: now, calendar: calendar)
+        let journalDay = JournalDay(startHour: dayStartHour, calendar: calendar)
+        let range = selection.focus?.sourceInterval
+            ?? selection.dateRange(now: now, calendar: calendar, dayStartHour: dayStartHour)
         let datedEntries = entries.filter { ingestion in
             guard !ingestion.isUnconfirmed, let time = ingestion.time else { return false }
             return range.start <= time && time < range.end
@@ -410,25 +465,25 @@ struct StatsRecords {
         }
         let entries = scopedEntries(using: filter)
         if let focus = selection.focus, let firstFilter = focus.experienceFilter {
-            let eligible = Self(entries: scopedEntries(using: firstFilter), range: range, calendar: calendar)
+            let eligible = Self(entries: scopedEntries(using: firstFilter), range: range, journalDay: journalDay)
                 .selecting(focus.experienceInterval ?? focus.interval, for: .experiences)
             let experienceIDs = Set(eligible.experiences.map(\.experience.objectID))
             let records = Self(
                 entries: entries.filter { $0.experience.map { experienceIDs.contains($0.objectID) } == true },
                 range: focus.experienceInterval == nil ? eligible.range : range,
-                calendar: calendar
+                journalDay: journalDay
             )
             self = focus.experienceInterval == nil ? records : records.selecting(focus.interval, for: focus.metric)
         } else {
-            let records = Self(entries: entries, range: range, calendar: calendar)
+            let records = Self(entries: entries, range: range, journalDay: journalDay)
             self = selection.focus.map { records.selecting($0.interval, for: $0.metric) } ?? records
         }
     }
 
-    private init(entries: [Ingestion], range: DateInterval, calendar: Calendar) {
+    private init(entries: [Ingestion], range: DateInterval, journalDay: JournalDay) {
         self.entries = entries
         self.range = range
-        self.calendar = calendar
+        self.journalDay = journalDay
         var entriesByExperience: [NSManagedObjectID: [Ingestion]] = [:]
         for entry in entries {
             guard let experience = entry.experience else { continue }
@@ -442,7 +497,7 @@ struct StatsRecords {
     }
 
     var daysLogged: Int {
-        Set(entries.compactMap(\.time).map { calendar.startOfDay(for: $0) }).count
+        Set(entries.compactMap(\.time).map(journalDay.label)).count
     }
 
     static func recordedRoute(for entry: Ingestion) -> AdministrationRoute? {
@@ -479,7 +534,7 @@ struct StatsRecords {
     func amountBuckets(for key: Amount.Key) -> [AmountBucket] {
         let totals = entries.reduce(into: [DateInterval: Double]()) { totals, entry in
             guard Amount.Key(entry) == key, let value = key.value(for: entry), let date = entry.time,
-                  let interval = calendar.dateInterval(of: bucketComponent, for: date) else { return }
+                  let interval = journalDay.interval(of: bucketComponent, containing: date) else { return }
             totals[interval, default: 0] += value
         }
         return totals.filter { $0.value.isFinite }.map { AmountBucket(interval: $0.key, total: $0.value) }
@@ -511,7 +566,7 @@ struct StatsRecords {
         }
 
         let byInterval: [DateInterval: Int] = dates.reduce(into: [:]) { counts, date in
-            if let interval = calendar.dateInterval(of: bucketComponent, for: date) {
+            if let interval = journalDay.interval(of: bucketComponent, containing: date) {
                 counts[interval, default: 0] += 1
             }
         }
@@ -527,7 +582,7 @@ struct StatsRecords {
         guard let first = intervals.first, let last = intervals.last else { return nil }
         let start = range.start == .distantPast ? first.start : min(first.start, range.start)
         let end = range.end == .distantFuture ? last.end : max(last.end, range.end)
-        return start...end
+        return journalDay.chartDomain(start...end)
     }
 
     func selecting(_ bucket: Bucket, for metric: StatsMetric) -> Self {
@@ -540,16 +595,16 @@ struct StatsRecords {
         let start = min(range.start, dates.min() ?? range.start)
         let end = max(range.end, dates.max()?.addingTimeInterval(0.001) ?? range.end)
         guard let interval = DateInterval(start: start, end: end).intersection(with: selectedInterval) else {
-            return Self(entries: [], range: selectedInterval, calendar: calendar)
+            return Self(entries: [], range: selectedInterval, journalDay: journalDay)
         }
         if metric == .experiences {
             let matches = experiences.filter { interval.start <= $0.firstMatchingDate && $0.firstMatchingDate < interval.end }
-            return Self(entries: matches.flatMap(\.entries), range: interval, calendar: calendar)
+            return Self(entries: matches.flatMap(\.entries), range: interval, journalDay: journalDay)
         }
         return Self(entries: entries.filter { entry in
             guard let date = entry.time else { return false }
             return interval.start <= date && date < interval.end
-        }, range: interval, calendar: calendar)
+        }, range: interval, journalDay: journalDay)
     }
 
     private static func recordedAmount(_ ingestion: Ingestion) -> Double? {
@@ -563,6 +618,7 @@ struct StatsPeriodControls: View {
     @Binding var start: Date
     @Binding var end: Date
     @Binding var step: Int
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
 
     var body: some View {
         Picker("Period", selection: Binding(
@@ -574,25 +630,25 @@ struct StatsPeriodControls: View {
             }
         }
         if period == .custom {
-            let now = Date.now
+            let today = JournalDay(startHour: dayStartHour).label(for: .now)
             DatePicker("From", selection: Binding(
-                get: { min(start, now) },
+                get: { min(start, today) },
                 set: { date in
                     start = date
                     if Calendar.current.compare(date, to: end, toGranularity: .day) == .orderedDescending {
                         end = date
                     }
                 }
-            ), in: ...now, displayedComponents: .date)
+            ), in: ...today, displayedComponents: .date)
             DatePicker("Through", selection: Binding(
-                get: { min(end, now) },
+                get: { min(end, today) },
                 set: { date in
                     end = date
                     if Calendar.current.compare(date, to: start, toGranularity: .day) == .orderedAscending {
                         start = date
                     }
                 }
-            ), in: ...now, displayedComponents: .date)
+            ), in: ...today, displayedComponents: .date)
         } else if period != .allTime {
             let now = Date.now
             var selection: StatsSelection {
@@ -610,7 +666,9 @@ struct StatsPeriodControls: View {
                 .accessibilityLabel("Previous Period")
                 .disabled(step <= -1_000)
 
-                Text(statsRangeLabel(selection.dateRange(now: now)))
+                Text(statsRangeLabel(
+                    selection.dateRange(now: now, dayStartHour: dayStartHour), journalDay: .init(startHour: dayStartHour)
+                ))
                     .font(.subheadline)
                     .frame(maxWidth: .infinity)
                     .multilineTextAlignment(.center)
@@ -668,8 +726,12 @@ struct StatsGoal: Codable, Identifiable {
         }
     }
 
-    func progress(in entries: [Ingestion], endingAt end: Date, calendar: Calendar = .current) -> Progress {
-        let start = calendar.date(byAdding: .day, value: 1 - days, to: calendar.startOfDay(for: end)) ?? end
+    func progress(
+        in entries: [Ingestion], endingAt end: Date, calendar: Calendar = .current, dayStartHour: Int = 0
+    ) -> Progress {
+        let journalDay = JournalDay(startHour: dayStartHour, calendar: calendar)
+        let label = calendar.date(byAdding: .day, value: 1 - days, to: journalDay.label(for: end)) ?? end
+        let start = journalDay.start(of: label)
         let entries = entries.filter { entry in
             guard entry.substanceNameUnwrapped == substance, entry.isMine, !entry.isUnconfirmed,
                   let time = entry.time else { return false }
