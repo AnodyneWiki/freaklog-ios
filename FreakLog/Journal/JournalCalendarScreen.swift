@@ -9,6 +9,7 @@ struct JournalCalendarScreen: View {
     var ingestions: FetchedResults<Ingestion>
 
     @State private var isFirstAppear = true
+    @State private var selectedDay = Calendar.current.startOfDay(for: .now)
 
     init() {
         self.calendar = Calendar.current
@@ -32,47 +33,70 @@ struct JournalCalendarScreen: View {
     var body: some View {
         // Grouped once here instead of a fetch request per visible day cell
         let ingestionsByDay = Dictionary(grouping: ingestions) { calendar.startOfDay(for: $0.timeUnwrapped) }
-        CalendarViewRepresentable(
-            calendar: calendar,
-            visibleDateRange: visibleDateRange,
-            monthsLayout: monthsLayout,
-            dataDependency: ingestions,
-            proxy: calendarViewProxy)
-        .interMonthSpacing(24)
-        .verticalDayMargin(8)
-        .horizontalDayMargin(8)
-        .monthHeaders { month in
-            let monthHeaderText = monthDateFormatter.string(from: calendar.date(from: month.components)!)
-            HStack {
-                Text(monthHeaderText)
-                    .font(.title2)
-                Spacer()
-            }
-            .padding()
-            .accessibilityAddTraits(.isHeader)
-        }
+        GeometryReader { geometry in
+            VStack(spacing: 0) {
+                CalendarViewRepresentable(
+                    calendar: calendar,
+                    visibleDateRange: visibleDateRange,
+                    monthsLayout: monthsLayout,
+                    dataDependency: (ingestions, selectedDay),
+                    proxy: calendarViewProxy)
+                .interMonthSpacing(24)
+                .verticalDayMargin(8)
+                .horizontalDayMargin(8)
+                .monthHeaders { month in
+                    let monthHeaderText = monthDateFormatter.string(from: calendar.date(from: month.components)!)
+                    HStack {
+                        Text(monthHeaderText)
+                            .font(.title2)
+                        Spacer()
+                    }
+                    .padding()
+                    .accessibilityAddTraits(.isHeader)
+                }
 
-        .days { dayComponents in
-            DayView(dayComponents: dayComponents, ingestionsByDay: ingestionsByDay)
-        }
-        .onAppear {
-            if isFirstAppear {
-                calendarViewProxy.scrollToDay(
-                    containing: Date.now,
-                    scrollPosition: .lastFullyVisiblePosition(padding: 0),
-                    animated: false)
-                isFirstAppear = false
+                .days { dayComponents in
+                    if let date = calendar.date(from: dayComponents.components) {
+                        let day = calendar.startOfDay(for: date)
+                        DayView(date: day, ingestions: ingestionsByDay[day] ?? [], isSelected: day == selectedDay) {
+                            selectedDay = day
+                        }
+                    }
+                }
+                .frame(maxWidth: 375)
+                .frame(height: geometry.size.height / 2)
+                .task {
+                    guard isFirstAppear else { return }
+                    await Task.yield()
+                    guard !Task.isCancelled else { return }
+                    calendarViewProxy.scrollToDay(containing: selectedDay, scrollPosition: .centered, animated: false)
+                    isFirstAppear = false
+                }
+                List {
+                    Section {
+                        let entries = ingestionsByDay[selectedDay] ?? []
+                        if entries.isEmpty {
+                            Text("No ingestions").foregroundStyle(.secondary)
+                        }
+                        ForEach(entries) { ingestion in
+                            JournalEntryLink(ingestion: ingestion, timeFormat: .dateTime.hour().minute())
+                        }
+                    } header: {
+                        Text(selectedDay, format: .dateTime.weekday(.wide).month().day().year())
+                    }
+                }
+                .listStyle(.insetGrouped)
             }
         }
-        .frame(maxWidth: 375, maxHeight: .infinity)
         .navigationTitle("Calendar")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Today") {
+                    selectedDay = calendar.startOfDay(for: .now)
                     calendarViewProxy.scrollToDay(
-                        containing: Date.now,
-                        scrollPosition: .lastFullyVisiblePosition(padding: 0),
+                        containing: selectedDay,
+                        scrollPosition: .centered,
                         animated: true)
                 }
             }
@@ -91,6 +115,30 @@ struct JournalCalendarScreen: View {
 }
 
 
+
+struct JournalEntryLink: View {
+    @ObservedObject var ingestion: Ingestion
+    let timeFormat: Date.FormatStyle
+
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
+
+    var body: some View {
+        if let experience = ingestion.experience {
+            NavigationLink(value: GlobalNavigationDestination.experience(experience: experience)) {
+                row
+            }
+        } else {
+            row
+        }
+    }
+
+    private var row: some View {
+        IngestionRow(ingestion: ingestion, isEyeOpen: isEyeOpen, isHidingDosageDots: isHidingDosageDots) {
+            Text(ingestion.timeUnwrapped, format: timeFormat)
+        }
+    }
+}
 
 #Preview {
     NavigationStack {
