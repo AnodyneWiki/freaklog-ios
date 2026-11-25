@@ -1,20 +1,25 @@
 # FreakLog
 
-FreakLog is a fully open source continuation fork of the now closed-source and in-app-purchase-ridden PW Journal app.
+FreakLog is an open-source iOS journal for tracking substance use and a fork of [PsyLog](https://codeberg.org/PsyLog/PsyLog-iOS).
 
-Features:
-- Easy offline access to key harm reduction information (dosage, tolerance, duration, interactions)
-- Ingestion journal with effect timelines, ratings, timed notes and a calendar
-- Live Activity with the timeline of the current experience
-- Tolerance and usage stats
-- Custom substances, custom units and your own dose and duration data for any substance and route
-- Optional [AnodyneWiki](https://anodyne.wiki) integration: logged dose tiers, user notes, timings, legal status, reagent tests, molecular structures and experience reports, combined with the PsychonautWiki data on each substance page
-- Webhooks (e.g. Discord) and leaderboards
-- iCloud sync, and export and import of your journal
+**Public TestFlight beta coming soon™.**
 
-**Triple tap on the closed eye in settings to see all PW substances.** (necessary to get past App Store review)
+The journal includes offline harm reduction reference data, experience timelines, ratings, timed notes, calendar views, Live Activities, tolerance estimates, and custom substances and units.
 
-We strongly recommend using [TripSit](https://tripsit.me/) instead of PW to look up info on substances.
+## Highlights
+
+- **Assistant.** Ask about your journal or summarize an experience and save the summary to your notes. Use Apple Intelligence on supported devices running iOS 26 or connect your own OpenAI-compatible, Anthropic, or Gemini provider. Optional web access includes dedicated Wikipedia lookups and general web search via Exa.
+- **Apple Watch quick logging.** Log recent substances and formulations, adjust the amount with the Digital Crown, and undo an entry. The watch queues entries while the iPhone is unreachable.
+- **Formulations.** Save mixtures as presets and scale every ingredient from a single amount when you log them.
+- **All Ingestions.** Browse individual entries and timed notes alongside a timeline with a configurable time range. Switch between ingestions and experiences, or filter either view to favorite experiences. Record an administration site and location per entry, and see ingestion counts over time in Statistics.
+- **Substance customization.** Rename substances, set categories, override dose and duration data by route, and choose colors with suggested swatches, the system color picker, or hex codes.
+- **AnodyneWiki integration.** Look up substances on an instance of your choice and see logged dose tiers, timings, notes, legal status, reagent tests, molecular structures, and experience reports alongside PsychonautWiki data. [AnodyneWiki](https://anodyne.wiki)
+- **iCloud sync and backups.** Sync your journal with iCloud or export a backup of your journal, substance customizations, app settings, and assistant model profiles. Assistant API keys stay in the device Keychain.
+- **Webhooks and leaderboards.** Send ingestion and timed-note updates to multiple Discord-compatible webhooks, or opt in to sharing ingestions with leaderboard servers you select.
+
+**Triple-tap the closed eye in Settings to show all PsychonautWiki substances.**
+
+For substance information, we recommend [AnodyneWiki](https://anodyne.wiki), with [TripSit](https://tripsit.me/) as a secondary reference.
 
 <p>
 <img src="README Assets/presentation.png" width="100%">
@@ -22,5 +27,4 @@ We strongly recommend using [TripSit](https://tripsit.me/) instead of PW to look
 
 ## Installation and Building
 
-The project should be opened with Xcode 15 or newer; the app runs on iOS 16.2 and newer.
-Dependencies are managed with [Swift Package Manager](https://swift.org/package-manager), no further setup is needed.
+Open `FreakLog.xcodeproj` in Xcode. The app targets iOS 16.2 and watchOS 10 or later. Dependencies are resolved by Swift Package Manager.
