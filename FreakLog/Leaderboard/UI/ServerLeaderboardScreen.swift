@@ -14,9 +14,8 @@ struct ServerLeaderboardScreen: View {
   }
 
   private var filteredLog: [SyncLogEntry] {
-    guard let nickname = server?.nickname else { return [] }
     return syncManager.log
-      .filter { $0.serverNickname == nickname }
+      .filter { $0.serverID == serverID }
       .prefix(20)
       .map { $0 }
   }
