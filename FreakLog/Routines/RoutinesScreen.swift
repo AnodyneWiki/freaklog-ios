@@ -3,11 +3,18 @@ import SwiftUI
 import UIKit
 
 struct RoutinesScreen: View {
+    var body: some View {
+        RoutineDayScreen(mode: .agenda)
+    }
+}
+
+private struct RoutineManagementScreen: View {
     @ObservedObject private var store = RoutineSchedules.shared
     @Environment(\.openURL) private var openURL
     @Environment(\.scenePhase) private var scenePhase
     @State private var selection: RoutineSchedule?
     @State private var copiedProductID: NSManagedObjectID?
+    @State private var testReminderError: String?
     @AppStorage(PersistenceController.showsDueTodayKey) private var showsDueToday = false
     @FetchRequest(sortDescriptors: []) private var records: FetchedResults<RoutineRecord>
 
@@ -56,13 +63,22 @@ struct RoutinesScreen: View {
                 }
 
                 Section {
-                    NavigationLink("Due Today") { RoutineDayScreen() }
                     Toggle("Show Due Today in Journal", isOn: $showsDueToday)
+                    Button("Send Test Reminder") {
+                        Task {
+                            do {
+                                try await store.sendTestReminder()
+                            } catch {
+                                testReminderError = error.localizedDescription
+                            }
+                        }
+                    }
+                    .disabled(store.isUpdating || store.authorization == .denied)
                 } footer: {
-                    Text("Reminders use a generic message.")
+                    Text("Reminders use a generic message. A test reminder arrives in a few seconds.")
                 }
 
-                if store.authorization == .denied, store.schedules.contains(where: \.reminds) {
+                if store.authorization == .denied {
                     Section {
                         Text("Notifications are turned off for FreakLog.")
                         Button("Open Notification Settings") {
@@ -87,7 +103,7 @@ struct RoutinesScreen: View {
                 }
             }
         }
-        .navigationTitle("Routines")
+        .navigationTitle("Manage Routines")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -107,6 +123,14 @@ struct RoutinesScreen: View {
             )
         }
         .task { await store.refresh() }
+        .alert("Couldn’t Send Test Reminder", isPresented: Binding(
+            get: { testReminderError != nil },
+            set: { if !$0 { testReminderError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(testReminderError ?? "")
+        }
         .onChange(of: scenePhase) { phase in
             if phase == .active { Task { await store.refresh() } }
         }
@@ -128,8 +152,17 @@ extension RoutineSchedule {
         }
             .formatted(.list(type: .and))
         var parts = [String]()
-        if let interval = intervalDays {
+        if isAsNeeded {
+            parts.append(String(localized: "As needed"))
+        } else if let day = monthlyDay {
+            parts.append(String(localized: "Monthly on day \(day) at \(formattedTime)"))
+        } else if let interval = intervalDays {
             parts.append(String(localized: "Every \(interval) days at \(formattedTime)"))
+            if let weekdays {
+                let symbols = calendar.shortWeekdaySymbols
+                let days = calendar.orderedWeekdays.filter(weekdays.contains).map { symbols[$0 - 1] }
+                parts.append(days.formatted(.list(type: .and)))
+            }
         } else if let weekdays {
             let symbols = calendar.shortWeekdaySymbols
             let days = calendar.orderedWeekdays.filter(weekdays.contains).map { symbols[$0 - 1] }
@@ -166,7 +199,7 @@ private extension RoutineRecord {
 
 struct RoutineScheduleEditor: View {
     private enum Frequency: Hashable {
-        case daily, selectedDays, interval
+        case daily, selectedDays, interval, monthly, asNeeded
     }
 
     @Environment(\.dismiss) private var dismiss
@@ -202,6 +235,7 @@ struct RoutineScheduleEditor: View {
     var body: some View {
         NavigationStack {
             Form {
+                let updated = preparedSchedule
                 if let error {
                     Section {
                         Label(error, systemImage: "exclamationmark.circle")
@@ -238,31 +272,12 @@ struct RoutineScheduleEditor: View {
                 }
 
                 Section("Schedule") {
-                    VStack(spacing: 8) {
-                        DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
-                        if let unit = selectedProduct?.routineUnit {
-                            LabeledContent("Default Amount") {
-                                TextField("Choose When Logging", value: $schedule.productAmount, format: routineAmountFormat)
-                                    .multilineTextAlignment(.trailing)
-                                    .keyboardType(.decimalPad)
-                                    .accessibilityLabel("Default Amount")
-                                Text(unit).foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                    ForEach(schedule.additionalTimes ?? []) { entry in
-                        additionalTimeRow(entry)
-                    }
-                    Button(action: addTime) {
-                        Label("Add Time", systemImage: "plus.circle")
-                    }
-                    if Set(preparedSchedule.times.map(\.minuteOfDay)).count != preparedSchedule.times.count {
-                        Text("Choose a different time for each occurrence.").foregroundStyle(.secondary)
-                    }
                     Picker("Repeat", selection: frequency) {
                         Text("Every Day").tag(Frequency.daily)
                         Text("Selected Days").tag(Frequency.selectedDays)
                         Text("Fixed Interval").tag(Frequency.interval)
+                        Text("Monthly").tag(Frequency.monthly)
+                        Text("As Needed").tag(Frequency.asNeeded)
                     }
                     if schedule.weekdays != nil {
                         ForEach(Calendar.current.orderedWeekdays, id: \.self) { weekday in
@@ -276,6 +291,16 @@ struct RoutineScheduleEditor: View {
                         ) {
                             Text("Every \(schedule.intervalDays ?? 2) days")
                         }
+                        Toggle("Limit to Selected Days", isOn: limitsIntervalToWeekdays)
+                        Text("Days outside this selection are skipped. The interval still starts on the first day.")
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
+                    if schedule.monthlyDay != nil {
+                        Picker("Day of Month", selection: monthlyDay) {
+                            ForEach(1...31, id: \.self) { day in Text(day.formatted()).tag(day) }
+                        }
+                        Text("In shorter months, use the last day.")
+                            .font(.footnote).foregroundStyle(.secondary)
                     }
                     DatePicker("First Day", selection: firstDay, displayedComponents: .date)
                     Toggle("Ends on a Date", isOn: hasEndDay)
@@ -284,13 +309,52 @@ struct RoutineScheduleEditor: View {
                     }
                 }
 
+                if !schedule.isAsNeeded {
+                    Section("Times") {
+                        DatePicker("Time", selection: $time, displayedComponents: .hourAndMinute)
+                        if let unit = selectedProduct?.routineUnit { defaultAmount(unit: unit) }
+                        ForEach(schedule.additionalTimes ?? []) { entry in additionalTimeRow(entry) }
+                        Button(action: addTime) {
+                            Label("Add Time", systemImage: "plus.circle")
+                        }
+                    }
+                } else if let unit = selectedProduct?.routineUnit {
+                    Section("Logging") { defaultAmount(unit: unit) }
+                }
+
+                if let message = validationMessage(for: updated) {
+                    Section {
+                        Label(message, systemImage: "exclamationmark.circle").foregroundStyle(.secondary)
+                    }
+                } else if !updated.isAsNeeded && !updated.isPaused {
+                    Section("Next Occurrences") {
+                        let upcoming = updated.nextSlots(after: .now, calendar: RoutineSchedules.calendar, limit: 3)
+                        if upcoming.isEmpty {
+                            Text("No upcoming occurrences").foregroundStyle(.secondary)
+                        }
+                        ForEach(upcoming) { slot in
+                            LabeledContent {
+                                if let amount = updated.amount(for: slot), let unit = selectedProduct?.routineUnit {
+                                    Text("\(amount.formatted(routineAmountFormat)) \(unit)")
+                                }
+                            } label: {
+                                Text(slot.scheduledAt, format: .dateTime.weekday().month().day().hour().minute())
+                            }
+                        }
+                    }
+                }
+
                 Section {
                     Toggle("Paused", isOn: Binding(
                         get: { schedule.isPaused }, set: { schedule.setPaused($0) }
                     ))
-                    Toggle("Remind Me", isOn: $schedule.reminds)
+                    if !schedule.isAsNeeded { Toggle("Remind Me", isOn: $schedule.reminds) }
                 } footer: {
-                    Text("Reminders omit the routine name.")
+                    if schedule.isAsNeeded {
+                        Text("Log this routine whenever you need it from the Routines screen.")
+                    } else {
+                        Text("Reminders omit the routine name.")
+                    }
                 }
 
                 if !isNew {
@@ -298,6 +362,8 @@ struct RoutineScheduleEditor: View {
                         Button("Delete Routine", role: .destructive) {
                             showsDeleteConfirmation = true
                         }
+                    } footer: {
+                        Text("Schedule edits apply today. Earlier schedule dates are kept.")
                     }
                 }
             }
@@ -309,11 +375,13 @@ struct RoutineScheduleEditor: View {
                     Button("Cancel") { dismiss() }.disabled(store.isUpdating)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: save).disabled(store.isUpdating || !preparedSchedule.isValid)
+                    Button("Save", action: save).disabled(store.isUpdating || validationMessage(for: preparedSchedule) != nil)
                 }
             }
             .confirmationDialog("Delete this routine?", isPresented: $showsDeleteConfirmation, titleVisibility: .visible) {
                 Button("Delete Routine", role: .destructive, action: delete)
+            } message: {
+                Text("This removes the routine and its schedule history. Journal entries stay in your journal.")
             }
         }
         .interactiveDismissDisabled(store.isUpdating)
@@ -352,20 +420,58 @@ struct RoutineScheduleEditor: View {
         Binding(
             get: {
                 if schedule.intervalDays != nil { return .interval }
+                if schedule.monthlyDay != nil { return .monthly }
+                if schedule.isAsNeeded { return .asNeeded }
                 return schedule.weekdays == nil ? .daily : .selectedDays
             },
             set: { value in
                 let calendar = RoutineSchedules.calendar
-                if schedule.intervalDays != nil, value != .interval {
-                    schedule.anchorDay = .init(.now, calendar: calendar)
-                }
+                if schedule.anchorDay == nil { schedule.anchorDay = .init(.now, calendar: calendar) }
                 schedule.weekdays = value == .selectedDays ? [calendar.component(.weekday, from: .now)] : nil
                 schedule.intervalDays = value == .interval ? 2 : nil
-                if value == .interval {
-                    schedule.anchorDay = .init(.now, calendar: calendar)
-                }
+                schedule.monthlyDay = value == .monthly ? calendar.component(.day, from: firstDay.wrappedValue) : nil
+                schedule.asNeeded = value == .asNeeded ? true : nil
+                if value == .asNeeded { schedule.reminds = false }
             }
         )
+    }
+
+    private var monthlyDay: Binding<Int> {
+        Binding(get: { schedule.monthlyDay ?? 1 }, set: { schedule.monthlyDay = $0 })
+    }
+
+    private var limitsIntervalToWeekdays: Binding<Bool> {
+        Binding(
+            get: { schedule.weekdays != nil },
+            set: { enabled in
+                let weekday = RoutineSchedules.calendar.component(.weekday, from: firstDay.wrappedValue)
+                schedule.weekdays = enabled ? [weekday] : nil
+            }
+        )
+    }
+
+    private func defaultAmount(unit: String) -> some View {
+        LabeledContent("Default Amount") {
+            TextField("Choose When Logging", value: $schedule.productAmount, format: routineAmountFormat)
+                .multilineTextAlignment(.trailing)
+                .keyboardType(.decimalPad)
+                .accessibilityLabel("Default Amount")
+            Text(unit).foregroundStyle(.secondary)
+        }
+    }
+
+    private func validationMessage(for updated: RoutineSchedule) -> String? {
+        if updated.name.isEmpty { return String(localized: "Enter a name for this routine.") }
+        if productID != nil && selectedProduct == nil { return String(localized: "Choose an available saved product.") }
+        if updated.weekdays?.isEmpty == true { return String(localized: "Select at least one day.") }
+        if !updated.intervalCanReachSelectedDays(calendar: RoutineSchedules.calendar) {
+            return String(localized: "Include the weekday of the first day, or choose a different interval.")
+        }
+        if Set(updated.times.map(\.minuteOfDay)).count != updated.times.count {
+            return String(localized: "Choose a different time for each occurrence.")
+        }
+        if !updated.isValid { return String(localized: "Enter an amount greater than zero or leave the amount blank.") }
+        return nil
     }
 
     private var firstDay: Binding<Date> {
@@ -483,6 +589,7 @@ struct RoutineScheduleEditor: View {
             customUnits.contains(where: { $0.objectID == id }) ? .customUnit : .formulation
         }
         updated.productAmount = productID == nil ? nil : schedule.productAmount
+        if updated.isAsNeeded { updated.additionalTimes = nil }
         return updated
     }
 
@@ -514,32 +621,49 @@ struct RoutineScheduleEditor: View {
 }
 
 struct RoutineDayScreen: View {
+    enum Mode { case agenda, day, history }
+
+    var mode = Mode.day
     @ObservedObject private var store = RoutineSchedules.shared
     @FetchRequest(sortDescriptors: [NSSortDescriptor(key: "scheduledAt", ascending: true)])
     private var occurrences: FetchedResults<RoutineOccurrence>
     @FetchRequest(sortDescriptors: []) private var records: FetchedResults<RoutineRecord>
     @State private var selectedDay = Date()
     @State private var logging: RoutineOccurrenceSlot?
+    @State private var newRoutine: RoutineSchedule?
     @State private var error: String?
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        List {
-            DatePicker("Date", selection: $selectedDay, in: ...Date(), displayedComponents: .date)
-            if let error = error ?? store.loadError ?? store.reminderError {
-                Label(error, systemImage: "exclamationmark.circle")
-            }
-            if slots.isEmpty {
-                Text("No routines for this day").foregroundStyle(.secondary)
-            }
-            ForEach(slots) { slot in
-                if let record = records.first(where: { $0.id == slot.scheduleID }), let schedule = record.schedule {
-                    row(for: slot, schedule: schedule, unit: record.productUnit)
+        TimelineView(.periodic(from: .now, by: 60)) { tick in
+            dayList(at: tick.date)
+        }
+        .navigationTitle(title)
+        .task { await store.refresh() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { Task { await store.refresh() } }
+        }
+        .toolbar {
+            if mode == .agenda {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    NavigationLink {
+                        RoutineManagementScreen()
+                    } label: {
+                        Label("Manage Routines", systemImage: "list.bullet")
+                    }
+                    Button {
+                        newRoutine = .draft(calendar: RoutineSchedules.calendar)
+                    } label: {
+                        Label("Add Routine", systemImage: "plus")
+                    }
+                    .disabled(store.isUpdating || store.loadError != nil)
                 }
             }
         }
-        .navigationTitle(RoutineSchedules.calendar.isDateInToday(selectedDay) ? "Due Today" : "Routine History")
-        .task { await store.refresh() }
+        .sheet(item: $newRoutine) { schedule in
+            RoutineScheduleEditor(schedule: schedule, isNew: true, store: store)
+        }
         .sheet(item: $logging, onDismiss: { Task { await store.refresh() } }) { slot in
             RoutineLogSheet(
                 record: records.first(where: { $0.id == slot.scheduleID }),
@@ -552,23 +676,149 @@ struct RoutineDayScreen: View {
         }
     }
 
-    private var slots: [RoutineOccurrenceSlot] {
+    private var title: LocalizedStringKey {
+        switch mode {
+        case .agenda: "Routines"
+        case .day where RoutineSchedules.calendar.isDateInToday(selectedDay): "Due Today"
+        case .day, .history: "Routine History"
+        }
+    }
+
+    private func dayList(at now: Date) -> some View {
         let calendar = RoutineSchedules.calendar
-        let scheduled = records.flatMap { $0.schedule?.slots(on: selectedDay, calendar: calendar) ?? [] }
+        let day = mode == .agenda ? now : selectedDay
+        let occurrencesByKey = Dictionary(grouping: occurrences) { $0.key ?? "" }
+        let rows = slots(for: day, calendar: calendar)
+        return List {
+            if mode != .agenda {
+                DatePicker("Date", selection: $selectedDay, in: ...now, displayedComponents: .date)
+            }
+            if let error = error ?? store.loadError ?? store.reminderError {
+                Label(error, systemImage: "exclamationmark.circle")
+            }
+            if mode == .agenda {
+                agendaSections(rows: rows, at: now, calendar: calendar, occurrencesByKey: occurrencesByKey)
+                Section {
+                    NavigationLink {
+                        RoutineDayScreen(mode: .history)
+                    } label: {
+                        Label("Routine History", systemImage: "calendar")
+                    }
+                }
+            } else {
+                if rows.isEmpty {
+                    Text("No routines for this day").foregroundStyle(.secondary)
+                }
+                slotRows(rows, occurrencesByKey: occurrencesByKey, now: now)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func agendaSections(
+        rows: [RoutineOccurrenceSlot], at now: Date, calendar: Calendar,
+        occurrencesByKey: [String: [RoutineOccurrence]]
+    ) -> some View {
+        let completed = rows.filter { slot in
+            occurrencesByKey[slot.id]?.contains { $0.isSkipped || ($0.ingestions?.count ?? 0) > 0 } == true
+        }
+        let completedIDs = Set(completed.map(\.id))
+        let pending = rows.filter { !completedIDs.contains($0.id) }
+        let overdue = pending.filter { slot in
+            let due = occurrencesByKey[slot.id]?.compactMap(\.snoozedUntil).max() ?? slot.scheduledAt
+            return due < now
+        }
+        let overdueIDs = Set(overdue.map(\.id))
+        let laterToday = pending.filter { !overdueIDs.contains($0.id) }
+        let asNeeded = store.schedules.filter { $0.canLogAsNeeded(at: now, calendar: calendar) }
+        let upcoming = nextRoutines(at: now, calendar: calendar, occurrencesByKey: occurrencesByKey)
+
+        if pending.isEmpty && completed.isEmpty {
+            Section("Today") {
+                Text("No scheduled routines today").foregroundStyle(.secondary)
+            }
+        }
+        if !overdue.isEmpty {
+            Section("Overdue Today") { slotRows(overdue, occurrencesByKey: occurrencesByKey, now: now) }
+        }
+        if !laterToday.isEmpty {
+            Section("Later Today") { slotRows(laterToday, occurrencesByKey: occurrencesByKey, now: now) }
+        }
+        if !asNeeded.isEmpty {
+            Section("As Needed") {
+                ForEach(asNeeded) { schedule in
+                    Button {
+                        logging = schedule.manualSlot(at: .now, calendar: calendar)
+                    } label: {
+                        LabeledContent {
+                            Text("Log").foregroundStyle(Color.accentColor)
+                        } label: {
+                            Text(schedule.name).foregroundStyle(.primary)
+                        }
+                    }
+                    .accessibilityLabel(Text("Log \(schedule.name)"))
+                    .disabled(store.isUpdating)
+                }
+            }
+        }
+        if !completed.isEmpty {
+            Section("Today’s Activity") { slotRows(completed, occurrencesByKey: occurrencesByKey, now: now) }
+        }
+        if !upcoming.isEmpty {
+            Section("Next Up") {
+                ForEach(upcoming) { slot in
+                    if let schedule = records.first(where: { $0.id == slot.scheduleID })?.schedule {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(schedule.name)
+                            Text(slot.scheduledAt, format: .dateTime.weekday().month().day().hour().minute())
+                                .font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                    }
+                }
+            }
+        }
+    }
+
+    private func nextRoutines(
+        at now: Date, calendar: Calendar, occurrencesByKey: [String: [RoutineOccurrence]]
+    ) -> [RoutineOccurrenceSlot] {
+        guard let tomorrow = calendar.dateInterval(of: .day, for: now)?.end else { return [] }
+        let upcoming = store.schedules.flatMap {
+            $0.nextSlots(after: tomorrow.addingTimeInterval(-1), calendar: calendar, limit: 10)
+        }.filter { slot in
+            occurrencesByKey[slot.id]?.contains { $0.isSkipped || ($0.ingestions?.count ?? 0) > 0 } != true
+        }.sorted { ($0.scheduledAt, $0.id) < ($1.scheduledAt, $1.id) }
+        return Array(upcoming.prefix(5))
+    }
+
+    private func slotRows(
+        _ slots: [RoutineOccurrenceSlot], occurrencesByKey: [String: [RoutineOccurrence]], now: Date
+    ) -> some View {
+        ForEach(slots) { slot in
+            if let record = records.first(where: { $0.id == slot.scheduleID }), let schedule = record.schedule {
+                row(for: slot, schedule: schedule, unit: record.productUnit, matches: occurrencesByKey[slot.id] ?? [], now: now)
+            }
+        }
+    }
+
+    private func slots(for day: Date, calendar: Calendar) -> [RoutineOccurrenceSlot] {
+        let scheduled = records.flatMap { $0.schedule?.slots(on: day, calendar: calendar) ?? [] }
         var byID = Dictionary(scheduled.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         // Keep recorded occurrences visible when a routine's weekdays or time are edited later.
         for occurrence in occurrences {
             guard let id = occurrence.key, let scheduledAt = occurrence.scheduledAt,
-                  calendar.isDate(scheduledAt, inSameDayAs: selectedDay),
+                  calendar.isDate(scheduledAt, inSameDayAs: day),
                   let scheduleID = occurrence.routine?.id else { continue }
             byID[id] = RoutineOccurrenceSlot(id: id, scheduleID: scheduleID, scheduledAt: scheduledAt)
         }
-        return byID.values.sorted { $0.scheduledAt < $1.scheduledAt }
+        return byID.values.sorted { ($0.scheduledAt, $0.id) < ($1.scheduledAt, $1.id) }
     }
 
     @ViewBuilder
-    private func row(for slot: RoutineOccurrenceSlot, schedule: RoutineSchedule, unit: String?) -> some View {
-        let matches = occurrences.filter { $0.key == slot.id }
+    private func row(
+        for slot: RoutineOccurrenceSlot, schedule: RoutineSchedule, unit: String?, matches: [RoutineOccurrence], now: Date
+    ) -> some View {
         let logged = matches.compactMap(\.loggedExperience).first
         let unconfirmed = matches.compactMap(\.unconfirmedExperience).first
         let occurrence = matches.first
@@ -580,14 +830,16 @@ struct RoutineDayScreen: View {
             NavigationLink(value: GlobalNavigationDestination.experience(experience: unconfirmed)) {
                 routineLabel(schedule.name, slot: slot, status: "Unconfirmed")
             }
+        } else if schedule.revision(on: slot.scheduledAt, calendar: RoutineSchedules.calendar)?.preservesProduct == false {
+            routineLabel(schedule.name, slot: slot, status: occurrence?.isSkipped == true ? "Skipped" : "Product changed")
         } else {
             let layout = dynamicTypeSize.isAccessibilitySize
                 ? AnyLayout(VStackLayout(alignment: .leading, spacing: 8))
                 : AnyLayout(HStackLayout())
             layout {
                 routineLabel(
-                    schedule.name, slot: slot, status: status(for: occurrence),
-                    amount: schedule.amount(for: slot), unit: unit
+                    schedule.name, slot: slot, status: status(for: occurrence, at: now),
+                    amount: schedule.amount(for: slot, calendar: RoutineSchedules.calendar), unit: unit
                 )
                 if !dynamicTypeSize.isAccessibilitySize { Spacer() }
                 HStack(spacing: 12) {
@@ -605,7 +857,7 @@ struct RoutineDayScreen: View {
                             .accessibilityLabel(Text("Log \(schedule.name) at \(slot.scheduledAt.formatted(date: .omitted, time: .shortened))"))
                         Menu {
                             Button("Skip") { update(.skip, slot: slot) }
-                            if RoutineSchedules.calendar.isDateInToday(selectedDay), slot.scheduledAt <= .now {
+                            if !schedule.isAsNeeded, RoutineSchedules.calendar.isDateInToday(slot.scheduledAt), slot.scheduledAt <= now {
                                 Button("Snooze 15 Minutes") { update(.snooze, slot: slot) }
                             }
                         } label: {
@@ -641,9 +893,9 @@ struct RoutineDayScreen: View {
         .accessibilityElement(children: .combine)
     }
 
-    private func status(for occurrence: RoutineOccurrence?) -> String? {
+    private func status(for occurrence: RoutineOccurrence?, at now: Date) -> String? {
         if occurrence?.isSkipped == true { return "Skipped" }
-        if let snoozedUntil = occurrence?.snoozedUntil, snoozedUntil > .now {
+        if let snoozedUntil = occurrence?.snoozedUntil, snoozedUntil > now {
             return String(localized: "Snoozed to \(snoozedUntil.formatted(.dateTime.hour().minute()))")
         }
         return nil
@@ -706,7 +958,7 @@ private struct RoutineLogSheet: View {
                 .navigationDestination(isPresented: $isReviewing) {
                     FinishIngestionScreen(ingestions: arguments, dismiss: dismiss)
                 }
-                .onFirstAppear { amount = record?.schedule?.amount(for: slot) }
+                .onFirstAppear { amount = record?.schedule?.amount(for: slot, calendar: RoutineSchedules.calendar) }
             }
         }
     }

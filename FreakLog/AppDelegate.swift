@@ -29,6 +29,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNoti
     ) async -> UNNotificationPresentationOptions {
         let request = notification.request
         if request.content.categoryIdentifier == RoutineNotificationResponse.category
+            || request.identifier == RoutineSchedules.testReminderID
             || request.identifier.hasPrefix(JournalReminders.prefix) {
             return [.banner, .sound]
         }

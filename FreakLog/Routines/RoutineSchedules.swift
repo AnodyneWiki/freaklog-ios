@@ -49,11 +49,17 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
         }
     }
 
+    struct Revision: Codable, Hashable {
+        let effectiveBefore: AnchorDay
+        let schedule: RoutineSchedule
+        var preservesProduct: Bool
+    }
+
     var id = UUID()
     var name: String
     var hour: Int
     var minute: Int
-    // nil means every day. Selected days use Calendar's weekday numbering.
+    // Selected days use Calendar's weekday numbering.
     var weekdays: Set<Int>?
     var reminds = false
     var productKind: ProductKind?
@@ -63,6 +69,11 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     var additionalTimes: [ClockTime]?
     var endDay: AnchorDay?
     var pauses: [PausePeriod]?
+    var monthlyDay: Int?
+    var asNeeded: Bool?
+    var revisions: [Revision]?
+
+    var isAsNeeded: Bool { asNeeded == true }
 
     static func draft(named name: String = "", at date: Date = .now, calendar: Calendar) -> Self {
         Self(
@@ -83,15 +94,28 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
             && Set(times.map(\.id)).count == times.count
             && Set(times.map(\.minuteOfDay)).count == times.count
             && weekdays.map { !$0.isEmpty && $0.allSatisfy { (1...7).contains($0) } } != false
-            && (productKind == nil || productAmount.map { $0.isFinite && $0 > 0 } == true)
+            && productAmount.map { $0.isFinite && $0 > 0 } != false
             && times.allSatisfy { $0.productAmount.map { $0.isFinite && $0 > 0 } != false }
-            && (intervalDays.map { (2...365).contains($0) && weekdays == nil && anchorDay != nil } ?? true)
+            && (intervalDays.map { (2...365).contains($0) && anchorDay != nil } ?? true)
+            && (monthlyDay.map { (1...31).contains($0) && weekdays == nil && intervalDays == nil } ?? true)
+            && (!isAsNeeded || (!reminds && intervalDays == nil && monthlyDay == nil && weekdays == nil))
     }
 
     var isPaused: Bool { pauses?.last.map { $0.endedAt == nil } ?? false }
 
     func isAvailable(forRemindersAfter date: Date, calendar: Calendar) -> Bool {
-        !isPaused && endDay?.date(in: calendar).map { $0 >= calendar.startOfDay(for: date) } != false
+        !isAsNeeded && !isPaused && endDay?.date(in: calendar).map { $0 >= calendar.startOfDay(for: date) } != false
+    }
+
+    func canLogAsNeeded(at date: Date, calendar: Calendar) -> Bool {
+        let day = calendar.startOfDay(for: date)
+        return isAsNeeded && !isPaused && !isPastEnd(on: day, calendar: calendar)
+            && anchorDay?.date(in: calendar).map { $0 <= day } != false
+    }
+
+    func manualSlot(at date: Date, calendar: Calendar) -> RoutineOccurrenceSlot? {
+        guard canLogAsNeeded(at: date, calendar: calendar) else { return nil }
+        return RoutineOccurrenceSlot(id: "\(id.uuidString).manual.\(UUID().uuidString)", scheduleID: id, scheduledAt: date)
     }
 
     mutating func setPaused(_ paused: Bool, at date: Date = .now) {
@@ -113,13 +137,62 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
             ClockTime(hour: $0.hour, minute: $0.minute, productAmount: $0.productAmount)
         }
         copy.pauses = nil
-        if isPastEnd(on: date, calendar: calendar) { copy.endDay = nil }
+        copy.revisions = nil
+        let today = calendar.startOfDay(for: date)
+        if (anchorDay?.date(in: calendar) ?? .distantPast) < today {
+            var firstDay = today
+            if let intervalDays, (2...365).contains(intervalDays),
+               let offset = offsetFromAnchor(on: today, calendar: calendar) {
+                let remaining = (intervalDays - offset % intervalDays) % intervalDays
+                firstDay = calendar.date(byAdding: .day, value: remaining, to: today) ?? today
+            }
+            copy.anchorDay = AnchorDay(firstDay, calendar: calendar)
+        }
+        if isPastEnd(on: copy.anchorDay?.date(in: calendar) ?? today, calendar: calendar) { copy.endDay = nil }
         return copy
     }
 
     func amount(for slot: RoutineOccurrenceSlot) -> Double? {
         let timeID = slot.timeID
         return additionalTimes?.first { $0.id == timeID }?.productAmount ?? productAmount
+    }
+
+    func amount(for slot: RoutineOccurrenceSlot, calendar: Calendar) -> Double? {
+        let effective = revision(on: slot.scheduledAt, calendar: calendar)?.schedule ?? self
+        return effective.amount(for: slot)
+    }
+
+    func intervalCanReachSelectedDays(calendar: Calendar) -> Bool {
+        guard let intervalDays, intervalDays.isMultiple(of: 7), let weekdays,
+              let anchor = anchorDay?.date(in: calendar) else { return true }
+        return weekdays.contains(calendar.component(.weekday, from: anchor))
+    }
+
+    func revision(on day: Date, calendar: Calendar) -> Revision? {
+        revisions?.first(where: { revision in
+            revision.effectiveBefore.date(in: calendar).map { calendar.startOfDay(for: day) < $0 } == true
+        })
+    }
+
+    mutating func preserveSchedule(_ previous: Self, productChanged: Bool, at date: Date, calendar: Calendar) {
+        var previous = previous
+        var current = self
+        var history = previous.revisions ?? []
+        previous.revisions = nil
+        current.revisions = nil
+        // A rename or reminder toggle does not change when or how past occurrences were logged.
+        current.name = previous.name
+        current.reminds = previous.reminds
+        if productChanged {
+            for index in history.indices { history[index].preservesProduct = false }
+        }
+        if previous != current || productChanged {
+            let boundary = AnchorDay(date, calendar: calendar)
+            if history.last?.effectiveBefore.date(in: calendar).map({ $0 < calendar.startOfDay(for: date) }) != false {
+                history.append(.init(effectiveBefore: boundary, schedule: previous, preservesProduct: !productChanged))
+            }
+        }
+        revisions = history.isEmpty ? nil : history
     }
 
     func reminderDays() -> [Int?] {
@@ -130,16 +203,18 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     func slot(on day: Date, calendar: Calendar, time: ClockTime? = nil) -> RoutineOccurrenceSlot? {
         let time = time ?? ClockTime(id: id, hour: hour, minute: minute)
         let components = calendar.dateComponents([.year, .month, .day, .weekday], from: day)
-        guard !isPastEnd(on: day, calendar: calendar),
+        guard !isAsNeeded, !isPastEnd(on: day, calendar: calendar),
               weekdays == nil || components.weekday.map({ weekdays?.contains($0) == true }) == true,
               let year = components.year, let month = components.month, let dayNumber = components.day,
               let scheduledAt = calendar.date(bySettingHour: time.hour, minute: time.minute, second: 0, of: day),
               calendar.isDate(day, inSameDayAs: scheduledAt),
               pauses?.contains(where: { $0.contains(scheduledAt) }) != true
         else { return nil }
+        if let monthlyDay, let month = calendar.range(of: .day, in: .month, for: day),
+           dayNumber != min(monthlyDay, month.count) { return nil }
         if anchorDay != nil {
             guard let offset = offsetFromAnchor(on: day, calendar: calendar), offset >= 0 else { return nil }
-            if let intervalDays, !offset.isMultiple(of: intervalDays) { return nil }
+            if let intervalDays, !(2...365).contains(intervalDays) || !offset.isMultiple(of: intervalDays) { return nil }
         }
         // A civil day and stable time ID identify a slot, even after editing its clock time.
         // Keep the original key for a routine's first time so older logs stay linked.
@@ -153,18 +228,56 @@ struct RoutineSchedule: Codable, Hashable, Identifiable {
     }
 
     func slots(on day: Date, calendar: Calendar) -> [RoutineOccurrenceSlot] {
-        times.sorted { $0.minuteOfDay < $1.minuteOfDay }.compactMap { slot(on: day, calendar: calendar, time: $0) }
+        let schedule = revision(on: day, calendar: calendar)?.schedule ?? self
+        return schedule.times.sorted { $0.minuteOfDay < $1.minuteOfDay }
+            .compactMap { schedule.slot(on: day, calendar: calendar, time: $0) }
     }
 
-    func nextIntervalSlots(after date: Date, calendar: Calendar, limit: Int) -> [RoutineOccurrenceSlot] {
-        guard isAvailable(forRemindersAfter: date, calendar: calendar),
-              limit > 0, let intervalDays, let anchor = anchorDay?.date(in: calendar),
-              let offset = offsetFromAnchor(on: date, calendar: calendar) else { return [] }
-        let nextOffset = offset < 0 ? 0 : (offset / intervalDays) * intervalDays
-        let days = (0...limit).compactMap { index in
-            calendar.date(byAdding: .day, value: nextOffset + index * intervalDays, to: anchor)
+    func nextSlots(after date: Date, calendar: Calendar, limit: Int) -> [RoutineOccurrenceSlot] {
+        guard isAvailable(forRemindersAfter: date, calendar: calendar), limit > 0 else { return [] }
+        let day = calendar.startOfDay(for: date)
+        let firstDay = max(day, anchorDay?.date(in: calendar) ?? day)
+        let component: Calendar.Component
+        let start: Date
+        let stride: Int
+        let attempts: Int
+        if let intervalDays {
+            guard (2...365).contains(intervalDays), let anchor = anchorDay?.date(in: calendar),
+                  let offset = offsetFromAnchor(on: firstDay, calendar: calendar) else { return [] }
+            component = .day
+            guard let intervalStart = calendar.date(byAdding: .day, value: (offset / intervalDays) * intervalDays, to: anchor)
+            else { return [] }
+            start = intervalStart
+            stride = intervalDays
+            attempts = weekdays == nil ? limit + 1 : (limit + 1) * 7
+        } else if monthlyDay != nil {
+            component = .month
+            start = calendar.dateInterval(of: .month, for: firstDay)?.start ?? firstDay
+            stride = 1
+            attempts = limit + 1
+        } else {
+            component = .day
+            start = firstDay
+            stride = 1
+            attempts = weekdays == nil ? limit + 1 : (limit + 1) * 7
         }
-        return Array(days.flatMap { slots(on: $0, calendar: calendar) }.filter { $0.scheduledAt > date }.prefix(limit))
+        let times = times.sorted { $0.minuteOfDay < $1.minuteOfDay }
+        var result: [RoutineOccurrenceSlot] = []
+        for index in 0..<attempts {
+            guard var candidate = calendar.date(byAdding: component, value: index * stride, to: start) else { break }
+            if let monthlyDay, let month = calendar.range(of: .day, in: .month, for: candidate),
+               let monthlyDate = calendar.date(byAdding: .day, value: min(monthlyDay, month.count) - 1, to: candidate) {
+                candidate = monthlyDate
+            }
+            if isPastEnd(on: candidate, calendar: calendar) { break }
+            for time in times {
+                if let slot = slot(on: candidate, calendar: calendar, time: time), slot.scheduledAt > date {
+                    result.append(slot)
+                    if result.count == limit { return result }
+                }
+            }
+        }
+        return result
     }
 
     private func offsetFromAnchor(on date: Date, calendar: Calendar) -> Int? {
@@ -250,6 +363,7 @@ extension RoutineOccurrence {
 @MainActor
 final class RoutineSchedules: ObservableObject {
     static let shared = RoutineSchedules()
+    nonisolated static let testReminderID = "freaklog.routine-preview"
 
     private static let reminderPrefix = "freaklog.routine."
     @Published private(set) var schedules: [RoutineSchedule] = []
@@ -282,13 +396,20 @@ final class RoutineSchedules: ObservableObject {
 
     func save(_ schedule: RoutineSchedule, productID: NSManagedObjectID?) async throws {
         guard !isUpdating else { throw StorageError.busy }
-        guard schedule.isValid else { throw StorageError.invalidSchedule }
+        guard schedule.isValid, schedule.intervalCanReachSelectedDays(calendar: Self.calendar)
+        else { throw StorageError.invalidSchedule }
         isUpdating = true
         defer { isUpdating = false }
 
         let context = try PersistenceController.shared.journalEditContext()
         let original = try Self.record(for: schedule.id, in: context)
         let wasReminding = original?.schedule?.reminds == true
+        var schedule = schedule
+        if let original, let previous = original.schedule {
+            let previousProduct = original.customUnit?.objectID ?? original.formulation?.objectID
+            let productChanged = previousProduct != productID || previous.productKind != schedule.productKind
+            schedule.preserveSchedule(previous, productChanged: productChanged, at: .now, calendar: Self.calendar)
+        }
         let record = original ?? RoutineRecord(context: context)
         record.id = schedule.id
         record.scheduleData = try JSONEncoder().encode(schedule)
@@ -312,6 +433,31 @@ final class RoutineSchedules: ObservableObject {
         try context.save()
         try reload(in: context)
         await reconcileReminders(askingPermission: schedule.reminds && !wasReminding)
+    }
+
+    func sendTestReminder() async throws {
+        guard !isUpdating else { throw StorageError.busy }
+        isUpdating = true
+        defer { isUpdating = false }
+
+        let center = UNUserNotificationCenter.current()
+        authorization = await center.notificationSettings().authorizationStatus
+        if authorization == .notDetermined {
+            _ = try await center.requestAuthorization(options: [.alert, .sound])
+            authorization = await center.notificationSettings().authorizationStatus
+        }
+        guard authorization == .authorized || authorization == .provisional || authorization == .ephemeral
+        else { throw StorageError.notificationsUnavailable }
+
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Routine Reminder Preview")
+        content.body = String(localized: "This is a test reminder.")
+        content.sound = .default
+        try await center.add(UNNotificationRequest(
+            identifier: Self.testReminderID,
+            content: content,
+            trigger: UNTimeIntervalNotificationTrigger(timeInterval: 3, repeats: false)
+        ))
     }
 
     func delete(_ id: UUID) async throws {
@@ -422,6 +568,14 @@ final class RoutineSchedules: ObservableObject {
         // Saving happens synchronously on the main actor, in the same transaction as these links.
         guard occurrence.ingestions?.count ?? 0 == 0 else { return nil }
         guard !occurrence.isSkipped else { throw StorageError.skipped }
+        guard let schedule = occurrence.routine?.schedule else { throw StorageError.missingRoutine }
+        let calendar = Self.calendar
+        let revision = schedule.revision(on: slot.scheduledAt, calendar: calendar)
+        guard revision?.preservesProduct != false else { throw StorageError.missingProduct }
+        if slot.isManual {
+            let effective = revision?.schedule ?? schedule
+            guard effective.canLogAsNeeded(at: slot.scheduledAt, calendar: calendar) else { throw StorageError.missingRoutine }
+        }
         occurrence.snoozedUntil = nil
         return occurrence
     }
@@ -545,8 +699,8 @@ final class RoutineSchedules: ObservableObject {
                 let date = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: slot.scheduledAt)
                 reminders.append(reminder(id: slot.id, schedule: schedule, time: time, slot: slot, date: date))
             }
-            if schedule.intervalDays != nil {
-                for slot in schedule.nextIntervalSlots(after: now, calendar: calendar, limit: 24) {
+            if schedule.intervalDays != nil || schedule.monthlyDay != nil {
+                for slot in schedule.nextSlots(after: now, calendar: calendar, limit: 24) {
                     if let time = schedule.times.first(where: { $0.id == (slot.timeID ?? schedule.id) }) {
                         add(slot, time: time)
                     }
@@ -603,7 +757,7 @@ final class RoutineSchedules: ObservableObject {
     }
 
     enum StorageError: LocalizedError {
-        case busy, unreadable, invalidSchedule, missingRoutine, missingProduct, alreadyLogged, skipped
+        case busy, unreadable, invalidSchedule, missingRoutine, missingProduct, alreadyLogged, skipped, notificationsUnavailable
 
         var errorDescription: String? {
             switch self {
@@ -614,6 +768,7 @@ final class RoutineSchedules: ObservableObject {
             case .missingProduct: "Choose an available product for this routine."
             case .alreadyLogged: "This occurrence has already been logged."
             case .skipped: "Reopen this occurrence before logging it."
+            case .notificationsUnavailable: "Allow notifications for FreakLog in Settings to receive a test reminder."
             }
         }
     }

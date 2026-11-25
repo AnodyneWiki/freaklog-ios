@@ -6,9 +6,11 @@ struct RoutineOccurrenceSlot: Codable, Hashable, Identifiable, Sendable {
     let scheduleID: UUID
     let scheduledAt: Date
 
+    var isManual: Bool { id.hasPrefix("\(scheduleID.uuidString).manual.") }
+
     var timeID: UUID? {
         let parts = id.split(separator: ".")
-        guard parts.count == 3 else { return nil }
+        guard parts.count == 3, !isManual else { return nil }
         return UUID(uuidString: String(parts[2]))
     }
 

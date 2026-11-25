@@ -98,14 +98,7 @@ enum RoutineQuickLogging {
         let candidates = records.flatMap { record -> [(RoutineOccurrenceSlot, RoutineRecord)] in
             guard let schedule = record.schedule, schedule.isAvailable(forRemindersAfter: date, calendar: calendar)
             else { return [] }
-            let slots: [RoutineOccurrenceSlot]
-            if schedule.intervalDays != nil {
-                slots = schedule.nextIntervalSlots(after: today.addingTimeInterval(-1), calendar: calendar, limit: 16)
-            } else {
-                let firstDay = max(today, schedule.anchorDay?.date(in: calendar) ?? today)
-                slots = (0..<14).compactMap { calendar.date(byAdding: .day, value: $0, to: firstDay) }
-                    .flatMap { schedule.slots(on: $0, calendar: calendar) }
-            }
+            let slots = schedule.nextSlots(after: today.addingTimeInterval(-1), calendar: calendar, limit: 32)
             return slots.map { ($0, record) }
         }
         guard !candidates.isEmpty else { return .empty }
@@ -145,6 +138,7 @@ enum RoutineQuickLogging {
                   calendar.isDate(request.recordedAt, inSameDayAs: slot.scheduledAt),
                   let record = try RoutineSchedules.record(for: slot.scheduleID, in: context),
                   let schedule = record.schedule, !schedule.isPaused,
+                  schedule.revision(on: slot.scheduledAt, calendar: calendar) == nil,
                   let clock = schedule.times.first(where: { $0.id == (slot.timeID ?? slot.scheduleID) }),
                   schedule.slot(on: slot.scheduledAt, calendar: calendar, time: clock) == slot,
                   let amount = schedule.amount(for: slot),
