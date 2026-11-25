@@ -313,6 +313,18 @@ private struct JournalDataSettings: View {
                 } label: {
                     Label("Clinician Summary", systemImage: "stethoscope")
                 }
+                NavigationLink {
+                    JournalTransferCompatibilityScreen(viewModel: viewModel)
+                } label: {
+                    Label("Transfer Compatibility", systemImage: "arrow.left.arrow.right")
+                }
+            }
+            Section("Presets") {
+                NavigationLink {
+                    JournalPresetTransferScreen()
+                } label: {
+                    Label("Share Presets", systemImage: "square.and.arrow.up.on.square")
+                }
             }
             Section {
                 Button {
@@ -549,7 +561,7 @@ private struct JournalCountsRows: View {
     }
 }
 
-private struct JournalExportReview: View {
+struct JournalExportReview: View {
     let viewModel: SettingsScreen.ViewModel
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let isBackup: Bool

@@ -223,10 +223,24 @@ struct JournalFile: FileDocument, Codable {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
         guard let source = header.exportSource else { return try decoder.decode(Self.self, from: data) }
-        guard source == "iOS Journal" || source == "Android Journal" else {
+        guard supportsModernJournalSource(source) else {
             throw JournalBackupError.unrecognizedFormat
         }
         return try decoder.decode(Self.self, from: Version12Journal.convert(data))
+    }
+
+    private static func supportsModernJournalSource(_ source: String) -> Bool {
+        if source == "iOS Journal" || source == "Android Journal" { return true }
+        // Recent iOS exports can append an app version to the source marker.
+        let prefix = "iOS Journal "
+        guard source.hasPrefix(prefix) else { return false }
+        let version = source.dropFirst(prefix.count).split(separator: ".", omittingEmptySubsequences: false)
+        guard (2...3).contains(version.count), let major = Int(version[0]), (12...18).contains(major) else {
+            return false
+        }
+        return version.allSatisfy { component in
+            !component.isEmpty && component.allSatisfy { $0.isASCII && $0.isNumber }
+        }
     }
 
     init(from decoder: Decoder) throws {

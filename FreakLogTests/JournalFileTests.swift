@@ -178,6 +178,47 @@ final class JournalFileTests: XCTestCase {
         XCTAssertThrowsError(try JournalFile.read(Data(#"{"exportSource":"Other Journal","experiences":[]}"#.utf8)))
     }
 
+    func testVersionedPWJournalHeaderUsesModernImport() throws {
+        let json = #"""
+          {"exportSource":"iOS Journal 15.0","experiences":[],"customUnits":[
+            {"id":7,"name":"Example pill","doseComponents":[
+              {"substanceName":"Caffeine","units":"mg","dose":80,"administrationRoute":"ORAL"}],
+              "unit":"pill"}]}
+          """#
+        let journal = try JournalFile.read(Data(json.utf8))
+        XCTAssertEqual(journal.customUnits.first?.substanceName, "Caffeine")
+        XCTAssertEqual(journal.customUnits.first?.dose, 80)
+        XCTAssertThrowsError(try JournalFile.read(Data(#"{"exportSource":"iOS Journal 99.0","experiences":[]}"#.utf8)))
+    }
+
+    func testPresetImportAddsADependencyAndKeepsTheExistingProduct() throws {
+        let original = PersistenceController(inMemory: true)
+        let ingredient = CustomSubstanceCodable(name: "Example ingredient", units: "mg", description: "").insert(into: original.viewContext)
+        let unit = CustomUnitCodable(
+            id: 4, substanceName: ingredient.nameUnwrapped, name: "Example product",
+            creationDate: .now, administrationRoute: .oral, dose: 1, estimatedDoseStandardDeviation: nil,
+            isEstimate: false, isArchived: false, unit: "unit", unitPlural: nil, originalUnit: "mg", note: ""
+        )
+        let preset = try JournalPreset(unit: unit.insert(into: original.viewContext), in: original.viewContext)
+        let data = try preset.exportFile().data
+        let restored = try JSONDecoder().decode(JournalPreset.self, from: data)
+        XCTAssertEqual(restored.ingredientNames, [ingredient.nameUnwrapped])
+        XCTAssertThrowsError(try JournalFile.read(data))
+
+        let destination = PersistenceController(inMemory: true)
+        _ = unit.insert(into: destination.viewContext)
+        try destination.viewContext.save()
+        let importContext = try destination.journalEditContext()
+        XCTAssertEqual(try restored.availableName(in: importContext), "Example product (Copy)")
+        XCTAssertThrowsError(try restored.importInto(importContext, as: "example product", keepLocalDefinitions: false))
+        try restored.importInto(importContext, as: "Example product (Copy)", keepLocalDefinitions: false)
+        let products = try importContext.fetch(CustomUnit.fetchRequest())
+        XCTAssertEqual(Set(products.map(\.nameUnwrapped)), ["Example product", "Example product (Copy)"])
+        XCTAssertEqual(Set(products.map(\.idForAndroid)).count, 2)
+        XCTAssertEqual(try importContext.fetch(CustomSubstance.fetchRequest()).map(\.nameUnwrapped), ["Example ingredient"])
+        XCTAssertEqual(try importContext.count(for: Ingestion.fetchRequest()), 0)
+    }
+
     func testRejectsDuplicateAndDanglingReferenceIDs() {
         let unit = #"{"id":7,"name":"Spoon","substanceName":"Example","creationDate":1700000000000,"administrationRoute":"ORAL","isEstimate":false,"isArchived":false,"unit":"spoon","originalUnit":"mg","note":""}"#
         let formulation = #"{"id":"blend","name":"Blend","creationDate":1700000000000,"note":"","components":[]}"#

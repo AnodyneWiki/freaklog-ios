@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		A8389D7DFE50836CF638B4E9 /* JournalTransferCompatibilityScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E287B4B9649D29914161FC82 /* JournalTransferCompatibilityScreen.swift */; };
+		7F13EDF2AB5E89D33E698173 /* JournalPresetTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BB87394F36839960053879E /* JournalPresetTransfer.swift */; };
 		64D559B79E1C0D6D8DE1C3AE /* SelectiveExportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */; };
 		D6C76B34BB81807680FBD295 /* JournalRecoveryBackups.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */; };
 		7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */; };
@@ -491,6 +493,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		E287B4B9649D29914161FC82 /* JournalTransferCompatibilityScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalTransferCompatibilityScreen.swift; sourceTree = "<group>"; };
+		2BB87394F36839960053879E /* JournalPresetTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalPresetTransfer.swift; sourceTree = "<group>"; };
 		9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectiveExportScreen.swift; sourceTree = "<group>"; };
 		80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalRecoveryBackups.swift; sourceTree = "<group>"; };
 		90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupProtection.swift; sourceTree = "<group>"; };
@@ -1007,6 +1011,8 @@
 			children = (
 				A7B357B963A085C666251860 /* JSONValue.swift */,
 				8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */,
+				E287B4B9649D29914161FC82 /* JournalTransferCompatibilityScreen.swift */,
+				2BB87394F36839960053879E /* JournalPresetTransfer.swift */,
 				9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */,
 				80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */,
 				90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */,
@@ -2326,6 +2332,8 @@
 				2AC40D0BBECA9791DF78C01C /* AssistantChat.swift in Sources */,
 				2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */,
 				2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */,
+				A8389D7DFE50836CF638B4E9 /* JournalTransferCompatibilityScreen.swift in Sources */,
+				7F13EDF2AB5E89D33E698173 /* JournalPresetTransfer.swift in Sources */,
 				64D559B79E1C0D6D8DE1C3AE /* SelectiveExportScreen.swift in Sources */,
 				D6C76B34BB81807680FBD295 /* JournalRecoveryBackups.swift in Sources */,
 				7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */,
