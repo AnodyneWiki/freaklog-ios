@@ -10,6 +10,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             EditCustomSubstanceView(customSubstance: customSubstance)
         case let .substance(substance):
             SubstanceScreen(substance: substance)
+        case let .substanceHistory(name):
+            SubstanceHistoryScreen(substanceName: name)
         case let .webView(articleURL):
             WebViewScreen(articleURL: articleURL)
         case let .webViewInteractions(substanceName, interactionURL):
@@ -65,8 +67,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             ToleranceChartExplanationScreen()
         case .toleranceChart:
             ToleranceChartScreen()
-        case let .experienceDetails(experienceData, ingestionData):
-            ExperienceDetailsScreen(experienceData: experienceData, ingestionData: ingestionData)
+        case let .experienceDetails(experienceData, ingestionData, showIngestions):
+            ExperienceDetailsScreen(experienceData: experienceData, ingestionData: ingestionData, showIngestions: showIngestions)
         case let .substanceDetails(substanceData):
             SubstanceDetailsScreen(substanceData: substanceData)
         case .saferRoutes:

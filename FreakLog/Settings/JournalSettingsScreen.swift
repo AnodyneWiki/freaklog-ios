@@ -16,6 +16,7 @@ struct JournalSettingsScreen: View {
     @AppStorage(AdministrationSiteNameStyle.preferenceKey) private var siteNameStyle = AdministrationSiteNameStyle.simple
 
     @AppStorage(PersistenceController.confirmsIngestionDeletionKey) private var confirmsIngestionDeletion = true
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
 
     var body: some View {
         List {
@@ -53,6 +54,23 @@ struct JournalSettingsScreen: View {
                 Text("Editing")
             } footer: {
                 Text("Entries linked to inventory and batches of unconfirmed entries always ask for confirmation.")
+            }
+
+            Section {
+                Picker("Day Starts At", selection: $dayStartHour) {
+                    Text("Midnight").tag(0)
+                    ForEach(1..<24, id: \.self) { hour in
+                        Text(
+                            Date(timeIntervalSinceReferenceDate: TimeInterval(hour) * 3_600),
+                            format: Date.FormatStyle(date: .omitted, time: .shortened, timeZone: .gmt)
+                        )
+                        .tag(hour)
+                    }
+                }
+            } header: {
+                Text("Journal Day")
+            } footer: {
+                Text("Calendar and Stats use this time in your current time zone. Earlier entries count toward the previous day.")
             }
 
             Section("Ingestion Overview") {

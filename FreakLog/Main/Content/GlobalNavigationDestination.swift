@@ -4,6 +4,7 @@ enum GlobalNavigationDestination: Hashable {
     // substance tab mainly
     case substance(substance: Substance)
     case customSubstance(customSubstance: CustomSubstance)
+    case substanceHistory(name: String)
     case editCustomSubstance(customSubstance: CustomSubstance)
     case webView(articleURL: URL)
     case webViewInteractions(substanceName: String, articleURL: URL)
@@ -32,7 +33,7 @@ enum GlobalNavigationDestination: Hashable {
     // stats tab mainly
     case toleranceChart
     case toleranceChartExplanation
-    case experienceDetails(experienceData: ExperienceData, ingestionData: ExperienceData)
+    case experienceDetails(experienceData: ExperienceData, ingestionData: ExperienceData, showIngestions: Bool)
     case substanceDetails(substanceData: SubstanceData)
     case dosageStat(substanceName: String)
 

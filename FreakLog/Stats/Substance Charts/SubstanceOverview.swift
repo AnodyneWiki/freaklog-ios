@@ -24,9 +24,10 @@ struct SubstanceOverview: View {
     let substanceData: SubstanceData
 
     var body: some View {
-        VStack(alignment: .leading) {
-            Text("Most Experiences Last 12 Months")
-                .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 5) {
+            Label("Substances by Experience", systemImage: "chart.bar.xaxis")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Color.accentColor)
             if let mostUsedName = substanceData.last12Months.first?.displayName {
                 Text(mostUsedName)
                     .font(.title2.bold())
@@ -34,9 +35,12 @@ struct SubstanceOverview: View {
                 Text("None")
                     .font(.title2.bold())
             }
-            SubstanceOverviewChart(substanceData: substanceData)
-                .frame(height: chartHeight)
+            if chartHeight > 0 {
+                SubstanceOverviewChart(substanceData: substanceData)
+                    .frame(height: chartHeight)
+            }
         }
+        .padding(.vertical, 6)
     }
 
     var chartHeight: CGFloat {

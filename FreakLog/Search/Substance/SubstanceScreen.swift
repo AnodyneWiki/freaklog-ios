@@ -168,6 +168,11 @@ struct SubstanceJournalLinks: View {
 
   var body: some View {
     Section("Journal") {
+      NavigationLink {
+        SubstanceHistoryScreen(substanceName: substanceName)
+      } label: {
+        Label("History", systemImage: "clock.arrow.circlepath")
+      }
       SubstanceTimelineVisibilityToggle(substanceName: substanceName)
       NavigationLink {
         EditPersonalTagsScreen(substanceName: substanceName)

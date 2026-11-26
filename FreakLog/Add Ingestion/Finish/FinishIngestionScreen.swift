@@ -158,6 +158,11 @@ struct FinishIngestionScreen: View {
             if !isUnconfirmed, let inventoryUse = Inventory.Use(ingestions) {
                 InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
             }
+            if !isUnconfirmed {
+                ForEach(substanceNames, id: \.self) { name in
+                    StatsGoalLoggingSection(substanceName: name, at: selectedTime)
+                }
+            }
             Section("Details") {
                 TextField("Note", text: $enteredNote, axis: .vertical)
                     .textInputAutocapitalization(.sentences)

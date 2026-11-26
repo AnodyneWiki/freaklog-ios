@@ -104,6 +104,7 @@ struct EditCustomSubstanceView: View {
           try PersistenceController.renameSubstance(from: oldName, to: newName, in: context)
         }
         try context.save()
+        StatsPreferences.replaceSubstanceName(oldName, with: newName)
       } catch {
         toastViewModel.showErrorToast(message: "Couldn't save substance changes")
       }
@@ -413,6 +414,7 @@ struct CustomSubstanceMergeRecords {
     let retained = substances[chosen].custom
     let duplicate = substances[removed].custom
     let name = retained.nameUnwrapped
+    let duplicateName = duplicate.nameUnwrapped
     let definitions = substances.map(\.definition)
     func value<T>(_ id: String, _ keyPath: KeyPath<CustomSubstanceMergePreview.Definition, T?>) -> T? {
       let first = selection[id] ?? chosen
@@ -480,6 +482,7 @@ struct CustomSubstanceMergeRecords {
     context.delete(duplicate)
     let changed = substances.flatMap(\.ingestions).filter(\.hasChanges)
     try PersistenceController.saveJournalChanges(in: context)
+    StatsPreferences.replaceSubstanceName(duplicateName, with: name)
     return changed
   }
 }
