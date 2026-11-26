@@ -1,17 +1,30 @@
 import SwiftUI
 
 struct ExperienceLogic {
-    // The experience a new ingestion at the date belongs to: one starting at most 3 hours later, or that started
-    // at most 15 hours before, or whose last ingestion was at most 3 hours before
     static func closestExperience(from experiences: [Experience], to date: Date) -> Experience? {
+        closestExperience(from: experiences, to: date...date)
+    }
+
+    // Keep the usual logging windows, accounting for both recorded and draft ranges.
+    static func closestExperience(from experiences: [Experience], to dates: ClosedRange<Date>) -> Experience? {
         let fifteenHours: TimeInterval = 15 * 60 * 60
         let threeHours: TimeInterval = 3 * 60 * 60
-        return experiences.first { exp in
-            let experienceStart = exp.ingestionsSorted.first?.time ?? exp.sortDateUnwrapped
-            let lastIngestionTime = exp.ingestionsSorted.last?.time ?? exp.sortDateUnwrapped
-            let experienceRange = experienceStart.addingTimeInterval(-threeHours) ... max(experienceStart.addingTimeInterval(fifteenHours), lastIngestionTime.addingTimeInterval(threeHours))
-            return experienceRange.contains(date)
+        var closest: (experience: Experience, gap: TimeInterval, startOffset: TimeInterval)?
+        for experience in experiences {
+            let start = experience.sortDateUnwrapped
+            let end = experience.ingestionsSorted.compactMap { ingestion in
+                ingestion.time.map { max($0, ingestion.endTime ?? $0) }
+            }.max() ?? start
+            let window = start.addingTimeInterval(-threeHours)...max(
+                start.addingTimeInterval(fifteenHours), end.addingTimeInterval(threeHours)
+            )
+            guard window.overlaps(dates) else { continue }
+            let gap = max(start.timeIntervalSince(dates.upperBound), dates.lowerBound.timeIntervalSince(end), 0)
+            let startOffset = abs(start.timeIntervalSince(dates.lowerBound))
+            if let closest, (closest.gap, closest.startOffset) <= (gap, startOffset) { continue }
+            closest = (experience, gap, startOffset)
         }
+        return closest?.experience
     }
 
     static func myIngestions(from ingestions: [Ingestion]) -> [Ingestion] {

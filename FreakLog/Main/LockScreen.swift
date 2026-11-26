@@ -1,29 +1,51 @@
 import SwiftUI
 
 struct LockScreen: View {
-    let isEyeOpen: Bool
     let isFaceIDEnabled: Bool
+    var isAuthenticating = false
+    var unlock: (() -> Void)?
+
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     var body: some View {
-        VStack(spacing: 0) {
-            Image(decorative: "Eye Closed")
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 150, height: 150, alignment: .top)
-            if !isFaceIDEnabled {
-                Spacer().frame(height: 20)
-                Text("Face ID is disabled.\nEnable it for Journal in settings to unlock the app.")
-                    .font(.title2)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 25)
+        GeometryReader { geometry in
+            ScrollView {
+                VStack(spacing: 20) {
+                    Image(decorative: "Eye Closed")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: symbolSize, height: symbolSize)
+                    if let unlock {
+                        Text("Journal Locked")
+                            .font(.title2.bold())
+                            .accessibilityAddTraits(.isHeader)
+                        if !isFaceIDEnabled {
+                            Text("Set up device authentication in Settings to unlock FreakLog.")
+                                .foregroundStyle(.secondary)
+                        }
+                        if isAuthenticating {
+                            ProgressView("Unlocking…")
+                        } else {
+                            Button(isFaceIDEnabled ? "Unlock Journal" : "Try Again", action: unlock)
+                                .buttonStyle(.borderedProminent)
+                                .controlSize(.large)
+                        }
+                    } else {
+                        ProgressView("Opening Journal…")
+                    }
+                }
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 440)
+                .padding(24)
+                .frame(maxWidth: .infinity, minHeight: geometry.size.height)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .ignoresSafeArea()
-        .background(Color(UIColor.systemBackground))
+        .background(Color(uiColor: .systemBackground).ignoresSafeArea())
     }
+
+    private var symbolSize: CGFloat { dynamicTypeSize.isAccessibilitySize ? 64 : 100 }
 }
 
 #Preview {
-    LockScreen(isEyeOpen: false, isFaceIDEnabled: false)
+    LockScreen(isFaceIDEnabled: false, unlock: {})
 }

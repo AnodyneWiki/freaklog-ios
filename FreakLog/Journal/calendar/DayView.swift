@@ -1,64 +1,35 @@
 import SwiftUI
-import HorizonCalendar
 
 struct DayView: View {
-
-    private let dayComponents: DayComponents
+    let date: Date
     let ingestions: [Ingestion]
-    let isToday: Bool
-
-    init(dayComponents: DayComponents, ingestionsByDay: [Date: [Ingestion]]) {
-        self.dayComponents = dayComponents
-        let startOfDay = Calendar.current.date(from: dayComponents.components) ?? .now
-        ingestions = ingestionsByDay[startOfDay] ?? []
-        isToday = startOfDay == Calendar.current.startOfDay(for: .now)
-    }
-
-    private let colorHeight: Double = 6
+    let isSelected: Bool
+    let select: () -> Void
 
     var body: some View {
-        let experiences = experiences
-        if let firstExperience = experiences.first {
-            NavigationLink(
-                value: experiences.count > 1
-                    ? GlobalNavigationDestination.chooseExperience(experiences: experiences)
-                    : .experience(experience: firstExperience)
-            ) {
-                experienceDayLabel
+        Button(action: select) {
+            VStack(spacing: 2) {
+                Text(date, format: .dateTime.day())
+                    .fontWeight(isSelected || Calendar.current.isDateInToday(date) ? .semibold : .regular)
+                    .foregroundStyle(isSelected ? Color.accentColor : (ingestions.isEmpty ? Color.secondary : Color.primary))
+                Group {
+                    if ingestions.isEmpty {
+                        Color.clear
+                    } else {
+                        CalendarColorRectangle(colors: ingestions.map { $0.substanceColor.swiftUIColor })
+                    }
+                }
+                .frame(height: 6)
+                .padding(.horizontal, 5)
+                .accessibilityHidden(true)
             }
-        } else {
-            VStack(spacing: 0) {
-                textWithColor
-                Color.clear.frame(height: colorHeight)
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(isSelected ? Color.accentColor.opacity(0.15) : Color.clear, in: RoundedRectangle(cornerRadius: 8))
+            .contentShape(Rectangle())
         }
-    }
-
-    private var textWithColor: Text {
-        if isToday {
-            text.foregroundColor(.accentColor)
-        } else if ingestions.isEmpty {
-            text.foregroundColor(.secondary)
-        } else {
-            text.foregroundColor(.primary)
-        }
-    }
-
-    private var text: Text {
-        Text("\(dayComponents.day)")
-    }
-
-    private var experienceDayLabel: some View {
-        VStack(spacing: 0) {
-            textWithColor
-            CalendarColorRectangle(colors: ingestions.map({$0.substanceColor.swiftUIColor}))
-                .frame(height: colorHeight).padding(.horizontal, 5)
-        }
-    }
-
-    private var experiences: [Experience] {
-        ingestions.compactMap {$0.experience}.uniqued().sorted { lhs, rhs in
-            lhs.sortDateUnwrapped < rhs.sortDateUnwrapped
-        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(date, format: .dateTime.weekday(.wide).month().day().year()))
+        .accessibilityValue(ingestions.count.formatted())
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

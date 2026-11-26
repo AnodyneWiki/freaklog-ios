@@ -83,7 +83,7 @@ struct WebhooksScreen: View {
 
             Section(
                 header: Text("Message Layout"),
-                footer: Text("Variables: {user}, {dose}, {unit}, {substance}, {route}, {site}, {note}")
+                footer: Text("Use {user}, {dose}, {unit}, {substance}, {route}, and {note}. For the site, use {site} for the recorded name or {site_simple} for a plain-language name.")
             ) {
                 TextEditor(text: $webhookTemplate)
                     .frame(minHeight: 100)

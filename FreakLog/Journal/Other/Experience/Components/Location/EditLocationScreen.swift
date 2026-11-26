@@ -7,16 +7,14 @@ struct EditLocationScreen: View {
     var body: some View {
         ChooseLocationScreen(
             locationManager: locationManager,
+            initialLocation: experienceLocation.asLocation,
             onDone: onDone
         )
-        .onAppear {
-            locationManager.selectLocation(experienceLocation.asLocation)
-        }
     }
 
-    private func onDone() {
-        if let selectedLocation = locationManager.selectedLocation {
-            experienceLocation.update(from: selectedLocation)
+    private func onDone(_ location: Location?) {
+        if let location {
+            experienceLocation.update(from: location)
         } else {
             PersistenceController.shared.viewContext.delete(experienceLocation)
         }

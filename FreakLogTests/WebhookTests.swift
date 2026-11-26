@@ -31,6 +31,7 @@ final class WebhookTests: XCTestCase {
       isEstimate: true,
       route: "oral",
       site: "",
+      simpleSite: "",
       note: "")
     let settings = WebhookManager.WebhookSettingsSnapshot(
       template: WebhookService.defaultTemplate,
@@ -39,6 +40,34 @@ final class WebhookTests: XCTestCase {
       isHyperlinked: false,
       substanceInfoUrl: "")
     XCTAssertEqual(WebhookService.content(for: data, settings: settings), "Sam: ~100 mg Caffeine via oral")
+  }
+
+  func testSiteLabelsForJournalAndWebhookTemplates() {
+    let context = PersistenceController(inMemory: true).viewContext
+    let ingestion = Ingestion(context: context)
+    let route = AdministrationRoute.intramuscular
+    ingestion.administrationRoute = route.rawValue
+    ingestion.administrationSite = "Left Deltoid"
+
+    XCTAssertEqual(AdministrationSiteNameStyle.simple.label(for: ingestion.administrationSiteUnwrapped, route: route),
+                   "Left shoulder")
+    XCTAssertEqual(AdministrationSiteNameStyle.medical.label(for: ingestion.administrationSiteUnwrapped, route: route),
+                   "Left deltoid")
+    let settings = WebhookManager.WebhookSettingsSnapshot(
+      template: "[{site} / {site_simple}]",
+      noteTemplate: "",
+      username: "",
+      isHyperlinked: false,
+      substanceInfoUrl: "")
+    XCTAssertEqual(WebhookService.content(for: .init(ingestion: ingestion), settings: settings),
+                   "left deltoid / left shoulder")
+    XCTAssertEqual(ingestion.administrationSite, "Left Deltoid")
+
+    ingestion.administrationSite = "Custom site"
+    XCTAssertEqual(WebhookService.content(for: .init(ingestion: ingestion), settings: settings),
+                   "custom site / custom site")
+    ingestion.administrationSite = nil
+    XCTAssertEqual(WebhookService.content(for: .init(ingestion: ingestion), settings: settings), "")
   }
 
   func testTimedNoteMessagesAreDeletedWithTheNote() throws {

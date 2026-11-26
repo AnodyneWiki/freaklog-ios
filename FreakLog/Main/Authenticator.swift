@@ -6,6 +6,7 @@ class Authenticator: ObservableObject {
     @Published var isLocked = true
     @Published var isFaceIDEnabled = true
     @Published var isStartingUp = true
+    @Published private(set) var isAuthenticating = false
 
     func onChange(of scenePhase: ScenePhase) {
         let hasToUnlockApp = UserDefaults.standard.bool(forKey: PersistenceController.hasToUnlockAppKey)
@@ -37,11 +38,23 @@ class Authenticator: ObservableObject {
         }
     }
 
+    func retryUnlock() {
+        guard isLocked, !isAuthenticating else { return }
+        let context = LAContext()
+        isFaceIDEnabled = context.canEvaluatePolicy(.deviceOwnerAuthentication, error: nil)
+        if isFaceIDEnabled {
+            authenticate(with: context)
+        }
+    }
+
     private func authenticate(with context: LAContext) {
+        guard !isAuthenticating else { return }
+        isAuthenticating = true
         let reason = "Authenticate yourself to see your journal."
         context.evaluatePolicy(.deviceOwnerAuthentication, localizedReason: reason) { success, _ in
-            if success {
-                Task { @MainActor in
+            Task { @MainActor in
+                self.isAuthenticating = false
+                if success {
                     self.isLocked = false
                 }
             }

@@ -6,6 +6,7 @@ struct ExperiencePickerRow: View {
     @Binding var selectedExperience: Experience?
     @Binding var wantsToForceNewExperience: Bool
     let experiences: [Experience]
+    var onSelection: () -> Void = {}
 
     var body: some View {
         if !experiences.isEmpty {
@@ -13,14 +14,11 @@ struct ExperiencePickerRow: View {
                 ExperiencePickerScreen(
                     selectedExperience: $selectedExperience,
                     wantsToForceNewExperience: $wantsToForceNewExperience,
-                    experiences: experiences
+                    experiences: experiences,
+                    onSelection: onSelection
                 )
             } label: {
-                HStack {
-                    Text("Experience")
-                    Spacer()
-                    Text(selectedExperience?.titleUnwrapped ?? "New Experience")
-                }
+                LabeledContent("Add To", value: selectedExperience?.titleUnwrapped ?? String(localized: "New Experience"))
             }
         }
     }
@@ -31,12 +29,8 @@ struct ConsumerRow: View {
     let onEdit: () -> Void
 
     var body: some View {
-        HStack {
-            Text("Consumer")
-            Spacer()
-            Button(action: onEdit) {
-                Label(Ingestion.storedConsumerName(consumerName) ?? "You", systemImage: "person")
-            }
+        Button(action: onEdit) {
+            LabeledContent("Logged For", value: Ingestion.storedConsumerName(consumerName) ?? String(localized: "You"))
         }
     }
 }
@@ -47,11 +41,7 @@ struct LocationButton: View {
 
     var body: some View {
         Button(action: onEdit) {
-            if let locationName {
-                Label(locationName, systemImage: "mappin")
-            } else {
-                Label("Add Location", systemImage: "plus")
-            }
+            LabeledContent("Location", value: locationName ?? String(localized: "None"))
         }
     }
 }

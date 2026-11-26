@@ -22,12 +22,12 @@ struct UnitsPicker: View {
         }
         .listRowSeparator(.hidden)
         .onChange(of: pickerValue) { newValue in
-            if newValue != .custom {
-                units = newValue.rawValue
-            }
+            units = newValue == .custom ? textValue : newValue.rawValue
         }
         .onChange(of: textValue) { newValue in
-            units = newValue
+            if pickerValue == .custom {
+                units = newValue
+            }
         }
         .task {
             initializePicker()

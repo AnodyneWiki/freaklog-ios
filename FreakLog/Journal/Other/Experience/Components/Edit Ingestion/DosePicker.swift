@@ -13,7 +13,7 @@ struct DosePicker: View {
                 UnitsPicker(units: $selectedUnits)
                     .padding(.bottom, 10)
             }
-            if areUnitsDefined {
+            if areUnitsDefined, roaDose?.units == selectedUnits {
                 DynamicDoseRangeView(roaDose: roaDose, dose: doseMaybe)
             }
             doseTextFieldWithUnit

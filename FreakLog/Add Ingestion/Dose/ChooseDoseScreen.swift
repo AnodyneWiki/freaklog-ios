@@ -5,13 +5,15 @@ struct ChooseDoseScreen: View {
   init(
     arguments: SubstanceAndRoute,
     dismiss: @escaping () -> Void,
-    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void
+    navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void,
+    shortcut: ShortcutDosePrefill? = nil
   ) {
     let substanceName = arguments.substance.name
     let administrationRoute = arguments.administrationRoute
     self.arguments = arguments
     self.dismiss = dismiss
     self.navigateToCustomUnitChooseDose = navigateToCustomUnitChooseDose
+    self.shortcut = shortcut
     if arguments.substance.customSubstanceUnits != nil {
       let description = PersistenceController.shared.getCustomSubstance(name: substanceName)?.explanationUnwrapped
       customSubstanceDescription = description?.isEmpty == false ? description : nil
@@ -21,8 +23,8 @@ struct ChooseDoseScreen: View {
     let roaDose = PersistenceController.shared.resolvedDose(for: substanceName, route: administrationRoute)
     self.roaDose = roaDose
     let defaultUnits = arguments.substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue
-    _selectedUnits = State(initialValue: roaDose?.units ?? defaultUnits)
-    _selectedPureDose = State(initialValue: Self.isOralMDMA(arguments) ? 113 : nil)
+    _selectedUnits = State(initialValue: shortcut?.units ?? roaDose?.units ?? defaultUnits)
+    _selectedPureDose = State(initialValue: shortcut == nil && Self.isOralMDMA(arguments) ? 113 : shortcut?.amount)
     customUnits = FetchRequest(fetchRequest: PersistenceController.activeCustomUnitsRequest(for: substanceName))
   }
 
@@ -33,6 +35,7 @@ struct ChooseDoseScreen: View {
   let customSubstanceDescription: String?
   let dismiss: () -> Void
   let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
+  private let shortcut: ShortcutDosePrefill?
   private let roaDose: RoaDose?
   private var substanceName: String { arguments.substance.name }
   private var substance: Substance? { arguments.substance.psychonautWikiSubstance }
@@ -168,6 +171,17 @@ struct ChooseDoseScreen: View {
 
   private var screen: some View {
     Form {
+      if let customUnit = shortcut?.customUnit {
+        Section("From Shortcut") {
+          NavigationLink(value: customUnit) {
+            Label(customUnit.nameUnwrapped, systemImage: "ruler")
+          }
+        }
+      }
+      if let message = shortcut?.message {
+        Label(message, systemImage: "info.circle")
+          .foregroundStyle(.secondary)
+      }
       if isEyeOpen, Self.isOralMDMA(arguments) {
         Section("Max Dose Calculator") {
           MDMAMaxDoseCalculator(showResult: false) { maxDose in

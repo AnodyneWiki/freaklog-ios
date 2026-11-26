@@ -8,7 +8,7 @@ struct RatingScreenContent: View {
 
     var body: some View {
         Form {
-            Section {
+            Section("When") {
                 if canDefineOverall {
                     Toggle("Overall Rating", isOn: $isOverallRating.animation()).tint(.accentColor)
                 }
@@ -18,8 +18,7 @@ struct RatingScreenContent: View {
                         selection: $selectedTime,
                         displayedComponents: [.date, .hourAndMinute]
                     )
-                    .labelsHidden()
-                    .datePickerStyle(.wheel)
+                    .datePickerStyle(.compact)
                 }
             }
             SelectRatingSection(selectedRating: $selectedRating)

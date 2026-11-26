@@ -73,7 +73,7 @@ struct EditIngestionScreen: View {
             consumerName: $consumerName,
             siteSelection: $siteSelection,
             save: save,
-            delete: delete,
+            onDeleted: { dismiss() },
             deleteWebhookMessage: WebhookManager.shared.deleteMessage,
             isHidden: $isHidden,
             selectedExperience: $selectedExperience,
@@ -109,7 +109,11 @@ struct EditIngestionScreen: View {
         .sheet(item: $sheetToShow, content: { sheet in
             switch sheet {
             case .editLocation:
-                ChooseLocationScreen(locationManager: locationManager, onDone: { })
+                ChooseLocationScreen(
+                    locationManager: locationManager,
+                    initialLocation: locationManager.selectedLocation,
+                    onDone: locationManager.selectLocation
+                )
             case .editConsumer:
                 EditConsumerScreen(consumerName: $consumerName)
             }
@@ -131,7 +135,7 @@ struct EditIngestionScreen: View {
                 ingestion.customUnit = try PersistenceController.journalObject(selectedCustomUnit, in: context)
                 ingestion.units = selectedCustomUnit.unitUnwrapped
             } else {
-                ingestion.units = roaDose?.units ?? units
+                ingestion.units = units
                 ingestion.customUnit = nil
             }
             ingestion.isEstimate = isEstimate
@@ -152,14 +156,6 @@ struct EditIngestionScreen: View {
             dismiss()
         } catch {
             toastViewModel.showErrorToast(message: "Failed to save ingestion")
-        }
-    }
-
-    private func delete() {
-        Task {
-            if await IngestionDeletion.delete(ingestions: [ingestion]) {
-                dismiss()
-            }
         }
     }
 }
@@ -183,7 +179,7 @@ struct EditIngestionContent: View {
     @Binding var consumerName: String
     @Binding var siteSelection: AdministrationSiteSelection
     let save: () -> Void
-    let delete: () -> Void
+    let onDeleted: () -> Void
     let deleteWebhookMessage: (WebhookMessage) async -> Bool
     @Binding var isHidden: Bool
     @Binding var selectedExperience: Experience?
@@ -193,15 +189,14 @@ struct EditIngestionContent: View {
 
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.dismiss) var dismiss
+    @State private var deletionRequest: IngestionDeletion.Request?
+    @State private var showsTimelineOptions = false
 
     var body: some View {
         NavigationStack {
             Form {
-                Section("\(route.rawValue.localizedCapitalized) Dose") {
+                Section("Amount") {
                     VStack(alignment: .leading, spacing: 8) {
-                        if let roaDose {
-                            RoaDoseRow(roaDose: roaDose)
-                        }
                         if let customUnit {
                             CustomUnitCalculationText(
                                 customUnit: customUnit,
@@ -220,21 +215,16 @@ struct EditIngestionContent: View {
                             )
                         }
                     }
+                    if let roaDose {
+                        DisclosureGroup("Reference Range") {
+                            RoaDoseRow(roaDose: roaDose)
+                        }
+                    }
                     if !otherUnits.isEmpty {
                         NavigationLink {
                             ChooseCustomUnitScreen(customUnit: $customUnit, customUnits: otherUnits)
                         } label: {
-                            HStack {
-                                Text("Choose Unit")
-                                Spacer()
-                                Group {
-                                    if let customUnit {
-                                        Text(customUnit.nameUnwrapped)
-                                    } else {
-                                        Text("Default")
-                                    }
-                                }.foregroundStyle(.secondary)
-                            }
+                            LabeledContent("Counting Unit", value: customUnit?.nameUnwrapped ?? String(localized: "Default"))
                         }
                         .onChange(of: customUnit, perform: { unit in
                             units = unit?.unit ?? roaDose?.units ?? ""
@@ -256,35 +246,32 @@ struct EditIngestionContent: View {
                         }
                     }.listRowSeparator(.hidden)
                 }
-                Section("Notes") {
-                    TextField("Enter Note", text: $note, axis: .vertical)
-                        .autocapitalization(.sentences)
-                }
-                Section {
+                Section("When") {
                     TimePointOrRangePicker(
                         selectedTimePickerOption: $selectedTimePickerOption,
                         selectedTime: $time,
                         selectedEndTime: $endTime
                     )
-                    ExperiencePickerRow(
-                        selectedExperience: $selectedExperience,
-                        wantsToForceNewExperience: $wantsToForceNewExperience,
-                        experiences: experiencesWithinLargerRange
-                    )
+                }
+                Section("Experience") {
+                    if experiencesWithinLargerRange.isEmpty {
+                        LabeledContent("Add To", value: selectedExperience?.titleUnwrapped ?? String(localized: "New Experience"))
+                    } else {
+                        ExperiencePickerRow(
+                            selectedExperience: $selectedExperience,
+                            wantsToForceNewExperience: $wantsToForceNewExperience,
+                            experiences: experiencesWithinLargerRange
+                        )
+                    }
+                }
+                Section("Details") {
+                    TextField("Note", text: $note, axis: .vertical)
+                        .textInputAutocapitalization(.sentences)
                     ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
                     AdministrationSitePicker(route: route, selection: $siteSelection)
                     LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-                }.listRowSeparator(.hidden)
-                Section {
-                    Toggle("Hide in timeline", isOn: $isHidden).tint(.accentColor)
-                    Button(action: {
-                        dismiss()
-                        addIngestionAtSameTime()
-                    }) {
-                        Label("Add ingestion at same time", systemImage: "plus")
-                    }
-                    Button(action: delete) {
-                        Label("Delete ingestion", systemImage: "trash").foregroundColor(.red)
+                    DisclosureGroup("Display Options", isExpanded: $showsTimelineOptions) {
+                        Toggle("Hide from Timeline", isOn: $isHidden)
                     }
                 }
                 if !ingestion.webhookMessagesSorted.isEmpty {
@@ -313,7 +300,19 @@ struct EditIngestionContent: View {
                         }
                     }
                 }
-
+                Section {
+                    Button(action: {
+                        dismiss()
+                        addIngestionAtSameTime()
+                    }) {
+                        Label("Add Ingestion at Same Time", systemImage: "plus")
+                    }
+                    Button(role: .destructive) {
+                        requestIngestionDeletion(ingestion, confirmation: $deletionRequest, onDeleted: onDeleted)
+                    } label: {
+                        Label("Delete Ingestion", systemImage: "trash")
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -329,6 +328,8 @@ struct EditIngestionContent: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .navigationTitle("Edit Ingestion")
+            .navigationBarTitleDisplayMode(.inline)
+            .confirmIngestionDeletion($deletionRequest, onDeleted: onDeleted)
         }
     }
 
@@ -357,7 +358,7 @@ struct EditIngestionContent: View {
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { },
+        onDeleted: { },
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
@@ -385,7 +386,7 @@ struct EditIngestionContent: View {
         consumerName: .constant("Marc"),
         siteSelection: .constant(AdministrationSiteSelection()),
         save: { },
-        delete: { },
+        onDeleted: { },
         deleteWebhookMessage: { _ in return true },
         isHidden: .constant(false),
         selectedExperience: .constant(nil),
