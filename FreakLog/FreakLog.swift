@@ -61,7 +61,8 @@ struct FreakLog: App {
             }
             .onOpenURL { url in
                 guard url == continueJournalURL || url == dueTodayURL
-                    || url.absoluteString == openLatestExperience else { return }
+                    || url.absoluteString == openLatestExperience
+                    || ExperienceActivityLink.experienceURI(from: url) != nil else { return }
                 pendingJournalURL = url
                 openPendingJournalURL()
             }
@@ -96,6 +97,8 @@ struct FreakLog: App {
             if UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2) {
                 navigator.journalTabPath.append(GlobalNavigationDestination.dueToday)
             }
+        } else if let uri = ExperienceActivityLink.experienceURI(from: pendingJournalURL) {
+            navigator.openActivityExperience(at: uri)
         } else {
             navigator.openLatestActiveExperience()
         }

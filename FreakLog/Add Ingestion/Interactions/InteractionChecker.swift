@@ -55,6 +55,16 @@ enum InteractionChecker {
         cacheLock.unlock()
     }
 
+    static func documentedSources(for interaction: Interaction) -> [Substance] {
+        [
+            (interaction.aName, interaction.bName),
+            (interaction.bName, interaction.aName),
+        ].compactMap { source, other in
+            guard getInteraction(fromName: source, toName: other) == interaction.interactionType else { return nil }
+            return SubstanceRepo.shared.getSubstance(name: source)
+        }
+    }
+
     private static let cacheLock = NSLock()
     nonisolated(unsafe) private static var cache: [String: InteractionType?] = [:]
 

@@ -20,6 +20,7 @@ struct EditFormulationComponentScreen: View {
     let defaultUnits = substance.customSubstanceUnits ?? UnitPickerOptions.mg.rawValue
     _units = State(initialValue: component?.units ?? roaDose?.units ?? defaultUnits)
     _isEstimate = State(initialValue: component?.isEstimate ?? false)
+    _isHiddenInTimeline = State(initialValue: component?.isHiddenInTimeline ?? false)
     _estimatedDoseStandardDeviation = State(initialValue: component?.estimatedDoseStandardDeviation)
   }
 
@@ -54,6 +55,11 @@ struct EditFormulationComponentScreen: View {
         Text("The dose in one unit of the formulation, e.g. one pill. Leave it empty if unknown.")
       }
       .listRowSeparator(.hidden)
+      Section {
+        Toggle("Hide New Entries from Timelines", isOn: $isHiddenInTimeline)
+      } footer: {
+        Text("Applies when logging this formulation. Review earlier entries from their experience.")
+      }
     }
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(substance.displayName)
@@ -71,7 +77,8 @@ struct EditFormulationComponentScreen: View {
             dose: dose,
             units: units,
             isEstimate: isEstimate,
-            estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation : nil)
+            estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation : nil,
+            isHiddenInTimeline: isHiddenInTimeline)
           if let component {
             newComponent.id = component.id
           }
@@ -86,6 +93,7 @@ struct EditFormulationComponentScreen: View {
   @State private var dose: Double?
   @State private var units: String
   @State private var isEstimate: Bool
+  @State private var isHiddenInTimeline: Bool
   @State private var estimatedDoseStandardDeviation: Double?
 
   private var roaDose: RoaDose? {

@@ -23,7 +23,7 @@ struct EditColorsScreen: View {
             Section {
                 let companions = visibleCompanions
                 if companions.isEmpty {
-                    Text(substanceCompanions.isEmpty ? "No colors added yet" : "No matching substances")
+                    Text(substanceCompanions.isEmpty ? "No substances configured yet" : "No matching substances")
                         .foregroundStyle(.secondary)
                 } else {
                     ForEach(companions) { companion in
@@ -32,7 +32,8 @@ struct EditColorsScreen: View {
                         }, label: {
                             CompanionRow(
                                 name: PersistenceController.shared.displayName(for: companion.substanceNameUnwrapped),
-                                color: companion.color.swiftUIColor
+                                color: companion.color.swiftUIColor,
+                                isHidden: companion.isHiddenInTimeline
                             ).foregroundColor(.primary)
                         })
                     }
@@ -44,7 +45,7 @@ struct EditColorsScreen: View {
                 EditCompanionColorScreen(companion: companion, usedColors: substanceCompanions.map(\.color))
             }
         })
-        .navigationTitle("Substance Colors")
+        .navigationTitle("Substance Colors & Visibility")
         .searchable(text: $search, prompt: "Find a substance")
         .toolbar {
             Menu {
@@ -64,16 +65,19 @@ private struct EditCompanionColorScreen: View {
     let usedColors: [SubstanceColor]
 
     @State private var color: SubstanceColor
+    @State private var hidesTimeline: Bool
+    @State private var showsSaveError = false
     @Environment(\.dismiss) private var dismiss
 
     init(companion: SubstanceCompanion, usedColors: [SubstanceColor]) {
         self.companion = companion
         self.usedColors = usedColors
         _color = State(initialValue: companion.color)
+        _hidesTimeline = State(initialValue: companion.isHiddenInTimeline)
     }
 
     var body: some View {
-        ColorPickerScreen(selectedColor: $color, usedColors: usedColors)
+        ColorPickerScreen(selectedColor: $color, usedColors: usedColors, hidesTimeline: $hidesTimeline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -82,23 +86,84 @@ private struct EditCompanionColorScreen: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     DoneButton {
-                        companion.colorAsText = color.rawValue
-                        PersistenceController.shared.saveViewContext()
-                        dismiss()
+                        do {
+                            let context = try PersistenceController.shared.journalEditContext()
+                            let editable = try PersistenceController.journalObject(companion, in: context)
+                            editable.colorAsText = color.rawValue
+                            editable.isHiddenInTimeline = hidesTimeline
+                            try context.save()
+                            dismiss()
+                        } catch {
+                            showsSaveError = true
+                        }
                     }
                 }
             }
+            .alert("Couldn’t Save Substance Settings", isPresented: $showsSaveError) {
+                Button("OK", role: .cancel) {}
+            }
+    }
+}
+
+struct SubstanceTimelineVisibilityToggle: View {
+    let substanceName: String
+    @FetchRequest private var companions: FetchedResults<SubstanceCompanion>
+    @State private var showsSaveError = false
+
+    init(substanceName: String) {
+        self.substanceName = substanceName
+        let request = PersistenceController.substanceCompanionsRequest()
+        request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+        _companions = FetchRequest(fetchRequest: request)
+    }
+
+    var body: some View {
+        Toggle(isOn: Binding(get: {
+            companions.contains(where: \.isHiddenInTimeline)
+        }, set: save)) {
+            Label("Hide Timeline by Default", systemImage: "eye.slash")
+        }
+        .alert("Couldn’t Update the Timeline", isPresented: $showsSaveError) {
+            Button("OK", role: .cancel) {}
+        }
+    }
+
+    private func save(_ isHidden: Bool) {
+        do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let request = PersistenceController.substanceCompanionsRequest()
+            request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+            let records = try context.fetch(request)
+            if records.isEmpty, isHidden {
+                let companion = SubstanceCompanion(context: context)
+                companion.substanceName = substanceName
+                companion.colorAsText = SubstanceColor.suggested(
+                    avoiding: try context.fetch(PersistenceController.substanceCompanionsRequest()).map(\.color)
+                ).rawValue
+                companion.isHiddenInTimeline = true
+            }
+            for record in records { record.isHiddenInTimeline = isHidden }
+            try context.save()
+        } catch {
+            showsSaveError = true
+        }
     }
 }
 
 struct CompanionRow: View {
     let name: String
     let color: Color
+    var isHidden = false
 
     var body: some View {
         HStack {
             Text(name)
             Spacer()
+            if isHidden {
+                Image(systemName: "eye.slash")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Hidden from timelines")
+            }
             Image(systemName: "circle.fill")
                 .font(.title2)
                 .foregroundColor(color)

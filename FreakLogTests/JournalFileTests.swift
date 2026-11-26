@@ -4,6 +4,19 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testNativeJournalJSONPreservesNoteDetails() throws {
+        let fixture = #"""
+          {"experiences":[{
+            "title":"Example","text":"","creationDate":1700000000000,
+            "timedNotes":[{"creationDate":1700000000000,"time":1700000000000,
+              "note":"A note","isPartOfTimeline":true,"color":"BLUE","mood":"neutral","energy":"veryLow"}]
+          }]}
+          """#
+        let journal = try JournalFile.read(Data(fixture.utf8))
+        let native = try JournalFile.read(JSONEncoder().encode(journal))
+        XCTAssertEqual(native.experiences.first?.timedNotes.first?.details, TimedNoteDetails(mood: .neutral, energy: .veryLow))
+    }
+
     func testAndroid1136HeaderlessTransferAndPortableExport() throws {
         // Shape follows Android JournalExport, AdaptiveColorSerializer and InstantSerializer
         // at ae3419d. The example uses the Kotlin serializer's omitted default fields.
@@ -65,8 +78,8 @@ final class JournalFileTests: XCTestCase {
           """#
         let journal = try JournalFile.read(Data(fixture.utf8))
         XCTAssertEqual(journal.experiences.first?.location?.name, "Library")
-        XCTAssertTrue(journal.experiences.first?.ingestions.isEmpty == true)
-        XCTAssertTrue(journal.transferOmissions.contains("Unconfirmed ingestions"))
+        XCTAssertTrue(journal.experiences.first?.ingestions.first?.isUnconfirmed == true)
+        XCTAssertFalse(journal.transferOmissions.contains("Unconfirmed ingestions"))
         let exported = try JournalFile.read(journal.androidTransferData())
         XCTAssertTrue(exported.experiences.first?.ingestions.isEmpty == true)
     }
@@ -99,6 +112,12 @@ final class JournalFileTests: XCTestCase {
           """#
         let source = try JournalFile.read(Data(fixture.utf8))
 
+        let nativeRoundTrip = try JournalFile.read(JSONEncoder().encode(source))
+        let pending = try XCTUnwrap(nativeRoundTrip.experiences.first?.ingestions.last)
+        XCTAssertEqual(nativeRoundTrip.experiences.first?.ingestions.count, 2)
+        XCTAssertTrue(pending.isUnconfirmed)
+        XCTAssertEqual(pending.confirmationBatchID, UUID(uuidString: "328CF5D7-8AE2-4B7A-9172-E6E0148EBC66"))
+
         // Key sets come from Journal 18.0's Codable metadata and the 11.11 source at 61e91e04.
         let modernData = try source.pwJournalTransferData(.current)
         let modern = try JSONDecoder().decode([String: JSONValue].self, from: modernData)
@@ -113,8 +132,10 @@ final class JournalFileTests: XCTestCase {
         XCTAssertNil(modernIngestions[0]["location"])
         XCTAssertNil(modernIngestions[0]["administrationSite"])
         XCTAssertEqual(modernIngestions[0]["stomachFullness"], .string("QUARTERFULL"))
-        XCTAssertEqual(modernIngestions.count, 1)
+        XCTAssertEqual(modernIngestions.count, 2)
         XCTAssertEqual(modernIngestions.first?["isUnconfirmed"], .bool(false))
+        XCTAssertEqual(modernIngestions.last?["isUnconfirmed"], .bool(true))
+        XCTAssertNil(modernIngestions.last?["confirmationBatchID"])
         let modernRoundTrip = try JournalFile.read(modernData)
         XCTAssertEqual(modernRoundTrip.customUnits.first?.originalUnit, "mg")
         XCTAssertEqual(modernRoundTrip.customUnits.first?.dose, 20)
@@ -561,10 +582,17 @@ final class JournalFileTests: XCTestCase {
         ingestion.consumerName = "Someone"
         ingestion.customUnit = unit
         ingestion.experience = experience
+        ingestion.isHiddenInTimeline = true
+        ingestion.stomachFullness = "halfFull"
+        let companion = SubstanceCompanion(context: source)
+        companion.substanceName = "Ketamine"
+        companion.isHiddenInTimeline = true
+        ingestion.substanceCompanion = companion
         let rating = ShulginRating(context: source)
         rating.creationDate = Date(timeIntervalSince1970: 6_000)
         rating.option = ShulginRatingOption.twoPlus.rawValue
         rating.experience = experience
+        rating.isHiddenInTimeline = true
         let customSubstance = CustomSubstance(context: source)
         customSubstance.name = "Coffee"
         customSubstance.units = "cups"
@@ -594,6 +622,7 @@ final class JournalFileTests: XCTestCase {
         XCTAssertTrue(importedExperience.isFavorite)
         XCTAssertEqual(importedExperience.ratingsUnwrapped.first?.optionUnwrapped, .twoPlus)
         XCTAssertNil(importedExperience.ratingsUnwrapped.first?.time)
+        XCTAssertEqual(importedExperience.ratingsUnwrapped.first?.isHiddenInTimeline, true)
         XCTAssertEqual(importedExperience.sortDate, experience.sortDate)
         let importedIngestion = try XCTUnwrap(importedExperience.ingestionsSorted.first)
         XCTAssertEqual(importedIngestion.time, ingestion.time)
@@ -604,6 +633,9 @@ final class JournalFileTests: XCTestCase {
         XCTAssertEqual(importedIngestion.customUnit?.dose, 20)
         XCTAssertNotNil(importedIngestion.identifier)
         XCTAssertEqual(importedIngestion.substanceCompanion?.substanceName, "Ketamine")
+        XCTAssertTrue(importedIngestion.isHiddenInTimeline)
+        XCTAssertEqual(importedIngestion.stomachFullness, "halfFull")
+        XCTAssertEqual(importedIngestion.substanceCompanion?.isHiddenInTimeline, true)
         let importedSubstance = try XCTUnwrap(target.fetch(CustomSubstance.fetchRequest()).first)
         XCTAssertEqual(importedSubstance.units, "cups")
         XCTAssertEqual(importedSubstance.explanation, "Bitter")

@@ -312,6 +312,7 @@ extension AssistantToolbox {
     request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
       request.predicate ?? NSPredicate(value: true),
       NSPredicate(format: "substanceName IN %@ AND time <= %@", substanceNames, Date.now as NSDate),
+      Ingestion.confirmedPredicate,
     ])
     request.fetchLimit = 1
     return try context.fetch(request).first
@@ -324,6 +325,7 @@ extension AssistantToolbox {
     request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
       request.predicate ?? NSPredicate(value: true),
       NSPredicate(format: "time <= %@ AND (time >= %@ OR endTime >= %@)", now as NSDate, start as NSDate, start as NSDate),
+      Ingestion.confirmedPredicate,
     ])
     request.fetchLimit = limits.maxIngestions
     let ingestions = try context.fetch(request).reversed().map { ingestion -> JSONValue in

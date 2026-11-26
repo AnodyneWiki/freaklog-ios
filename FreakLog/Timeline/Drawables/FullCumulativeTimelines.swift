@@ -25,13 +25,6 @@ struct FullCumulativeTimelines: TimelineDrawable {
         let isIngestionPoint: Bool
     }
 
-    struct WeightedLineRelativeToFirst {
-        let startTimeRelativeToGroupInSeconds: TimeInterval
-        let horizontalWeight: Double
-        let height: Double
-        let onsetDelayInHours: Double
-    }
-
     struct Point {
         let x: Double
         let y: Double
@@ -67,62 +60,50 @@ struct FullCumulativeTimelines: TimelineDrawable {
         graphStartTime: Date,
         areSubstanceHeightsIndependent: Bool
     ) {
-        let rangeLineSegments = weightedLines.flatMap { weightedLine in
-            FullCumulativeTimelines.getRangeLineSegments(
-                graphStartTime: graphStartTime,
-                weightedLine: weightedLine,
-                onset: onset,
-                comeup: comeup,
-                peak: peak,
-                offset: offset
+        self.init(
+            weightedLines: weightedLines,
+            lineSegments: Self.lineSegments(
+                weightedLines: weightedLines, graphStartTime: graphStartTime,
+                onset: onset, comeup: comeup, peak: peak, offset: offset
+            ),
+            graphStartTime: graphStartTime,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
+    }
+
+    init(
+        combinedRoutes: [TimelineModel.RoaGroup],
+        graphStartTime: Date,
+        areSubstanceHeightsIndependent: Bool
+    ) {
+        let segments = combinedRoutes.flatMap { route -> [LineSegment] in
+            guard let phases = route.roaDuration?.fullPhases else { return [] }
+            return Self.lineSegments(
+                weightedLines: route.weightedLines, graphStartTime: graphStartTime,
+                onset: phases.onset, comeup: phases.comeup, peak: phases.peak, offset: phases.offset
             )
         }
+        self.init(
+            weightedLines: combinedRoutes.flatMap(\.weightedLines),
+            lineSegments: segments,
+            graphStartTime: graphStartTime,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )
+    }
+
+    private init(
+        weightedLines: [WeightedLine],
+        lineSegments: [LineSegment],
+        graphStartTime: Date,
+        areSubstanceHeightsIndependent: Bool
+    ) {
         self.areSubstanceHeightsIndependent = areSubstanceHeightsIndependent
-        let weightedRelatives = weightedLines.filter { $0.endTime == nil }.map { weightedLine in
-            WeightedLineRelativeToFirst(
-                startTimeRelativeToGroupInSeconds: weightedLine.startTime.timeIntervalSince1970 - graphStartTime.timeIntervalSince1970,
-                horizontalWeight: weightedLine.horizontalWeight,
-                height: weightedLine.strengthRelativeToCommonDose,
-                onsetDelayInHours: weightedLine.onsetDelayInHours
-            )
-        }
-        let lineSegments = weightedRelatives.flatMap { weightedRelative in
-            var result = [LineSegment]()
-            let onsetAndComeupWeight = 0.5
-            let onsetEndX = weightedRelative.startTimeRelativeToGroupInSeconds + weightedRelative.onsetDelayInHours * 60 * 60 + onset.interpolateLinearly(at: onsetAndComeupWeight)
-            let comeupStartPoint = Point(x: onsetEndX, y: 0)
-            let comeupEndX = onsetEndX + comeup.interpolateLinearly(at: onsetAndComeupWeight)
-            let peakStartPoint = Point(x: comeupEndX, y: weightedRelative.height)
-            result.append(
-                LineSegment(
-                    start: comeupStartPoint,
-                    end: peakStartPoint
-                )
-            )
-            let peakEndX = comeupEndX + (peak.interpolateLinearly(at: weightedRelative.horizontalWeight))
-            let peakEndPoint = Point(x: peakEndX, y: weightedRelative.height)
-            result.append(
-                LineSegment(
-                    start: peakStartPoint,
-                    end: peakEndPoint
-                )
-            )
-            let offsetEndX = peakEndX + offset.interpolateLinearly(at: weightedRelative.horizontalWeight)
-            let offsetEndPoint = Point(x: offsetEndX, y: 0)
-            result.append(
-                LineSegment(
-                    start: peakEndPoint,
-                    end: offsetEndPoint
-                )
-            )
-            return result
-        } + rangeLineSegments
         let linePoints = Set(lineSegments.flatMap { lineSegment in
             [lineSegment.start.x, lineSegment.end.x]
         }).map { point in FinalPoint(x: point, y: 0, isIngestionPoint: false) }
-        let ingestionPoints = weightedRelatives.map { relative in
+        let ingestionPoints = weightedLines.filter { $0.endTime == nil }.map { line in
             FinalPoint(
-                x: relative.startTimeRelativeToGroupInSeconds,
+                x: graphStartTime.distance(to: line.startTime),
                 y: 0,
                 isIngestionPoint: true
             )
@@ -143,6 +124,35 @@ struct FullCumulativeTimelines: TimelineDrawable {
             lhs.x < rhs.x
         }
         finalPoints = sortedPoints
+    }
+
+    private static func lineSegments(
+        weightedLines: [WeightedLine],
+        graphStartTime: Date,
+        onset: FullDurationRange,
+        comeup: FullDurationRange,
+        peak: FullDurationRange,
+        offset: FullDurationRange
+    ) -> [LineSegment] {
+        weightedLines.flatMap { line in
+            if line.endTime != nil {
+                return getRangeLineSegments(
+                    graphStartTime: graphStartTime, weightedLine: line,
+                    onset: onset, comeup: comeup, peak: peak, offset: offset
+                )
+            }
+            let onsetEnd = graphStartTime.distance(to: line.startTime)
+                + line.onsetDelayInHours * 3600 + onset.interpolateLinearly(at: 0.5)
+            let peakStart = onsetEnd + comeup.interpolateLinearly(at: 0.5)
+            let peakEnd = peakStart + peak.interpolateLinearly(at: line.horizontalWeight)
+            let end = peakEnd + offset.interpolateLinearly(at: line.horizontalWeight)
+            return getLineSegments(points: [
+                Point(x: onsetEnd, y: 0),
+                Point(x: peakStart, y: line.strengthRelativeToCommonDose),
+                Point(x: peakEnd, y: line.strengthRelativeToCommonDose),
+                Point(x: end, y: 0)
+            ])
+        }
     }
 
     func draw(

@@ -19,6 +19,7 @@ class Navigator: ObservableObject {
     }
     // The time a new ingestion starts at, handed to the add ingestion screens; nil is now
     @Published private(set) var addIngestionStartTime: Date?
+    @Published private(set) var addIngestionEndTime: Date?
     @Published private(set) var ingestionPrefill: IngestionPrefill?
 
     @Published var selectedTab: Tab = .journal
@@ -55,6 +56,15 @@ class Navigator: ObservableObject {
 
     func openLatestExperience() {
         openInJournal(PersistenceController.shared.getLatestExperience())
+    }
+
+    func openActivityExperience(at uri: URL) {
+        let context = PersistenceController.shared.viewContext
+        let experience = context.persistentStoreCoordinator?.managedObjectID(forURIRepresentation: uri).flatMap {
+            (try? context.existingObject(with: $0) as? Experience).flatMap { $0.isDeleted ? nil : $0 }
+        }
+        journalTabPath = NavigationPath()
+        openInJournal(experience)
     }
 
     private func openInJournal(_ experience: Experience?) {
@@ -99,10 +109,11 @@ class Navigator: ObservableObject {
         showAddIngestionFullScreenCover()
     }
 
-    func showAddIngestionFullScreenCover(startingAt startTime: Date? = nil) {
+    func showAddIngestionFullScreenCover(startingAt startTime: Date? = nil, endingAt endTime: Date? = nil) {
         guard !isShowingAddIngestionSheet else { return }
         ingestionPrefill = nil
         addIngestionStartTime = startTime
+        addIngestionEndTime = endTime
         isShowingAddIngestionSheet = true
     }
 
@@ -112,12 +123,17 @@ class Navigator: ObservableObject {
         journalTabPath.removeLast(journalTabPath.count)
         ingestionPrefill = prefill
         addIngestionStartTime = prefill.time
+        addIngestionEndTime = nil
         isShowingAddIngestionSheet = true
         return true
     }
 }
 
 private struct AddIngestionStartTimeKey: EnvironmentKey {
+    static let defaultValue: Date? = nil
+}
+
+private struct AddIngestionEndTimeKey: EnvironmentKey {
     static let defaultValue: Date? = nil
 }
 
@@ -129,6 +145,11 @@ extension EnvironmentValues {
     var addIngestionStartTime: Date? {
         get { self[AddIngestionStartTimeKey.self] }
         set { self[AddIngestionStartTimeKey.self] = newValue }
+    }
+
+    var addIngestionEndTime: Date? {
+        get { self[AddIngestionEndTimeKey.self] }
+        set { self[AddIngestionEndTimeKey.self] = newValue }
     }
 
     var ingestionPrefillNote: String? {

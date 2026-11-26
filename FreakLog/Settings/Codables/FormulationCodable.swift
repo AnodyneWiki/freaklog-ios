@@ -124,7 +124,8 @@ struct FormulationCodable: Codable, Hashable {
         dose: dose.map { $0 * amount },
         units: units,
         isEstimate: isEstimate,
-        estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation.map { $0 * amount } : nil)
+        estimatedDoseStandardDeviation: isEstimate ? estimatedDoseStandardDeviation.map { $0 * amount } : nil,
+        isHiddenInTimeline: isHiddenInTimeline)
     }
 
     func scaled(by quantity: Double) -> Self? {
@@ -272,6 +273,7 @@ extension FormulationCodable {
       component.dose = value.dose ?? 0
       component.units = value.units
       component.isEstimate = value.isEstimate
+      component.isHiddenInTimeline = value.isHiddenInTimeline
       component.estimatedDoseStandardDeviation = value.estimatedDoseStandardDeviation ?? 0
       component.blendPathData = value.blendPath.isEmpty ? nil : try? JSONEncoder().encode(value.blendPath)
       component.formulation = formulation

@@ -2,13 +2,14 @@ import SwiftUI
 
 struct UnifiedSearchFilters {
     enum JournalType: CaseIterable {
-        case all, experiences, ingestions
+        case all, experiences, ingestions, notes
 
         var title: String {
             switch self {
             case .all: String(localized: "All Entries")
             case .experiences: String(localized: "Experiences")
             case .ingestions: String(localized: "Ingestions")
+            case .notes: String(localized: "Timed Notes")
             }
         }
     }
@@ -27,6 +28,7 @@ struct UnifiedSearchFilters {
 
     var journalType = JournalType.all
     var ingestionKind = UnifiedJournalQuery.IngestionKind.any
+    var noteDetails = TimedNoteDetails()
     var libraryType = LibraryType.all
     var categories: Set<String> = []
     var personalTag: String?
@@ -34,6 +36,12 @@ struct UnifiedSearchFilters {
 
     var libraryIsFiltered: Bool {
         libraryType != .all || !categories.isEmpty || personalTag != nil || untaggedOnly
+    }
+
+    mutating func clearJournal() {
+        journalType = .all
+        ingestionKind = .any
+        noteDetails = TimedNoteDetails()
     }
 
     mutating func clearLibrary() {
@@ -63,12 +71,30 @@ struct UnifiedSearchFilterScreen: View {
                                 Text(type.title).tag(type)
                             }
                         }
-                        Picker("Logged As", selection: $filters.ingestionKind) {
-                            ForEach(UnifiedJournalQuery.IngestionKind.allCases, id: \.self) { kind in
-                                Text(kind.title).tag(kind)
+                        if filters.journalType != .notes {
+                            Picker("Logged As", selection: $filters.ingestionKind) {
+                                ForEach(UnifiedJournalQuery.IngestionKind.allCases, id: \.self) { kind in
+                                    Text(kind.title).tag(kind)
+                                }
                             }
                         }
                         Toggle("Favorite Experiences Only", isOn: $favoritesOnly)
+                    }
+                    if filters.journalType == .notes {
+                        Section("Note Details") {
+                            Picker("Mood", selection: $filters.noteDetails.mood) {
+                                Text("Any").tag(nil as TimedNoteMood?)
+                                ForEach(TimedNoteMood.allCases, id: \.self) { mood in
+                                    Text(mood.title).tag(Optional(mood))
+                                }
+                            }
+                            Picker("Energy", selection: $filters.noteDetails.energy) {
+                                Text("Any").tag(nil as TimedNoteEnergy?)
+                                ForEach(TimedNoteEnergy.allCases, id: \.self) { energy in
+                                    Text(energy.title).tag(Optional(energy))
+                                }
+                            }
+                        }
                     }
                 }
                 if scope.includesLibrary {

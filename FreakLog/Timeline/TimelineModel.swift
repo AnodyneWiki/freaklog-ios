@@ -2,6 +2,9 @@ import Foundation
 import SwiftUI
 
 struct TimelineModel: Hashable {
+    static let combinesComparableRoutesKey = "timelineCombinesComparableRoutes"
+    static let showsQuantityDetailsKey = "timelineShowsQuantityDetails"
+
     static func == (lhs: TimelineModel, rhs: TimelineModel) -> Bool {
         lhs.contentHash == rhs.contentHash
     }
@@ -20,6 +23,35 @@ struct TimelineModel: Hashable {
     let ratingDrawables: [RatingDrawable]
     let timedNoteDrawables: [TimedNoteDrawable]
     let axisDrawable: AxisDrawable
+    let supportsCombiningRoutes: Bool
+    private let effectEstimates: [TimelineEffectEstimate]
+    private let unmodeledIngestionTimes: [Date]
+
+    func effectEstimate(at time: Date) -> TimelineEffectEstimate? {
+        guard !unmodeledIngestionTimes.contains(where: { $0 <= time }) else { return nil }
+        let active = effectEstimates.filter { $0.start <= time && time < $0.end }
+        return active.count == 1 ? active.first : nil
+    }
+
+    func phaseUpdateDates(from time: Date) -> [Date] {
+        let boundaries = effectEstimates.flatMap { [$0.start, $0.onsetEnd, $0.peakStart, $0.peakEnd, $0.end] }
+        return [time] + Set(boundaries + unmodeledIngestionTimes).filter { $0 > time }.sorted()
+    }
+
+    // A live activity can use a single stable interval without following edits or overlapping curves.
+    var singleEffectEstimate: TimelineEffectEstimate? {
+        guard unmodeledIngestionTimes.isEmpty, effectEstimates.count == 1 else { return nil }
+        return effectEstimates.first
+    }
+
+    var timeRange: ClosedRange<Date> {
+        startTime...startTime.addingTimeInterval(max(0, totalWidth))
+    }
+
+    func clampingTime(_ time: Date) -> Date {
+        let range = timeRange
+        return min(range.upperBound, max(range.lowerBound, time))
+    }
 
     var isWorthDrawing: Bool {
         let allHaveMissingDuration = groupDrawables.allSatisfy { groupDrawable in
@@ -33,6 +65,7 @@ struct TimelineModel: Hashable {
         let roaDuration: RoaDuration?
         let weightedLines: [WeightedLine]
         let ingestionRanges: [IngestionRange]
+        let canCombine: Bool
     }
 
     // swiftlint:disable function_body_length
@@ -42,7 +75,9 @@ struct TimelineModel: Hashable {
         everythingForEachTimedNote: [EverythingForOneTimedNote],
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool,
-        visibleTimeRange: ClosedRange<Date>? = nil
+        visibleTimeRange: ClosedRange<Date>? = nil,
+        alignedTimeRange: ClosedRange<Date>? = nil,
+        combinesComparableRoutes: Bool = false
     ) {
 
         let startTime: Date
@@ -52,7 +87,9 @@ struct TimelineModel: Hashable {
             everythingForEachTimedNote: everythingForEachTimedNote
         )
         
-        if let visibleTimeRange {
+        if let alignedTimeRange {
+            startTime = alignedTimeRange.lowerBound
+        } else if let visibleTimeRange {
             startTime = max(visibleTimeRange.lowerBound, contentStartTime)
         } else {
             startTime = contentStartTime
@@ -60,9 +97,12 @@ struct TimelineModel: Hashable {
         self.startTime = startTime
 
         let substanceGroupsWithRepoInfo = getSubstanceGroupWithRepoInfo(substanceIngestionGroups: substanceGroups)
-        var roaGroups: [RoaGroup] = []
-        for substanceGroup in substanceGroupsWithRepoInfo {
-            for routeGroup in substanceGroup.routeGroups {
+        var estimates: [TimelineEffectEstimate] = []
+        var unmodeled: [Date] = []
+        var canCombineRoutes = false
+        var groupDrawables: [GroupDrawable] = []
+        let roaGroups = zip(substanceGroups, substanceGroupsWithRepoInfo).flatMap { substance, resolvedSubstance in
+            let routes = zip(substance.routeMinInfos, resolvedSubstance.routeGroups).map { route, routeGroup in
                 let ingestionRanges = routeGroup.ingestions.compactMap { ingestion in
                     if let endTime = ingestion.endTime {
                         IngestionRange(startTime: ingestion.time, endTime: endTime)
@@ -70,8 +110,15 @@ struct TimelineModel: Hashable {
                         nil
                     }
                 }
-                let group = RoaGroup(
-                    color: substanceGroup.color,
+                for ingestion in route.ingestions {
+                    if let estimate = TimelineEffectEstimate(substance: substance.substanceName, route: route, ingestion: ingestion) {
+                        estimates.append(estimate)
+                    } else {
+                        unmodeled.append(ingestion.time)
+                    }
+                }
+                return RoaGroup(
+                    color: resolvedSubstance.color,
                     roaDuration: routeGroup.roaDuration,
                     weightedLines: routeGroup.ingestions.map { ingestion in
                         WeightedLine(
@@ -82,23 +129,42 @@ struct TimelineModel: Hashable {
                             onsetDelayInHours: ingestion.onsetDelayInHours
                         )
                     },
-                    ingestionRanges: ingestionRanges
+                    ingestionRanges: ingestionRanges,
+                    canCombine: route.canCombine
                 )
-                roaGroups.append(group)
             }
+            let comparable = routes.filter(\.canCombine)
+            let references = substance.routeMinInfos.filter(\.canCombine)
+            let referenceUnits = Set(references.compactMap(\.commonDoseUnits))
+            let referenceDoses = Set(references.compactMap(\.commonDose))
+            let canCombine = comparable.count > 1 && referenceUnits.count == 1 && referenceDoses.count == 1
+            canCombineRoutes = canCombineRoutes || canCombine
+            let combines = combinesComparableRoutes && canCombine
+            if combines {
+                groupDrawables.append(GroupDrawable(
+                    startGraph: startTime,
+                    color: resolvedSubstance.color,
+                    combinedRoutes: comparable,
+                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                ))
+            }
+            for group in routes where !combines || !group.canCombine {
+                groupDrawables.append(GroupDrawable(
+                    startGraph: startTime,
+                    color: group.color,
+                    roaDuration: group.roaDuration,
+                    weightedLines: group.weightedLines,
+                    areRedosesDrawnIndividually: areRedosesDrawnIndividually,
+                    areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+                ))
+            }
+            return routes
         }
-        var groupDrawables = roaGroups.map { group in
-            GroupDrawable(
-                startGraph: startTime,
-                color: group.color,
-                roaDuration: group.roaDuration,
-                weightedLines: group.weightedLines,
-                areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-                areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
-            )
-        }.sorted { lhs, rhs in
-            lhs.startInSeconds < rhs.startInSeconds
-        } // sort makes sure that lines are always drawn in the same order such that lines with a later ingestion time are drawn on top.
+        supportsCombiningRoutes = canCombineRoutes
+        effectEstimates = estimates
+        unmodeledIngestionTimes = unmodeled
+        // Later ingestion curves are drawn on top.
+        groupDrawables.sort { $0.startInSeconds < $1.startInSeconds }
         let maxHeight = groupDrawables.map { group in
             group.nonNormalizedHeight
         }.max() ?? 1
@@ -142,7 +208,9 @@ struct TimelineModel: Hashable {
         let calculatedMaxWidth: TimeInterval = (widthOfTimelinesAndRatings.max() ?? sixHours)
         
         let finalWidth: TimeInterval
-        if let visibleTimeRange {
+        if let alignedTimeRange {
+            finalWidth = alignedTimeRange.upperBound.timeIntervalSince(startTime)
+        } else if let visibleTimeRange {
             let currentTime = visibleTimeRange.upperBound
             let windowDurationFromStart = currentTime.timeIntervalSince(startTime)
             
@@ -183,6 +251,7 @@ struct TimelineModel: Hashable {
         }
         hasher.combine(areRedosesDrawnIndividually)
         hasher.combine(areSubstanceHeightsIndependent)
+        hasher.combine(combinesComparableRoutes)
         contentHash = hasher.finalize()
     }
     // swiftlint:enable function_body_length
@@ -199,5 +268,72 @@ struct TimelineModel: Hashable {
         }
         let potentialStartTimes = ingestionTimes + everythingForEachRating.map { $0.time } + everythingForEachTimedNote.map { $0.time }
         return potentialStartTimes.min() ?? Date()
+    }
+}
+
+struct TimelineEffectEstimate {
+    enum Phase: String {
+        case onset = "Onset"
+        case rising = "Come-up"
+        case peak = "Peak"
+        case fading = "Offset"
+    }
+
+    let substance: String
+    let route: AdministrationRoute
+    let start: Date
+    let onsetEnd: Date
+    let peakStart: Date
+    let peakEnd: Date
+    let end: Date
+    private let recordedAmount: Double?
+    let amountUnit: String?
+
+    init?(substance: String, route: RouteMinInfo, ingestion: IngestionMinInfo) {
+        guard ingestion.endTime == nil, let durations = route.roaDuration?.fullPhases,
+              ingestion.onsetDelayInHours.isFinite, ingestion.onsetDelayInHours >= 0,
+              ingestion.horizontalWeight.isFinite, (0...1).contains(ingestion.horizontalWeight),
+              [durations.onset, durations.comeup, durations.peak, durations.offset].allSatisfy({
+                  $0.min.isFinite && $0.max.isFinite && $0.min >= 0 && $0.max >= $0.min
+              }) else { return nil }
+        self.substance = substance
+        self.route = route.route
+        start = ingestion.time
+        onsetEnd = start.addingTimeInterval(ingestion.onsetDelayInHours * 3600 + durations.onset.interpolateLinearly(at: 0.5))
+        peakStart = onsetEnd.addingTimeInterval(durations.comeup.interpolateLinearly(at: 0.5))
+        peakEnd = peakStart.addingTimeInterval(durations.peak.interpolateLinearly(at: ingestion.horizontalWeight))
+        end = peakEnd.addingTimeInterval(durations.offset.interpolateLinearly(at: ingestion.horizontalWeight))
+        guard peakStart < end, end.timeIntervalSinceReferenceDate.isFinite else { return nil }
+        if let units = route.commonDoseUnits, units == ingestion.doseUnits,
+           let dose = ingestion.dose, dose.isFinite, dose > 0 {
+            recordedAmount = dose
+            amountUnit = units
+        } else {
+            recordedAmount = nil
+            amountUnit = nil
+        }
+    }
+
+    func phase(at time: Date) -> (phase: Phase, transition: Date)? {
+        guard time >= start, time < end else { return nil }
+        if time < onsetEnd { return (.onset, onsetEnd) }
+        if time < peakStart { return (.rising, peakStart) }
+        if time < peakEnd { return (.peak, peakEnd) }
+        return (.fading, end)
+    }
+
+    func fractionOfPeak(at time: Date) -> Double? {
+        guard let phase = phase(at: time)?.phase else { return nil }
+        switch phase {
+        case .onset: return 0
+        case .rising: return time.timeIntervalSince(onsetEnd) / peakStart.timeIntervalSince(onsetEnd)
+        case .peak: return 1
+        case .fading: return end.timeIntervalSince(time) / end.timeIntervalSince(peakEnd)
+        }
+    }
+
+    func curveScaledAmount(at time: Date) -> Double? {
+        guard let recordedAmount, let fraction = fractionOfPeak(at: time), fraction > 0 else { return nil }
+        return recordedAmount * fraction
     }
 }

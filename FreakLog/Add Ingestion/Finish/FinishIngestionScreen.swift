@@ -24,23 +24,34 @@ struct FinishIngestionScreen: View {
     // like the substances of a formulation
     @State private var ingestions: [FinishIngestionScreenArguments]
     let dismiss: () -> Void
+    private let onStage: ((StagedIngestion) -> Void)?
 
-    init(arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void) {
-        self.init(ingestions: [arguments], dismiss: dismiss)
+    init(
+        arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void,
+        onStage: ((StagedIngestion) -> Void)? = nil
+    ) {
+        self.init(ingestions: [arguments], dismiss: dismiss, onStage: onStage)
     }
 
-    init(ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void) {
+    init(
+        ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void,
+        onStage: ((StagedIngestion) -> Void)? = nil
+    ) {
         _ingestions = State(initialValue: ingestions)
         self.dismiss = dismiss
+        self.onStage = onStage
     }
 
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
+    @Environment(\.addIngestionEndTime) private var endTime
     @Environment(\.ingestionPrefillNote) private var prefillNote
     @Environment(\.routineOccurrenceSlot) private var routineSlot
+    @Environment(\.requiresIngestionAmount) private var requiresAmount
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
+    @State private var explicitlyChosenColors: Set<String> = []
     @State private var selectedTime = Date()
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedEndTime = Date().addingTimeInterval(30*60)
@@ -51,22 +62,22 @@ struct FinishIngestionScreen: View {
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
     @State private var usedColors = [SubstanceColor]()
-    @State private var foundCompanions: [String: SubstanceCompanion] = [:]
 
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
     @State private var hasSelectedExperience = false
     @State private var saveError: String?
-    @State private var stockContainerID: NSManagedObjectID?
     @State private var isSettingUpLoggedRoutine = false
+    @State private var stockContainerID: NSManagedObjectID?
     @State private var wantsToStartLiveActivity = true
+    @State private var isUnconfirmed = false
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
 
-    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var defaultSendWebhooks = false
+    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var defaultSendWebhooks: Bool = false
     @State private var sendRoutineWebhooks = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
     @State private var hasInitializedWebhooks = false
@@ -80,13 +91,22 @@ struct FinishIngestionScreen: View {
     }
 
     var doneButton: some View {
-        Button("Log") { save() }
+        Button(onStage != nil ? "Add to Batch" : isUnconfirmed ? "Save Unconfirmed" : "Log", action: save)
             .font(.headline)
-            .disabled(isSettingUpLoggedRoutine)
+            .disabled(isSettingUpLoggedRoutine || needsAmount)
     }
 
-    private func save(then routine: RoutineDraft? = nil) {
-        guard !isSettingUpLoggedRoutine else { return }
+    private func save() {
+        guard !needsAmount else { return }
+        if let onStage {
+            onStage(stagedIngestion)
+        } else {
+            save(then: nil)
+        }
+    }
+
+    private func save(then routine: RoutineDraft?) {
+        guard !isSettingUpLoggedRoutine, !needsAmount else { return }
         do {
             try addIngestionWithExperience()
             generateSuccessHaptic()
@@ -112,23 +132,32 @@ struct FinishIngestionScreen: View {
                 }
             }
             ingestionSummary
-            if let inventoryUse = Inventory.Use(ingestions) {
-                InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
-            }
             Section("When") {
-                if let routineSlot {
-                    LabeledContent("Scheduled") {
-                        Text(routineSlot.scheduledAt, format: .dateTime.month().day().hour().minute())
-                    }
-                }
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
                     selectedTime: $selectedTime,
                     selectedEndTime: $selectedEndTime,
                     showsPresets: true
                 )
+                if let routineSlot {
+                    LabeledContent("Scheduled") {
+                        Text(routineSlot.scheduledAt, format: .dateTime.month().day().hour().minute())
+                    }
+                }
             }
-            experienceSection
+            if onStage == nil {
+                experienceSection
+            }
+            Section {
+                Toggle("Unconfirmed", isOn: $isUnconfirmed)
+            } footer: {
+                if isUnconfirmed {
+                    Text("Confirm this entry in Journal to count it in totals, use stock, or send webhooks.")
+                }
+            }
+            if !isUnconfirmed, let inventoryUse = Inventory.Use(ingestions) {
+                InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
+            }
             Section("Details") {
                 TextField("Note", text: $enteredNote, axis: .vertical)
                     .textInputAutocapitalization(.sentences)
@@ -137,25 +166,24 @@ struct FinishIngestionScreen: View {
                     AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
                 }
                 LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-                if #available(iOS 16.2, *), selectedExperience == nil,
+                if #available(iOS 16.2, *), onStage == nil, selectedExperience == nil, !isUnconfirmed,
                    LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive,
                    selectedTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
                     Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity)
                 }
                 displayOptions
             }
-            if !enabledWebhookPresets.isEmpty {
+            if !isUnconfirmed, !enabledWebhookPresets.isEmpty {
                 sharingSection
             }
-            if let routineDraft {
+            if onStage == nil, !isUnconfirmed, let routineDraft {
                 Section {
                     Button("Log and Save as Routine…") { save(then: routineDraft) }
-                        .disabled(isSettingUpLoggedRoutine)
                 }
             }
         }
         .onChange(of: selectedTimeRange) { _ in
-            selectExperienceBasedOnCurrentTime()
+            if onStage == nil { selectExperienceBasedOnCurrentTime() }
         }
         .onAppear {
             generator.prepare()
@@ -200,9 +228,14 @@ struct FinishIngestionScreen: View {
             }
             if let startTime {
                 selectedTime = startTime
-                selectedEndTime = startTime.addingTimeInterval(30*60)
+                if let endTime, endTime > startTime {
+                    selectedTimePickerOption = .timeRange
+                    selectedEndTime = endTime
+                } else {
+                    selectedEndTime = startTime.addingTimeInterval(30*60)
+                }
             }
-            selectExperienceBasedOnCurrentTime()
+            if onStage == nil { selectExperienceBasedOnCurrentTime() }
             locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
             initializeColorCompanionAndNote()
         }
@@ -226,14 +259,24 @@ struct FinishIngestionScreen: View {
                     summary(for: ingestion)
                 }
             }
+            if needsAmount {
+                Button("Enter Amount") { sheetToShow = .editMeasurement }
+            }
         }
+    }
+
+    private var needsAmount: Bool {
+        requiresAmount && ingestions.first?.dose.map { $0.isFinite && $0 > 0 } != true
     }
 
     private func summary(for ingestion: FinishIngestionScreenArguments) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
                 .font(.headline)
-            Text(doseDescription(for: ingestion))
+            if requiresAmount, let unitName = ingestion.customUnit?.nameUnwrapped, !unitName.isEmpty {
+                Text(unitName).font(.subheadline).foregroundStyle(.secondary)
+            }
+            Text(ingestion.reviewAmount)
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
             Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
@@ -312,21 +355,6 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    private func doseDescription(for ingestion: FinishIngestionScreenArguments) -> String {
-        guard let dose = ingestion.dose else { return "Unknown amount" }
-        return dose.doseDescription(
-            units: ingestion.customUnit?.unitUnwrapped ?? ingestion.units ?? "",
-            isEstimate: ingestion.isEstimate,
-            standardDeviation: ingestion.estimatedDoseStandardDeviation
-        )
-    }
-
-    private func initializeWebhooks(with availableIDs: [UUID]) {
-        guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
-        selectedWebhookPresetIDs = Set(availableIDs)
-        hasInitializedWebhooks = true
-    }
-
     private var routineDraft: RoutineDraft? {
         guard routineSlot == nil, let first = ingestions.first else { return nil }
         let product: NSManagedObject
@@ -356,8 +384,10 @@ struct FinishIngestionScreen: View {
         return RoutineDraft(schedule: schedule, productID: product.objectID)
     }
 
-    private var sendWebhooks: Binding<Bool> {
-        routineSlot == nil ? $defaultSendWebhooks : $sendRoutineWebhooks
+    private func initializeWebhooks(with availableIDs: [UUID]) {
+        guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
+        selectedWebhookPresetIDs = Set(availableIDs)
+        hasInitializedWebhooks = true
     }
 
     private var webhookRecipients: String {
@@ -365,6 +395,10 @@ struct FinishIngestionScreen: View {
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.displayName)
         return names.isEmpty ? "None" : names.formatted(.list(type: .and))
+    }
+
+    private var sendWebhooks: Binding<Bool> {
+        routineSlot == nil ? $defaultSendWebhooks : $sendRoutineWebhooks
     }
 
     func selectExperienceBasedOnCurrentTime() {
@@ -398,6 +432,7 @@ struct FinishIngestionScreen: View {
             selectedColors[substanceName] ?? .fallback
         } set: { color in
             selectedColors[substanceName] = color
+            explicitlyChosenColors.insert(substanceName)
         }
     }
 
@@ -406,7 +441,6 @@ struct FinishIngestionScreen: View {
         usedColors = companions.map(\.color)
         for substanceName in substanceNames {
             if let companion = companions.first(where: { $0.substanceNameUnwrapped == substanceName }) {
-                foundCompanions[substanceName] = companion
                 selectedColors[substanceName] = companion.color
             } else {
                 // New substances logged together get different colors too
@@ -415,113 +449,36 @@ struct FinishIngestionScreen: View {
         }
     }
 
+    private var stagedIngestion: StagedIngestion {
+        StagedIngestion(
+            arguments: ingestions,
+            time: selectedTime,
+            endTime: selectedTimePickerOption == .timeRange ? selectedEndTime : nil,
+            note: enteredNote,
+            consumer: consumerName,
+            location: locationManager.selectedLocation,
+            sites: siteSelection,
+            colors: selectedColors,
+            isUnconfirmed: isUnconfirmed,
+            stockContainerID: stockContainerID,
+            webhookPresetIDs: chosenWebhookPresetObjectIDs,
+            explicitlyChosenColors: explicitlyChosenColors
+        )
+    }
+
     func addIngestionWithExperience() throws {
-        let persistence = PersistenceController.shared
-        let context = try persistence.journalEditContext()
-        let selectedLocationValue = locationManager.selectedLocation
-        let isNewExperience = selectedExperience == nil
-        let experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
-            ?? Experience.create(at: selectedTime, title: enteredTitle, in: context)
-        let companions = try Dictionary(uniqueKeysWithValues: substanceNames.map { substanceName in
-            (substanceName, try createOrUpdateCompanion(for: substanceName, with: context))
-        })
-        let newIngestions = try ingestions.map { arguments in
-            try createIngestion(
-                from: arguments,
-                companion: companions[arguments.substanceName],
-                with: experience,
-                location: selectedLocationValue,
-                and: context)
-        }
-        if stockContainerID != nil || routineSlot != nil {
-            try PersistenceController.withJournalStoreWrite {
-                if let routineSlot {
-                    guard let occurrence = try RoutineSchedules.stageLog(
-                        for: routineSlot, in: context, calendar: RoutineSchedules.calendar)
-                    else { throw RoutineSchedules.StorageError.alreadyLogged }
-                    for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
-                }
-                if let stockContainerID {
-                    guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
-                    try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
-                }
-                try PersistenceController.saveJournalChanges(in: context)
-            }
-            IngestionSaving.didSave(newIngestions, newIngestions: newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
-        } else {
-            try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
-        }
-        let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
-        if let savedExperience {
-            startLiveActivityIfWanted(for: savedExperience, isNewExperience: isNewExperience)
+        let saved = try StagedIngestion.persist([stagedIngestion], to: selectedExperience, title: enteredTitle, routineSlot: routineSlot)
+        saved.notifyIntegrations()
+        if selectedExperience == nil, wantsToStartLiveActivity {
+            saved.startLiveActivity()
         }
     }
 
     private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
-        guard sendWebhooks.wrappedValue else { return [] }
+        guard !isUnconfirmed, sendWebhooks.wrappedValue else { return [] }
         return enabledWebhookPresets
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.objectID)
-    }
-
-    // A running activity follows its experience by itself; a new experience starts one, if wanted
-    private func startLiveActivityIfWanted(for experience: Experience, isNewExperience: Bool) {
-        guard #available(iOS 16.2, *), isNewExperience, wantsToStartLiveActivity, experience.isCurrent else { return }
-        Task {
-            await ActivityManager.shared.show(experience)
-        }
-    }
-
-    private func createOrUpdateCompanion(for substanceName: String, with context: NSManagedObjectContext) throws -> SubstanceCompanion {
-        let color = colorBinding(for: substanceName).wrappedValue
-        if let foundCompanion = foundCompanions[substanceName] {
-            let foundCompanion = try PersistenceController.journalObject(foundCompanion, in: context)
-            foundCompanion.colorAsText = color.rawValue
-            return foundCompanion
-        } else {
-            let companion = SubstanceCompanion(context: context)
-            companion.substanceName = substanceName
-            companion.colorAsText = color.rawValue
-            return companion
-        }
-    }
-
-    private func createIngestion(
-        from arguments: FinishIngestionScreenArguments,
-        companion: SubstanceCompanion?,
-        with experience: Experience,
-        location: Location?,
-        and context: NSManagedObjectContext
-    ) throws -> Ingestion {
-        let ingestion = Ingestion(context: context)
-        ingestion.identifier = UUID()
-        ingestion.time = selectedTime
-        if selectedTimePickerOption == .timeRange {
-            ingestion.endTime = selectedEndTime
-        } else {
-            ingestion.endTime = nil
-        }
-        ingestion.creationDate = Date()
-        ingestion.customUnit = try arguments.customUnit.map { try PersistenceController.journalObject($0, in: context) }
-        ingestion.formulation = try arguments.formulation.map { try PersistenceController.journalObject($0, in: context) }
-        ingestion.formulationAmount = arguments.formulationAmount ?? 0
-        ingestion.dose = arguments.dose ?? 0
-        ingestion.units = arguments.units
-        ingestion.isHiddenInTimeline = arguments.isHiddenInTimeline
-        ingestion.isEstimate = arguments.isEstimate
-        ingestion.estimatedDoseStandardDeviation = arguments.estimatedDoseStandardDeviation ?? 0
-        ingestion.note = enteredNote
-        ingestion.administrationRoute = arguments.administrationRoute.rawValue
-        ingestion.substanceName = arguments.substanceName
-        ingestion.color = colorBinding(for: arguments.substanceName).wrappedValue.rawValue
-        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
-        let site = siteSelection.siteString(for: arguments.administrationRoute)
-        ingestion.administrationSite = site.isEmpty ? nil : site
-        ingestion.webhookMessageId = nil
-        ingestion.experience = experience
-        ingestion.setLocation(location)
-        ingestion.substanceCompanion = companion
-        return ingestion
     }
 
     private let generator = UINotificationFeedbackGenerator()
@@ -540,13 +497,26 @@ struct FinishIngestionScreen: View {
 
 // swiftlint:enable type_body_length function_body_length file_length
 
+private struct RequiresIngestionAmountKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var requiresIngestionAmount: Bool {
+        get { self[RequiresIngestionAmountKey.self] }
+        set { self[RequiresIngestionAmountKey.self] = newValue }
+    }
+}
+
 private struct IngestionMeasurementEditor: View {
     let ingestion: FinishIngestionScreenArguments
     let onDone: (FinishIngestionScreenArguments) -> Void
     private let initialAmountText: String
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.requiresIngestionAmount) private var requiresAmount
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @FocusState private var isAmountFocused: Bool
     @State private var route: AdministrationRoute
     @State private var amountText: String
     @State private var didChangeRoute = false
@@ -575,13 +545,14 @@ private struct IngestionMeasurementEditor: View {
         return getDouble(from: amountText)
     }
     private var amountIsValid: Bool {
-        amountText.isEmpty || (amount.map { $0.isFinite && $0 > 0 } ?? false)
+        guard let amount else { return amountText.isEmpty && !requiresAmount }
+        return amount.isFinite && amount > 0
     }
 
     var body: some View {
         NavigationStack {
             Form {
-                if isEyeOpen {
+                if isEyeOpen && !requiresAmount {
                     Section {
                         Picker("Route", selection: $route) {
                             ForEach(AdministrationRoute.allCases) { route in
@@ -602,6 +573,7 @@ private struct IngestionMeasurementEditor: View {
                     }
                     TextField("Amount", text: $amountText)
                         .keyboardType(.decimalPad)
+                        .focused($isAmountFocused)
                     if amount != nil {
                         EstimateFields(
                             isEstimate: $isEstimate,
@@ -611,9 +583,12 @@ private struct IngestionMeasurementEditor: View {
                         )
                     }
                 } footer: {
-                    Text("Leave the amount blank to log it as unknown.")
+                    if !requiresAmount {
+                        Text("Leave the amount blank to log it as unknown.")
+                    }
                 }
             }
+            .onAppear { isAmountFocused = requiresAmount }
             .navigationTitle("Edit Ingestion")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -641,7 +616,7 @@ private struct IngestionMeasurementEditor: View {
     }
 
     private func apply() {
-        let updated = FinishIngestionScreenArguments(
+        var updated = FinishIngestionScreenArguments(
             substanceName: ingestion.substanceName,
             administrationRoute: route,
             dose: amount,
@@ -650,6 +625,7 @@ private struct IngestionMeasurementEditor: View {
             estimatedDoseStandardDeviation: amount != nil && isEstimate ? deviation : nil,
             customUnit: customUnit
         )
+        updated.isHiddenInTimeline = ingestion.isHiddenInTimeline
         onDone(updated)
         dismiss()
     }

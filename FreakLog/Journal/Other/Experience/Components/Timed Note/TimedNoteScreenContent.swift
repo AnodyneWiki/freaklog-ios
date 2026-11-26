@@ -3,6 +3,7 @@ import SwiftUI
 struct TimedNoteScreenContent: View {
     @Binding var time: Date
     @Binding var note: String
+    @Binding var details: TimedNoteDetails
     @Binding var color: SubstanceColor
     @Binding var isPartOfTimeline: Bool
     let isTextFieldFocused: FocusState<Bool>.Binding
@@ -20,6 +21,37 @@ struct TimedNoteScreenContent: View {
                     .autocapitalization(.sentences)
                     .frame(minHeight: 100)
                     .accessibilityLabel("Note")
+            }
+            Section {
+                DisclosureGroup {
+                    Picker("Mood", selection: $details.mood) {
+                        Text("Not Recorded").tag(nil as TimedNoteMood?)
+                        ForEach(TimedNoteMood.allCases, id: \.self) { mood in
+                            Text(mood.title).tag(Optional(mood))
+                        }
+                    }
+                    Picker("Energy", selection: $details.energy) {
+                        Text("Not Recorded").tag(nil as TimedNoteEnergy?)
+                        ForEach(TimedNoteEnergy.allCases, id: \.self) { energy in
+                            Text(energy.title).tag(Optional(energy))
+                        }
+                    }
+                } label: {
+                    Label {
+                        if details.isEmpty {
+                            Text("Add Details")
+                        } else {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Details")
+                                Text([details.mood?.title, details.energy?.title].compactMap { $0 }.formatted())
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    } icon: {
+                        Image(systemName: "list.bullet")
+                    }
+                }
             }
             Section("When") {
                 DatePicker(

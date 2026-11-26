@@ -105,6 +105,39 @@ final class UnifiedSearchTests: XCTestCase {
     }
 
     @MainActor
+    func testTimedNoteSearchMatchesTextMoodAndEnergyOnTheSameNote() throws {
+        let context = try makeContext()
+        let favorite = Experience(context: context)
+        favorite.isFavorite = true
+        let other = Experience(context: context)
+
+        let matching = TimedNote(context: context)
+        matching.experience = favorite
+        matching.note = "After the café visit"
+        matching.details = TimedNoteDetails(mood: .pleasant, energy: .low)
+
+        let older = TimedNote(context: context)
+        older.experience = favorite
+        older.note = "Café visit, older entry"
+
+        let wrongMood = TimedNote(context: context)
+        wrongMood.experience = favorite
+        wrongMood.note = "Café visit, different mood"
+        wrongMood.details = TimedNoteDetails(mood: .neutral, energy: .low)
+
+        let notFavorite = TimedNote(context: context)
+        notFavorite.experience = other
+        notFavorite.note = "Café visit, another experience"
+        notFavorite.details = matching.details
+        try context.save()
+
+        let query = UnifiedJournalQuery(terms: ["cafe", "visit"], customSubstances: [], favoritesOnly: true)
+        XCTAssertEqual(try context.fetch(query.timedNotesRequest(limit: 10, details: matching.details)), [matching])
+        XCTAssertEqual(Set(try context.fetch(query.timedNotesRequest(limit: 10, details: .init()))),
+                       [matching, older, wrongMood])
+    }
+
+    @MainActor
     private func makeContext() throws -> NSManagedObjectContext {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

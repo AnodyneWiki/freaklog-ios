@@ -7,6 +7,8 @@ struct JournalSettingsScreen: View {
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
     @AppStorage(PersistenceController.areRedosesDrawnIndividuallyKey) var areRedosesDrawnIndividually: Bool = true
     @AppStorage(PersistenceController.independentSubstanceHeightKey) var areSubstanceHeightsIndependent: Bool = true
+    @AppStorage(TimelineModel.combinesComparableRoutesKey) private var combinesRoutes = false
+    @AppStorage(TimelineModel.showsQuantityDetailsKey) private var showsQuantityDetails = true
     @AppStorage(PersistenceController.isHidingDosageDotsKey) var isHidingDosageDots: Bool = false
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
@@ -50,7 +52,7 @@ struct JournalSettingsScreen: View {
             } header: {
                 Text("Editing")
             } footer: {
-                Text("Entries linked to inventory always ask for confirmation.")
+                Text("Entries linked to inventory and batches of unconfirmed entries always ask for confirmation.")
             }
 
             Section("Ingestion Overview") {
@@ -66,15 +68,13 @@ struct JournalSettingsScreen: View {
             Section {
                 Toggle("Draw redoses individually", isOn: $areRedosesDrawnIndividually)
                 Toggle("Independent substance heights", isOn: $areSubstanceHeightsIndependent)
+                Toggle("Combine comparable routes", isOn: $combinesRoutes)
+                Toggle("Timeline quantity details", isOn: $showsQuantityDetails)
                 Toggle("Dosage dots", isOn: $isHidingDosageDots.inverted)
             } header: {
                 Text("Timeline")
             } footer: {
-                Text(
-                    "Redoses drawn individually get their own curve instead of adding up into one. "
-                        + "Independent heights scale each substance to its own maximum "
-                        + "instead of comparing heights across substances."
-                )
+                Text("Combine routes when they share a reference amount and have complete duration estimates. Independent heights scale curves to fit separately.")
             }
             .tint(.accentColor)
 
@@ -88,8 +88,13 @@ struct JournalSettingsScreen: View {
             .tint(.accentColor)
 
             Section {
+                NavigationLink {
+                    JournalRemindersScreen()
+                } label: {
+                    Label("Journal Reminders", systemImage: "bell")
+                }
                 NavigationLink(value: GlobalNavigationDestination.editColors) {
-                    Label("Substance Colors", systemImage: "paintpalette")
+                    Label("Substance Colors & Visibility", systemImage: "paintpalette")
                 }
             }
         }

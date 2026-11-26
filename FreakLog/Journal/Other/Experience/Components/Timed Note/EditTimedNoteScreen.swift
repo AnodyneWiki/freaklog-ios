@@ -8,6 +8,7 @@ struct EditTimedNoteScreen: View {
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @State private var time = Date.now
     @State private var note = ""
+    @State private var details = TimedNoteDetails()
     @State private var color = SubstanceColor.blue
     @State private var isPartOfTimeline = false
     @FocusState private var isTextFieldFocused: Bool
@@ -17,6 +18,7 @@ struct EditTimedNoteScreen: View {
             TimedNoteScreenContent(
                 time: $time,
                 note: $note,
+                details: $details,
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
@@ -25,6 +27,7 @@ struct EditTimedNoteScreen: View {
             .onFirstAppear { // needed because else state is reset when navigating back from color picker
                 time = timedNote.timeUnwrapped
                 note = timedNote.noteUnwrapped
+                details = timedNote.details
                 color = timedNote.color
                 isPartOfTimeline = timedNote.isPartOfTimeline
             }
@@ -55,6 +58,7 @@ struct EditTimedNoteScreen: View {
             let updated = try PersistenceController.journalObject(timedNote, in: context)
             updated.time = time
             updated.note = note
+            updated.details = details
             updated.colorAsText = color.rawValue
             updated.isPartOfTimeline = isPartOfTimeline
             try TimedNoteSaving.save(updated)

@@ -48,6 +48,7 @@ struct ContentScreen: View {
                 ChooseSubstanceScreen()
             }
             .environment(\.addIngestionStartTime, navigator.addIngestionStartTime)
+            .environment(\.addIngestionEndTime, navigator.addIngestionEndTime)
         }
     }
 

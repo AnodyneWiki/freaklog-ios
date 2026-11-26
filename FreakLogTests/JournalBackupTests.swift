@@ -4,6 +4,93 @@ import XCTest
 
 @MainActor
 final class JournalBackupTests: XCTestCase {
+  func testImportsVersionSevenWithNoteDetailsAndReportLinks() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v7", withExtension: "json"))
+    let backup = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let context = PersistenceController(inMemory: true).viewContext
+    try backup.restore(into: context)
+    try context.save()
+
+    let note = try XCTUnwrap(context.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(note.details, TimedNoteDetails(mood: .pleasant, energy: .low))
+    let container = try XCTUnwrap(context.fetch(StockContainer.fetchRequest()).first)
+    XCTAssertEqual(container.labReportID, UUID(uuidString: "39061EC4-D9E5-4A6D-9211-979600B9D72A"))
+
+    let ingestion = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertEqual(ingestion.timelineVisibility, .show)
+    XCTAssertEqual(ingestion.substanceCompanion?.isHiddenInTimeline, true)
+    XCTAssertFalse(ingestion.isHiddenFromTimeline)
+    ingestion.timelineVisibility = .substanceDefault
+    XCTAssertTrue(ingestion.isHiddenFromTimeline)
+    ingestion.substanceCompanion?.isHiddenInTimeline = false
+    XCTAssertFalse(ingestion.isHiddenFromTimeline)
+    ingestion.timelineVisibility = .hide
+    XCTAssertTrue(ingestion.isHiddenFromTimeline)
+  }
+
+  func testNoteDetailsRoundTripThroughVersionSixBackup() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v6", withExtension: "json"))
+    let fixture = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let original = PersistenceController(inMemory: true).viewContext
+    try fixture.restore(into: original)
+    try original.save()
+    let backup = try JournalBackup(context: original, defaults: Self.emptyDefaults(), appVersion: "1")
+    let data = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+    let destination = PersistenceController(inMemory: true).viewContext
+    try data.restore(into: destination)
+    let note = try XCTUnwrap(destination.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(note.note, "A quiet morning")
+    XCTAssertEqual(note.details, TimedNoteDetails(mood: .pleasant, energy: .low))
+
+    var versionFive = backup
+    versionFive.formatVersion = 5
+    versionFive.dataModel = "FreakLog Version 16"
+    versionFive.entities["TimedNote"]?[0].attributes.removeValue(forKey: "mood")
+    versionFive.entities["TimedNote"]?[0].attributes.removeValue(forKey: "energy")
+    let upgraded = try XCTUnwrap(JournalBackup.read(versionFive.fileData()))
+    let migrated = PersistenceController(inMemory: true).viewContext
+    try upgraded.restore(into: migrated)
+    let olderNote = try XCTUnwrap(migrated.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(olderNote.note, note.note)
+    XCTAssertTrue(olderNote.details.isEmpty)
+  }
+
+  func testVersionSixteenSQLiteNotesMigrateWithMissingDetails() throws {
+    let modelURL = try XCTUnwrap(Bundle.main.url(forResource: "Main", withExtension: "momd"))
+    let legacy = try XCTUnwrap(NSManagedObjectModel(contentsOf: modelURL.appendingPathComponent("FreakLog Version 16.mom")))
+    let current = try XCTUnwrap(NSManagedObjectModel(contentsOf: modelURL))
+    let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+    try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: directory) }
+    let url = directory.appendingPathComponent("journal.sqlite")
+
+    do {
+      let coordinator = NSPersistentStoreCoordinator(managedObjectModel: legacy)
+      let store = try coordinator.addPersistentStore(type: .sqlite, at: url, options: nil)
+      let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+      context.persistentStoreCoordinator = coordinator
+      let original = NSEntityDescription.insertNewObject(forEntityName: "TimedNote", into: context)
+      original.setValue("Originally saved in v16", forKey: "note")
+      try context.save()
+      context.reset()
+      try coordinator.remove(store)
+    }
+
+    let coordinator = NSPersistentStoreCoordinator(managedObjectModel: current)
+    _ = try coordinator.addPersistentStore(type: .sqlite, at: url, options: [
+      NSMigratePersistentStoresAutomaticallyOption: true,
+      NSInferMappingModelAutomaticallyOption: true
+    ])
+    let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+    context.persistentStoreCoordinator = coordinator
+    let note = try XCTUnwrap(context.fetch(TimedNote.fetchRequest()).first)
+    XCTAssertEqual(note.note, "Originally saved in v16")
+    XCTAssertTrue(note.details.isEmpty)
+    note.details = TimedNoteDetails(mood: .neutral, energy: .moderate)
+    try context.save()
+    XCTAssertEqual(note.details, TimedNoteDetails(mood: .neutral, energy: .moderate))
+  }
+
   func testRemovedSaferTabDoesNotResetHiddenTabs() throws {
     let suite = "TabVisibilityTests-" + UUID().uuidString
     let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -194,7 +281,7 @@ final class JournalBackupTests: XCTestCase {
     let ingestion = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
     XCTAssertEqual(ingestion.substanceName, "Example")
     XCTAssertFalse(ingestion.isHiddenInTimeline)
-    XCTAssertTrue(ingestion.substanceCompanion?.isHiddenInTimeline == true)
+    XCTAssertTrue(ingestion.isHiddenFromTimeline)
     XCTAssertEqual(ingestion.stomachFullness, "halfFull")
   }
 
@@ -317,6 +404,84 @@ final class JournalBackupTests: XCTestCase {
     XCTAssertNil(migrated.capacity)
     XCTAssertEqual(migrated.remaining, 12)
     XCTAssertNil(migrated.fraction)
+  }
+
+  func testUnconfirmedBackupRoundTripAndVersionFourDefaults() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let experience = Experience.create(at: .now, title: "Unconfirmed", in: source)
+    let item = Ingestion(context: source)
+    item.experience = experience
+    item.time = .now
+    item.isUnconfirmed = true
+    let batchID = UUID()
+    item.confirmationBatchID = batchID
+    try source.save()
+
+    let current = try JournalBackup(context: source, defaults: Self.emptyDefaults(), appVersion: "1.6.0")
+    func restore(_ backup: JournalBackup) throws -> (Bool, UUID?) {
+      let decoded = try XCTUnwrap(JournalBackup.read(backup.fileData()))
+      let target = PersistenceController(inMemory: true).viewContext
+      try decoded.restore(into: target)
+      let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
+      return (imported.isUnconfirmed, imported.confirmationBatchID)
+    }
+    let latest = try restore(current)
+    XCTAssertTrue(latest.0)
+    XCTAssertEqual(latest.1, batchID)
+
+    var old = current
+    old.formatVersion = 4
+    old.dataModel = "FreakLog Version 15"
+    old.entities["Ingestion"]?[0].attributes.removeValue(forKey: "isUnconfirmed")
+    old.entities["Ingestion"]?[0].attributes.removeValue(forKey: "confirmationBatchID")
+    let migrated = try restore(old)
+    XCTAssertFalse(migrated.0)
+    XCTAssertNil(migrated.1)
+  }
+
+  func testImportsVersionFiveBackupFixture() throws {
+    let url = try XCTUnwrap(Bundle(for: type(of: self)).url(forResource: "Backup v5", withExtension: "json"))
+    let backup = try XCTUnwrap(JournalBackup.read(Data(contentsOf: url)))
+    let context = PersistenceController(inMemory: true).viewContext
+    try backup.restore(into: context)
+    let item = try XCTUnwrap(context.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertTrue(item.isUnconfirmed)
+    XCTAssertEqual(item.confirmationBatchID, UUID(uuidString: "01234567-89AB-4CDE-8F01-23456789ABCD"))
+  }
+
+  func testConfirmingBatchKeepsTimesAndRecordsStockOnlyOnce() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let time = Date(timeIntervalSince1970: 1_700_000_000)
+    let experience = Experience.create(at: time, title: "Batch", in: context)
+    let formulation = Formulation(context: context)
+    formulation.name = "Blend"
+    let container = StockContainer(context: context)
+    container.formulation = formulation
+    container.unit = Inventory.Use.formulationUnit
+    try Inventory.stage(.opening, quantity: 10, in: container)
+    let id = UUID()
+    let batch = (0..<2).map { index in
+      let ingestion = Ingestion(context: context)
+      ingestion.experience = experience
+      ingestion.formulation = formulation
+      ingestion.formulationAmount = 2
+      ingestion.isUnconfirmed = true
+      ingestion.confirmationBatchID = id
+      ingestion.time = time.addingTimeInterval(Double(index))
+      return ingestion
+    }
+    try context.save()
+
+    XCTAssertEqual(container.remaining, 10)
+    let confirmed = try IngestionSaving.stageConfirmation(for: batch[0], stockContainerID: container.objectID, in: context)
+    XCTAssertEqual(Set(confirmed), Set(batch))
+    XCTAssertEqual(container.remaining, 8)
+    XCTAssertEqual(batch[0].stockChange, batch[1].stockChange)
+    XCTAssertEqual(batch[0].stockChange?.date, time)
+    XCTAssertEqual(batch.map(\.time), [time, time.addingTimeInterval(1)])
+    XCTAssertTrue(batch.allSatisfy { !$0.isUnconfirmed && $0.confirmationBatchID == nil })
+    XCTAssertThrowsError(try IngestionSaving.stageConfirmation(for: batch[1], stockContainerID: container.objectID, in: context))
+    XCTAssertEqual(container.remaining, 8)
   }
 
   func testWrappedVersion1BackupsUpgradeBeforeCompletenessValidation() throws {
@@ -638,7 +803,8 @@ final class JournalBackupTests: XCTestCase {
           dose: 100,
           units: "mg",
           isEstimate: true,
-          estimatedDoseStandardDeviation: 10),
+          estimatedDoseStandardDeviation: 10,
+          isHiddenInTimeline: true),
         .init(
           substanceName: "Caffeine",
           administrationRoute: .oral,
@@ -647,7 +813,6 @@ final class JournalBackupTests: XCTestCase {
           isEstimate: false,
           estimatedDoseStandardDeviation: nil),
       ]).insert(into: context)
-    formulation.componentsSorted.first?.isHiddenInTimeline = true
 
     let ingestion = Ingestion(context: context)
     ingestion.identifier = UUID()

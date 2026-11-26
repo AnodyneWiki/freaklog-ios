@@ -25,6 +25,22 @@ struct GroupDrawable {
 
     let hasDurationInfo: Bool
 
+    init(
+        startGraph: Date,
+        color: SubstanceColor,
+        combinedRoutes: [TimelineModel.RoaGroup],
+        areSubstanceHeightsIndependent: Bool
+    ) {
+        self.color = color
+        startInSeconds = combinedRoutes.flatMap(\.weightedLines).map { startGraph.distance(to: $0.startTime) }.min() ?? 0
+        hasDurationInfo = true
+        timelineDrawables = [FullCumulativeTimelines(
+            combinedRoutes: combinedRoutes,
+            graphStartTime: startGraph,
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+        )]
+    }
+
     // swiftlint:disable function_body_length
     init(
         startGraph: Date,
