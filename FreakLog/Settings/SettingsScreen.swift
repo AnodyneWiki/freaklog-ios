@@ -350,7 +350,7 @@ private struct JournalDataSettings: View {
         .confirmationDialog("Delete Journal Data?", isPresented: $isConfirmingDeletion, titleVisibility: .visible) {
             Button("Delete", role: .destructive, action: viewModel.deleteEverything)
         } message: {
-            Text("This will delete your journal and its on-device recovery copies.")
+            Text("This will delete your journal, on-device recovery copies, and inventory attachments.")
         }
     }
 
@@ -647,6 +647,7 @@ struct JournalExportReview: View {
                     Text("Custom substances, units, formulations and overrides")
                 }
                 if isBackup {
+                    Text("Routines and inventory balances")
                     Text("Journal preferences and integration settings")
                 }
             } header: {
@@ -660,8 +661,10 @@ struct JournalExportReview: View {
                 if isBackup {
                     Text("Device state, including iCloud Sync and last unlock time")
                     Text("Assistant chats and API keys, cached references and retry records")
+                    Text("Package pairings and inventory lab report PDFs")
                 } else {
                     Text("App settings, webhooks and leaderboard history")
+                    Text("Inventory and routines, including lab report PDFs and package pairings")
                     Text("Spray calculator data, assistant data and cached references")
                     if isAndroidTransfer {
                         Text("Unconfirmed entries, individual ingestion locations and timeline visibility")

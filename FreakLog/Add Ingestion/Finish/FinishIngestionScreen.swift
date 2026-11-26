@@ -51,6 +51,7 @@ struct FinishIngestionScreen: View {
     @State private var wantsToForceNewExperience = false
     @State private var hasSelectedExperience = false
     @State private var saveError: String?
+    @State private var stockContainerID: NSManagedObjectID?
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
@@ -95,6 +96,9 @@ struct FinishIngestionScreen: View {
                 }
             }
             ingestionSummary
+            if let inventoryUse = Inventory.Use(ingestions) {
+                InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
+            }
             Section("When") {
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
@@ -356,7 +360,16 @@ struct FinishIngestionScreen: View {
                 location: selectedLocationValue,
                 and: context)
         }
-        try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
+        if let stockContainerID {
+            try PersistenceController.withJournalStoreWrite {
+                guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
+                try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
+                try PersistenceController.saveJournalChanges(in: context)
+            }
+            IngestionSaving.didSave(newIngestions, newIngestions: newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
+        } else {
+            try IngestionSaving.save(newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
+        }
         let savedExperience = persistence.viewContext.object(with: experience.objectID) as? Experience
         if let savedExperience {
             startLiveActivityIfWanted(for: savedExperience, isNewExperience: isNewExperience)

@@ -222,6 +222,7 @@ struct JournalPreset: Codable, Identifiable {
                     inserted = customUnit
                 } else if var formulation {
                     formulation.name = name
+                    formulation.blendIdentifier = nil
                     inserted = formulation.insert(into: context)
                 } else {
                     throw ImportError.invalid
@@ -574,6 +575,16 @@ private struct JournalPresetImportReview: View {
                         .autocorrectionDisabled()
                 }
                 if let components = preset.formulation?.components {
+                    let included = components.compactMap { $0.blendPath.first?.name }.uniqued()
+                    if !included.isEmpty {
+                        Section {
+                            ForEach(included, id: \.self) { Text($0) }
+                        } header: {
+                            Text("Included Products")
+                        } footer: {
+                            Text("The preset includes a copy of each product’s ingredients and amounts.")
+                        }
+                    }
                     Section("Contents") {
                         ForEach(components) { component in
                             LabeledContent {

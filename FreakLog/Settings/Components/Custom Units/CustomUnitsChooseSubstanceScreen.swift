@@ -3,6 +3,8 @@ import SwiftUI
 
 struct CustomUnitsChooseSubstanceScreen: View {
     @Environment(\.dismiss) var dismiss
+    var draftName = ""
+    var onDraft: ((CustomUnitCodable) -> Void)?
 
     var body: some View {
         NavigationStack {
@@ -23,7 +25,14 @@ struct CustomUnitsChooseSubstanceScreen: View {
                 ChooseOtherRouteScreen(arguments: arguments, dismiss: dismissSheet)
             })
             .navigationDestination(for: SubstanceAndRoute.self) { substanceAndRoute in
-                FinishCustomUnitsScreen(arguments: substanceAndRoute, cancel: dismissSheet, onAdded: { _ in dismissSheet() })
+                if let onDraft {
+                    FinishCustomUnitsScreen(arguments: substanceAndRoute, cancel: dismissSheet, name: draftName) { draft in
+                        onDraft(draft)
+                        dismissSheet()
+                    }
+                } else {
+                    FinishCustomUnitsScreen(arguments: substanceAndRoute, cancel: dismissSheet, onAdded: { _ in dismissSheet() })
+                }
             }
         }
     }

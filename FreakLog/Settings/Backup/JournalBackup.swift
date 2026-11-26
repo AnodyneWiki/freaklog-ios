@@ -27,8 +27,8 @@ struct JournalBackup: Codable {
   static let format = "FreakLog Backup"
   private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
   private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
-  static let formatVersion = 2
-  static let dataModelVersion = "PW Version 13"
+  static let formatVersion = 6
+  static let dataModelVersion = "FreakLog Version 16 Inventory"
   static let localOperationEntities: Set<String> = ["WatchLogReceipt", "WebhookDeletion"]
 
   // Settings that belong to the journal. Ones about this device (iCloud sync, the last unlock, the welcome screen,
@@ -47,6 +47,7 @@ struct JournalBackup: Codable {
     PersistenceController.independentSubstanceHeightKey,
     PersistenceController.fabButtonPositionKey,
     PersistenceController.dynamicExperienceRangeHoursKey,
+    PersistenceController.showsDueTodayKey,
     PersistenceController.sendWebhooksEnabledKey,
     PersistenceController.webhookUsernameKey,
     PersistenceController.webhookTemplateKey,
@@ -72,14 +73,59 @@ struct JournalBackup: Codable {
   // `2: { backup in try JournalBackup.renameAttribute("old", to: "new", of: "Ingestion", in: &backup) }`
   static let upgrades: [Int: (inout JSONValue) throws -> Void] = [
     1: { backup in
-      updateAttributes(of: "ExperienceLocation", in: &backup) { attributes in
+      updateRecordFields(of: "ExperienceLocation", in: &backup) { attributes in
         attributes["hasExplicitLatitude"] = .bool(false)
         attributes["hasExplicitLongitude"] = .bool(false)
       }
-      updateAttributes(of: "WebhookMessage", in: &backup) { attributes in
+      updateRecordFields(of: "WebhookMessage", in: &backup) { attributes in
         attributes["destinationURL"] = .null
       }
       backup = try replacing("dataModel", with: .string("PW Version 13"), in: backup)
+    },
+    2: { backup in
+      for entity in ["Ingestion", "ShulginRating", "SubstanceCompanion", "FormulationComponent"] {
+        updateRecordFields(of: entity, in: &backup) { attributes in
+          attributes["isHiddenInTimeline"] = .bool(false)
+        }
+      }
+      updateRecordFields(of: "SubstanceOverride", in: &backup) { attributes in
+        attributes["personalTagsJSON"] = .null
+      }
+      updateRecordFields(of: "Ingestion", in: &backup, field: "relationships") { relationships in
+        relationships["routineOccurrence"] = .null
+        relationships["stockChange"] = .null
+      }
+      guard var entities = backup.object?["entities"]?.object else { throw JournalBackupError.invalidContainer }
+      for name in ["RoutineRecord", "RoutineOccurrence", "StockContainer", "StockChange"] {
+        entities[name] = .array([])
+      }
+      backup = try replacing("entities", with: .object(entities), in: backup)
+      backup = try replacing("dataModel", with: .string("FreakLog Version 14"), in: backup)
+    },
+    3: { backup in
+      updateRecordFields(of: "StockContainer", in: &backup) { attributes in
+        attributes["capacity"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("FreakLog Version 15"), in: backup)
+    },
+    4: { backup in
+      updateRecordFields(of: "Ingestion", in: &backup) { attributes in
+        attributes["isUnconfirmed"] = .bool(false)
+        attributes["confirmationBatchID"] = .null
+      }
+      updateRecordFields(of: "Formulation", in: &backup) { attributes in
+        attributes["blendIdentifier"] = .null
+      }
+      updateRecordFields(of: "FormulationComponent", in: &backup) { attributes in
+        attributes["blendPathData"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("FreakLog Version 16"), in: backup)
+    },
+    5: { backup in
+      updateRecordFields(of: "StockContainer", in: &backup) { attributes in
+        attributes["labReportID"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("FreakLog Version 16 Inventory"), in: backup)
     },
   ]
 
@@ -311,16 +357,17 @@ extension JournalBackup {
 
   // For upgrade steps: renames an attribute in every record of the entity
   static func renameAttribute(_ old: String, to new: String, of entity: String, in backup: inout JSONValue) throws {
-    updateAttributes(of: entity, in: &backup) { attributes in
+    updateRecordFields(of: entity, in: &backup) { attributes in
       if let value = attributes.removeValue(forKey: old) {
         attributes[new] = value
       }
     }
   }
 
-  private static func updateAttributes(
+  private static func updateRecordFields(
     of entity: String,
     in backup: inout JSONValue,
+    field: String = "attributes",
     update: (inout [String: JSONValue]) -> Void)
   {
     guard case .object(var root) = backup, case .object(var entities) = root["entities"] else { return }
@@ -328,10 +375,10 @@ extension JournalBackup {
     entities[entity] = .array(records.map { record in
       guard
         case .object(var fields) = record,
-        case .object(var attributes) = fields["attributes"]
+        case .object(var properties) = fields[field]
       else { return record }
-      update(&attributes)
-      fields["attributes"] = .object(attributes)
+      update(&properties)
+      fields[field] = .object(properties)
       return .object(fields)
     })
     root["entities"] = .object(entities)
@@ -357,6 +404,14 @@ extension JournalBackup {
     _ = try assistantSettings()
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
     try validateCompleteness(in: model)
+    var labReportIDs = Set<UUID>()
+    for record in entities["StockContainer"] ?? [] {
+      if let value = record.attributes["labReportID"]?.string, let id = UUID(uuidString: value),
+        !labReportIDs.insert(id).inserted
+      {
+        throw JournalBackupError.invalidValue(entity: "StockContainer", name: "labReportID")
+      }
+    }
     for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
       request.includesPropertyValues = false

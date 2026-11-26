@@ -19,9 +19,8 @@ struct FormulationsScreen: View {
         }
       }
       .onDelete { offsets in
-        let context = PersistenceController.shared.viewContext
-        offsets.map { filteredFormulations[$0] }.forEach(context.delete)
-        try? context.save()
+        deletionCandidates = offsets.map { filteredFormulations[$0] }
+        confirmsDeletion = true
       }
     }
     .listStyle(.plain)
@@ -44,6 +43,18 @@ struct FormulationsScreen: View {
       }
     }
     .navigationTitle("Formulations")
+    .confirmationDialog(
+      deletionCandidates.count == 1 ? "Delete Formulation?" : "Delete Formulations?",
+      isPresented: $confirmsDeletion,
+      titleVisibility: .visible
+    ) {
+      Button("Delete", role: .destructive, action: deleteSelectedFormulations)
+    }
+    .alert("Couldn’t Delete Formulations", isPresented: $showsDeletionError) {
+      Button("OK", role: .cancel) {}
+    } message: {
+      Text("Your formulations are still saved. Try again.")
+    }
   }
 
   private enum SheetOption: Identifiable {
@@ -63,9 +74,24 @@ struct FormulationsScreen: View {
 
   @State private var searchText = ""
   @State private var sheetToShow: SheetOption?
+  @State private var deletionCandidates: [Formulation] = []
+  @State private var confirmsDeletion = false
+  @State private var showsDeletionError = false
 
   private var filteredFormulations: [Formulation] {
     formulations.filter { $0.matches(searchText: searchText) }
+  }
+
+  private func deleteSelectedFormulations() {
+    do {
+      let context = try PersistenceController.shared.journalEditContext()
+      let objects = try deletionCandidates.map { try PersistenceController.journalObject($0, in: context) }
+      objects.forEach(context.delete)
+      try PersistenceController.saveJournalChanges(in: context)
+    } catch {
+      showsDeletionError = true
+    }
+    deletionCandidates = []
   }
 }
 

@@ -60,6 +60,21 @@ struct ChooseSubstanceContent: View {
             .navigationDestination(for: Formulation.self) { formulation in
                 FormulationDoseScreen(formulation: formulation, dismiss: dismiss)
             }
+            .navigationDestination(for: JournalPresetProduct.self) { product in
+                switch product {
+                case .customUnit(let unit):
+                    CustomUnitsChooseDoseScreen(
+                        customUnit: unit,
+                        dismiss: dismiss,
+                        navigateToCustomUnitChooseDose: { navPath.append(JournalPresetProduct.customUnit($0)) },
+                        requiresDose: true
+                    )
+                case .formulation(let formulation):
+                    FormulationDoseScreen(
+                        formulation: formulation, dismiss: dismiss, initialAmount: nil
+                    )
+                }
+            }
             .navigationDestination(for: FinishFormulationArguments.self) { arguments in
                 FinishIngestionScreen(ingestions: arguments.ingestions, dismiss: dismiss)
                     .environment(\.ingestionPrefillNote, prefill?.note(
@@ -148,6 +163,11 @@ struct ChooseSubstanceContent: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
+                }
+                if isEyeOpen, prefill == nil {
+                    PackageLabelDraftButton(logProduct: { navPath.append($0) })
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
                 }
                 ForEach(filteredSuggestions, id: \.id) { suggestion in
                     if let pureSubstanceSuggestions = suggestion as? PureSubstanceSuggestions {

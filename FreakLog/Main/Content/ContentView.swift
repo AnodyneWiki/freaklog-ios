@@ -57,11 +57,7 @@ struct ContentScreen: View {
     }
 
     var filteredTabs: [Tab] {
-        let baseTabs = tabManager.enabledTabs
-        
-        return baseTabs.filter { tab in
-            isEyeOpen || (tab != .substances && tab != .safer)
-        }
+        tabManager.enabledTabs.filter { isEyeOpen || !$0.requiresOpenEye }
     }
 
     func view(for tab: Tab) -> some View {
@@ -97,8 +93,8 @@ struct ContentScreen: View {
             .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused }
             .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
             .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
-        case .safer:
-            SaferScreen()
+        case .tools:
+            ToolsScreen()
         case .settings:
             SettingsScreen()
         }

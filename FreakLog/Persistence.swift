@@ -58,6 +58,8 @@ struct PersistenceController {
     static let hasBeenMigrated8Key = "hasBeenMigrated8"
     static let hasBeenMigrated9Key = "hasBeenMigrated9"
     private static let didRepairMissingSortDatesKey = "didRepairMissingSortDates"
+    static let didMigrateRoutineSchedulesKey = "didMigrateRoutineSchedules"
+    static let showsDueTodayKey = "showsDueToday"
     static let openUntilRatedCountKey = "openUntilRatedCount"
     static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
 
@@ -234,7 +236,7 @@ struct PersistenceController {
         // Entities not reached via cascade delete rules are listed explicitly
         let entityNames = [
             "Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa",
-            "SubstanceOverride", "Formulation",
+            "SubstanceOverride", "Formulation", "RoutineRecord", "StockContainer",
         ]
         for entityName in entityNames {
             let request = NSFetchRequest<NSManagedObject>(entityName: entityName)

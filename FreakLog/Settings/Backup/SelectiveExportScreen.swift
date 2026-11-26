@@ -113,6 +113,9 @@ struct SelectiveExportScreen: View {
                 Toggle("Location Names", isOn: $options.locations)
                 Toggle("Participant Names", isOn: $options.names)
                 Toggle("Administration Sites", isOn: $options.sites)
+                if ingestions.contains(where: \.isUnconfirmed) {
+                    Toggle("Unconfirmed Ingestions", isOn: $options.unconfirmed)
+                }
             } header: {
                 Text("Include")
             } footer: {
@@ -177,6 +180,7 @@ struct SelectiveExportScreen: View {
             (substance == nil || $0.substanceNameUnwrapped == substance)
                 && (route == nil || ReportMarkdown.recordedRoute($0) == route)
                 && person.matches($0)
+                && (options.unconfirmed || !$0.isUnconfirmed)
                 && SelectiveJournalReport.includes($0.time, in: range)
         }
         let selectedExperiences = Set(selected.compactMap(\.experience))
@@ -208,6 +212,7 @@ struct SelectiveJournalReport: Identifiable {
         var locations = false
         var names = false
         var sites = false
+        var unconfirmed = false
     }
 
     let id = UUID()
@@ -221,7 +226,7 @@ struct SelectiveJournalReport: Identifiable {
         options: Options
     ) {
         title = kind.title
-        let ingestions = ingestions.sorted {
+        let ingestions = ingestions.filter { options.unconfirmed || !$0.isUnconfirmed }.sorted {
             ($0.time ?? .distantFuture) < ($1.time ?? .distantFuture)
         }
         let experiences = experiences.sorted {
@@ -237,6 +242,7 @@ struct SelectiveJournalReport: Identifiable {
             ("Location names", options.locations),
             ("Participant names", options.names),
             ("Administration sites", options.sites),
+            ("Unconfirmed ingestions", options.unconfirmed),
         ]
         included = ["Selected journal records", "Substances, routes and recorded amounts"]
             + limits.filter { $0.1 }.map { $0.0 }

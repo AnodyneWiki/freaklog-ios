@@ -1,0 +1,34 @@
+FREAKLOG-BACKUP/1
+{
+  "format": "FreakLog Backup",
+  "formatVersion": 3,
+  "dataModel": "FreakLog Version 14",
+  "appVersion": "1.4.3",
+  "created": "2026-11-25T10:00:00.000000Z",
+  "settings": {},
+  "entities": {
+    "CustomRoa": [], "CustomSubstance": [], "CustomUnit": [], "Experience": [],
+    "ExperienceLocation": [], "Formulation": [], "FormulationComponent": [], "RoutineRecord": [],
+    "RoutineOccurrence": [], "ShulginRating": [], "Spray": [], "StockChange": [], "StockContainer": [],
+    "SubstanceOverride": [], "TimedNote": [], "WebhookMessage": [], "WebhookPreset": [],
+    "Ingestion": [{
+      "id": "log-1",
+      "attributes": {
+        "administrationRoute": "oral", "administrationSite": null, "color": null, "consumerName": null,
+        "creationDate": null, "dose": 0, "endTime": null, "estimatedDoseStandardDeviation": 0,
+        "formulationAmount": 0, "identifier": null, "isEstimate": false, "isHiddenInTimeline": false,
+        "note": "", "stomachFullness": "halfFull", "substanceName": "Example", "time": null,
+        "units": "", "webhookMessageId": null
+      },
+      "relationships": {
+        "customUnit": null, "experience": null, "formulation": null, "location": null,
+        "routineOccurrence": null, "stockChange": null, "substanceCompanion": "companion-1"
+      }
+    }],
+    "SubstanceCompanion": [{
+      "id": "companion-1",
+      "attributes": {"substanceName": "Example", "colorAsText": null, "isHiddenInTimeline": true},
+      "relationships": {}
+    }]
+  }
+}

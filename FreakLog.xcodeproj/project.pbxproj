@@ -12,6 +12,18 @@
 		64D559B79E1C0D6D8DE1C3AE /* SelectiveExportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */; };
 		D6C76B34BB81807680FBD295 /* JournalRecoveryBackups.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */; };
 		7176E7F3993F405AABAFBDB9 /* JournalBackupProtection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */; };
+		5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */; };
+		EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */; };
+		1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */; };
+		B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4945BF062A782A1202689601 /* MedicationReference.swift */; };
+		616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */; };
+		FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */; };
+		C5066131C812FDC954A3C8FA /* InventoryLabReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3E42CBC7894677615D827B /* InventoryLabReport.swift */; };
+		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
+		D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */; };
+		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
+		1ABAB79F04D93DC4C0EA7FC3 /* Backup v6 Inventory.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */; };
+		EC45ACB7C9CF1A96E54D3358 /* Backup v5.json in Resources */ = {isa = PBXBuildFile; fileRef = C43624A324205A154F124773 /* Backup v5.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
@@ -492,6 +504,22 @@
 		9D8DAB4782FE2113E5E7C615 /* SelectiveExportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectiveExportScreen.swift; sourceTree = "<group>"; };
 		80DC28685AABD75D48DB329E /* JournalRecoveryBackups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalRecoveryBackups.swift; sourceTree = "<group>"; };
 		90BFCF8255E0B73E1B2A9797 /* JournalBackupProtection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupProtection.swift; sourceTree = "<group>"; };
+		7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolsScreen.swift; sourceTree = "<group>"; };
+		7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PackageLabelDraftButton.swift; path = "../Inventory/PackageLabelDraftButton.swift"; sourceTree = "<group>"; };
+		6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryScreen.swift; path = "../Inventory/InventoryScreen.swift"; sourceTree = "<group>"; };
+		4945BF062A782A1202689601 /* MedicationReference.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MedicationReference.swift; path = "../Inventory/MedicationReference.swift"; sourceTree = "<group>"; };
+		5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ProductDetailScreen.swift; path = "../Inventory/ProductDetailScreen.swift"; sourceTree = "<group>"; };
+		E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = StockLevelViews.swift; path = "../Inventory/StockLevelViews.swift"; sourceTree = "<group>"; };
+		9C3E42CBC7894677615D827B /* InventoryLabReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryLabReport.swift; path = "../Inventory/InventoryLabReport.swift"; sourceTree = "<group>"; };
+		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
+		99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryLabReportTests.swift; sourceTree = "<group>"; };
+		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
+		3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v6 Inventory.json"; sourceTree = "<group>"; };
+		C43624A324205A154F124773 /* Backup v5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v5.json"; sourceTree = "<group>"; };
+		B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 14.xcdatamodel"; sourceTree = "<group>"; };
+		A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 15.xcdatamodel"; sourceTree = "<group>"; };
+		DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16.xcdatamodel"; sourceTree = "<group>"; };
+		80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16 Inventory.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
@@ -1556,6 +1584,7 @@
 			children = (
 				EAE4711B26CBA663009FB0EC /* Welcome Screen */,
 				EAE4712926CBA663009FB0EC /* ContentView.swift */,
+				7BC13495066CE094B6CC19D2 /* ToolsScreen.swift */,
 				EACF43932B9F7B7A008D1897 /* GlobalNavigationDestination.swift */,
 			);
 			path = Content;
@@ -1742,6 +1771,13 @@
 				EA48F88629DD4FC2007DA8C5 /* Codables */,
 				EA6D44E12A4FF8B700BF2E8A /* Components */,
 				EAE4712B26CBA663009FB0EC /* SettingsScreen.swift */,
+				6D75D6DF1AFC49E72E6E20FC /* InventoryScreen.swift */,
+				4945BF062A782A1202689601 /* MedicationReference.swift */,
+				5B75F699EA4746E2D483587A /* ProductDetailScreen.swift */,
+				E51EACCA0CD1296E3B5B736B /* StockLevelViews.swift */,
+				9C3E42CBC7894677615D827B /* InventoryLabReport.swift */,
+				7EA17595BCECE46358099C17 /* PackageLabelDraftButton.swift */,
+				F34E1B0857C8764C9DFAEA88 /* Inventory.swift */,
 				0DC49AC82EFB5117000A9A0D /* WebhooksScreen.swift */,
 				0D235F2D2EF9B92800D9309D /* WebhookPresetEditScreen.swift */,
 				0D3477A52EF62F60004CDCB4 /* TabSettingsScreen.swift */,
@@ -1756,6 +1792,9 @@
 			children = (
 				99BB092F1DFA4B0ECA850563 /* Backup v1.json */,
 				B0DFAA759F8B4CF783A9B54A /* Backup v2.json */,
+				050CB115A621D9CF84A3F1BC /* Backup v3.json */,
+				3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */,
+				C43624A324205A154F124773 /* Backup v5.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
 				6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */,
 				4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */,
@@ -1769,6 +1808,7 @@
 				C2BEEDEB557AAAECE4EDB10E /* SubstanceColorTests.swift */,
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
+				99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
@@ -2194,6 +2234,9 @@
 			files = (
 				9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */,
 				5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */,
+				A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */,
+				1ABAB79F04D93DC4C0EA7FC3 /* Backup v6 Inventory.json in Resources */,
+				EC45ACB7C9CF1A96E54D3358 /* Backup v5.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
@@ -2281,6 +2324,7 @@
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
+				D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
@@ -2440,6 +2484,13 @@
 				EA60482E2A162225005C6A4B /* String-CleanSearch.swift in Sources */,
 				EAC25BFD2955F23A0002D68F /* ReagentTestingScreen.swift in Sources */,
 				EAE471BE26CBA664009FB0EC /* SettingsScreen.swift in Sources */,
+				1D1184B7B57169FD0BE9534D /* InventoryScreen.swift in Sources */,
+				B3286EC7433CC45861217506 /* MedicationReference.swift in Sources */,
+				616283C5BD79C237FB561897 /* ProductDetailScreen.swift in Sources */,
+				FF5C9088FE463BFD0A21AD1D /* StockLevelViews.swift in Sources */,
+				C5066131C812FDC954A3C8FA /* InventoryLabReport.swift in Sources */,
+				EAE44A4F33821E0CB210F563 /* PackageLabelDraftButton.swift in Sources */,
+				85348E582B036476DE61B10B /* Inventory.swift in Sources */,
 				EA48F89029DD5076007DA8C5 /* CustomSubstanceCodable.swift in Sources */,
 				0DC49AC92EFB5117000A9A0D /* WebhooksScreen.swift in Sources */,
 				EAF76C9027D7A5A000945587 /* AcknowledgeInteractionsView.swift in Sources */,
@@ -2570,6 +2621,7 @@
 				EA039AC72A6C6657006DFAFE /* View-ColorBackground.swift in Sources */,
 				EAC25C04295603B10002D68F /* VolumetricDosingScreen.swift in Sources */,
 				EAE471BD26CBA664009FB0EC /* ContentView.swift in Sources */,
+				5923970D5924D4CD57AF2B9D /* ToolsScreen.swift in Sources */,
 				EA2A5C5F29F01F58004D8A7E /* DoneButton.swift in Sources */,
 				EACB0C1E293FA4F500C605E2 /* SaferScreen.swift in Sources */,
 				EAA9C3832A5479AE00869E5A /* SearchLogic.swift in Sources */,
@@ -3131,6 +3183,10 @@
 			isa = XCVersionGroup;
 			children = (
 				8465BDFDBAAD424484E05932 /* PW Version 13.xcdatamodel */,
+				B1239587B114576FB96E204D /* FreakLog Version 14.xcdatamodel */,
+				A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */,
+				DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */,
+				80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */,
 				7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */,
 				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
@@ -3145,7 +3201,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = 8465BDFDBAAD424484E05932 /* PW Version 13.xcdatamodel */;
+			currentVersion = 80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

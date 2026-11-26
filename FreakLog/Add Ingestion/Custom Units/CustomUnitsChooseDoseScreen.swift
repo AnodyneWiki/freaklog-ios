@@ -1,19 +1,25 @@
 import SwiftUI
 
 struct CustomUnitsChooseDoseScreen: View {
-    let customUnit: CustomUnit
+    @ObservedObject var customUnit: CustomUnit
     let dismiss: () -> Void
     let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
+    let showsProductLink: Bool
+    let requiresDose: Bool
 
     init(
         customUnit: CustomUnit,
         dismiss: @escaping () -> Void,
         navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void,
-        initialDose: Double? = nil
+        initialDose: Double? = nil,
+        showsProductLink: Bool = true,
+        requiresDose: Bool = false
     ) {
         self.customUnit = customUnit
         self.dismiss = dismiss
         self.navigateToCustomUnitChooseDose = navigateToCustomUnitChooseDose
+        self.showsProductLink = showsProductLink
+        self.requiresDose = requiresDose
         _dose = State(initialValue: initialDose)
     }
 
@@ -58,6 +64,13 @@ struct CustomUnitsChooseDoseScreen: View {
             }
             if isEyeOpen {
                 Section {
+                    if showsProductLink {
+                        NavigationLink {
+                            ProductDetailScreen(product: .customUnit(customUnit), allowsLogging: false)
+                        } label: {
+                            Label("View Product", systemImage: "shippingbox")
+                        }
+                    }
                     Button("Add new custom unit") {
                         isAddCustomUnitSheetShown = true
                     }
@@ -97,6 +110,7 @@ struct CustomUnitsChooseDoseScreen: View {
                 {
                     NextLabel()
                 }
+                .disabled(requiresDose && dose.map { $0.isFinite && $0 > 0 } != true)
             }
         }
         .onAppear {

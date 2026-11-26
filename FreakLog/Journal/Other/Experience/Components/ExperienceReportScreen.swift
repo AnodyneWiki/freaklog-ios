@@ -43,6 +43,9 @@ struct ExperienceReportScreen: View {
                         Toggle("Location Names", isOn: selection(\.includesLocations))
                         Toggle("Participant Names", isOn: selection(\.includesNames))
                         Toggle("Notes", isOn: selection(\.includesNotes))
+                        if experience.ingestionsSorted.contains(where: \.isUnconfirmed) {
+                            Toggle("Unconfirmed Ingestions", isOn: selection(\.includesUnconfirmed))
+                        }
                     }
                 } footer: {
                     Text("Review the text before sharing. Notes, titles and custom names can contain identifying details.")
@@ -380,6 +383,7 @@ enum ExperienceReport {
         var includesLocations = false
         var includesNames = false
         var includesNotes = true
+        var includesUnconfirmed = false
     }
 
     private struct Event {
@@ -393,7 +397,7 @@ enum ExperienceReport {
         options: Options = Options(),
         includesRatings: Bool
     ) -> String {
-        let ingestions = experience.ingestionsSorted
+        let ingestions = experience.ingestionsSorted.filter { options.includesUnconfirmed || !$0.isUnconfirmed }
         let names = ingestions.compactMap { Ingestion.storedConsumerName($0.consumerNameUnwrapped) }.uniqued()
         let participants = Dictionary(uniqueKeysWithValues: names.enumerated().map {
             ($0.element, "Participant \($0.offset + 1)")
@@ -527,7 +531,8 @@ enum ReportMarkdown {
 
     static func amountAndRoute(_ ingestion: Ingestion, amount: String) -> String {
         let route = recordedRoute(ingestion)?.rawValue ?? "route not recorded"
-        return "\(inline(amount)), \(route)"
+        let label = ingestion.isUnconfirmed ? ", unconfirmed" : ""
+        return "\(inline(amount)), \(route)\(label)"
     }
 
     static func recordedRoute(_ ingestion: Ingestion) -> AdministrationRoute? {

@@ -162,6 +162,46 @@ final class ExperienceReportTests: XCTestCase {
         XCTAssertTrue(pdf.page(at: pdf.pageCount - 1)?.string?.contains("Reviewed line 200") == true)
     }
 
+    func testUnconfirmedEntriesRequireOptInAndAreLabeledInReports() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let context = persistence.viewContext
+        let experience = Experience.create(at: .now, in: context)
+        let confirmed = Ingestion(context: context)
+        confirmed.experience = experience
+        confirmed.time = .now
+        confirmed.substanceName = "Caffeine"
+        let pending = Ingestion(context: context)
+        pending.experience = experience
+        pending.time = .now
+        pending.substanceName = "Pending example"
+        pending.isUnconfirmed = true
+
+        let trip = ExperienceReport.markdown(for: experience, includesRatings: false)
+        XCTAssertTrue(trip.contains("Caffeine"))
+        XCTAssertFalse(trip.contains("Pending example"))
+        let reviewedTrip = ExperienceReport.markdown(
+            for: experience, options: .init(includesUnconfirmed: true), includesRatings: false
+        )
+        XCTAssertTrue(reviewedTrip.contains("Pending example"))
+        XCTAssertTrue(reviewedTrip.contains("unconfirmed"))
+
+        for kind in [SelectiveExportScreen.Kind.journal, .clinician] {
+            let report = SelectiveJournalReport(
+                kind: kind, ingestions: [confirmed, pending], experiences: [experience], range: nil, options: .init()
+            )
+            XCTAssertTrue(report.markdown.contains("1 ingestion."))
+            XCTAssertFalse(report.markdown.contains("Pending example"))
+            XCTAssertTrue(report.excluded.contains("Unconfirmed ingestions"))
+            let reviewed = SelectiveJournalReport(
+                kind: kind, ingestions: [confirmed, pending], experiences: [experience],
+                range: nil, options: .init(unconfirmed: true)
+            )
+            XCTAssertTrue(reviewed.markdown.contains("Pending example"))
+            XCTAssertTrue(reviewed.markdown.contains("unconfirmed"))
+            XCTAssertTrue(reviewed.included.contains("Unconfirmed ingestions"))
+        }
+    }
+
     func testStandaloneSubstancePresetCopiesDefinitionUnderReviewedName() throws {
         let context = PersistenceController(inMemory: true).viewContext
         let existing = CustomSubstanceCodable(name: "My custom", units: "g", description: "Local definition")

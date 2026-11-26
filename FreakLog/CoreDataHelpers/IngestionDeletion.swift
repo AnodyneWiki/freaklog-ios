@@ -7,12 +7,18 @@ import CoreData
 enum IngestionDeletion {
     struct Request {
         private let selectedID: NSManagedObjectID
+        private let stockUseID: NSManagedObjectID?
+        let canReturnStock: Bool
+
+        var hasStockUse: Bool { stockUseID != nil }
         let name: String
         let date: Date?
         let amount: String
 
         init(_ ingestion: Ingestion) {
             selectedID = ingestion.objectID
+            stockUseID = ingestion.stockChange?.objectID
+            canReturnStock = ingestion.stockChange?.canReverseUse == true
             name = ingestion.substanceDisplayName
             date = ingestion.time
             amount = ingestion.customUnitDose?.doseDescription
@@ -24,10 +30,15 @@ enum IngestionDeletion {
                 ?? String(localized: "Unknown amount")
         }
 
+        func requiresConfirmation(preferenceEnabled: Bool) -> Bool {
+            preferenceEnabled || hasStockUse
+        }
+
         func resolve(in context: NSManagedObjectContext) throws -> [Ingestion] {
             guard !selectedID.isTemporaryID,
                   let ingestion = try? context.existingObject(with: selectedID) as? Ingestion,
-                  !ingestion.isDeleted else {
+                  !ingestion.isDeleted,
+                  ingestion.stockChange?.objectID == stockUseID else {
                 throw DeletionError.entryUnavailable
             }
             return [ingestion]
@@ -43,8 +54,8 @@ enum IngestionDeletion {
     }
 
     @discardableResult
-    static func delete(_ request: Request) async -> Bool {
-        await delete { context in
+    static func delete(_ request: Request, returningStock: Bool = false) async -> Bool {
+        await delete(returningStock: returningStock) { context in
             try request.resolve(in: context)
         }
     }
@@ -72,7 +83,9 @@ enum IngestionDeletion {
         }
     }
 
-    private static func delete(resolve: (NSManagedObjectContext) throws -> [NSManagedObject]) async -> Bool {
+    private static func delete(
+        returningStock: Bool = false, resolve: (NSManagedObjectContext) throws -> [NSManagedObject]
+    ) async -> Bool {
         do {
             let context = try PersistenceController.shared.journalEditContext()
             let identifiers = try PersistenceController.withJournalStoreWrite {
@@ -95,6 +108,12 @@ enum IngestionDeletion {
                     }
                 }
                 let identifiers = ingestions.compactMap(\.identifier)
+                if returningStock {
+                    guard rootObjects.count == 1, let ingestion = rootObjects.first as? Ingestion else {
+                        throw InventoryError.cannotReverseUse
+                    }
+                    try Inventory.stageUsageReversal(for: ingestion)
+                }
                 WebhookManager.stageMessageDeletion(for: ingestions, timedNotes: notes, in: context)
                 rootObjects.forEach(context.delete)
                 try PersistenceController.saveJournalChanges(in: context)
@@ -103,7 +122,7 @@ enum IngestionDeletion {
             didDelete(identifiers: identifiers)
             return true
         } catch {
-            let message = (error as? DeletionError)?.errorDescription ?? String(localized: "Couldn't delete journal data")
+            let message = (error as? LocalizedError)?.errorDescription ?? String(localized: "Couldn’t delete journal data")
             NotificationCenter.default.post(name: failureNotification, object: message)
             return false
         }

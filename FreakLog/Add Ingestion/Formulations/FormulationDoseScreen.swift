@@ -12,17 +12,23 @@ struct FinishFormulationArguments: Hashable {
 // Chooses how much of a formulation was taken, e.g. 1.5 pills, which scales the dose of every substance in it
 struct FormulationDoseScreen: View {
 
-  init(formulation: Formulation, dismiss: @escaping () -> Void) {
-    let values = FormulationCodable(formulation)
+  init(
+    formulation: Formulation, dismiss: @escaping () -> Void, showsProductLink: Bool = true, initialAmount: Double? = 1
+  ) {
     self.formulation = formulation
-    self.values = values
     self.dismiss = dismiss
-    interactions = ExperienceLogic.interactions(between: values.substanceNames)
+    self.showsProductLink = showsProductLink
+    _amount = State(initialValue: initialAmount)
   }
 
   let dismiss: () -> Void
+  let showsProductLink: Bool
+  @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
 
   var body: some View {
+    let values = FormulationCodable(formulation)
+    let arguments = validAmount.map { formulation.ingestionArguments(amount: $0) } ?? []
+    let interactions = ExperienceLogic.interactions(between: values.substanceNames)
     Form {
       Section {
         HStack {
@@ -37,9 +43,20 @@ struct FormulationDoseScreen: View {
       } footer: {
         Text("The doses of all substances are multiplied by the amount.")
       }
-      Section("Substances") {
-        ForEach(values.components) { component in
-          FormulationComponentDoseRow(component: component, amount: validAmount ?? 0)
+      Section {
+        if validAmount != nil, arguments.isEmpty {
+          Text("The ingredients can’t be scaled to this amount.")
+            .foregroundStyle(.secondary)
+        } else {
+          ForEach(values.components) { component in
+            FormulationComponentDoseRow(component: component, amount: validAmount ?? 1)
+          }
+        }
+      } header: {
+        Text("Substances")
+      } footer: {
+        if validAmount == nil {
+          Text("Ingredient amounts are shown per serving until you enter the amount you took.")
         }
       }
       if !interactions.isEmpty {
@@ -57,6 +74,15 @@ struct FormulationDoseScreen: View {
           Text(values.note)
         }
       }
+      if isEyeOpen, showsProductLink {
+        Section {
+          NavigationLink {
+            ProductDetailScreen(product: .formulation(formulation), allowsLogging: false)
+          } label: {
+            Label("View Product", systemImage: "shippingbox")
+          }
+        }
+      }
     }
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(values.name)
@@ -65,22 +91,20 @@ struct FormulationDoseScreen: View {
         Button("Cancel", action: dismiss)
       }
       ToolbarItem(placement: .primaryAction) {
-        NavigationLink(value: FinishFormulationArguments(ingestions: formulation.ingestionArguments(amount: validAmount ?? 1))) {
+        NavigationLink(value: FinishFormulationArguments(ingestions: arguments)) {
           NextLabel()
         }
-        .disabled(validAmount == nil)
+        .disabled(arguments.isEmpty)
       }
     }
   }
 
-  @State private var amount: Double? = 1
+  @State private var amount: Double?
 
-  private let formulation: Formulation
-  private let values: FormulationCodable
-  private let interactions: [Interaction]
+  @ObservedObject private var formulation: Formulation
 
   private var validAmount: Double? {
-    guard let amount, amount > 0 else { return nil }
+    guard let amount, amount.isFinite, amount > 0 else { return nil }
     return amount
   }
 
@@ -110,6 +134,11 @@ struct FormulationComponentDoseRow: View {
       }
       Text(component.doseDescription(amount: amount)).foregroundColor(doseRangeType.color)
         + Text(" \(component.administrationRoute.rawValue)").foregroundColor(.secondary)
+      if !component.blendPath.isEmpty {
+        Text(component.blendPath.map(\.name).joined(separator: " › "))
+          .font(.caption)
+          .foregroundStyle(.secondary)
+      }
     }
   }
 
