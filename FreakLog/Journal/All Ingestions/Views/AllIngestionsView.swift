@@ -213,6 +213,14 @@ private extension AllIngestionsView {
                 openExperienceButton(experience)
             }
 
+            if isEyeOpen {
+                Button {
+                    Navigator.shared.openInCurrentTab(.substanceHistory(name: ingestion.substanceNameUnwrapped))
+                } label: {
+                    Label("Substance History", systemImage: "chart.bar")
+                }
+            }
+
             Button {
                 sheetToShow = .editIngestion(ingestion)
             } label: {

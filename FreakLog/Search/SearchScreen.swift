@@ -338,6 +338,7 @@ struct SearchScreen: View {
             Section("Substances") {
                 ForEach(bundled) { substance in
                     SearchSubstanceRow(substance: substance)
+                        .contextMenu { historyLink(substance.name) }
                 }
             }
         }
@@ -359,6 +360,7 @@ struct SearchScreen: View {
                             }
                         }
                     }
+                    .contextMenu { historyLink(substance.nameUnwrapped) }
                 }
             }
         }
@@ -367,6 +369,14 @@ struct SearchScreen: View {
                 Text("No matching substances").foregroundStyle(.secondary)
                 createSubstanceButton
             }
+        }
+    }
+
+    private func historyLink(_ name: String) -> some View {
+        Button {
+            Navigator.shared.openInCurrentTab(.substanceHistory(name: name))
+        } label: {
+            Label("Open History", systemImage: "chart.bar")
         }
     }
 

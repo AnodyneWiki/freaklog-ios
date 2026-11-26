@@ -23,6 +23,9 @@
 		D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */; };
 		D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */; };
 		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
+		FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */; };
+		CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E586B999611F07C489BD07AC /* StatsDetailScreen.swift */; };
+		83E54A437A2BAD9276A5717E /* StatsSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91546F11601A54F66F47B78A /* StatsSelection.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		1ABAB79F04D93DC4C0EA7FC3 /* Backup v6 Inventory.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */; };
 		EC45ACB7C9CF1A96E54D3358 /* Backup v5.json in Resources */ = {isa = PBXBuildFile; fileRef = C43624A324205A154F124773 /* Backup v5.json */; };
@@ -534,6 +537,9 @@
 		99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryLabReportTests.swift; sourceTree = "<group>"; };
 		0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineModelTests.swift; sourceTree = "<group>"; };
 		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
+		C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelectionTests.swift; sourceTree = "<group>"; };
+		E586B999611F07C489BD07AC /* StatsDetailScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsDetailScreen.swift; sourceTree = "<group>"; };
+		91546F11601A54F66F47B78A /* StatsSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsSelection.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v6 Inventory.json"; sourceTree = "<group>"; };
 		C43624A324205A154F124773 /* Backup v5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v5.json"; sourceTree = "<group>"; };
@@ -1523,6 +1529,8 @@
 				EA418A052968D62F00DEA663 /* Substance Charts */,
 				EAA9C3732A50759100869E5A /* TimeRange */,
 				EABDA72D28881B4800A23DB3 /* StatsScreen.swift */,
+				E586B999611F07C489BD07AC /* StatsDetailScreen.swift */,
+				91546F11601A54F66F47B78A /* StatsSelection.swift */,
 				EA41C624295EAFD8000DA021 /* Data.swift */,
 			);
 			path = Stats;
@@ -1860,6 +1868,7 @@
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */,
 				0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */,
+				C7B8221AAA5F2A65A89697C6 /* StatsSelectionTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
@@ -2398,6 +2407,7 @@
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */,
 				D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */,
+				FB883E9E97C3BE70A32B9E9A /* StatsSelectionTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
@@ -2740,6 +2750,8 @@
 				0D3477A42EF5FE9B004CDCB4 /* FabButtonPosition.swift in Sources */,
 				EABD91FD294105830073303A /* TimelineModel.swift in Sources */,
 				EABDA72E28881B4800A23DB3 /* StatsScreen.swift in Sources */,
+				CB9C978170EC440B7B02B996 /* StatsDetailScreen.swift in Sources */,
+				83E54A437A2BAD9276A5717E /* StatsSelection.swift in Sources */,
 				EAC4BFFC2B890ADA00293B44 /* ChooseCustomUnitScreen.swift in Sources */,
 				EA1F77512D4CCB7700E7F483 /* FullRangeTimeline.swift in Sources */,
 				A15CA3012EFB784600D90023 /* JournalSettingsScreen.swift in Sources */,

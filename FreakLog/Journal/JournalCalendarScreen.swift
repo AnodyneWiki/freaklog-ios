@@ -5,17 +5,24 @@ import UIKit
 
 struct JournalCalendarScreen: View {
 
-    @FetchRequest(fetchRequest: PersistenceController.ingestionsRequest())
+    @FetchRequest
     var ingestions: FetchedResults<Ingestion>
 
     @State private var deletionRequest: IngestionDeletion.Request?
     @State private var isFirstAppear = true
-    @State private var selectedDay = Calendar.current.startOfDay(for: .now)
+    @State private var selectedDay: Date?
+    @AppStorage(JournalDay.startHourKey) private var dayStartHour = 0
+    @Environment(\.calendar) private var calendar
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @ScaledMetric(relativeTo: .title2) private var monthHeaderAllowance = 104.0
 
-    init() {
-        self.calendar = Calendar.current
+    private let substanceName: String?
+    private let statsSelection: StatsSelection?
+
+    init(substanceName: String? = nil, statsSelection: StatsSelection? = nil) {
+        self.substanceName = substanceName
+        self.statsSelection = statsSelection
+        _ingestions = FetchRequest(fetchRequest: PersistenceController.historyIngestionsRequest(for: substanceName))
         self.monthsLayout = MonthsLayout.vertical
 
         let thirtyYears: TimeInterval = 30*12*30*24*60*60
@@ -23,20 +30,31 @@ struct JournalCalendarScreen: View {
         let halfYear: TimeInterval = 6*30*24*60*60
         let endDate = Date.now.addingTimeInterval(halfYear)
         visibleDateRange = startDate...endDate
-
-        monthDateFormatter = DateFormatter()
-        monthDateFormatter.calendar = calendar
-        monthDateFormatter.locale = calendar.locale
-        monthDateFormatter.dateFormat = DateFormatter.dateFormat(
-            fromTemplate: "MMMM yyyy",
-            options: 0,
-            locale: calendar.locale ?? Locale.current)
     }
 
     var body: some View {
-        // Grouped once here instead of a fetch request per visible day cell
-        let ingestionsByDay = Dictionary(grouping: ingestions) { calendar.startOfDay(for: $0.timeUnwrapped) }
-        GeometryReader { geometry in
+        Group {
+            if let statsSelection {
+                StatsJournal { entries, tags in
+                    let records = StatsRecords(
+                        entries: entries, selection: statsSelection, calendar: calendar, dayStartHour: dayStartHour, tags: tags
+                    )
+                    calendarContent(entries: records.entries, scope: records.range)
+                }
+            } else {
+                calendarContent(entries: Array(ingestions), scope: nil)
+            }
+        }
+        .navigationTitle("Calendar")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+
+    private func calendarContent(entries: [Ingestion], scope: DateInterval?) -> some View {
+        let ingestionsByDay = Dictionary(grouping: entries) { journalDay.label(for: $0.timeUnwrapped) }
+        let range = historyDateRange(days: ingestionsByDay.keys, scope: scope)
+        let today = journalDay.label(for: .now)
+        let day = min(max(selectedDay ?? today, range.lowerBound), range.upperBound)
+        return GeometryReader { geometry in
             let size = geometry.size
             let sideBySide = size.width >= 740
                 || (size.width >= 610 && size.height < 430 && !dynamicTypeSize.isAccessibilitySize)
@@ -48,25 +66,27 @@ struct JournalCalendarScreen: View {
             let monthHeight = 6 * dayWidth * dayAspectRatio + 5 * 8 + monthHeaderAllowance
 
             layout {
-                calendarPanel(ingestionsByDay, dayMargin: dayMargin, dayAspectRatio: dayAspectRatio)
-                    .frame(
-                        width: calendarWidth,
-                        height: sideBySide ? nil : min(monthHeight, size.height * 0.6)
-                    )
+                calendarPanel(
+                    ingestionsByDay, range: range, activeDay: day, dayMargin: dayMargin, dayAspectRatio: dayAspectRatio
+                )
+                .frame(
+                    width: calendarWidth,
+                    height: sideBySide ? nil : min(monthHeight, size.height * 0.6)
+                )
                 Divider()
-                dayEntries(ingestionsByDay[selectedDay] ?? [])
+                dayEntries(ingestionsByDay[day] ?? [], on: day)
             }
         }
-        .navigationTitle("Calendar")
-        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Today") {
-                    selectedDay = calendar.startOfDay(for: .now)
-                    calendarViewProxy.scrollToDay(
-                        containing: selectedDay,
-                        scrollPosition: .centered,
-                        animated: true)
+                if range.contains(today) {
+                    Button("Today") {
+                        selectedDay = today
+                        calendarViewProxy.scrollToDay(
+                            containing: today,
+                            scrollPosition: .centered,
+                            animated: true)
+                    }
                 }
             }
         }
@@ -74,14 +94,16 @@ struct JournalCalendarScreen: View {
 
     private func calendarPanel(
         _ ingestionsByDay: [Date: [Ingestion]],
+        range: ClosedRange<Date>,
+        activeDay: Date,
         dayMargin: CGFloat,
         dayAspectRatio: CGFloat
     ) -> some View {
         CalendarViewRepresentable(
             calendar: calendar,
-            visibleDateRange: visibleDateRange,
+            visibleDateRange: range,
             monthsLayout: monthsLayout,
-            dataDependency: (ingestions, selectedDay),
+            dataDependency: (ingestionsByDay, activeDay),
             proxy: calendarViewProxy
         )
         .interMonthSpacing(24)
@@ -90,7 +112,7 @@ struct JournalCalendarScreen: View {
         .dayAspectRatio(dayAspectRatio)
         .monthHeaders { month in
             if let date = calendar.date(from: month.components) {
-                Text(monthDateFormatter.string(from: date))
+                Text(date, format: .dateTime.month(.wide).year())
                     .font(.title2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding()
@@ -100,21 +122,27 @@ struct JournalCalendarScreen: View {
         .days { dayComponents in
             if let date = calendar.date(from: dayComponents.components) {
                 let day = calendar.startOfDay(for: date)
-                DayView(date: day, ingestions: ingestionsByDay[day] ?? [], isSelected: day == selectedDay) {
+                DayView(date: day, ingestions: ingestionsByDay[day] ?? [], isSelected: day == activeDay) {
                     selectedDay = day
                 }
             }
         }
         .task {
             guard isFirstAppear else { return }
+            let initialDay = if substanceName != nil || statsSelection != nil {
+                ingestionsByDay.keys.max() ?? range.upperBound
+            } else {
+                journalDay.label(for: .now)
+            }
+            selectedDay = min(max(initialDay, range.lowerBound), range.upperBound)
             await Task.yield()
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled, let selectedDay else { return }
             calendarViewProxy.scrollToDay(containing: selectedDay, scrollPosition: .centered, animated: false)
             isFirstAppear = false
         }
     }
 
-    private func dayEntries(_ entries: [Ingestion]) -> some View {
+    private func dayEntries(_ entries: [Ingestion], on day: Date) -> some View {
         List {
             Section {
                 if entries.isEmpty {
@@ -131,7 +159,7 @@ struct JournalCalendarScreen: View {
                         }
                 }
             } header: {
-                Text(selectedDay, format: .dateTime.weekday(.wide).month().day().year())
+                Text(day, format: .dateTime.weekday(.wide).month().day().year())
             }
         }
         .listStyle(.insetGrouped)
@@ -140,16 +168,51 @@ struct JournalCalendarScreen: View {
 
     // MARK: Private
 
-    private let calendar: Calendar
     private let monthsLayout: MonthsLayout
     private let visibleDateRange: ClosedRange<Date>
 
-    private let monthDateFormatter: DateFormatter
-
     @StateObject private var calendarViewProxy = CalendarViewProxy()
+
+    private var journalDay: JournalDay { JournalDay(startHour: dayStartHour, calendar: calendar) }
+
+    private func historyDateRange(days: Dictionary<Date, [Ingestion]>.Keys, scope: DateInterval?) -> ClosedRange<Date> {
+        if let scope, scope.start != .distantPast, scope.end != .distantFuture {
+            let first = journalDay.label(for: scope.start)
+            let last = journalDay.lastLabel(in: scope)
+            return min(first, days.min() ?? first)...max(last, days.max() ?? last)
+        }
+        if (substanceName != nil || scope != nil), let first = days.min(), let last = days.max() {
+            let today = journalDay.label(for: .now)
+            return min(first, today)...max(last, today)
+        }
+        let first = calendar.startOfDay(for: visibleDateRange.lowerBound)
+        let last = calendar.startOfDay(for: visibleDateRange.upperBound)
+        return min(first, days.min() ?? first)...max(last, days.max() ?? last)
+    }
 }
 
+extension PersistenceController {
+    static func historyIngestionsRequest(for substanceName: String?) -> NSFetchRequest<Ingestion> {
+        let request = ingestionsRequest()
+        if let substanceName {
+            request.predicate = NSPredicate(format: "substanceName == %@", substanceName)
+        }
+        return request
+    }
+}
 
+struct SubstanceHistoryScreen: View {
+    private let selection: StatsSelection
+
+    init(substanceName: String, selection: StatsSelection = StatsSelection(period: .allTime, person: .everyone)) {
+        self.selection = selection.forSubstance(substanceName)
+    }
+
+    var body: some View {
+        StatsDetailScreen(metric: .ingestions, selection: selection, isSubstanceHistory: true)
+            .navigationBarTitleDisplayMode(.inline)
+    }
+}
 
 struct JournalEntryLink: View {
     @ObservedObject var ingestion: Ingestion

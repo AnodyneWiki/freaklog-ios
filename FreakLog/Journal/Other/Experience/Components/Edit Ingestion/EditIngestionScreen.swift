@@ -213,6 +213,14 @@ struct EditIngestionScreen: View {
                     Text(route.rawValue.localizedCapitalized).tag(route)
                 }
             }
+            if isEyeOpen, !correctsIdentity {
+                NavigationLink {
+                    SubstanceHistoryScreen(substanceName: substanceName)
+                } label: {
+                    Label("History", systemImage: "chart.bar")
+                }
+                .accessibilityLabel("Substance History")
+            }
         } header: {
             Text("Substance")
         } footer: {
