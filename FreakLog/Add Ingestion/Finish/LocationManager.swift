@@ -5,13 +5,21 @@ import Foundation
 class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     let manager = CLLocationManager()
     @Published var currentLocation: Location?
-    @Published var selectedLocation: Location?
+    @Published private(set) var selectedLocation: Location?
     @Published var authorizationStatus: CLAuthorizationStatus?
-    @Published var searchSuggestedLocations: [Location] = []
-    @Published var selectedLocationName = ""
-    @Published var isSearchingForLocations = false
-    @Published var searchText = ""
+    @Published private(set) var searchSuggestedLocations: [Location] = []
+    @Published private(set) var isSearchingForLocations = false
+    @Published var searchText = "" {
+        didSet {
+            if searchText != oldValue {
+                cancelLocationSearch()
+                searchSuggestedLocations = []
+            }
+        }
+    }
     @Published var experienceLocations: [Location] = []
+    private let searchGeocoder = CLGeocoder()
+    private var searchTask: Task<Void, Never>?
 
     override init() {
         super.init()
@@ -32,30 +40,21 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
     }
 
     nonisolated func locationManager(_: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        Task {
+        Task { @MainActor in
             guard let foundCLLocation = locations.last else { return }
             let place = await getPlacemark(from: foundCLLocation)
-            Task { @MainActor in
-                let locationName = place?.subLocality ?? place?.name ?? "Unknown"
-                let location = Location(
-                    name: locationName,
-                    longitude: foundCLLocation.coordinate.longitude,
-                    latitude: foundCLLocation.coordinate.latitude
-                )
-                self.currentLocation = location
-                if self.shouldUpdateSelectedLocation {
-                    self.selectLocation(location)
-                    self.shouldUpdateSelectedLocation = false
-                }
-            }
+            let location = Location(
+                name: place?.subLocality ?? place?.name ?? "Unknown",
+                longitude: foundCLLocation.coordinate.longitude,
+                latitude: foundCLLocation.coordinate.latitude
+            )
+            self.currentLocation = location
         }
     }
 
     nonisolated func locationManager(_: CLLocationManager, didFailWithError error: Error) {
         print("Location manager \(error)") // no assertion failure because this is triggered when adding an ingestion with app intent
     }
-
-    private var shouldUpdateSelectedLocation = false
 
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
         Task { @MainActor in
@@ -64,7 +63,6 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
             let didJustNowGivePermission = before == CLAuthorizationStatus.notDetermined && (after == .authorizedWhenInUse || after == .authorizedAlways)
             if didJustNowGivePermission {
                 manager.requestLocation()
-                self.shouldUpdateSelectedLocation = true
             }
             self.authorizationStatus = after
         }
@@ -72,39 +70,41 @@ class LocationManager: NSObject, ObservableObject, CLLocationManagerDelegate {
 
     func selectLocation(_ location: Location?) {
         selectedLocation = location
-        selectedLocationName = location?.name ?? ""
     }
 
     func searchLocations() {
+        cancelLocationSearch()
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty else { return }
+
         isSearchingForLocations = true
-        Task {
-            let geoCoder = CLGeocoder()
-            var foundLocations: [Location] = []
-            if let places = try? await geoCoder.geocodeAddressString(searchText) {
-                foundLocations = places.map { place in
-                    Location(
-                        name: place.name ?? "Unknown",
-                        longitude: place.location?.coordinate.longitude,
-                        latitude: place.location?.coordinate.latitude
-                    )
-                }
+        searchTask = Task { [weak self, searchGeocoder] in
+            guard !Task.isCancelled else { return }
+            let places = (try? await searchGeocoder.geocodeAddressString(query)) ?? []
+            guard !Task.isCancelled, let self else { return }
+            self.searchSuggestedLocations = places.map { place in
+                Location(
+                    name: place.name ?? "Unknown",
+                    longitude: place.location?.coordinate.longitude,
+                    latitude: place.location?.coordinate.latitude
+                )
             }
-            Task { @MainActor in
-                self.searchSuggestedLocations = foundLocations
-                self.isSearchingForLocations = false
-            }
+            self.isSearchingForLocations = false
+            self.searchTask = nil
         }
+    }
+
+    private func cancelLocationSearch() {
+        guard let searchTask else { return }
+        searchTask.cancel()
+        searchGeocoder.cancelGeocode()
+        isSearchingForLocations = false
+        self.searchTask = nil
     }
 
     private func getPlacemark(from location: CLLocation) async -> CLPlacemark? {
         let geocoder = CLGeocoder()
-        do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
-            return placemarks.first
-        } catch {
-            assertionFailure("Failed to get placemark: \(error)")
-            return nil
-        }
+        return try? await geocoder.reverseGeocodeLocation(location).first
     }
 }
 

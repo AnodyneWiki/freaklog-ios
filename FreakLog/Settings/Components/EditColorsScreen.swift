@@ -6,14 +6,26 @@ struct EditColorsScreen: View {
     var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     @State private var companionToEdit: SubstanceCompanion?
+    @State private var search = ""
+
+    private var visibleCompanions: [SubstanceCompanion] {
+        let query = search.trimmingCharacters(in: .whitespacesAndNewlines)
+        return substanceCompanions.filter { companion in
+            let name = companion.substanceNameUnwrapped
+            return query.isEmpty || name.localizedStandardContains(query)
+                || PersistenceController.shared.displayName(for: name).localizedStandardContains(query)
+        }
+    }
 
     var body: some View {
         List {
             Section {
-                if substanceCompanions.isEmpty {
-                    Text("No colors added yet")
+                let companions = visibleCompanions
+                if companions.isEmpty {
+                    Text(substanceCompanions.isEmpty ? "No colors added yet" : "No matching substances")
+                        .foregroundStyle(.secondary)
                 } else {
-                    ForEach(substanceCompanions) { companion in
+                    ForEach(companions) { companion in
                         Button(action: {
                             companionToEdit = companion
                         }, label: {
@@ -31,7 +43,8 @@ struct EditColorsScreen: View {
                 EditCompanionColorScreen(companion: companion, usedColors: substanceCompanions.map(\.color))
             }
         })
-        .navigationTitle("Edit Colors")
+        .navigationTitle("Substance Colors")
+        .searchable(text: $search, prompt: "Find a substance")
         .onAppear {
             for substanceCompanion in substanceCompanions {
                 if substanceCompanion.ingestionsUnwrapped.isEmpty {

@@ -2,39 +2,39 @@ import SwiftUI
 
 struct ExperienceToolbarContent: View {
     @ObservedObject var experience: Experience
-    @Binding var saveableTimeDisplayStyle: SaveableTimeDisplayStyle
     @Binding var sheetToShow: ExperienceScreen.SheetOption?
     @Binding var isShowingDeleteConfirmation: Bool
+    let canAddIngestion: Bool
     let addIngestion: () -> Void
 
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
-    private var timeDisplayMenu: some View {
-        Menu {
-            ForEach(SaveableTimeDisplayStyle.allCases) { option in
-                Button {
-                    withAnimation {
-                        saveableTimeDisplayStyle = option
-                    }
-                } label: {
-                    if saveableTimeDisplayStyle == option {
-                        Label(option.text, systemImage: "checkmark")
-                    } else {
-                        Text(option.text)
-                    }
-                }
-            }
-        } label: {
-            Label("Time Display", systemImage: "timer")
-        }
-    }
-
     var body: some View {
         Group {
-            // The assistant shares a menu with the time display, so the bar doesn't get another button
-            if isAssistantEnabled {
-                Menu {
+            Menu {
+                if canAddIngestion {
+                    Button(action: addIngestion) {
+                        Label("Add Ingestion", systemImage: "plus")
+                    }
+                }
+                Button {
+                    sheetToShow = .addTimedNote
+                } label: {
+                    Label("Add Timed Note", systemImage: "note.text")
+                }
+                if isEyeOpen {
+                    Button {
+                        sheetToShow = .addRating
+                    } label: {
+                        Label("Add Rating", systemImage: "plus.forwardslash.minus")
+                    }
+                }
+            } label: {
+                Label("Add", systemImage: "plus")
+            }
+            Menu {
+                if isAssistantEnabled {
                     Section {
                         Button {
                             sheetToShow = .assistant(prompt: AssistantChat.summaryPrompt)
@@ -47,14 +47,7 @@ struct ExperienceToolbarContent: View {
                             Label("Ask Assistant", systemImage: "text.bubble")
                         }
                     }
-                    timeDisplayMenu
-                } label: {
-                    Label("More", systemImage: "ellipsis.circle")
                 }
-            } else {
-                timeDisplayMenu
-            }
-            Menu {
                 Button {
                     sheetToShow = .editNotes
                 } label: {
@@ -89,28 +82,7 @@ struct ExperienceToolbarContent: View {
                     Label("Delete Experience", systemImage: "trash")
                 }
             } label: {
-                Label("Edit", systemImage: "pencil")
-            }
-            if isEyeOpen {
-                Menu {
-                    if !experience.isCurrent {
-                        Button(action: addIngestion) {
-                            Label("Add Ingestion", systemImage: "plus")
-                        }
-                    }
-                    Button {
-                        sheetToShow = .addRating
-                    } label: {
-                        Label("Add Rating", systemImage: "plus.forwardslash.minus")
-                    }
-                    Button {
-                        sheetToShow = .addTimedNote
-                    } label: {
-                        Label("Add Timed Note", systemImage: "note.text")
-                    }
-                } label: {
-                    Label("Add", systemImage: "plus")
-                }
+                Label("More", systemImage: "ellipsis.circle")
             }
         }
     }

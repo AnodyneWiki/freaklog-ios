@@ -5,9 +5,9 @@ import SwiftUI
 
 struct FinishIngestionScreen: View {
     enum SheetOption: Identifiable {
-        case editTitle
         case editLocation
         case editConsumer
+        case editMeasurement
 
         var id: Self {
             self
@@ -16,7 +16,7 @@ struct FinishIngestionScreen: View {
 
     // Logged together with the same time, experience, consumer, location and note,
     // like the substances of a formulation
-    let ingestions: [FinishIngestionScreenArguments]
+    @State private var ingestions: [FinishIngestionScreenArguments]
     let dismiss: () -> Void
 
     init(arguments: FinishIngestionScreenArguments, dismiss: @escaping () -> Void) {
@@ -24,19 +24,22 @@ struct FinishIngestionScreen: View {
     }
 
     init(ingestions: [FinishIngestionScreenArguments], dismiss: @escaping () -> Void) {
-        self.ingestions = ingestions
+        _ingestions = State(initialValue: ingestions)
         self.dismiss = dismiss
     }
 
     @EnvironmentObject private var toastViewModel: ToastViewModel
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
+    @Environment(\.ingestionPrefillNote) private var prefillNote
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
     @State private var selectedTimePickerOption = TimePickerOption.pointInTime
     @State private var selectedEndTime = Date().addingTimeInterval(30*60)
     @State private var enteredNote = ""
+    @State private var showsDisplayOptions = false
+    @State private var showsWebhooks = false
     @State private var enteredTitle = ""
     @State private var consumerName = ""
     @State private var siteSelection = AdministrationSiteSelection()
@@ -46,6 +49,8 @@ struct FinishIngestionScreen: View {
     @State private var experiencesWithinLargerRange: [Experience] = []
     @State private var selectedExperience: Experience?
     @State private var wantsToForceNewExperience = false
+    @State private var hasSelectedExperience = false
+    @State private var saveError: String?
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
@@ -54,153 +59,105 @@ struct FinishIngestionScreen: View {
 
     @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
+    @State private var hasInitializedWebhooks = false
 
     var body: some View {
         screen.toolbar {
-            ToolbarItem(placement: .cancellationAction) {
-                Button("Cancel") {
-                    dismiss()
-                }
-            }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItem(placement: .confirmationAction) {
                 doneButton
             }
         }
     }
 
     var doneButton: some View {
-        DoneButton {
-            do {
-                try addIngestionWithExperience()
-                toastViewModel.showSuccessToast()
-                generateSuccessHaptic()
-                dismiss()
-            } catch {
-                toastViewModel.showErrorToast(message: "Failed Ingestion")
-                generateFailedHaptic()
-            }
+        Button("Log", action: save)
+            .font(.headline)
+    }
+
+    private func save() {
+        do {
+            try addIngestionWithExperience()
+            toastViewModel.showSuccessToast()
+            generateSuccessHaptic()
+            dismiss()
+        } catch {
+            saveError = (error as? LocalizedError)?.errorDescription ?? "Your ingestion couldn’t be saved. Your details are still here."
+            generateFailedHaptic()
         }
     }
 
     var screen: some View {
         Form {
-            Section("Ingestion") {
+            if let saveError {
+                Section {
+                    Label(saveError, systemImage: "exclamationmark.circle")
+                    Button("Try Again", action: save)
+                }
+            }
+            ingestionSummary
+            Section("When") {
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
                     selectedTime: $selectedTime,
-                    selectedEndTime: $selectedEndTime
+                    selectedEndTime: $selectedEndTime,
+                    showsPresets: true
                 )
-                ExperiencePickerRow(
-                    selectedExperience: $selectedExperience,
-                    wantsToForceNewExperience: $wantsToForceNewExperience,
-                    experiences: experiencesWithinLargerRange
-                )
+            }
+            experienceSection
+            Section("Details") {
+                TextField("Note", text: $enteredNote, axis: .vertical)
+                    .textInputAutocapitalization(.sentences)
                 ConsumerRow(consumerName: consumerName) { sheetToShow = .editConsumer }
                 if let sharedRoute {
                     AdministrationSitePicker(route: sharedRoute, selection: $siteSelection)
                 }
                 LocationButton(locationName: locationManager.selectedLocation?.name) { sheetToShow = .editLocation }
-            }
-            .listRowSeparator(.hidden)
-            .onChange(of: selectedTime) { _ in
-                selectExperienceBasedOnCurrentTime()
-            }
-            Section("Notes") {
-                TextField("Enter Note", text: $enteredNote, axis: .vertical)
-                    .autocapitalization(.sentences)
-            }
-            if selectedExperience == nil {
-                Section("New Experience") {
-                    Button {
-                        sheetToShow = .editTitle
-                    } label: {
-                        if enteredTitle.isEmpty {
-                            Label("Add Title", systemImage: "plus")
-                        } else {
-                            Label(enteredTitle, systemImage: "pencil").lineLimit(1)
-                        }
-                    }
-                    if #available(iOS 16.2, *) {
-                        let isTimeRecentOrFuture = selectedTime > Date().addingTimeInterval(-12 * 60 * 60)
-                        if LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive, isTimeRecentOrFuture {
-                            Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity).tint(.accentColor)
-                        }
-                    }
+                if #available(iOS 16.2, *), selectedExperience == nil,
+                   LiveActivities.areAvailable, !ActivityManager.shared.isActivityActive,
+                   selectedTime > Date.now.addingTimeInterval(-12 * 60 * 60) {
+                    Toggle("Start Live Activity", isOn: $wantsToStartLiveActivity)
                 }
-            }
-            Section {
-                ForEach(substanceNames, id: \.self) { substanceName in
-                    let selectedColor = colorBinding(for: substanceName)
-                    NavigationLink {
-                        ColorPickerScreen(
-                            selectedColor: selectedColor,
-                            usedColors: usedColors)
-                    } label: {
-                        HStack {
-                            Text("\(PersistenceController.shared.displayName(for: substanceName)) Color")
-                            Spacer()
-                            Image(systemName: "circle.fill").foregroundColor(selectedColor.wrappedValue.swiftUIColor)
-                        }
-                    }
-                }
+                displayOptions
             }
             if !enabledWebhookPresets.isEmpty {
-                Section("Webhooks") {
-                    Toggle("Send Webhooks", isOn: $isWebhookSectionExpanded.animation())
-                        .tint(.accentColor)
-
-                    if isWebhookSectionExpanded {
-                        ForEach(enabledWebhookPresets, id: \.objectID) { preset in
-                            HStack {
-                                Text(preset.displayName)
-                                Spacer()
-                                if selectedWebhookPresetIDs.contains(preset.idUnwrapped) {
-                                    Image(systemName: "checkmark")
-                                        .foregroundColor(.accentColor)
-                                }
-                            }
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                let presetId = preset.idUnwrapped
-                                if selectedWebhookPresetIDs.contains(presetId) {
-                                    selectedWebhookPresetIDs.remove(presetId)
-                                } else {
-                                    selectedWebhookPresetIDs.insert(presetId)
-                                }
-                            }
-                        }
-                    }
-                }
+                sharingSection
             }
+        }
+        .onChange(of: selectedTimeRange) { _ in
+            selectExperienceBasedOnCurrentTime()
         }
         .onAppear {
-            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
             generator.prepare()
-            // Preserve previously selected presets; if none stored, default to all enabled
-            if selectedWebhookPresetIDs.isEmpty {
-                selectedWebhookPresetIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
-            }
+            initializeWebhooks(with: enabledWebhookPresets.map(\.idUnwrapped))
         }
-        .onChange(of: enabledWebhookPresets.count) { _ in
-            let availableIDs = Set(enabledWebhookPresets.map { $0.idUnwrapped })
-            // Drop selections that no longer exist and default to all when empty
-            selectedWebhookPresetIDs = selectedWebhookPresetIDs.intersection(availableIDs)
-            if selectedWebhookPresetIDs.isEmpty {
-                selectedWebhookPresetIDs = availableIDs
-            }
+        .onChange(of: enabledWebhookPresets.map(\.idUnwrapped)) { availableIDs in
+            initializeWebhooks(with: availableIDs)
+            selectedWebhookPresetIDs.formIntersection(availableIDs)
         }
-        .navigationBarTitle("Finish Ingestion")
+        .scrollDismissesKeyboard(.interactively)
+        .navigationTitle("Review")
+        .navigationBarTitleDisplayMode(.inline)
         .sheet(item: $sheetToShow, content: { sheet in
             switch sheet {
-            case .editTitle:
-                ExperienceTitleScreen(title: $enteredTitle)
             case .editLocation:
-                ChooseLocationScreen(locationManager: locationManager, onDone: { })
+                ChooseLocationScreen(
+                    locationManager: locationManager,
+                    initialLocation: locationManager.selectedLocation,
+                    onDone: locationManager.selectLocation
+                )
             case .editConsumer:
                 EditConsumerScreen(consumerName: $consumerName)
+            case .editMeasurement:
+                if let ingestion = ingestions.first {
+                    IngestionMeasurementEditor(ingestion: ingestion, onDone: updateMeasurement)
+                }
             }
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
+            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
+            if let prefillNote, !prefillNote.isEmpty {
+                enteredNote = prefillNote
+            }
             if let startTime {
                 selectedTime = startTime
                 selectedEndTime = startTime.addingTimeInterval(30*60)
@@ -211,13 +168,142 @@ struct FinishIngestionScreen: View {
         }
     }
 
-    func selectExperienceBasedOnCurrentTime() {
-        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: selectedTime)
-        if wantsToForceNewExperience {
-            selectedExperience = nil
-        } else {
-            selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: selectedTime)
+    private var ingestionSummary: some View {
+        Section {
+            ForEach(ingestions.indices, id: \.self) { index in
+                let ingestion = ingestions[index]
+                if ingestions.count == 1, ingestion.formulation == nil {
+                    Button {
+                        sheetToShow = .editMeasurement
+                    } label: {
+                        summary(for: ingestion)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens the ingestion details editor")
+                } else {
+                    summary(for: ingestion)
+                }
+            }
         }
+    }
+
+    private func summary(for ingestion: FinishIngestionScreenArguments) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(PersistenceController.shared.displayName(for: ingestion.substanceName))
+                .font(.headline)
+            Text(doseDescription(for: ingestion))
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+            Text(ingestion.administrationRoute.rawValue.localizedCapitalized)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, 4)
+        .accessibilityElement(children: .combine)
+    }
+
+    private func updateMeasurement(_ updated: FinishIngestionScreenArguments) {
+        if updated.administrationRoute != ingestions[0].administrationRoute {
+            siteSelection = AdministrationSiteSelection()
+        }
+        ingestions[0] = updated
+    }
+
+    private var experienceSection: some View {
+        Section("Experience") {
+            if experiencesWithinLargerRange.isEmpty {
+                LabeledContent("Add To", value: "New Experience")
+            } else {
+                ExperiencePickerRow(
+                    selectedExperience: $selectedExperience,
+                    wantsToForceNewExperience: $wantsToForceNewExperience,
+                    experiences: experiencesWithinLargerRange,
+                    onSelection: { hasSelectedExperience = true }
+                )
+            }
+            if selectedExperience == nil {
+                TextField("Title (Optional)", text: $enteredTitle)
+                    .textInputAutocapitalization(.sentences)
+            }
+        }
+    }
+
+    private var displayOptions: some View {
+        DisclosureGroup("Journal Colors", isExpanded: $showsDisplayOptions) {
+            ForEach(substanceNames, id: \.self) { substanceName in
+                let color = colorBinding(for: substanceName)
+                NavigationLink {
+                    ColorPickerScreen(selectedColor: color, usedColors: usedColors)
+                } label: {
+                    LabeledContent {
+                        Image(systemName: "circle.fill")
+                            .foregroundStyle(color.wrappedValue.swiftUIColor)
+                            .accessibilityLabel(Text(color.wrappedValue.name))
+                    } label: {
+                        if substanceNames.count == 1 {
+                            Text("Journal Color")
+                        } else {
+                            Text(PersistenceController.shared.displayName(for: substanceName))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private var sharingSection: some View {
+        Section("Sharing") {
+            DisclosureGroup(isExpanded: $showsWebhooks) {
+                Toggle("Send Webhooks", isOn: $isWebhookSectionExpanded)
+                if isWebhookSectionExpanded {
+                    ForEach(enabledWebhookPresets, id: \.objectID) { preset in
+                        Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
+                    }
+                }
+            } label: {
+                LabeledContent("Webhooks", value: isWebhookSectionExpanded ? webhookRecipients : String(localized: "Off"))
+            }
+        }
+    }
+
+    private func doseDescription(for ingestion: FinishIngestionScreenArguments) -> String {
+        guard let dose = ingestion.dose else { return "Unknown amount" }
+        return dose.doseDescription(
+            units: ingestion.customUnit?.unitUnwrapped ?? ingestion.units ?? "",
+            isEstimate: ingestion.isEstimate,
+            standardDeviation: ingestion.estimatedDoseStandardDeviation
+        )
+    }
+
+    private func initializeWebhooks(with availableIDs: [UUID]) {
+        guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
+        selectedWebhookPresetIDs = Set(availableIDs)
+        hasInitializedWebhooks = true
+    }
+
+    private var webhookRecipients: String {
+        let names = enabledWebhookPresets
+            .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
+            .map(\.displayName)
+        return names.isEmpty ? "None" : names.formatted(.list(type: .and))
+    }
+
+    func selectExperienceBasedOnCurrentTime() {
+        let dates = selectedTimeRange
+        experiencesWithinLargerRange = PersistenceController.shared.getExperiences(near: dates)
+        if hasSelectedExperience {
+            if let selectedExperience, !experiencesWithinLargerRange.contains(selectedExperience) {
+                experiencesWithinLargerRange.insert(selectedExperience, at: 0)
+            }
+        } else {
+            selectedExperience = ExperienceLogic.closestExperience(from: experiencesWithinLargerRange, to: dates)
+        }
+    }
+
+    private var selectedTimeRange: ClosedRange<Date> {
+        selectedTime...((selectedTimePickerOption == .timeRange) ? max(selectedTime, selectedEndTime) : selectedTime)
     }
 
     private var substanceNames: [String] {
@@ -359,4 +445,117 @@ struct FinishIngestionScreen: View {
 
 // swiftlint:enable type_body_length function_body_length file_length
 
+private struct IngestionMeasurementEditor: View {
+    let ingestion: FinishIngestionScreenArguments
+    let onDone: (FinishIngestionScreenArguments) -> Void
+    private let initialAmountText: String
 
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
+    @State private var route: AdministrationRoute
+    @State private var amountText: String
+    @State private var didChangeRoute = false
+    @State private var units: String
+    @State private var isEstimate: Bool
+    @State private var deviation: Double?
+
+    init(ingestion: FinishIngestionScreenArguments, onDone: @escaping (FinishIngestionScreenArguments) -> Void) {
+        self.ingestion = ingestion
+        self.onDone = onDone
+        _route = State(initialValue: ingestion.administrationRoute)
+        let formattedAmount = ingestion.dose?.formatted() ?? ""
+        _amountText = State(initialValue: formattedAmount)
+        initialAmountText = formattedAmount
+        _units = State(initialValue: ingestion.units ?? "")
+        _isEstimate = State(initialValue: ingestion.isEstimate)
+        _deviation = State(initialValue: ingestion.estimatedDoseStandardDeviation)
+    }
+
+    private var customUnit: CustomUnit? {
+        route == ingestion.administrationRoute ? ingestion.customUnit : nil
+    }
+
+    private var amount: Double? {
+        if !didChangeRoute, amountText == initialAmountText { return ingestion.dose }
+        return getDouble(from: amountText)
+    }
+    private var amountIsValid: Bool {
+        amountText.isEmpty || (amount.map { $0.isFinite && $0 > 0 } ?? false)
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                if isEyeOpen {
+                    Section {
+                        Picker("Route", selection: $route) {
+                            ForEach(AdministrationRoute.allCases) { route in
+                                Text(route.rawValue.localizedCapitalized).tag(route)
+                            }
+                        }
+                        .pickerStyle(.navigationLink)
+                        .onChange(of: route, perform: resetAmount)
+                    } footer: {
+                        Text("Changing the route clears the amount.")
+                    }
+                }
+                Section {
+                    if let customUnit {
+                        LabeledContent("Unit", value: customUnit.unitUnwrapped)
+                    } else {
+                        UnitsPicker(units: $units).id(route)
+                    }
+                    TextField("Amount", text: $amountText)
+                        .keyboardType(.decimalPad)
+                    if amount != nil {
+                        EstimateFields(
+                            isEstimate: $isEstimate,
+                            standardDeviation: $deviation,
+                            units: customUnit?.unitUnwrapped ?? units,
+                            mean: amount
+                        )
+                    }
+                } footer: {
+                    Text("Leave the amount blank to log it as unknown.")
+                }
+            }
+            .navigationTitle("Edit Ingestion")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done", action: apply)
+                        .disabled(!amountIsValid || (amount != nil && customUnit == nil && units.isEmpty))
+                }
+            }
+        }
+    }
+
+    private func resetAmount(for route: AdministrationRoute) {
+        didChangeRoute = true
+        amountText = ""
+        isEstimate = false
+        deviation = nil
+        units = route == ingestion.administrationRoute
+            ? ingestion.units ?? ""
+            : PersistenceController.shared.getCustomSubstance(name: ingestion.substanceName)?.unitsUnwrapped
+                ?? PersistenceController.shared.resolvedDose(for: ingestion.substanceName, route: route)?.units
+                ?? UnitPickerOptions.mg.rawValue
+    }
+
+    private func apply() {
+        let updated = FinishIngestionScreenArguments(
+            substanceName: ingestion.substanceName,
+            administrationRoute: route,
+            dose: amount,
+            units: units.isEmpty ? nil : units,
+            isEstimate: amount != nil && isEstimate,
+            estimatedDoseStandardDeviation: amount != nil && isEstimate ? deviation : nil,
+            customUnit: customUnit
+        )
+        onDone(updated)
+        dismiss()
+    }
+}

@@ -130,6 +130,7 @@ struct EditWebhookPresetScreen: View {
             isEstimate: false,
             route: "oral",
             site: "",
+            simpleSite: "",
             note: "This is a test note."
         )
         let content = WebhookService.content(for: data, settings: .current)

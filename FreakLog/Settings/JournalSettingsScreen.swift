@@ -11,6 +11,9 @@ struct JournalSettingsScreen: View {
     @AppStorage(PersistenceController.isHidingToleranceChartInExperienceKey) var isHidingToleranceChartInExperience: Bool = false
     @AppStorage(PersistenceController.isHidingSubstanceInfoInExperienceKey) var isHidingSubstanceInfoInExperience: Bool = false
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity = true
+    @AppStorage(AdministrationSiteNameStyle.preferenceKey) private var siteNameStyle = AdministrationSiteNameStyle.simple
+
+    @AppStorage(PersistenceController.confirmsIngestionDeletionKey) private var confirmsIngestionDeletion = true
 
     var body: some View {
         List {
@@ -32,6 +35,17 @@ struct JournalSettingsScreen: View {
                 }
 
                 Toggle("Tab Switcher", isOn: $isHidingJournalTabSwitcher.inverted)
+                    .tint(.accentColor)
+
+                Picker("Site Names", selection: $siteNameStyle) {
+                    ForEach(AdministrationSiteNameStyle.allCases) { style in
+                        Text(style.title).tag(style)
+                    }
+                }
+            }
+
+            Section("Editing") {
+                Toggle("Confirm Ingestion Deletion", isOn: $confirmsIngestionDeletion)
                     .tint(.accentColor)
             }
 
@@ -68,8 +82,14 @@ struct JournalSettingsScreen: View {
                 }
             }
             .tint(.accentColor)
+
+            Section {
+                NavigationLink(value: GlobalNavigationDestination.editColors) {
+                    Label("Substance Colors", systemImage: "paintpalette")
+                }
+            }
         }
-        .navigationTitle("Journal Settings")
+        .navigationTitle("Journal & Timeline")
     }
 }
 

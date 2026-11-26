@@ -101,6 +101,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             CustomUnitsArchiveScreen()
         case .tabSettings:
             TabSettingsScreen()
+        case .appIconSettings:
+            AppIconSettingsScreen()
         case .journalSettings:
             JournalSettingsScreen()
         case let .timeline(timelineModel, timeDisplayStyle):

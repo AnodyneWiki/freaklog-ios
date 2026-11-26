@@ -72,6 +72,7 @@ struct WebhookService {
             "unit": unitString,
             "route": data.route,
             "site": data.site,
+            "site_simple": data.simpleSite,
             "note": data.note
         ]
 

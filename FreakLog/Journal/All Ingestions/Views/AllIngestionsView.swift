@@ -5,6 +5,7 @@ struct AllIngestionsView: View {
     let searchText: String
     let isFavoriteFilterEnabled: Bool
     var timeDisplayStyle: SaveableTimeDisplayStyle
+    var showsTimeline = true
     
     @AppStorage(PersistenceController.isEyeOpenKey2) private var isEyeOpen = false
     @AppStorage(PersistenceController.isHidingDosageDotsKey) private var isHidingDosageDots = false
@@ -14,13 +15,16 @@ struct AllIngestionsView: View {
     private var dynamicRange = DynamicRangeOption.twentyFourHours
 
     @State private var sheetToShow: SheetOption?
+    @State private var deletionRequest: IngestionDeletion.Request?
     @State private var hiddenIngestions: Set<ObjectIdentifier> = []
 
     var body: some View {
         List {
-            timelineSection
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
+            if showsTimeline {
+                timelineSection
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            }
 
             ForEach(viewModel.sections) { section in
                 Section(header: ChameleonHeader(
@@ -47,8 +51,10 @@ struct AllIngestionsView: View {
         .listStyle(.plain)
         .overlay {
             if viewModel.sections.isEmpty && viewModel.hasReachedEnd {
-                Text(emptyText)
-                    .foregroundColor(.secondary)
+                JournalEmptyState(
+                    message: emptyText,
+                    offersLogging: searchText.isEmpty && !isFavoriteFilterEnabled
+                )
             }
         }
         .scrollIndicators(.hidden)
@@ -66,6 +72,7 @@ struct AllIngestionsView: View {
                 EditTimedNoteScreen(timedNote: timedNote, experience: experience)
             }
         }
+        .confirmIngestionDeletion($deletionRequest)
         .onChange(of: searchText) { newValue in
             viewModel.searchText = newValue
         }
@@ -217,7 +224,7 @@ private extension AllIngestionsView {
             }
 
             Button(role: .destructive) {
-                viewModel.delete(ingestion)
+                requestIngestionDeletion(ingestion, confirmation: $deletionRequest)
             } label: {
                 Label("Delete", systemImage: "trash")
             }
@@ -272,7 +279,7 @@ private extension AllIngestionsView {
 
     func delete(_ item: IngestionSection.Item) {
         switch item {
-        case .ingestion(let ingestion): viewModel.delete(ingestion)
+        case .ingestion(let ingestion): requestIngestionDeletion(ingestion, confirmation: $deletionRequest)
         case .timedNote(let timedNote): viewModel.delete(timedNote)
         }
     }

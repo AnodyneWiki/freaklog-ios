@@ -5,6 +5,18 @@ struct CustomUnitsChooseDoseScreen: View {
     let dismiss: () -> Void
     let navigateToCustomUnitChooseDose: (CustomUnit) -> Void
 
+    init(
+        customUnit: CustomUnit,
+        dismiss: @escaping () -> Void,
+        navigateToCustomUnitChooseDose: @escaping (CustomUnit) -> Void,
+        initialDose: Double? = nil
+    ) {
+        self.customUnit = customUnit
+        self.dismiss = dismiss
+        self.navigateToCustomUnitChooseDose = navigateToCustomUnitChooseDose
+        _dose = State(initialValue: initialDose)
+    }
+
     @State private var isAddCustomUnitSheetShown = false
 
     @State private var dose: Double?

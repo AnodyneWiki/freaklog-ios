@@ -46,6 +46,7 @@ final class WebhookManager {
         let isEstimate: Bool
         let route: String
         let site: String
+        let simpleSite: String
         let note: String
     }
 
@@ -389,6 +390,8 @@ extension WebhookManager.WebhookDataSnapshot {
     // The message for a saved ingestion, used both when sending and when editing it
     init(ingestion: Ingestion) {
         let dose = ingestion.doseUnwrapped ?? 0
+        let route = ingestion.administrationRouteUnwrapped
+        let site = ingestion.administrationSiteUnwrapped
         self.init(
             user: ingestion.isMine ? "" : ingestion.consumerNameUnwrapped,
             substance: ingestion.substanceNameUnwrapped,
@@ -396,8 +399,9 @@ extension WebhookManager.WebhookDataSnapshot {
             dose: dose,
             units: ingestion.customUnit.map { dose.justUnit(pluralizableUnit: $0.pluralizableUnit) } ?? ingestion.unitsUnwrapped,
             isEstimate: ingestion.isEstimate,
-            route: ingestion.administrationRouteUnwrapped.rawValue,
-            site: ingestion.administrationSiteUnwrapped.lowercased(),
+            route: route.rawValue,
+            site: site.lowercased(),
+            simpleSite: AdministrationSiteNameStyle.simple.label(for: site, route: route).lowercased(),
             note: ingestion.noteUnwrapped
         )
     }

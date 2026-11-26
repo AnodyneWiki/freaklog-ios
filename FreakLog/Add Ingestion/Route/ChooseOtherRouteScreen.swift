@@ -15,13 +15,19 @@ struct ChooseOtherRouteScreen: View {
     }
 
     var screen: some View {
-        VStack(alignment: .leading) {
-            RouteGrid(routes: arguments.otherRoutes) { route in
-                SubstanceAndRoute(substance: arguments.substance, administrationRoute: route)
+        List {
+            Section {
+                ForEach(arguments.otherRoutes, id: \.self) { route in
+                    NavigationLink(value: SubstanceAndRoute(substance: arguments.substance, administrationRoute: route)) {
+                        RouteRow(route: route)
+                    }
+                }
+            } header: {
+                Text(arguments.substance.displayName)
             }
         }
-        .padding(.horizontal)
-        .navigationBarTitle("Other Routes")
+        .navigationTitle("Other Routes")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
 

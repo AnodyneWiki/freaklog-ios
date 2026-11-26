@@ -9,8 +9,11 @@ struct ContentView: View {
 
     var body: some View {
         ContentScreen(isEyeOpen: isEyeOpen2)
-            .fullScreenCover(isPresented: $needsToSeeWelcome) {
+            .sheet(isPresented: $needsToSeeWelcome) {
                 WelcomeScreen(isShowingWelcome: $needsToSeeWelcome)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.hidden)
+                    .interactiveDismissDisabled()
             }
     }
 }

@@ -21,31 +21,29 @@ struct FreakLog: App {
         WindowGroup {
             if appDelegate.isJournalReady {
                 AuthenticatorWrapper(authenticator: authenticator) {
-                    LaunchAnimationWrapper {
-                        ContentView()
-                            .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
-                            .environmentObject(toastViewModel)
-                            .environmentObject(authenticator)
-                            .environmentObject(locationManager)
-                            .environmentObject(LeaderboardServerStore.shared)
-                            .accentColor(Color.blue)
-                            .onReceive(NotificationCenter.default.publisher(for: IngestionDeletion.failureNotification)) { notification in
-                                if let message = notification.object as? String {
-                                    toastViewModel.showErrorToast(message: message)
-                                }
+                    ContentView()
+                        .environment(\.managedObjectContext, PersistenceController.shared.viewContext)
+                        .environmentObject(toastViewModel)
+                        .environmentObject(authenticator)
+                        .environmentObject(locationManager)
+                        .environmentObject(LeaderboardServerStore.shared)
+                        .accentColor(Color.blue)
+                        .onReceive(NotificationCenter.default.publisher(for: IngestionDeletion.failureNotification)) { notification in
+                            if let message = notification.object as? String {
+                                toastViewModel.showErrorToast(message: message)
                             }
-                            .onReceive(NotificationCenter.default.publisher(for: WebhookManager.failureNotification)) { notification in
-                                if let message = notification.object as? String {
-                                    toastViewModel.showErrorToast(message: message)
-                                }
+                        }
+                        .onReceive(NotificationCenter.default.publisher(for: WebhookManager.failureNotification)) { notification in
+                            if let message = notification.object as? String {
+                                toastViewModel.showErrorToast(message: message)
                             }
-                            .toast(isPresenting: $toastViewModel.isShowingToast, duration: 1) {
-                                AlertToast(
-                                    displayMode: .alert,
-                                    type: toastViewModel.isSuccessToast ? .complete(.green) : .error(.red),
-                                    title: toastViewModel.toastMessage)
-                            }
-                    }
+                        }
+                        .toast(isPresenting: $toastViewModel.isShowingToast, duration: 1) {
+                            AlertToast(
+                                displayMode: .alert,
+                                type: toastViewModel.isSuccessToast ? .complete(.green) : .error(.red),
+                                title: toastViewModel.toastMessage)
+                        }
                 }
             } else {
                 VStack(spacing: 16) {

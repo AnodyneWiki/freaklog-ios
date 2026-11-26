@@ -6,7 +6,8 @@ struct JournalScreen: View {
     @Binding var isSearchPresented: Bool
     @Binding var isFavoriteFilterEnabled: Bool
 
-
+    @State private var journalWidth: CGFloat = 0
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @AppStorage(PersistenceController.timeDisplayStyleKey) private var timeDisplayStyle: SaveableTimeDisplayStyle = .auto
     @AppStorage(PersistenceController.isEyeOpenKey2) var isEyeOpen: Bool = false
     @AppStorage(PersistenceController.fabButtonPositionKey) var fabButtonPosition: FabButtonPosition = .right
@@ -61,11 +62,35 @@ struct JournalScreen: View {
                     AllIngestionsView(
                         searchText: searchText,
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
-                        timeDisplayStyle: timeDisplayStyle
+                        timeDisplayStyle: timeDisplayStyle,
+                        showsTimeline: !isSearchPresented && !isFavoriteFilterEnabled
                     )
                 }
             }
             .scrollDismissesKeyboard(.interactively)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                VStack(spacing: 0) {
+                    if !isHidingJournalTabSwitcher, dynamicTypeSize.isAccessibilitySize {
+                        HStack {
+                            viewPicker.pickerStyle(.menu)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(minHeight: 44)
+                        .background(.bar)
+                    }
+                    if !showsDirectActions, isSearchPresented || isFavoriteFilterEnabled {
+                        HStack {
+                            favoriteButton
+                                .labelStyle(.titleAndIcon)
+                                .frame(minHeight: 44)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 16)
+                        .background(.bar)
+                    }
+                }
+            }
             .task(id: searchText) {
                 if !searchText.isEmpty {
                     try? await Task.sleep(nanoseconds: 300_000_000)
@@ -87,6 +112,13 @@ struct JournalScreen: View {
             }
             .disableAutocorrection(true)
         }
+        .background {
+            GeometryReader { geometry in
+                Color.clear
+                    .onAppear { journalWidth = geometry.size.width }
+                    .onChange(of: geometry.size.width) { journalWidth = $0 }
+            }
+        }
         // Both tabs share one inline bar, so switching doesn't resize it; the switcher takes the title's place
         .navigationTitle("Journal")
         .navigationBarTitleDisplayMode(.inline)
@@ -100,15 +132,11 @@ struct JournalScreen: View {
             AssistantScreen(experience: nil, suggestsCurrentSessionSummary: selectedTab == .allIngestions)
         }
         .toolbar {
-            if !isHidingJournalTabSwitcher {
+            if !isHidingJournalTabSwitcher, !dynamicTypeSize.isAccessibilitySize {
                 ToolbarItem(placement: .principal) {
-                    Picker("View", selection: selectedTabBinding) {
-                        ForEach(JournalViewOption.allCases) { option in
-                            Text(option.text).tag(option)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .frame(maxWidth: 228)
+                    viewPicker
+                        .pickerStyle(.segmented)
+                        .frame(maxWidth: 228)
                 }
             }
 
@@ -119,15 +147,57 @@ struct JournalScreen: View {
                     } label: {
                         Label("Search", systemImage: "magnifyingglass")
                     }
-                    favoriteButton
+                    if showsDirectActions { favoriteButton }
                 }
             }
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 4) {
-                    timeDisplayMenu
-                    calendarLink
+                if showsDirectActions {
+                    HStack(spacing: 4) {
+                        timeDisplayMenu
+                        calendarLink
+                    }
+                } else {
+                    moreMenu
                 }
             }
+        }
+    }
+
+    private var showsDirectActions: Bool {
+        // Leave room for the centered switcher as well as two buttons on each side.
+        !dynamicTypeSize.isAccessibilitySize && journalWidth >= (isHidingJournalTabSwitcher ? 320 : 440)
+    }
+
+    private var calendarLink: some View {
+        NavigationLink(value: GlobalNavigationDestination.calendar) {
+            Label("Calendar", systemImage: "calendar")
+        }
+    }
+
+    private var viewPicker: some View {
+        Picker("Journal View", selection: selectedTabBinding) {
+            ForEach(JournalViewOption.allCases) { option in
+                Text(option.text).tag(option)
+            }
+        }
+    }
+
+    private var moreMenu: some View {
+        Menu {
+            Button {
+                isAddingTimedNote = true
+            } label: {
+                Label("Add Timed Note", systemImage: "note.text")
+            }
+            Button {
+                Navigator.shared.openInCurrentTab(.calendar)
+            } label: {
+                Label("Calendar", systemImage: "calendar")
+            }
+            favoriteButton
+            timeDisplayMenu
+        } label: {
+            Label("More", systemImage: "ellipsis.circle")
         }
     }
 
@@ -149,22 +219,31 @@ struct JournalScreen: View {
         }
     }
 
-    private var calendarLink: some View {
-        NavigationLink(value: GlobalNavigationDestination.calendar) {
-            Label("Calendar", systemImage: "calendar")
-        }
-    }
-
     private var favoriteButton: some View {
         Button {
             isFavoriteFilterEnabled.toggle()
         } label: {
-            if isFavoriteFilterEnabled {
-                Label("Don't Filter Favorites", systemImage: "star.fill")
-            } else {
-                Label("Filter Favorites", systemImage: "star")
+            Label("Favorites", systemImage: isFavoriteFilterEnabled ? "star.fill" : "star")
+        }
+        .accessibilityAddTraits(isFavoriteFilterEnabled ? .isSelected : [])
+    }
+}
+
+struct JournalEmptyState: View {
+    let message: String
+    let offersLogging: Bool
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text(message).foregroundStyle(.secondary)
+            if offersLogging {
+                Button("Log an Ingestion") {
+                    Navigator.shared.showAddIngestionFullScreenCover()
+                }
+                .buttonStyle(.borderedProminent)
             }
         }
+        .padding()
     }
 }
 

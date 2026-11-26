@@ -42,6 +42,7 @@ struct PersistenceController {
     static let isAssistantAnodyneWikiEnabledKey = "isAssistantAnodyneWikiEnabled"
     static let isAssistantWebAccessEnabledKey = "isAssistantWebAccessEnabled"
     static let defaultJournalViewKey = "defaultJournalView"
+    static let confirmsIngestionDeletionKey = "confirmsIngestionDeletion"
     static let isHidingJournalTabSwitcherKey = "isHidingJournalTabSwitcher"
     static let leaderboardServersKey = "leaderboardServers"
     static let leaderboardDeviceSeedKey = "leaderboardDeviceSeed"
@@ -661,17 +662,27 @@ struct PersistenceController {
     }
 
     static func experiencesRequest(near date: Date) -> NSFetchRequest<Experience> {
+        experiencesRequest(near: date...date)
+    }
+
+    static func experiencesRequest(near dates: ClosedRange<Date>) -> NSFetchRequest<Experience> {
         let window: TimeInterval = 60 * 60 * 60
-        let r = Self.experiencesRequest()
-        r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
-            NSPredicate(format: "sortDate > %@", date.addingTimeInterval(-window) as NSDate),
-            NSPredicate(format: "sortDate < %@", date.addingTimeInterval(window) as NSDate),
-        ])
+        let earliest = dates.lowerBound.addingTimeInterval(-window) as NSDate
+        let latest = dates.upperBound.addingTimeInterval(window) as NSDate
+        let r = Self.experiencesRequest(prefetchingIngestions: true)
+        r.predicate = NSPredicate(
+            format: "sortDate <= %@ AND (sortDate >= %@ OR ANY ingestions.time >= %@ OR ANY ingestions.endTime >= %@)",
+            latest, earliest, earliest, earliest
+        )
         return r
     }
 
     func getExperiences(near date: Date) -> [Experience] {
-        (try? viewContext.fetch(Self.experiencesRequest(near: date))) ?? []
+        getExperiences(near: date...date)
+    }
+
+    func getExperiences(near dates: ClosedRange<Date>) -> [Experience] {
+        (try? viewContext.fetch(Self.experiencesRequest(near: dates))) ?? []
     }
 
     func getAllCustomSubstances() -> [CustomSubstance] {

@@ -7,9 +7,9 @@ extension Binding where Value == Bool {
   }
 }
 
-extension Binding where Value == Set<ObjectIdentifier> {
+extension Binding {
   // Whether the set holds the element; turning it on inserts it, turning it off removes it
-  func contains(_ element: ObjectIdentifier) -> Binding<Bool> {
+  func contains<Element>(_ element: Element) -> Binding<Bool> where Value == Set<Element> {
     Binding<Bool>(
       get: { wrappedValue.contains(element) },
       set: { isContained in

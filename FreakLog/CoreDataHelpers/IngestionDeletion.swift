@@ -5,9 +5,48 @@ import CoreData
 // The local delete happens right away; the network cleanup runs afterwards in the background.
 @MainActor
 enum IngestionDeletion {
+    struct Request {
+        private let selectedID: NSManagedObjectID
+        let name: String
+        let date: Date?
+        let amount: String
+
+        init(_ ingestion: Ingestion) {
+            selectedID = ingestion.objectID
+            name = ingestion.substanceDisplayName
+            date = ingestion.time
+            amount = ingestion.customUnitDose?.doseDescription
+                ?? ingestion.doseUnwrapped?.doseDescription(
+                    units: ingestion.unitsUnwrapped,
+                    isEstimate: ingestion.isEstimate,
+                    standardDeviation: ingestion.estimatedDoseStandardDeviationUnwrapped
+                )
+                ?? String(localized: "Unknown amount")
+        }
+
+        func resolve(in context: NSManagedObjectContext) throws -> [Ingestion] {
+            guard !selectedID.isTemporaryID,
+                  let ingestion = try? context.existingObject(with: selectedID) as? Ingestion,
+                  !ingestion.isDeleted else {
+                throw DeletionError.entryUnavailable
+            }
+            return [ingestion]
+        }
+    }
+
+    private enum DeletionError: LocalizedError {
+        case entryUnavailable
+
+        var errorDescription: String? {
+            String(localized: "This ingestion is no longer available. Review the journal before deleting.")
+        }
+    }
+
     @discardableResult
-    static func delete(ingestions: [Ingestion]) async -> Bool {
-        await delete(ingestions)
+    static func delete(_ request: Request) async -> Bool {
+        await delete { context in
+            try request.resolve(in: context)
+        }
     }
 
     @discardableResult
@@ -28,10 +67,16 @@ enum IngestionDeletion {
     static let failureNotification = Notification.Name("JournalDeletionFailed")
 
     private static func delete(_ objects: [NSManagedObject]) async -> Bool {
+        await delete { context in
+            try objects.filter { !$0.isDeleted }.map { try PersistenceController.journalObject($0, in: context) }
+        }
+    }
+
+    private static func delete(resolve: (NSManagedObjectContext) throws -> [NSManagedObject]) async -> Bool {
         do {
             let context = try PersistenceController.shared.journalEditContext()
             let identifiers = try PersistenceController.withJournalStoreWrite {
-                let rootObjects = try objects.filter { !$0.isDeleted }.map { try PersistenceController.journalObject($0, in: context) }
+                let rootObjects = try resolve(context)
                 var ingestions: [Ingestion] = []
                 var notes: [TimedNote] = []
                 for object in rootObjects {
@@ -58,7 +103,8 @@ enum IngestionDeletion {
             didDelete(identifiers: identifiers)
             return true
         } catch {
-            NotificationCenter.default.post(name: failureNotification, object: "Couldn't delete journal data")
+            let message = (error as? DeletionError)?.errorDescription ?? String(localized: "Couldn't delete journal data")
+            NotificationCenter.default.post(name: failureNotification, object: message)
             return false
         }
     }
