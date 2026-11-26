@@ -368,6 +368,10 @@ struct StockContainerEditor: View {
     private var chosenCustomUnit: CustomUnit? { customUnits.first { $0.objectID == productID } }
     private var chosenFormulation: Formulation? { formulations.first { $0.objectID == productID } }
 
+    private var selectedProduct: JournalPresetProduct? {
+        chosenCustomUnit.map(JournalPresetProduct.customUnit) ?? chosenFormulation.map(JournalPresetProduct.formulation)
+    }
+
     private func productName(for id: NSManagedObjectID) -> String {
         customUnits.first { $0.objectID == id }?.nameUnwrapped
             ?? formulations.first { $0.objectID == id }?.nameUnwrapped
@@ -407,14 +411,14 @@ struct StockContainerEditor: View {
                         Button("Edit Product") { productEditor = productDraft.editor }
                         Button("Remove Draft", role: .destructive) { self.productDraft = nil }
                     } else {
-                        if !customUnits.isEmpty || !formulations.isEmpty {
-                            Picker("Linked Product", selection: $productID) {
-                                Text("None").tag(Optional<NSManagedObjectID>.none)
-                                ForEach(customUnits, id: \.objectID) { product in
-                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
-                                }
-                                ForEach(formulations, id: \.objectID) { product in
-                                    Text(product.nameUnwrapped).tag(Optional(product.objectID))
+                        if productID != nil || !customUnits.isEmpty || !formulations.isEmpty {
+                            NavigationLink {
+                                SavedProductPicker(selection: $productID, emptyTitle: "No Linked Product")
+                            } label: {
+                                if let selectedProduct {
+                                    SavedProductRow(product: selectedProduct)
+                                } else {
+                                    Text("Link Saved Product")
                                 }
                             }
                         }

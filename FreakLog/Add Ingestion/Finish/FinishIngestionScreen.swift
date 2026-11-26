@@ -4,10 +4,16 @@ import SwiftUI
 // swiftlint:disable type_body_length function_body_length file_length
 
 struct FinishIngestionScreen: View {
-    enum SheetOption: Identifiable {
+    struct RoutineDraft: Hashable {
+        let schedule: RoutineSchedule
+        let productID: NSManagedObjectID
+    }
+
+    enum SheetOption: Identifiable, Hashable {
         case editLocation
         case editConsumer
         case editMeasurement
+        case setUpRoutine(RoutineDraft)
 
         var id: Self {
             self
@@ -32,6 +38,7 @@ struct FinishIngestionScreen: View {
     @EnvironmentObject private var locationManager: LocationManager
     @Environment(\.addIngestionStartTime) private var startTime
     @Environment(\.ingestionPrefillNote) private var prefillNote
+    @Environment(\.routineOccurrenceSlot) private var routineSlot
     @State private var sheetToShow: SheetOption?
     @State private var selectedColors: [String: SubstanceColor] = [:]
     @State private var selectedTime = Date()
@@ -52,13 +59,15 @@ struct FinishIngestionScreen: View {
     @State private var hasSelectedExperience = false
     @State private var saveError: String?
     @State private var stockContainerID: NSManagedObjectID?
+    @State private var isSettingUpLoggedRoutine = false
     @State private var wantsToStartLiveActivity = true
     @AppStorage(PersistenceController.shouldAutomaticallyStartLiveActivityKey) var shouldAutomaticallyStartLiveActivity: Bool = true
 
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest(), animation: .default)
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
 
-    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var isWebhookSectionExpanded: Bool = false
+    @AppStorage(PersistenceController.sendWebhooksEnabledKey) private var defaultSendWebhooks = false
+    @State private var sendRoutineWebhooks = false
     @State private var selectedWebhookPresetIDs: Set<UUID> = []
     @State private var hasInitializedWebhooks = false
 
@@ -71,16 +80,23 @@ struct FinishIngestionScreen: View {
     }
 
     var doneButton: some View {
-        Button("Log", action: save)
+        Button("Log") { save() }
             .font(.headline)
+            .disabled(isSettingUpLoggedRoutine)
     }
 
-    private func save() {
+    private func save(then routine: RoutineDraft? = nil) {
+        guard !isSettingUpLoggedRoutine else { return }
         do {
             try addIngestionWithExperience()
-            toastViewModel.showSuccessToast()
             generateSuccessHaptic()
-            dismiss()
+            if let routine {
+                isSettingUpLoggedRoutine = true
+                sheetToShow = .setUpRoutine(routine)
+            } else {
+                toastViewModel.showSuccessToast()
+                dismiss()
+            }
         } catch {
             saveError = (error as? LocalizedError)?.errorDescription ?? "Your ingestion couldn’t be saved. Your details are still here."
             generateFailedHaptic()
@@ -92,7 +108,7 @@ struct FinishIngestionScreen: View {
             if let saveError {
                 Section {
                     Label(saveError, systemImage: "exclamationmark.circle")
-                    Button("Try Again", action: save)
+                    Button("Try Again") { save() }
                 }
             }
             ingestionSummary
@@ -100,6 +116,11 @@ struct FinishIngestionScreen: View {
                 InventorySourcePicker(use: inventoryUse, selection: $stockContainerID)
             }
             Section("When") {
+                if let routineSlot {
+                    LabeledContent("Scheduled") {
+                        Text(routineSlot.scheduledAt, format: .dateTime.month().day().hour().minute())
+                    }
+                }
                 TimePointOrRangePicker(
                     selectedTimePickerOption: $selectedTimePickerOption,
                     selectedTime: $selectedTime,
@@ -126,6 +147,12 @@ struct FinishIngestionScreen: View {
             if !enabledWebhookPresets.isEmpty {
                 sharingSection
             }
+            if let routineDraft {
+                Section {
+                    Button("Log and Save as Routine…") { save(then: routineDraft) }
+                        .disabled(isSettingUpLoggedRoutine)
+                }
+            }
         }
         .onChange(of: selectedTimeRange) { _ in
             selectExperienceBasedOnCurrentTime()
@@ -141,7 +168,9 @@ struct FinishIngestionScreen: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("Review")
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(item: $sheetToShow, content: { sheet in
+        .sheet(item: $sheetToShow, onDismiss: {
+            if isSettingUpLoggedRoutine { dismiss() }
+        }, content: { sheet in
             switch sheet {
             case .editLocation:
                 ChooseLocationScreen(
@@ -155,10 +184,17 @@ struct FinishIngestionScreen: View {
                 if let ingestion = ingestions.first {
                     IngestionMeasurementEditor(ingestion: ingestion, onDone: updateMeasurement)
                 }
+            case .setUpRoutine(let draft):
+                RoutineScheduleEditor(
+                    schedule: draft.schedule, isNew: true, store: .shared, initialProductID: draft.productID)
             }
         })
         .onFirstAppear { // because onAppear is called again when navigating back from color picker screen
-            wantsToStartLiveActivity = shouldAutomaticallyStartLiveActivity
+            wantsToStartLiveActivity = routineSlot == nil && shouldAutomaticallyStartLiveActivity
+            if routineSlot != nil {
+                hasSelectedExperience = true
+                wantsToForceNewExperience = true
+            }
             if let prefillNote, !prefillNote.isEmpty {
                 enteredNote = prefillNote
             }
@@ -167,7 +203,7 @@ struct FinishIngestionScreen: View {
                 selectedEndTime = startTime.addingTimeInterval(30*60)
             }
             selectExperienceBasedOnCurrentTime()
-            locationManager.selectLocation(locationManager.currentLocation)
+            locationManager.selectLocation(routineSlot == nil ? locationManager.currentLocation : nil)
             initializeColorCompanionAndNote()
         }
     }
@@ -176,7 +212,7 @@ struct FinishIngestionScreen: View {
         Section {
             ForEach(ingestions.indices, id: \.self) { index in
                 let ingestion = ingestions[index]
-                if ingestions.count == 1, ingestion.formulation == nil {
+                if ingestions.count == 1, ingestion.formulation == nil, routineSlot == nil {
                     Button {
                         sheetToShow = .editMeasurement
                     } label: {
@@ -209,8 +245,12 @@ struct FinishIngestionScreen: View {
     }
 
     private func updateMeasurement(_ updated: FinishIngestionScreenArguments) {
-        if updated.administrationRoute != ingestions[0].administrationRoute {
+        let previous = ingestions[0]
+        if updated.administrationRoute != previous.administrationRoute {
             siteSelection = AdministrationSiteSelection()
+            stockContainerID = nil
+        } else if updated.customUnit != previous.customUnit || updated.units != previous.units || updated.dose == nil {
+            stockContainerID = nil
         }
         ingestions[0] = updated
     }
@@ -260,14 +300,14 @@ struct FinishIngestionScreen: View {
     private var sharingSection: some View {
         Section("Sharing") {
             DisclosureGroup(isExpanded: $showsWebhooks) {
-                Toggle("Send Webhooks", isOn: $isWebhookSectionExpanded)
-                if isWebhookSectionExpanded {
+                Toggle("Send Webhooks", isOn: sendWebhooks)
+                if sendWebhooks.wrappedValue {
                     ForEach(enabledWebhookPresets, id: \.objectID) { preset in
                         Toggle(preset.displayName, isOn: $selectedWebhookPresetIDs.contains(preset.idUnwrapped))
                     }
                 }
             } label: {
-                LabeledContent("Webhooks", value: isWebhookSectionExpanded ? webhookRecipients : String(localized: "Off"))
+                LabeledContent("Webhooks", value: sendWebhooks.wrappedValue ? webhookRecipients : String(localized: "Off"))
             }
         }
     }
@@ -285,6 +325,39 @@ struct FinishIngestionScreen: View {
         guard !hasInitializedWebhooks, !availableIDs.isEmpty else { return }
         selectedWebhookPresetIDs = Set(availableIDs)
         hasInitializedWebhooks = true
+    }
+
+    private var routineDraft: RoutineDraft? {
+        guard routineSlot == nil, let first = ingestions.first else { return nil }
+        let product: NSManagedObject
+        let name: String
+        let kind: RoutineSchedule.ProductKind
+        let amount: Double
+        if let formulation = first.formulation, let formulationAmount = first.formulationAmount,
+           ingestions.allSatisfy({ $0.formulation == formulation && $0.formulationAmount == formulationAmount }) {
+            product = formulation
+            name = formulation.nameUnwrapped
+            kind = .formulation
+            amount = formulationAmount
+        } else if ingestions.count == 1, let unit = first.customUnit, let dose = first.dose {
+            product = unit
+            name = unit.nameUnwrapped
+            kind = .customUnit
+            amount = dose
+        } else {
+            return nil
+        }
+        guard !product.isDeleted, !product.objectID.isTemporaryID, amount.isFinite, amount > 0 else { return nil }
+        let calendar = RoutineSchedules.calendar
+        let time = calendar.dateComponents([.hour, .minute], from: selectedTime)
+        let schedule = RoutineSchedule(
+            name: name, hour: time.hour ?? 0, minute: time.minute ?? 0,
+            productKind: kind, productAmount: amount, anchorDay: .init(.now, calendar: calendar))
+        return RoutineDraft(schedule: schedule, productID: product.objectID)
+    }
+
+    private var sendWebhooks: Binding<Bool> {
+        routineSlot == nil ? $defaultSendWebhooks : $sendRoutineWebhooks
     }
 
     private var webhookRecipients: String {
@@ -360,10 +433,18 @@ struct FinishIngestionScreen: View {
                 location: selectedLocationValue,
                 and: context)
         }
-        if let stockContainerID {
+        if stockContainerID != nil || routineSlot != nil {
             try PersistenceController.withJournalStoreWrite {
-                guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
-                try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
+                if let routineSlot {
+                    guard let occurrence = try RoutineSchedules.stageLog(
+                        for: routineSlot, in: context, calendar: RoutineSchedules.calendar)
+                    else { throw RoutineSchedules.StorageError.alreadyLogged }
+                    for ingestion in newIngestions { ingestion.routineOccurrence = occurrence }
+                }
+                if let stockContainerID {
+                    guard let inventoryUse = Inventory.Use(ingestions) else { throw InventoryError.sourceChanged }
+                    try inventoryUse.stage(using: stockContainerID, for: newIngestions, at: .now, in: context)
+                }
                 try PersistenceController.saveJournalChanges(in: context)
             }
             IngestionSaving.didSave(newIngestions, newIngestions: newIngestions, sendingWebhooksTo: chosenWebhookPresetObjectIDs)
@@ -377,7 +458,7 @@ struct FinishIngestionScreen: View {
     }
 
     private var chosenWebhookPresetObjectIDs: [NSManagedObjectID] {
-        guard isWebhookSectionExpanded else { return [] }
+        guard sendWebhooks.wrappedValue else { return [] }
         return enabledWebhookPresets
             .filter { selectedWebhookPresetIDs.contains($0.idUnwrapped) }
             .map(\.objectID)
@@ -426,6 +507,7 @@ struct FinishIngestionScreen: View {
         ingestion.formulationAmount = arguments.formulationAmount ?? 0
         ingestion.dose = arguments.dose ?? 0
         ingestion.units = arguments.units
+        ingestion.isHiddenInTimeline = arguments.isHiddenInTimeline
         ingestion.isEstimate = arguments.isEstimate
         ingestion.estimatedDoseStandardDeviation = arguments.estimatedDoseStandardDeviation ?? 0
         ingestion.note = enteredNote

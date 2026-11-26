@@ -12,7 +12,7 @@ struct OtherDoseScreen: View {
   var body: some View {
     VStack(spacing: 2) {
       Text(amountText)
-        .font(.system(size: 44, weight: .semibold, design: .rounded))
+        .font(.system(size: amountFontSize, weight: .semibold, design: .rounded))
         .monospacedDigit()
         .foregroundStyle(suggestion.swiftUIColor)
         .contentTransition(.numericText(value: amount))
@@ -21,10 +21,12 @@ struct OtherDoseScreen: View {
         .lineLimit(1)
       Text(unitText)
         .font(.headline)
+        .multilineTextAlignment(.center)
       if let calculated = suggestion.calculatedDescription(of: dose) {
         Text(calculated)
           .font(.footnote)
           .foregroundStyle(.secondary)
+          .multilineTextAlignment(.center)
       }
     }
     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -38,8 +40,9 @@ struct OtherDoseScreen: View {
       sensitivity: .medium,
       isContinuous: false,
       isHapticFeedbackEnabled: true)
-    .accessibilityElement(children: .combine)
-    .accessibilityValue(suggestion.description(of: dose))
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel("Amount")
+    .accessibilityValue(accessibleAmount)
     .accessibilityAdjustableAction { direction in
       switch direction {
       case .increment:
@@ -58,7 +61,7 @@ struct OtherDoseScreen: View {
         } label: {
           Image(systemName: "minus")
         }
-        .accessibilityLabel("Decrease")
+        .accessibilityLabel("Decrease Amount")
         .disabled(amount <= 0)
         Button {
           model.log(dose, of: suggestion)
@@ -73,7 +76,8 @@ struct OtherDoseScreen: View {
         } label: {
           Image(systemName: "plus")
         }
-        .accessibilityLabel("Increase")
+        .accessibilityLabel("Increase Amount")
+        .disabled(amount >= maxAmount)
       }
     }
     .onAppear {
@@ -82,6 +86,7 @@ struct OtherDoseScreen: View {
   }
 
   @EnvironmentObject private var model: QuickLogModel
+  @ScaledMetric(relativeTo: .largeTitle) private var amountFontSize: CGFloat = 44
   @State private var amount: Double
   @FocusState private var isCrownFocused: Bool
 
@@ -100,6 +105,12 @@ struct OtherDoseScreen: View {
 
   private var amountText: String {
     amount.asRoundedReadableString
+  }
+
+  private var accessibleAmount: String {
+    let description = suggestion.description(of: dose)
+    guard let calculated = suggestion.calculatedDescription(of: dose) else { return description }
+    return "\(description), \(calculated)"
   }
 
   private var unitText: String {

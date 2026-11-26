@@ -6,11 +6,15 @@ struct LiveActivityButton: View {
     let experience: Experience
     let startLiveActivity: () -> Void
     @ObservedObject var activityManager = ActivityManager.shared
+    @AppStorage(PersistenceController.hasToUnlockAppKey) private var requiresUnlock = false
     @State private var areActivitiesEnabled = false
 
     var body: some View {
         Group {
-            if !ProcessInfo.processInfo.isiOSAppOnMac && areActivitiesEnabled {
+            if requiresUnlock {
+                Label("Live Activities Are Hidden with App Lock", systemImage: "lock")
+                    .foregroundStyle(.secondary)
+            } else if !ProcessInfo.processInfo.isiOSAppOnMac && areActivitiesEnabled {
                 // An activity of another experience can be switched over to this one
                 if activityManager.isShowing(experience) {
                     Button {

@@ -16,6 +16,8 @@ struct JournalScreen: View {
     @State private var isAddingTimedNote = false
     @State private var isShowingAssistant = false
     @ObservedObject private var tabs = TabManager.shared
+    @ObservedObject private var routines = RoutineSchedules.shared
+    @AppStorage(PersistenceController.showsDueTodayKey) private var showsDueToday = false
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
     // Without the switcher there is no way to change tabs, so the default tab is shown
@@ -82,6 +84,20 @@ struct JournalScreen: View {
                             Spacer()
                         }
                         .padding(.horizontal, 16)
+                        .background(.bar)
+                    }
+                    if isEyeOpen, showsDueToday, !routines.schedules.isEmpty {
+                        NavigationLink(value: GlobalNavigationDestination.dueToday) {
+                            HStack {
+                                Label("Due Today", systemImage: "calendar.badge.clock")
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .accessibilityHidden(true)
+                            }
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 44)
+                        }
                         .background(.bar)
                     }
                 }

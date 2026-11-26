@@ -1,15 +1,38 @@
 import UIKit
 import CoreData
 import Combine
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
+class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject, UNUserNotificationCenterDelegate {
     @Published private(set) var isJournalReady = false
     private var cloudKitBackgroundTaskID: UIBackgroundTaskIdentifier = .invalid
 
     func application(_ app: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
+        let notifications = UNUserNotificationCenter.current()
+        notifications.delegate = self
+        notifications.getNotificationCategories { categories in
+            let otherCategories = categories.filter { $0.identifier != RoutineNotificationResponse.category }
+            notifications.setNotificationCategories(Set(otherCategories).union([RoutineNotificationResponse.notificationCategory]))
+        }
         setupCloudKitBackgroundTaskHandling()
         prepareJournal()
         return true
+    }
+
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        guard let action = RoutineNotificationResponse(response) else { return }
+        await RoutineSchedules.shared.handleNotification(action)
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        let request = notification.request
+        if request.content.categoryIdentifier == RoutineNotificationResponse.category
+            || request.identifier == RoutineSchedules.testReminderID {
+            return [.banner, .sound]
+        }
+        return []
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
@@ -22,6 +45,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
         endCloudKitBackgroundTask()
         if isJournalReady {
             PhoneWatchSession.shared.retryPendingUndos()
+            RoutineQuickLogging.refresh()
             retryPendingRemoteDeletions()
         } else {
             prepareJournal()
@@ -39,6 +63,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
             }
             isJournalReady = true
             PhoneWatchSession.shared.activate()
+            RoutineQuickLogging.observeChanges()
             retryPendingRemoteDeletions()
         } catch {
             print("Could not open journal: \(error)")

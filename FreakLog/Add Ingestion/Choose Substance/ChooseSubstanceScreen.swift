@@ -5,10 +5,11 @@ import AppIntents
 struct ChooseSubstanceScreen: View {
     @StateObject private var viewModel = ViewModel()
     @Environment(\.dismiss) var dismiss
+    @Environment(\.routineOccurrenceSlot) private var routineSlot
     @EnvironmentObject private var locationManager: LocationManager
 
     var body: some View {
-        let prefill = Navigator.shared.ingestionPrefill
+        let prefill = routineSlot == nil ? Navigator.shared.ingestionPrefill : nil
         let matchedSubstance = prefill?.matchSubstance(in: viewModel.customSubstanceModels, isEyeOpen: viewModel.isEyeOpen)
         ChooseSubstanceContent(
             searchText: $viewModel.searchText,

@@ -33,12 +33,16 @@ class ActivityManager: ObservableObject {
     }
 
     var areActivitiesAvailable: Bool {
-        areActivitiesSupported && authorizationInfo.areActivitiesEnabled
+        areActivitiesSupported && authorizationInfo.areActivitiesEnabled && !isJournalLockEnabled
+    }
+
+    private var isJournalLockEnabled: Bool {
+        UserDefaults.standard.bool(forKey: PersistenceController.hasToUnlockAppKey)
     }
 
     init() {
         guard areActivitiesSupported else { return }
-        if let firstActivity = Activity<TimelineWidgetAttributes>.activities.first {
+        if !isJournalLockEnabled, let firstActivity = Activity<TimelineWidgetAttributes>.activities.first {
             isActivityActive = firstActivity.activityState == .active
             shownExperience = Self.experience(at: firstActivity.attributes.experienceURI)
             observeStateUpdates(of: firstActivity)
@@ -86,7 +90,12 @@ class ActivityManager: ObservableObject {
             await activity.update(ActivityContent(state: state, staleDate: nil))
         } else {
             await stop()
+            guard areActivitiesAvailable else { return }
             startActivity(state, for: experience)
+        }
+        guard !isJournalLockEnabled else {
+            await stop()
+            return
         }
         shownExperience = experience
         shownState = state
@@ -101,13 +110,17 @@ class ActivityManager: ObservableObject {
     }
 
     func stop() async {
-        guard areActivitiesAvailable else { return }
+        guard areActivitiesSupported else { return }
         for activity in Activity<TimelineWidgetAttributes>.activities {
-            let finalContent = shownState.map { ActivityContent(state: $0, staleDate: nil) }
-            await activity.end(finalContent, dismissalPolicy: .immediate)
+            await activity.end(nil, dismissalPolicy: .immediate)
         }
+        isActivityActive = false
         shownExperience = nil
         shownState = nil
+    }
+
+    func enforceJournalPrivacy() async {
+        if isJournalLockEnabled { await stop() }
     }
 
     private func startActivity(_ state: TimelineWidgetAttributes.ContentState, for experience: Experience) {
@@ -138,6 +151,10 @@ class ActivityManager: ObservableObject {
 
     // Changes come in bursts (a save touches several objects, typing edits a note), so they are coalesced
     private func scheduleRefresh() {
+        if isJournalLockEnabled {
+            Task { await enforceJournalPrivacy() }
+            return
+        }
         guard isActivityActive, shownExperience != nil, refreshTask == nil else { return }
         refreshTask = Task {
             try? await Task.sleep(nanoseconds: 300_000_000)
@@ -147,6 +164,10 @@ class ActivityManager: ObservableObject {
     }
 
     private func refresh() async {
+        if isJournalLockEnabled {
+            await stop()
+            return
+        }
         guard isActivityActive, let experience = shownExperience else { return }
         guard !experience.isDeleted, experience.managedObjectContext != nil else {
             await stop()
