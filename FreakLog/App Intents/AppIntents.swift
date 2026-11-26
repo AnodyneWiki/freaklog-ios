@@ -1,5 +1,6 @@
 import Foundation
 import AppIntents
+import UniformTypeIdentifiers
 
 struct OpenLastExperienceIntent: AppIntent {
 
@@ -64,6 +65,24 @@ struct PrefillIngestionIntent: AppIntent {
     }
 }
 
+struct ExportJournalIntent: AppIntent {
+    static let title: LocalizedStringResource = "Export Journal"
+    static let description = IntentDescription("Return an unencrypted JSON file containing your journal entries and substance definitions.")
+    static let authenticationPolicy: IntentAuthenticationPolicy = .requiresLocalDeviceAuthentication
+
+    @MainActor
+    func perform() async throws -> some IntentResult & ReturnsValue<IntentFile> {
+        if #available(iOS 18.0, *) {
+            try await requestConfirmation(dialog: "Export your journal as an unencrypted JSON file?")
+        } else {
+            try await requestConfirmation()
+        }
+        let export = try await SettingsScreen.ViewModel().exportData()
+        let file = IntentFile(data: export.file.data, filename: export.file.filename + ".json", type: .json)
+        return .result(value: file)
+    }
+}
+
 
 struct JournalAutoShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
@@ -94,6 +113,11 @@ struct JournalAutoShortcuts: AppShortcutsProvider {
                     ],
                     shortTitle: "Search Substance",
                     systemImageName: "magnifyingglass"
+        )
+        AppShortcut(intent: ExportJournalIntent(),
+                    phrases: ["Export Journal in \(.applicationName)"],
+                    shortTitle: "Export Journal",
+                    systemImageName: "arrow.up.doc"
         )
     }
 
