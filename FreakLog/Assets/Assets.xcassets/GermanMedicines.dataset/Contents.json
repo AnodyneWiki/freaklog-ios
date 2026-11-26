@@ -1,0 +1,12 @@
+{
+  "data" : [
+    {
+      "filename" : "Medicines.tsv",
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}

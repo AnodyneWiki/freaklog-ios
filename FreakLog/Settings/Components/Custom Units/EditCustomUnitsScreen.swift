@@ -12,6 +12,7 @@ struct EditCustomUnitsScreen: View {
     @State private var isEstimate: Bool = false
     @State private var estimatedDoseStandardDeviation: Double?
     @State private var isArchived: Bool = false
+    @State private var errorMessage: String?
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
@@ -29,7 +30,8 @@ struct EditCustomUnitsScreen: View {
             estimatedDoseStandardDeviation: $estimatedDoseStandardDeviation,
             isArchived: $isArchived,
             delete: delete,
-            ingestionCount: customUnit.ingestionsUnwrapped.count
+            ingestionCount: customUnit.ingestionsUnwrapped.count,
+            savedUnit: customUnit
         )
         .onAppear {
             name = customUnit.nameUnwrapped
@@ -55,20 +57,40 @@ struct EditCustomUnitsScreen: View {
                 }
             }
         }
+        .alert("Couldn’t Save Unit", isPresented: Binding(
+            get: { errorMessage != nil },
+            set: { if !$0 { errorMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { errorMessage = nil }
+        } message: {
+            Text(errorMessage ?? "")
+        }
     }
 
     private func save() {
-        customUnit.name = name
-        customUnit.originalUnit = originalUnit
-        customUnit.unit = unit
-        customUnit.unitPlural = unitPlural
-        customUnit.note = note
-        customUnit.dose = dosePerUnit ?? 0
-        customUnit.isEstimate = isEstimate
-        customUnit.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
-        customUnit.isArchived = isArchived
-        PersistenceController.shared.saveViewContext()
-        dismiss()
+        do {
+            try PersistenceController.withJournalStoreWrite {
+                let context = try PersistenceController.shared.journalEditContext()
+                let record = try PersistenceController.journalObject(customUnit, in: context)
+                let countingUnit = unit.trimmingCharacters(in: .whitespacesAndNewlines)
+                if record.originalUnitUnwrapped == originalUnit, record.dose == (dosePerUnit ?? 0) {
+                    Inventory.renameCountingUnit(of: record, to: countingUnit)
+                }
+                record.name = name
+                record.originalUnit = originalUnit
+                record.unit = countingUnit
+                record.unitPlural = unitPlural
+                record.note = note
+                record.dose = dosePerUnit ?? 0
+                record.isEstimate = isEstimate
+                record.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
+                record.isArchived = isArchived
+                try PersistenceController.saveJournalChanges(in: context)
+            }
+            dismiss()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
     }
 
     private func delete() {
@@ -95,6 +117,7 @@ struct EditCustomUnitsScreenContent: View {
     @Binding var isArchived: Bool
     let delete: () -> Void
     let ingestionCount: Int
+    var savedUnit: CustomUnit?
 
     @State private var isDeleteShown = false
 
@@ -169,6 +192,12 @@ struct EditCustomUnitsScreenContent: View {
                 Toggle("Archive", isOn: $isArchived).tint(.accentColor)
             } footer: {
                 Text("Archived custom units don't show up when adding ingestions")
+            }
+
+            if let savedUnit {
+                Section {
+                    JournalPresetShareLink(product: .customUnit(savedUnit), title: "Share Saved Preset")
+                }
             }
 
             Section {

@@ -34,6 +34,75 @@ final class FormulationTests: XCTestCase {
     XCTAssertEqual(try context.count(for: FormulationComponent.fetchRequest()), 2)
   }
 
+  func testNestedBlendsKeepScaledLeafSnapshotsAcrossEditsAndBackups() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let ingredient = sample.insert(into: source)
+    var middle = FormulationCodable(name: "Middle", note: "", creationDate: .now, components: [])
+    middle.components = try XCTUnwrap(ingredient.includedProduct.leaves(quantity: 1.5))
+    let middleObject = middle.insert(into: source)
+    var outer = FormulationCodable(name: "Outer", note: "", creationDate: .now, components: [])
+    outer.components = try XCTUnwrap(middleObject.includedProduct.leaves(quantity: 2))
+    let outerObject = outer.insert(into: source)
+
+    var changed = sample
+    changed.components[0].dose = 1
+    changed.apply(to: ingredient)
+    source.delete(middleObject)
+    try source.save()
+
+    let args = outerObject.ingestionArguments(amount: 2)
+    XCTAssertEqual(args.map(\.dose), [600, 300, nil])
+    XCTAssertEqual(args[0].estimatedDoseStandardDeviation, 60)
+    XCTAssertEqual(args.map(\.units), ["mg", "mg", "mg"])
+    XCTAssertTrue(args.allSatisfy { $0.formulation == outerObject && $0.formulationAmount == 2 })
+
+    let target = PersistenceController(inMemory: true).viewContext
+    let backup = try JournalBackup(context: source, appVersion: "test").fileData()
+    try XCTUnwrap(JournalBackup.read(backup)).restore(into: target)
+    let restored = try XCTUnwrap(target.fetch(Formulation.fetchRequest()).first { $0.name == outer.name })
+    XCTAssertEqual(restored.blendIdentifier, outerObject.blendIdentifier)
+    XCTAssertEqual(restored.componentsSorted[0].blendPath.map(\.name), ["Middle", sample.name])
+    XCTAssertEqual(restored.componentsSorted[0].blendPath.map(\.quantity), [2, 1.5])
+    XCTAssertEqual(restored.ingestionArguments(amount: 2).map(\.dose), args.map(\.dose))
+
+    let portable = try JSONEncoder().encode(FormulationCodable(restored))
+    let decoded = try JSONDecoder().decode(FormulationCodable.self, from: portable)
+    XCTAssertEqual(decoded.components.map(\.withoutID), FormulationCodable(restored).components.map(\.withoutID))
+  }
+
+  func testBlendCycleDetectionUsesIdentityRatherThanName() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let first = sample.insert(into: context)
+    let sameName = sample.insert(into: context)
+    let firstValues = FormulationCodable(first)
+    XCTAssertFalse(firstValues.canInclude(first.includedProduct))
+    XCTAssertTrue(firstValues.canInclude(sameName.includedProduct))
+    var secondValues = FormulationCodable(sameName)
+    secondValues.components = try XCTUnwrap(first.includedProduct.leaves(quantity: 1))
+    secondValues.apply(to: sameName)
+    XCTAssertFalse(firstValues.canInclude(sameName.includedProduct))
+  }
+
+  func testIncludedCustomUnitsKeepTheOriginalConversion() throws {
+    let context = PersistenceController(inMemory: true).viewContext
+    let unit = CustomUnit(context: context)
+    unit.name = "Test unit"
+    unit.substanceName = "Caffeine"
+    unit.administrationRoute = "oral"
+    unit.unit = "capsule"
+    unit.originalUnit = "mg"
+    unit.dose = 30
+    unit.isEstimate = true
+    unit.estimatedDoseStandardDeviation = 2
+    let snapshotted = try XCTUnwrap(unit.includedProduct.leaves(quantity: 1.5))
+    unit.dose = 50
+    let component = try XCTUnwrap(snapshotted.first)
+    XCTAssertEqual(component.dose, 45)
+    XCTAssertEqual(component.units, "mg")
+    XCTAssertEqual(component.estimatedDoseStandardDeviation, 3)
+    XCTAssertEqual(component.blendPath.first?.kind, .customUnit)
+  }
+
   func testExportedFormulationsImportTheSameData() throws {
     let source = PersistenceController(inMemory: true).viewContext
     let formulation = sample.insert(into: source)

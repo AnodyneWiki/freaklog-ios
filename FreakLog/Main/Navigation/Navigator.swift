@@ -7,7 +7,7 @@ class Navigator: ObservableObject {
     @Published var statsTabPath = NavigationPath()
     @Published var journalTabPath = NavigationPath()
     @Published var substancesTabPath = NavigationPath()
-    @Published var saferTabPath = NavigationPath()
+    @Published var toolsTabPath = NavigationPath()
     @Published var settingsTabPath = NavigationPath()
 
     @Published var isShowingAddIngestionSheet = false {
@@ -40,7 +40,7 @@ class Navigator: ObservableObject {
         case .stats: \.statsTabPath
         case .journal: \.journalTabPath
         case .substances: \.substancesTabPath
-        case .safer: \.saferTabPath
+        case .tools: \.toolsTabPath
         case .settings: \.settingsTabPath
         }
     }

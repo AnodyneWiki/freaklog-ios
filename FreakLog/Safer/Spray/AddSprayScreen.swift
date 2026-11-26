@@ -2,75 +2,91 @@ import SwiftUI
 
 struct AddSprayScreen: View {
     @State private var name = ""
-    @State private var sizeInMlText = ""
-    @State private var sizeInMl: Double?
-    @State private var numSpraysText = ""
-    @State private var numSprays: Double?
-    @Environment(\.dismiss) var dismiss
+    @State private var volumeText = ""
+    @State private var countText = ""
+    @State private var saveError: String?
+    @Environment(\.dismiss) private var dismiss
+
+    private var volume: Double? { SprayCalculation.positiveNumber(volumeText) }
+    private var count: Double? { SprayCalculation.positiveNumber(countText) }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
 
     var body: some View {
         NavigationStack {
-            List {
-                Section("Name") {
-                    TextField("Spray Name", text: $name)
-                        .font(.title)
-                        .padding(.vertical, 3)
+            Form {
+                Section {
+                    TextField("Name", text: $name)
                 }
                 Section {
-                    VStack {
-                        HStack {
-                            TextField("Volume", text: $sizeInMlText)
-                                .keyboardType(.decimalPad)
-                            Text("ml")
-                        }
-                        .font(.title)
-                        TextField("Number of sprays", text: $numSpraysText)
-                            .font(.title)
+                    LabeledContent("Bottle Volume") {
+                        TextField("Volume", text: $volumeText)
                             .keyboardType(.decimalPad)
-                    }.padding(.vertical, 3)
+                            .multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Bottle volume in milliliters")
+                        Text("mL").foregroundStyle(.secondary)
+                    }
+                    LabeledContent("Number of Sprays") {
+                        TextField("Count", text: $countText)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.trailing)
+                            .accessibilityLabel("Number of sprays")
+                    }
                 } header: {
-                    Text("Size")
+                    Text("Calibration")
                 } footer: {
-                    Text("Note: fill it into the spray bottle and count the number of sprays. To make sure the last couple of sprays still work properly use a small spray bottle (5ml) and fill it completely.")
-                }.listRowSeparator(.hidden)
-            }
-            .navigationTitle("Add Spray")
-            .onChange(of: numSpraysText) { newValue in
-                numSprays = getDouble(from: newValue)
-            }
-            .onChange(of: sizeInMlText) { newValue in
-                sizeInMl = getDouble(from: newValue)
-            }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if let sizeInMl, let numSprays, !name.isEmpty {
-                        Button("Save") {
-                            save(sizeInMl: sizeInMl, numSprays: numSprays)
-                            dismiss()
-                        }
+                    if (!volumeText.isEmpty && volume == nil) || (!countText.isEmpty && count == nil) {
+                        Text("Enter a volume and spray count greater than zero.")
+                    } else {
+                        Text("Use the measured volume and the number of sprays it produces.")
                     }
                 }
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .navigationTitle("Add Spray")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Save", action: save)
+                        .disabled(trimmedName.isEmpty || volume == nil || count == nil)
+                }
+            }
+            .alert("Couldn’t Save Spray", isPresented: Binding(
+                get: { saveError != nil },
+                set: { if !$0 { saveError = nil } }
+            )) {
+                Button("OK", role: .cancel) { saveError = nil }
+            } message: {
+                Text(saveError ?? "")
             }
         }
     }
 
-    private func save(sizeInMl: Double, numSprays: Double) {
-        let spray = Spray(context: PersistenceController.shared.viewContext)
-        spray.creationDate = Date()
-        spray.name = name
-        spray.contentInMl = sizeInMl
-        spray.numSprays = numSprays
-        spray.isPreferred = true
+    private func save() {
+        guard !trimmedName.isEmpty, let volume, let count else { return }
         do {
-            try PersistenceController.shared.viewContext.save()
+            try PersistenceController.withJournalStoreWrite {
+                let context = try PersistenceController.shared.journalEditContext()
+                for existing in try context.fetch(PersistenceController.sprayRequest()) where existing.isPreferred {
+                    existing.isPreferred = false
+                }
+                let spray = Spray(context: context)
+                spray.creationDate = .now
+                spray.name = trimmedName
+                spray.contentInMl = volume
+                spray.numSprays = count
+                spray.isPreferred = true
+                try context.save()
+            }
+            dismiss()
         } catch {
-            assertionFailure("Failed to save spray")
+            saveError = error.localizedDescription
         }
     }
 }
 
 #Preview {
-    NavigationStack {
-        AddSprayScreen()
-    }
+    AddSprayScreen()
 }

@@ -4,7 +4,7 @@ import SwiftUI
 class TabManager: ObservableObject {
     static let shared = TabManager()
     
-    private let storageKey = PersistenceController.hiddenTabsKey
+    private let defaults: UserDefaults
     
     @Published private(set) var hiddenTabs: Set<Tab> = [] {
         didSet {
@@ -12,7 +12,8 @@ class TabManager: ObservableObject {
         }
     }
     
-    private init() {
+    init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         loadState()
     }
     
@@ -20,14 +21,9 @@ class TabManager: ObservableObject {
         Tab.allCases.filter { !hiddenTabs.contains($0) }
     }
     
-    var disabledTabs: [Tab] {
-        Tab.allCases.filter { hiddenTabs.contains($0) }
-    }
-    
-    func toggleVisibility(for tab: Tab) {
+    func setVisibility(for tab: Tab, isVisible: Bool) {
         guard !tab.isMandatory else { return }
-        
-        if hiddenTabs.contains(tab) {
+        if isVisible {
             hiddenTabs.remove(tab)
         } else {
             hiddenTabs.insert(tab)
@@ -37,7 +33,7 @@ class TabManager: ObservableObject {
     private func saveState() {
         if let data = try? JSONEncoder().encode(hiddenTabs),
            let string = String(data: data, encoding: .utf8) {
-            UserDefaults.standard.set(string, forKey: storageKey)
+            defaults.set(string, forKey: PersistenceController.hiddenTabsKey)
         }
     }
     
@@ -47,12 +43,13 @@ class TabManager: ObservableObject {
     }
 
     private func loadState() {
-        if let string = UserDefaults.standard.string(forKey: storageKey),
+        if let string = defaults.string(forKey: PersistenceController.hiddenTabsKey),
            let data = string.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode(Set<Tab>.self, from: data) {
-            self.hiddenTabs = decoded
+           let decoded = try? JSONDecoder().decode([String].self, from: data) {
+            // Older backups can still list the Safer tab.
+            hiddenTabs = Set(decoded.compactMap(Tab.init(rawValue:)).filter { !$0.isMandatory })
         } else {
-            self.hiddenTabs = []
+            hiddenTabs = []
         }
     }
 }

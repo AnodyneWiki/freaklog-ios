@@ -274,6 +274,15 @@ struct EditIngestionContent: View {
                         Toggle("Hide from Timeline", isOn: $isHidden)
                     }
                 }
+                if let stockChange = ingestion.stockChange, let container = stockChange.container {
+                    Section("Inventory") {
+                        NavigationLink {
+                            StockContainerDetail(container: container)
+                        } label: {
+                            LabeledContent(container.displayName, value: container.quantityLabel(abs(stockChange.quantity)))
+                        }
+                    }
+                }
                 if !ingestion.webhookMessagesSorted.isEmpty {
                     Section("Sent Webhooks") {
                         ForEach(ingestion.webhookMessagesSorted, id: \.objectID) { message in

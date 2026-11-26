@@ -44,9 +44,13 @@ struct JournalSettingsScreen: View {
                 }
             }
 
-            Section("Editing") {
+            Section {
                 Toggle("Confirm Ingestion Deletion", isOn: $confirmsIngestionDeletion)
                     .tint(.accentColor)
+            } header: {
+                Text("Editing")
+            } footer: {
+                Text("Entries linked to inventory always ask for confirmation.")
             }
 
             Section("Ingestion Overview") {

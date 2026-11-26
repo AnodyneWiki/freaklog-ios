@@ -143,7 +143,7 @@ extension View {
         let request = IngestionDeletion.Request(ingestion)
         let confirmsDeletion = UserDefaults.standard
             .object(forKey: PersistenceController.confirmsIngestionDeletionKey) as? Bool ?? true
-        if confirmsDeletion {
+        if request.requiresConfirmation(preferenceEnabled: confirmsDeletion) {
             confirmation.wrappedValue = request
         } else {
             Task {
@@ -161,9 +161,16 @@ extension View {
             get: { request.wrappedValue != nil },
             set: { if !$0 { request.wrappedValue = nil } }
         ), titleVisibility: .visible, presenting: request.wrappedValue) { deletion in
-            Button("Delete Entry", role: .destructive) {
+            Button(deletion.hasStockUse ? "Delete Entry, Keep Stock Use" : "Delete Entry", role: .destructive) {
                 Task {
                     if await IngestionDeletion.delete(deletion) { onDeleted() }
+                }
+            }
+            if deletion.canReturnStock {
+                Button("Delete Entry and Return Stock", role: .destructive) {
+                    Task {
+                        if await IngestionDeletion.delete(deletion, returningStock: true) { onDeleted() }
+                    }
                 }
             }
             Button("Cancel", role: .cancel) {}

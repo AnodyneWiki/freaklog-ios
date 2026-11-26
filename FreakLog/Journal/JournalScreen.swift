@@ -19,6 +19,7 @@ struct JournalScreen: View {
     @State private var experienceSearchText = ""
     @State private var isAddingTimedNote = false
     @State private var isShowingAssistant = false
+    @ObservedObject private var tabs = TabManager.shared
     @AppStorage(PersistenceController.isAssistantEnabledKey) private var isAssistantEnabled = false
 
     // Without the switcher there is no way to change tabs, so the default tab is shown
@@ -155,6 +156,11 @@ struct JournalScreen: View {
                     HStack(spacing: 4) {
                         timeDisplayMenu
                         calendarLink
+                        if showsToolsLink {
+                            NavigationLink(value: GlobalNavigationDestination.tools) {
+                                Label("Tools", systemImage: Tab.tools.icon)
+                            }
+                        }
                     }
                 } else {
                     moreMenu
@@ -165,8 +171,11 @@ struct JournalScreen: View {
 
     private var showsDirectActions: Bool {
         // Leave room for the centered switcher as well as two buttons on each side.
-        !dynamicTypeSize.isAccessibilitySize && journalWidth >= (isHidingJournalTabSwitcher ? 320 : 440)
+        let minimumWidth: CGFloat = isHidingJournalTabSwitcher ? 320 : 440
+        return !dynamicTypeSize.isAccessibilitySize && journalWidth >= minimumWidth + (showsToolsLink ? 44 : 0)
     }
+
+    private var showsToolsLink: Bool { isEyeOpen && tabs.hiddenTabs.contains(.tools) }
 
     private var calendarLink: some View {
         NavigationLink(value: GlobalNavigationDestination.calendar) {
@@ -193,6 +202,13 @@ struct JournalScreen: View {
                 Navigator.shared.openInCurrentTab(.calendar)
             } label: {
                 Label("Calendar", systemImage: "calendar")
+            }
+            if showsToolsLink {
+                Button {
+                    Navigator.shared.openInCurrentTab(.tools)
+                } label: {
+                    Label("Tools", systemImage: Tab.tools.icon)
+                }
             }
             favoriteButton
             timeDisplayMenu

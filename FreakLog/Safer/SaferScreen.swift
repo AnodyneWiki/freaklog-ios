@@ -56,11 +56,6 @@ struct SaferScreen: View {
                     }
                 }
             }
-            Section {
-                NavigationLink(value: GlobalNavigationDestination.sprayCalculator) {
-                    Label("Spray Calculator", systemImage: "eyedropper").font(.headline)
-                }
-            }
         }
         .navigationTitle("Safer Use")
     }
