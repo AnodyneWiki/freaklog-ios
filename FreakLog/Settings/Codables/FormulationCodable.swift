@@ -91,6 +91,7 @@ struct FormulationCodable: Codable, Hashable {
   }
 
   enum CodingKeys: String, CodingKey {
+    case id
     case name
     case note
     case creationDate
@@ -101,6 +102,7 @@ struct FormulationCodable: Codable, Hashable {
   var note: String
   var creationDate: Date
   var components: [Component]
+  var id: String? = nil
 
   var substanceNames: [String] {
     components.map(\.substanceName).uniqued()
@@ -118,6 +120,7 @@ extension FormulationCodable {
     note = try values.decodeIfPresent(String.self, forKey: .note) ?? ""
     creationDate = try values.decodeMillis(forKey: .creationDate)
     components = try values.decode([Component].self, forKey: .components)
+    id = try values.decodeIfPresent(String.self, forKey: .id)
   }
 
   init(_ formulation: Formulation) {
@@ -142,6 +145,7 @@ extension FormulationCodable {
     try container.encode(note, forKey: .note)
     try container.encodeMillis(creationDate, forKey: .creationDate)
     try container.encode(components, forKey: .components)
+    try container.encodeIfPresent(id, forKey: .id)
   }
 
   @discardableResult

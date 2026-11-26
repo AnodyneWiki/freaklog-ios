@@ -4,9 +4,23 @@ enum LeaderboardClientResult {
   case success
   case httpError(Int)
   case networkError(Error)
+
+  var failureDescription: String? {
+    switch self {
+    case .success: nil
+    case .httpError(let code): "HTTP \(code)"
+    case .networkError(let error): error.localizedDescription
+    }
+  }
 }
 
-final class LeaderboardClient {
+@MainActor
+protocol LeaderboardSyncClient {
+  func submitBatch(baseURL: String, entries: [LeaderboardEntryPayload]) async -> LeaderboardClientResult
+  func submitDelete(baseURL: String, entry: LeaderboardEntryPayload) async -> LeaderboardClientResult
+}
+
+final class LeaderboardClient: LeaderboardSyncClient {
   static let shared = LeaderboardClient()
 
   private init() {}
@@ -56,14 +70,10 @@ final class LeaderboardClient {
     do {
       request.httpBody = try JSONEncoder().encode(body)
       let (_, response) = try await URLSession.shared.data(for: request)
-      if let http = response as? HTTPURLResponse {
-        if (200 ..< 300).contains(http.statusCode) {
-          return .success
-        } else {
-          return .httpError(http.statusCode)
-        }
+      guard let http = response as? HTTPURLResponse else {
+        return .networkError(URLError(.badServerResponse))
       }
-      return .success
+      return (200 ..< 300).contains(http.statusCode) ? .success : .httpError(http.statusCode)
     } catch {
       return .networkError(error)
     }

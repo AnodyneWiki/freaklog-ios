@@ -1,5 +1,6 @@
 import CoreData
 import Foundation
+import UniformTypeIdentifiers
 
 extension SettingsScreen {
     @MainActor
@@ -10,35 +11,42 @@ extension SettingsScreen {
 
         // The journal in the format the Android app reads
         func exportData() {
-            let pc = PersistenceController.shared
-            let journalFile = JournalFile(
-                experiences: pc.getAllExperiences(),
-                customSubstances: pc.getAllCustomSubstances(),
-                customUnits: pc.getAllCustomUnits(),
-                substanceOverrideRoas: pc.getAllStandaloneCustomRoas(),
-                substanceOverrides: (try? pc.viewContext.fetch(PersistenceController.substanceOverridesRequest())) ?? [],
-                formulations: pc.getAllFormulations())
-            do {
-                exportedFile = try ExportedFile(data: JSONEncoder().encode(journalFile), filename: "\(appName) \(Self.fileDate)")
-                isExporting = true
-            } catch {
-                showErrorToast(message: "Export Failed")
+            export(contentType: .json, suffix: "") { context in
+                let journal = try JournalFile(
+                    experiences: context.fetch(PersistenceController.experiencesRequest(prefetchingIngestions: true)),
+                    customSubstances: context.fetch(PersistenceController.customSubstancesRequest()),
+                    customUnits: context.fetch(CustomUnit.fetchRequest()),
+                    substanceOverrideRoas: context.fetch(PersistenceController.standaloneCustomRoasRequest()),
+                    substanceOverrides: context.fetch(PersistenceController.substanceOverridesRequest()),
+                    formulations: context.fetch(PersistenceController.formulationsRequest()))
+                return try JSONEncoder().encode(journal)
             }
         }
 
-        // Everything, to restore exactly
         func exportBackup() {
             let appVersion = getCurrentAppVersion()
+            export(contentType: .freakLogBackup, suffix: " Backup") { context in
+                try JournalBackup(context: context, appVersion: appVersion).fileData()
+            }
+        }
+
+        private func export(
+            contentType: UTType,
+            suffix: String,
+            makeData: @escaping @Sendable (NSManagedObjectContext) throws -> Data
+        ) {
             Task {
                 do {
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
                     let data = try await PersistenceController.shared.container.performBackgroundTask { context in
-                        try JournalBackup(context: context, appVersion: appVersion).data()
+                        try context.setQueryGenerationFrom(.current)
+                        return try makeData(context)
                     }
-                    exportedFile = ExportedFile(data: data, filename: "\(appName) Backup \(Self.fileDate)")
+                    exportedFile = ExportedFile(data: data, filename: "\(appName)\(suffix) \(Self.fileDate)", contentType: contentType)
                     isExporting = true
                 } catch {
-                    print("Backup failed: \(error)")
-                    showErrorToast(message: "Backup Failed")
+                    showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Export Failed")
                 }
             }
         }
@@ -51,270 +59,117 @@ extension SettingsScreen {
                 timeSeparator: .omitted))
         }
 
-        // Restores a backup exactly, settings included: everything is replaced in one save, so a backup that can't be
-        // restored leaves the journal as it was
-        private func importBackup(_ backup: JournalBackup) async {
-            let container = PersistenceController.shared.container
-            let result: Result<Void, Error> = await container.performBackgroundTask { context in
-                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                do {
-                    try backup.restore(into: context)
-                    try context.save()
-                    return .success(())
-                } catch {
-                    return .failure(error)
-                }
-            }
-            switch result {
-            case .success:
-                backup.restoreSettings()
-                TabManager.shared.reload()
-                LeaderboardServerStore.shared.reload()
-                showSuccessToast(message: "Backup Restored")
-            case .failure(let error):
-                print("Restoring the backup failed: \(error)")
-                showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
-            }
-        }
-
-        // swiftlint:disable cyclomatic_complexity function_body_length
-        func importData(data: Data) {
+        func importFile(_ url: URL, removePublishedCopies: Bool) {
             Task {
                 do {
-                    let container = PersistenceController.shared.container
-
-                    // A backup restores everything; other files are journal files
-                    if let backup = try await Task.detached(priority: .userInitiated, operation: {
-                        try JournalBackup.read(data)
-                    }).value {
-                        await importBackup(backup)
-                        return
-                    }
-
-                    // Decode off the main thread first; the view model, and so this task, is main-actor isolated
-                    let file = try await Task.detached(priority: .userInitiated) {
-                        try JSONDecoder().decode(JournalFile.self, from: Self.tryConvertFile(data))
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
+                    let data = try await Task.detached(priority: .userInitiated) {
+                        let scoped = url.startAccessingSecurityScopedResource()
+                        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+                        return try Data(contentsOf: url)
                     }.value
-                    
-                    await container.performBackgroundTask { context in
-                        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-                        
-                        do {
-                            // First delete everything in this background context
-                            try PersistenceController.shared.deleteEverything(blockContext: context)
-                            
-                            file.insert(into: context)
-                            if context.hasChanges {
-                                try context.save()
-                            }
-
-                            Task { @MainActor in
-                                self.showSuccessToast(message: "Import Successful")
-                            }
-                        } catch {
-                            print("Background import failed: \(error)")
-                            Task { @MainActor in
-                                self.showErrorToast(message: "Import Failed")
+                    let backup = try await Task.detached(priority: .userInitiated) { try JournalBackup.read(data) }.value
+                    let container = PersistenceController.shared.container
+                    let retainInFlightMessages = removePublishedCopies ? nil : WebhookManager.shared.makeInFlightRetentionCommit()
+                    let removed: [UUID]
+                    if let backup {
+                        removed = try await container.performBackgroundTask { context in
+                            try Self.replaceJournal(
+                                in: context,
+                                removePublishedCopies: removePublishedCopies,
+                                retainInFlightMessages: retainInFlightMessages
+                            ) {
+                                try backup.restore(into: context)
                             }
                         }
-                    }
-                } catch {
-                    print("Decoding failed: \(error)")
-                    await MainActor.run {
-                        self.showErrorToast(message: (error as? JournalBackupError)?.errorDescription ?? "Import Failed")
-                    }
-                }
-            }
-        }
-
-        // Converts v12 exports, if necessary.
-        private nonisolated static func tryConvertFile(_ data: Data) -> Data {
-            guard
-                var jsonObject = try? JSONSerialization.jsonObject(
-                    with: data,
-                    options: .mutableContainers
-                ) as? [String: Any]
-            else {
-                return data
-            }
-            
-            guard let exportSource = jsonObject["exportSource"] as? String,
-                  exportSource == "iOS Journal"
-                    || exportSource == "Android Journal"
-            else {
-                return data
-            }
-            
-            jsonObject.removeValue(forKey: "exportSource")
-            
-            let customUnits =
-            (jsonObject["customUnits"] as? [[String: Any]]) ?? []
-            
-            // Transform 'customUnits' into the old 'customSubstances' format.
-            let customSubstances = customUnits.map { unit -> [String: Any] in
-                let name = unit["name"] as? String ?? ""
-                let units = unit["unit"] as? String ?? ""
-                let description = unit["note"] as? String ?? ""
-                return [
-                    "name": name,
-                    "units": units,
-                    "description": description,
-                ]
-            }
-            jsonObject["customSubstances"] = customSubstances
-            
-            // Build list of substance companions
-            var companionObject = (jsonObject["substanceCompanions"] as? [[String: String]]) ?? []
-            
-            let companions: [String] = companionObject.map { companion in
-                companion["substanceName"] ?? ""
-            }.filter { substance in
-                substance != ""
-            }
-            
-            // First pass: Build an initial map of Int ID -> (substanceName, nested customUnitId)
-            var customUnitSubstancesMap:
-            [Int: (substanceName: String?, customUnitId: Int?)] = [:]
-            for unit in customUnits {
-                let idInt: Int
-                
-                // Convert ID to Int, handling both String and Int cases
-                if let id = unit["id"] as? Int {
-                    idInt = id
-                } else if let id = unit["id"] as? String,
-                          let convertedId = Int(id)
-                {
-                    idInt = convertedId
-                } else {
-                    continue
-                }
-                
-                let name = unit["name"] as? String
-                
-                if let color = unit["color"] as? String {
-                    if let name = name {
-                        if (!companions.contains(name)) {
-                            let companion: [String: String] = ["substanceName": name, "color": color]
-                            companionObject.append(companion)
-                        }
-                    }
-                }
-                
-                if let doseComponents = unit["doseComponents"]
-                    as? [[String: Any]],
-                   let firstComponent = doseComponents.first
-                {
-                    let substanceName =
-                    firstComponent["substanceName"] as? String
-                    
-                    // Handle customUnitId as Int or string
-                    let customUnitIdInt: Int?
-                    if let customUnitId = firstComponent["customUnitId"] as? Int
-                    {
-                        customUnitIdInt = customUnitId
-                    } else if let customUnitId = firstComponent["customUnitId"]
-                                as? String, let convertedId = Int(customUnitId)
-                    {
-                        customUnitIdInt = convertedId
                     } else {
-                        customUnitIdInt = nil
-                    }
-                    
-                    customUnitSubstancesMap[idInt] = (
-                        substanceName, customUnitIdInt
-                    )
-                } else {
-                    customUnitSubstancesMap[idInt] = (name, nil)
-                }
-            }
-            
-            jsonObject.updateValue(companionObject, forKey: "substanceCompanions")
-            
-            // Second pass: Resolve the nested references into a final, simple mapping.
-            var resolvedMapping: [Int: String] = [:]
-            for (key, value) in customUnitSubstancesMap {
-                if let nestedId = value.customUnitId,
-                   let resolvedValue = customUnitSubstancesMap[nestedId]
-                {
-                    resolvedMapping[key] =
-                    resolvedValue.substanceName ?? value.substanceName
-                    ?? "Unknown Substance"
-                } else {
-                    resolvedMapping[key] =
-                    value.substanceName ?? "Unknown Substance"
-                }
-            }
-            jsonObject.removeValue(forKey: "customUnits")
-            
-            // Update ingestions within experiences to use the resolved substance names.
-            if var experiences = jsonObject["experiences"] as? [[String: Any]] {
-                for i in 0..<experiences.count {
-                    var experience = experiences[i]
-                    if var ingestions = experience["ingestions"]
-                        as? [[String: Any]]
-                    {
-                        if ingestions.isEmpty {
-                            continue
-                        }
-                        for j in 0..<ingestions.count {
-                            var ingestion = ingestions[j]
-                            
-                            // Check for missing/null substanceName
-                            if ingestion["substanceName"] == nil
-                                || (ingestion["substanceName"] as? NSNull)
-                                != nil {
-                                
-                                let customUnitIdInt: Int?
-                                if let intId = ingestion["customUnitId"] as? Int
-                                {
-                                    customUnitIdInt = intId
-                                } else if let stringId = ingestion[
-                                    "customUnitId"
-                                ] as? String, let convertedId = Int(stringId) {
-                                    customUnitIdInt = convertedId
-                                } else {
-                                    customUnitIdInt = nil
-                                }
-                                
-                                if let customUnitId = customUnitIdInt,
-                                   let resolvedName = resolvedMapping[
-                                    customUnitId
-                                   ]
-                                {
-                                    ingestion["substanceName"] = resolvedName
-                                } else {
-                                    ingestion["substanceName"] = "Unknown Substance"
-                                }
+                        let file = try await Task.detached(priority: .userInitiated) { try JournalFile.read(data) }.value
+                        removed = try await container.performBackgroundTask { context in
+                            let removed = try Self.replaceJournal(
+                                in: context,
+                                removePublishedCopies: removePublishedCopies,
+                                retainInFlightMessages: retainInFlightMessages
+                            ) {
+                                try PersistenceController.stageJournalDeletion(in: context)
+                                file.insert(into: context)
                             }
-                            ingestions[j] = ingestion
+                            PersistenceController.purgeLocalHistory(in: context)
+                            return removed
                         }
-                        experience["ingestions"] = ingestions
-                        experiences[i] = experience
                     }
+                    LeaderboardSyncManager.shared.journalWasReplaced()
+                    if removePublishedCopies { IngestionDeletion.didDelete(identifiers: removed) }
+                    if let backup {
+                        backup.restoreSettings()
+                        TabManager.shared.reload()
+                        LeaderboardServerStore.shared.reload()
+                    }
+                    showSuccessToast(message: backup == nil ? "Import Successful" : "Backup Restored")
+                } catch {
+                    showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Import Failed")
                 }
-                jsonObject["experiences"] = experiences
-            }
-            
-            do {
-                let finalData = try JSONSerialization.data(
-                    withJSONObject: jsonObject
-                )
-                return finalData
-            } catch {
-                return data
             }
         }
-        // swiftlint:enable cyclomatic_complexity function_body_length
+
+        nonisolated static func replaceJournal(
+            in context: NSManagedObjectContext,
+            removePublishedCopies: Bool,
+            retainInFlightMessages: (@Sendable () -> Void)? = nil,
+            replace: () throws -> Void
+        ) throws -> [UUID] {
+            try PersistenceController.withJournalStoreWrite {
+                context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+                var didSave = false
+                defer { if !didSave { context.rollback() } }
+                let outgoingIDs = removePublishedCopies ? try ingestionIDs(in: context) : []
+                let outgoingMessages = removePublishedCopies ? try messageDestinations(in: context) : []
+                try replace()
+                context.processPendingChanges()
+                let removedIDs = removePublishedCopies ? outgoingIDs.subtracting(try ingestionIDs(in: context)) : []
+                if removePublishedCopies {
+                    for destination in outgoingMessages.subtracting(try messageDestinations(in: context)) {
+                        destination.stage(in: context)
+                    }
+                }
+                try context.save()
+                didSave = true
+                retainInFlightMessages?()
+                return Array(removedIDs)
+            }
+        }
+
+        private nonisolated static func ingestionIDs(in context: NSManagedObjectContext) throws -> Set<UUID> {
+            try Set(context.fetch(Ingestion.fetchRequest()).compactMap(\.identifier))
+        }
+
+        private nonisolated static func messageDestinations(in context: NSManagedObjectContext) throws -> Set<WebhookManager.Destination> {
+            try Set(context.fetch(WebhookMessage.fetchRequest()).compactMap(WebhookManager.Destination.init))
+        }
 
         func deleteEverything() {
             Task {
                 do {
-                    let cleanUp = await IngestionDeletion.remoteCleanUp(for: PersistenceController.shared.getAllIngestions())
-                    try PersistenceController.shared.deleteEverything()
-                    cleanUp()
+                    try PersistenceController.beginJournalOperation()
+                    defer { PersistenceController.endJournalOperation() }
+                    let container = PersistenceController.shared.container
+                    let identifiers = try await container.performBackgroundTask { context in
+                        try PersistenceController.withJournalStoreWrite {
+                            let ingestions = try context.fetch(Ingestion.fetchRequest())
+                            let notes = try context.fetch(TimedNote.fetchRequest())
+                            let identifiers = ingestions.compactMap(\.identifier)
+                            WebhookManager.stageMessageDeletion(for: ingestions, timedNotes: notes, in: context)
+                            try WebhookManager.stageAllPresetDeletion(in: context)
+                            try PersistenceController.stageJournalDeletion(in: context)
+                            try context.save()
+                            PersistenceController.purgeLocalHistory(in: context)
+                            return identifiers
+                        }
+                    }
+                    IngestionDeletion.didDelete(identifiers: identifiers)
                     showSuccessToast(message: "Delete Successful")
                 } catch {
-                    showErrorToast(message: "Delete Failed")
+                    showErrorToast(message: (error as? LocalizedError)?.errorDescription ?? "Delete Failed")
                 }
             }
         }

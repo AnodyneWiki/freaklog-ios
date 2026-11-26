@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // MARK: - EditIngestionScreen
@@ -80,9 +81,7 @@ struct EditIngestionScreen: View {
             experiencesWithinLargerRange: experiencesWithinLargerRange,
             sheetToShow: $sheetToShow
         ).onFirstAppear {
-            if let location = ingestion.location {
-                locationManager.selectLocation(location.asLocation)
-            }
+            locationManager.selectLocation(ingestion.location?.asLocation)
             time = ingestion.timeUnwrapped
             if let eTime = ingestion.endTime {
                 endTime = eTime
@@ -118,48 +117,49 @@ struct EditIngestionScreen: View {
     }
 
     private func save() {
-        ingestion.time = time
-        if selectedTimePickerOption == .timeRange {
-            ingestion.endTime = endTime
-        } else {
-            ingestion.endTime = nil
-        }
-        ingestion.dose = dose ?? 0
-        if let selectedCustomUnit {
-            ingestion.customUnit?.removeFromIngestions(ingestion)
-            ingestion.customUnit = selectedCustomUnit
-            ingestion.units = selectedCustomUnit.unitUnwrapped
-        } else {
-            ingestion.units = roaDose?.units ?? units
-            ingestion.customUnit?.removeFromIngestions(ingestion)
-        }
-        ingestion.isEstimate = isEstimate
-        ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
-        ingestion.note = note
-        ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
-        let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
-        ingestion.administrationSite = site.isEmpty ? nil : site
-
-        ingestion.setLocation(locationManager.selectedLocation)
-
-        if wantsToForceNewExperience || selectedExperience == nil {
-            ingestion.experience = Experience.create(at: time, in: PersistenceController.shared.viewContext)
-        } else {
-            ingestion.experience = selectedExperience
-        }
         do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let ingestion = try PersistenceController.journalObject(self.ingestion, in: context)
+            ingestion.time = time
+            if selectedTimePickerOption == .timeRange {
+                ingestion.endTime = endTime
+            } else {
+                ingestion.endTime = nil
+            }
+            ingestion.dose = dose ?? 0
+            if let selectedCustomUnit {
+                ingestion.customUnit = try PersistenceController.journalObject(selectedCustomUnit, in: context)
+                ingestion.units = selectedCustomUnit.unitUnwrapped
+            } else {
+                ingestion.units = roaDose?.units ?? units
+                ingestion.customUnit = nil
+            }
+            ingestion.isEstimate = isEstimate
+            ingestion.estimatedDoseStandardDeviation = estimatedDoseStandardDeviation ?? 0
+            ingestion.note = note
+            ingestion.consumerName = Ingestion.storedConsumerName(consumerName)
+            let site = siteSelection.siteString(for: ingestion.administrationRouteUnwrapped)
+            ingestion.administrationSite = site.isEmpty ? nil : site
+
+            ingestion.setLocation(locationManager.selectedLocation)
+
+            if wantsToForceNewExperience || selectedExperience == nil {
+                ingestion.experience = Experience.create(at: time, in: context)
+            } else {
+                ingestion.experience = try selectedExperience.map { try PersistenceController.journalObject($0, in: context) }
+            }
             try IngestionSaving.save(ingestion)
+            dismiss()
         } catch {
             toastViewModel.showErrorToast(message: "Failed to save ingestion")
         }
-        ingestion.experience?.objectWillChange.send()
-        dismiss()
     }
 
     private func delete() {
         Task {
-            await IngestionDeletion.delete(ingestions: [ingestion])
-            dismiss()
+            if await IngestionDeletion.delete(ingestions: [ingestion]) {
+                dismiss()
+            }
         }
     }
 }

@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // Where the dose section's ranges come from, when both sources have some

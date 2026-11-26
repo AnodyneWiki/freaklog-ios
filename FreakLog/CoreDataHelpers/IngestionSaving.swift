@@ -13,7 +13,12 @@ enum IngestionSaving {
     // and each gets its own webhook message
     static func save(_ ingestions: [Ingestion], sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) throws {
         let newIngestions = ingestions.filter(\.isInserted)
-        try PersistenceController.shared.viewContext.save()
+        guard let context = ingestions.first?.managedObjectContext else { return }
+        try PersistenceController.saveJournalChanges(in: context)
+        didSave(ingestions, newIngestions: newIngestions, sendingWebhooksTo: presetObjectIDs)
+    }
+
+    static func didSave(_ ingestions: [Ingestion], newIngestions: [Ingestion], sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) {
         for ingestion in ingestions {
             if newIngestions.contains(ingestion) {
                 if !presetObjectIDs.isEmpty {
@@ -36,7 +41,8 @@ enum TimedNoteSaving {
     static func save(_ timedNote: TimedNote, sendingWebhooksTo presetObjectIDs: [NSManagedObjectID] = []) throws {
         let isNew = timedNote.isInserted
         let isNoteChanged = timedNote.changedValues().keys.contains("note")
-        try PersistenceController.shared.viewContext.save()
+        guard let context = timedNote.managedObjectContext else { return }
+        try PersistenceController.saveJournalChanges(in: context)
         if isNew {
             WebhookManager.shared.sendWebhooks(for: timedNote, presetObjectIDs: presetObjectIDs)
         } else if isNoteChanged {

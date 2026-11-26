@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // Everything the app takes from a substance's AnodyneWiki page, laid out like FreakLog's own substance

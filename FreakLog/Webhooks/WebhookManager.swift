@@ -1,10 +1,40 @@
 import Foundation
 import CoreData
+import OSLog
+import os
 
-final class WebhookManager: Sendable {
-    static let shared = WebhookManager()
+@MainActor
+final class WebhookManager {
+    static let shared = WebhookManager(container: PersistenceController.shared.container)
+    nonisolated static let failureNotification = Notification.Name("WebhookOperationDidFail")
 
-    private init() {}
+    typealias SendMessage = (String, String, String?) async -> WebhookResult
+    typealias DeleteMessage = (String, String) async -> Bool
+
+    private let container: NSPersistentContainer
+    private let sendMessage: SendMessage
+    private let deleteMessageFromServer: DeleteMessage
+    private let reportFailure: (String) -> Void
+    private var initialSends: [UUID: InitialSend] = [:]
+    private var pendingEdits: [Destination: String] = [:]
+    private var editTasks: [Destination: Task<Void, Never>] = [:]
+    private var deletionTasks: [Destination: Task<Bool, Never>] = [:]
+    private var unsavedDeletions: Set<Destination> = []
+
+    init(
+        container: NSPersistentContainer,
+        sendMessage: @escaping SendMessage = WebhookService.sendWebhookWithRetry,
+        deleteMessage: @escaping DeleteMessage = WebhookService.deleteWebhookMessage,
+        reportFailure: @escaping (String) -> Void = { message in
+            Logger(subsystem: Bundle.main.bundleIdentifier ?? "FreakLog", category: "Webhook").error("\(message, privacy: .public)")
+            NotificationCenter.default.post(name: failureNotification, object: message)
+        }
+    ) {
+        self.container = container
+        self.sendMessage = sendMessage
+        deleteMessageFromServer = deleteMessage
+        self.reportFailure = reportFailure
+    }
 
     struct WebhookDataSnapshot: Sendable {
         let user: String
@@ -38,6 +68,47 @@ final class WebhookManager: Sendable {
         }
     }
 
+    private struct InitialSend {
+        let ownerID: NSManagedObjectID
+        let presetID: NSManagedObjectID
+        let url: String
+        var content: String
+        let keepRemoteMessage = OSAllocatedUnfairLock(initialState: false)
+    }
+
+    private enum TrackingOutcome {
+        case tracked
+        case missingOwnerOrPreset
+        case keepRemoteMessage
+    }
+
+    struct Destination: Hashable, Sendable {
+        let url: String
+        let messageId: String
+
+        init?(url: String?, messageId: String?) {
+            guard let url, !url.isEmpty, let messageId, !messageId.isEmpty else { return nil }
+            self.url = url
+            self.messageId = messageId
+        }
+
+        init?(_ message: WebhookMessage) {
+            self.init(url: message.destinationURL ?? message.webhookPreset?.url, messageId: message.messageId)
+        }
+
+        func stage(in context: NSManagedObjectContext) {
+            let deletion = WebhookDeletion(context: context)
+            deletion.url = url
+            deletion.messageId = messageId
+        }
+
+        var deletionRequest: NSFetchRequest<WebhookDeletion> {
+            let request = WebhookDeletion.fetchRequest()
+            request.predicate = NSPredicate(format: "url == %@ AND messageId == %@", url, messageId)
+            return request
+        }
+    }
+
     // MARK: - Sending Webhooks
 
     func sendWebhooks(for ingestion: Ingestion, presetObjectIDs: [NSManagedObjectID]) {
@@ -46,204 +117,271 @@ final class WebhookManager: Sendable {
     }
 
     func sendWebhooks(for timedNote: TimedNote, presetObjectIDs: [NSManagedObjectID]) {
-        send(WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current), about: timedNote.objectID, to: presetObjectIDs)
+        let content = WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current)
+        send(content, about: timedNote.objectID, to: presetObjectIDs)
     }
 
-    // Remembers each sent message on the ingestion or timed note it is about, to edit and delete it later
-    private func send(_ content: String, about ownerObjectID: NSManagedObjectID, to presetObjectIDs: [NSManagedObjectID]) {
-        guard !presetObjectIDs.isEmpty else { return }
-        Task.detached(priority: .background) {
-            let container = PersistenceController.shared.container
-            let urls = await Self.urls(of: presetObjectIDs, in: container)
-            await withTaskGroup(of: Void.self) { group in
-                for (presetObjectID, url) in urls {
-                    group.addTask {
-                        let result = await WebhookService.sendWebhookWithRetry(url: url, content: content)
-                        guard result.success, let messageId = result.messageId else { return }
-                        await container.performBackgroundTask { bgContext in
-                            guard
-                                let bgPreset = try? bgContext.existingObject(with: presetObjectID) as? WebhookPreset,
-                                let owner = try? bgContext.existingObject(with: ownerObjectID)
-                            else { return }
-
-                            let message = WebhookMessage(context: bgContext)
-                            message.id = UUID()
-                            message.creationDate = Date()
-                            message.messageId = messageId
-                            message.ingestion = owner as? Ingestion
-                            message.timedNote = owner as? TimedNote
-                            message.webhookPreset = bgPreset
-                            try? bgContext.save()
-                        }
-                    }
-                }
-            }
+    private func send(_ content: String, about ownerID: NSManagedObjectID, to presetIDs: [NSManagedObjectID]) {
+        guard !presetIDs.isEmpty else { return }
+        let context = container.viewContext
+        for presetID in Set(presetIDs) {
+            guard let preset = try? context.existingObject(with: presetID) as? WebhookPreset,
+                  !preset.isDeleted, let url = preset.url, !url.isEmpty else { continue }
+            let id = UUID()
+            initialSends[id] = InitialSend(ownerID: ownerID, presetID: presetID, url: url, content: content)
+            Task { await completeInitialSend(id) }
         }
+    }
+
+    private func completeInitialSend(_ id: UUID) async {
+        guard let initial = initialSends[id] else { return }
+        defer { initialSends.removeValue(forKey: id) }
+        let canSend = withStore { context in
+            !initial.keepRemoteMessage.withLock { $0 } && Self.deliveryObjects(for: initial, in: context) != nil
+        }
+        guard canSend else { return }
+
+        let result = await sendMessage(initial.url, initial.content, nil)
+        guard result.success, let target = Destination(url: initial.url, messageId: result.messageId) else {
+            if result.error as? WebhookService.DeliveryError == .unknownDelivery || result.success {
+                reportFailure("Couldn't confirm webhook delivery. Check the destination for the message.")
+            } else {
+                reportFailure("Couldn't send a webhook message.")
+            }
+            return
+        }
+
+        do {
+            let outcome: TrackingOutcome = try withStore { context in
+                if initial.keepRemoteMessage.withLock({ $0 }) { return .keepRemoteMessage }
+                guard let (owner, preset) = Self.deliveryObjects(for: initial, in: context) else { return .missingOwnerOrPreset }
+                let message = WebhookMessage(context: context)
+                message.id = id
+                message.creationDate = Date()
+                message.messageId = target.messageId
+                message.destinationURL = target.url
+                message.ingestion = owner as? Ingestion
+                message.timedNote = owner as? TimedNote
+                message.webhookPreset = preset
+                try context.save()
+                return .tracked
+            }
+            switch outcome {
+            case .tracked:
+                if let latest = initialSends[id]?.content, latest != initial.content { enqueueEdit(of: target, to: latest) }
+                return
+            case .keepRemoteMessage:
+                return
+            case .missingOwnerOrPreset:
+                break
+            }
+        } catch {
+            reportFailure("Couldn't save webhook message tracking. The message will be removed.")
+        }
+
+        // The owner or preset may disappear while POST is in flight. If the tracking save
+        // fails, retain the delivery as a cleanup target before trying the remote delete.
+        unsavedDeletions.insert(target)
+        if !(await retryPendingDeletions()) {
+            reportFailure("Some webhook messages couldn't be removed. Cleanup will be retried.")
+        }
+    }
+
+    nonisolated private static func deliveryObjects(
+        for initial: InitialSend,
+        in context: NSManagedObjectContext
+    ) -> (NSManagedObject, WebhookPreset)? {
+        guard let owner = try? context.existingObject(with: initial.ownerID),
+              let preset = try? context.existingObject(with: initial.presetID) as? WebhookPreset else { return nil }
+        return (owner, preset)
     }
 
     // MARK: - Editing Webhooks
 
     func editWebhookMessages(for ingestion: Ingestion) {
         let content = WebhookService.content(for: WebhookDataSnapshot(ingestion: ingestion), settings: .current)
-        edit(ingestion.webhookMessagesSorted, to: content)
+        edit(about: ingestion.objectID, to: content)
     }
 
     func editWebhookMessages(for timedNote: TimedNote) {
-        edit(timedNote.webhookMessagesSorted, to: WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current))
+        let content = WebhookService.content(forNote: timedNote.noteUnwrapped, settings: .current)
+        edit(about: timedNote.objectID, to: content)
     }
 
-    private func edit(_ sentMessages: [WebhookMessage], to content: String) {
-        let messages = sentMessages.compactMap { message -> (preset: NSManagedObjectID, id: String)? in
-            guard let preset = message.webhookPreset, let messageId = message.messageId else { return nil }
-            return (preset.objectID, messageId)
+    private func edit(about ownerID: NSManagedObjectID, to content: String) {
+        for id in initialSends.keys where initialSends[id]?.ownerID == ownerID {
+            initialSends[id]?.content = content
         }
-        guard !messages.isEmpty else { return }
+        // Read the store directly so we can see tracking even before the UI context merges it.
+        let targets: Set<Destination> = withStore { context in
+            guard let owner = try? context.existingObject(with: ownerID) else { return [] }
+            let messages = (owner as? Ingestion)?.webhookMessagesSorted ?? (owner as? TimedNote)?.webhookMessagesSorted ?? []
+            return Set(messages.compactMap(Destination.init))
+        }
+        for target in targets {
+            enqueueEdit(of: target, to: content)
+        }
+    }
 
-        Task.detached(priority: .background) {
-            let container = PersistenceController.shared.container
-            let urls = await Self.urls(of: messages.map(\.preset), in: container)
-            await withTaskGroup(of: Void.self) { group in
-                for message in messages {
-                    guard let url = urls.first(where: { $0.presetObjectID == message.preset })?.url else { continue }
-                    group.addTask {
-                        _ = await WebhookService.sendWebhookWithRetry(url: url, content: content, editing: message.id)
-                    }
+    private func enqueueEdit(of target: Destination, to content: String) {
+        guard deletionTasks[target] == nil else { return }
+        pendingEdits[target] = content
+        guard editTasks[target] == nil else { return }
+        editTasks[target] = Task {
+            while let content = pendingEdits.removeValue(forKey: target) {
+                let result = await sendMessage(target.url, content, target.messageId)
+                if !result.success, pendingEdits[target] == nil, deletionTasks[target] == nil {
+                    reportFailure("Couldn't update a webhook message.")
                 }
             }
-        }
-    }
-
-    // Presets that still exist and have a URL
-    private static func urls(
-        of presetObjectIDs: [NSManagedObjectID],
-        in container: NSPersistentContainer
-    ) async -> [(presetObjectID: NSManagedObjectID, url: String)] {
-        await container.performBackgroundTask { bgContext in
-            presetObjectIDs.compactMap { presetID in
-                guard let preset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return nil }
-                let url = preset.urlUnwrapped
-                return url.isEmpty ? nil : (presetID, url)
-            }
+            editTasks.removeValue(forKey: target)
         }
     }
 
     // MARK: - Deleting Webhooks
 
-    fileprivate struct DeletionTarget: Sendable {
-        let messageObjectID: NSManagedObjectID
-        let url: String
-        let messageId: String
+    // Insert retry records in the same transaction as the local deletion so rollback
+    // preserves the remote messages, and cascades cannot remove the retry records.
+    nonisolated static func stageMessageDeletion(
+        for ingestions: [Ingestion],
+        timedNotes: [TimedNote] = [],
+        in context: NSManagedObjectContext
+    ) {
+        let messages = ingestions.flatMap(\.webhookMessagesSorted) + timedNotes.flatMap(\.webhookMessagesSorted)
+        stageDeletion(of: messages, in: context)
     }
 
-    // Messages to delete, collected before their ingestions or timed notes are deleted locally
-    struct PendingMessageDeletion: Sendable {
-        fileprivate let targets: [DeletionTarget]
+    nonisolated static func stageAllPresetDeletion(in context: NSManagedObjectContext) throws {
+        let presets = try context.fetch(WebhookPreset.fetchRequest())
+        stageDeletion(of: presets.flatMap { $0.messages?.allObjects as? [WebhookMessage] ?? [] }, in: context)
+        presets.forEach(context.delete)
+    }
 
-        func run() async {
-            await WebhookManager.shared.executeDeletions(targets, in: PersistenceController.shared.container)
+    nonisolated private static func stageDeletion(of messages: [WebhookMessage], in context: NSManagedObjectContext) {
+        let queued = Set(context.insertedObjects.compactMap { object -> Destination? in
+            guard let deletion = object as? WebhookDeletion else { return nil }
+            return Destination(url: deletion.url, messageId: deletion.messageId)
+        })
+        for destination in Set(messages.compactMap(Destination.init)).subtracting(queued) {
+            destination.stage(in: context)
         }
     }
 
-    fileprivate func executeDeletions(
-        _ targets: [DeletionTarget],
-        in container: NSPersistentContainer,
-        also extraObjectID: NSManagedObjectID? = nil
-    ) async {
-        await withTaskGroup(of: Void.self) { group in
+    @discardableResult
+    func retryPendingDeletions() async -> Bool {
+        let targets: Set<Destination>
+        let loadedQueue: Bool
+        let unpersistedTargets = unsavedDeletions
+        do {
+            targets = try withStore { context in
+                for target in unpersistedTargets {
+                    target.stage(in: context)
+                }
+                if context.hasChanges { try context.save() }
+                return Set(try context.fetch(WebhookDeletion.fetchRequest()).compactMap {
+                    Destination(url: $0.url, messageId: $0.messageId)
+                })
+            }
+            unsavedDeletions.removeAll()
+            loadedQueue = true
+        } catch {
+            // A late ID still permits a best-effort delete while local storage is unavailable.
+            targets = unsavedDeletions
+            loadedQueue = false
+        }
+        return await withTaskGroup(of: Bool.self) { group in
             for target in targets {
-                group.addTask {
-                    _ = await WebhookService.deleteWebhookMessage(url: target.url, messageId: target.messageId)
-                }
+                group.addTask { await self.completeDeletion(of: target) }
             }
-        }
-        await container.performBackgroundTask { bgContext in
-            for target in targets {
-                if let msg = try? bgContext.existingObject(with: target.messageObjectID) as? WebhookMessage {
-                    bgContext.delete(msg)
-                }
+            var allDeleted = loadedQueue
+            for await deleted in group {
+                allDeleted = allDeleted && deleted
             }
-            if let id = extraObjectID, let obj = try? bgContext.existingObject(with: id) {
-                bgContext.delete(obj)
-            }
-            try? bgContext.save()
+            return allDeleted
         }
     }
 
-    private func buildPresetDeletionTargets(presetID: NSManagedObjectID, in container: NSPersistentContainer) async -> [DeletionTarget] {
-        await container.performBackgroundTask { bgContext in
-            guard let bgPreset = try? bgContext.existingObject(with: presetID) as? WebhookPreset else { return [] }
-            let url = bgPreset.urlUnwrapped
-            guard !url.isEmpty else { return [] }
-            return (bgPreset.messages?.allObjects as? [WebhookMessage] ?? []).compactMap { msg in
-                guard let messageId = msg.messageId else { return nil }
-                return DeletionTarget(messageObjectID: msg.objectID, url: url, messageId: messageId)
+    private func completeDeletion(of target: Destination) async -> Bool {
+        guard await deleteRemotely(target) else { return false }
+        unsavedDeletions.remove(target)
+        do {
+            try withStore { context in
+                try context.fetch(target.deletionRequest).forEach(context.delete)
+                if context.hasChanges { try context.save() }
             }
+            return true
+        } catch {
+            return false
         }
     }
 
-    func deleteWebhookMessages(for ingestions: [Ingestion]) async {
-        await prepareMessageDeletion(for: ingestions).run()
-    }
+    private func deleteRemotely(_ target: Destination) async -> Bool {
+        if let inFlight = deletionTasks[target] { return await inFlight.value }
 
-    func prepareMessageDeletion(for ingestions: [Ingestion], timedNotes: [TimedNote] = []) async -> PendingMessageDeletion {
-        let ownerObjectIDs = ingestions.map(\.objectID) + timedNotes.map(\.objectID)
-        guard !ownerObjectIDs.isEmpty else { return PendingMessageDeletion(targets: []) }
-        let container = PersistenceController.shared.container
-        let targets: [DeletionTarget] = await container.performBackgroundTask { bgContext in
-            ownerObjectIDs.flatMap { ownerID -> [DeletionTarget] in
-                guard let owner = try? bgContext.existingObject(with: ownerID) else { return [] }
-                let messages = (owner as? Ingestion)?.webhookMessagesSorted ?? (owner as? TimedNote)?.webhookMessagesSorted ?? []
-                return messages.compactMap { message in
-                    guard let preset = message.webhookPreset,
-                          let messageId = message.messageId,
-                          let url = preset.url, !url.isEmpty
-                    else { return nil }
-                    return DeletionTarget(messageObjectID: message.objectID, url: url, messageId: messageId)
-                }
-            }
+        pendingEdits.removeValue(forKey: target)
+        let currentEdit = editTasks[target]
+        let deletion = Task {
+            await currentEdit?.value
+            return await deleteMessageFromServer(target.url, target.messageId)
         }
-        return PendingMessageDeletion(targets: targets)
+        deletionTasks[target] = deletion
+        let deleted = await deletion.value
+        deletionTasks.removeValue(forKey: target)
+        return deleted
     }
 
-    // Deletes one sent message remotely and, only if that worked, locally
-    @MainActor
+    // Keep the visible tracking row when the user asks to delete just one message and the request fails.
     func deleteMessage(_ message: WebhookMessage) async -> Bool {
-        guard let url = message.webhookPreset?.url, !url.isEmpty, let messageId = message.messageId else { return false }
-        guard await WebhookService.deleteWebhookMessage(url: url, messageId: messageId) else { return false }
-        message.managedObjectContext?.delete(message)
-        PersistenceController.shared.saveViewContext()
+        guard let target = Destination(message), await deleteRemotely(target) else { return false }
+        let id = message.objectID
+        do {
+            try withStore { context in
+                guard let stored = try? context.existingObject(with: id) else { return }
+                context.delete(stored)
+                try context.save()
+            }
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    @discardableResult
+    func deletePreset(_ preset: WebhookPreset, deletingMessages: Bool) async throws -> Bool {
+        let presetID = preset.objectID
+        try withStore { context in
+            guard let stored = try? context.existingObject(with: presetID) as? WebhookPreset else { return }
+            if deletingMessages {
+                Self.stageDeletion(of: stored.messages?.allObjects as? [WebhookMessage] ?? [], in: context)
+            }
+            context.delete(stored)
+            try context.save()
+        }
+        if deletingMessages { return await retryPendingDeletions() }
+
+        for initial in initialSends.values where initial.presetID == presetID {
+            initial.keepRemoteMessage.withLock { $0 = true }
+        }
         return true
     }
 
-    @MainActor
-    func deletePreset(_ preset: WebhookPreset, deletingMessages: Bool) async {
-        if deletingMessages {
-            await deleteMessagesAndPreset(presetID: preset.objectID)
-        } else {
-            preset.managedObjectContext?.delete(preset)
-            PersistenceController.shared.saveViewContext()
-        }
-    }
-
-    func deleteAllPresetsAndMessages() async {
-        let container = PersistenceController.shared.container
-        let presetObjectIDs: [NSManagedObjectID] = await container.performBackgroundTask { bgContext in
-            let fetchRequest = WebhookPreset.fetchRequest()
-            return (try? bgContext.fetch(fetchRequest).map { $0.objectID }) ?? []
-        }
-        await withTaskGroup(of: Void.self) { group in
-            for presetID in presetObjectIDs {
-                group.addTask {
-                    await self.deleteMessagesAndPreset(presetID: presetID)
-                }
+    // Call the returned closure within the replacement transaction after it commits.
+    func makeInFlightRetentionCommit() -> @Sendable () -> Void {
+        let pending = initialSends.values.map(\.keepRemoteMessage)
+        return {
+            for flag in pending {
+                flag.withLock { $0 = true }
             }
         }
     }
 
-    private func deleteMessagesAndPreset(presetID: NSManagedObjectID) async {
-        let container = PersistenceController.shared.container
-        let targets = await buildPresetDeletionTargets(presetID: presetID, in: container)
-        await executeDeletions(targets, in: container, also: presetID)
+    // Transactions are synchronous on the main actor with journal deletion staging, while
+    // using an independent context so unrelated unsaved form changes cannot join them.
+    private func withStore<Value>(_ work: (NSManagedObjectContext) throws -> Value) rethrows -> Value {
+        let context = container.newBackgroundContext()
+        return try context.performAndWait {
+            try PersistenceController.withJournalStoreWrite { try work(context) }
+        }
     }
 }
 

@@ -2,7 +2,7 @@ import SwiftUI
 
 // Shown over the app while logging: waits for the iPhone, then confirms with a chance to undo
 struct LoggedScreen: View {
-  let logging: QuickLogModel.Logging
+  let request: WatchLogRequest
 
   var body: some View {
     ScrollView {
@@ -22,7 +22,7 @@ struct LoggedScreen: View {
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
         }
-        if isDone {
+        if canUndo {
           Button("Undo", role: .destructive) {
             model.undo()
           }
@@ -31,13 +31,13 @@ struct LoggedScreen: View {
       }
       .frame(maxWidth: .infinity)
     }
-    .toolbar(isDone ? .visible : .hidden, for: .navigationBar)
-    .interactiveDismissDisabled(logging.outcome == nil)
-    .task(id: logging.outcome) {
+    .toolbar(outcome == nil ? .hidden : .visible, for: .navigationBar)
+    .interactiveDismissDisabled(outcome == nil)
+    .task(id: outcome) {
       // Leaves time to undo before returning to the suggestions
-      guard isDone else { return }
-      try? await Task.sleep(nanoseconds: 5_000_000_000)
-      if model.logging?.id == logging.id {
+      guard canUndo || outcome == .undone || outcome == .undoQueued else { return }
+      try? await Task.sleep(for: .seconds(5))
+      if !Task.isCancelled, model.logging?.id == request.id {
         model.logging = nil
       }
     }
@@ -45,50 +45,59 @@ struct LoggedScreen: View {
 
   @EnvironmentObject private var model: QuickLogModel
 
-  private var isDone: Bool {
-    logging.outcome == .logged || logging.outcome == .queued
+  private var outcome: LogOutcome? {
+    model.logging?.outcome
+  }
+
+  private var canUndo: Bool {
+    outcome == .logged || outcome == .queued
   }
 
   private var title: String {
-    switch logging.outcome {
+    switch outcome {
     case .none:
-      "Logging…"
-    case .logged, .queued:
+      model.logging?.kind == .undo ? "Undoing…" : "Logging…"
+    case .logged:
       "Logged"
+    case .queued:
+      "Log Queued"
+    case .undone:
+      "Undone"
+    case .undoQueued:
+      "Undo Queued"
     case .failed:
-      "Couldn't Log"
+      model.logging?.kind == .undo ? "Couldn't Undo" : "Couldn't Log"
     }
   }
 
   // "100 mg MDMA"
   private var doseText: String {
-    let suggestion = logging.request.suggestion
-    return "\(suggestion.description(of: logging.request.dose)) \(suggestion.displayName)"
+    let suggestion = request.suggestion
+    return "\(suggestion.description(of: request.dose)) \(suggestion.displayName)"
   }
 
   private var detail: String? {
-    switch logging.outcome {
-    case .queued:
-      "It's added to your journal once your iPhone is reachable."
+    switch outcome {
+    case .queued, .undoQueued:
+      "Waiting for your iPhone to confirm."
     case .failed(let message):
       message
-    case .none, .logged:
+    case .none, .logged, .undone:
       nil
     }
   }
 
   @ViewBuilder
   private var icon: some View {
-    switch logging.outcome {
+    switch outcome {
     case .none:
       ProgressView()
-    case .logged:
+    case .logged, .undone:
       Image(systemName: "checkmark.circle.fill")
         .foregroundStyle(.green)
-    case .queued:
-      Image(systemName: "clock.badge.checkmark.fill")
-        .symbolRenderingMode(.multicolor)
-        .foregroundStyle(.green)
+    case .queued, .undoQueued:
+      Image(systemName: "clock")
+        .foregroundStyle(.secondary)
     case .failed:
       Image(systemName: "exclamationmark.triangle.fill")
         .foregroundStyle(.yellow)

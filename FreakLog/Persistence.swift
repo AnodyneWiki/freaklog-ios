@@ -9,8 +9,6 @@ struct PersistenceController {
     let roaCache: ResolvedRoaCache
     let overrideCache: SubstanceOverrideCache
 
-    private var isInitialized = false
-
     static let needsToSeeWelcomeKey = "needsToSeeWelcome"
     static let isEyeOpenKey1 = "isEyeOpen"
     static let isEyeOpenKey2 = "isEyeOpen2"
@@ -58,6 +56,7 @@ struct PersistenceController {
     static let hasBeenMigrated7Key = "hasBeenMigrated7"
     static let hasBeenMigrated8Key = "hasBeenMigrated8"
     static let hasBeenMigrated9Key = "hasBeenMigrated9"
+    private static let didRepairMissingSortDatesKey = "didRepairMissingSortDates"
     static let openUntilRatedCountKey = "openUntilRatedCount"
     static let didInitializeCloudKitSchemaKey = "didInitializeCloudKitSchema"
 
@@ -101,16 +100,11 @@ struct PersistenceController {
         }
 
         if inMemory {
-            loadInMemoryStores(description: container.persistentStoreDescriptions.first)
-            isInitialized = true
+            loadInMemoryStores()
         }
     }
 
-    public func loadData(_ app: UIApplication) {
-        tryLoadPersistentStores(app)
-    }
-
-    private func loadInMemoryStores(description: NSPersistentStoreDescription?) {
+    private func loadInMemoryStores() {
         let description = NSPersistentStoreDescription()
         description.type = NSInMemoryStoreType
         container.persistentStoreDescriptions = [description]
@@ -124,24 +118,13 @@ struct PersistenceController {
         viewContext.automaticallyMergesChangesFromParent = true
     }
 
-    private func tryLoadPersistentStores(_ app: UIApplication) {
-        if isInitialized { return }
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                let nsError = error as NSError
-                if (nsError.domain == "NSCocoaErrorDomain" && nsError.code == 256 && nsError.userInfo["NSSQLiteErrorDomain"] as? Int == 23) {
-                    exit(0)
-                }
-                else {
-                    fatalError("Failed to load Core Data stack: \(error)")
-                }
-            }
-        }
-
-        
+    @MainActor
+    func loadData() throws {
+        guard container.persistentStoreCoordinator.persistentStores.isEmpty else { return }
+        try loadStore(using: container.persistentStoreDescriptions)
         viewContext.automaticallyMergesChangesFromParent = true
         viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
-        
+
         // Pushes the schema to the CloudKit development environment. This blocks launch and fails against
         // production and without sync enabled (retrying on every launch), so only debug builds with sync try it.
         #if DEBUG
@@ -155,53 +138,98 @@ struct PersistenceController {
             }
         }
         #endif
-
-
-        return
     }
 
-    func updateCloudKitSyncStatus(_ enabled: Bool) {
-        
-        saveViewContext()
-        
-        guard let store = container.persistentStoreCoordinator.persistentStores.first,
-              store.url != nil else {
-            return
-        }
+    private static let journalStoreWriteLock = NSLock()
 
-        guard let description = container.persistentStoreDescriptions.first else {
-             return
-        }
+    static func withJournalStoreWrite<T>(_ body: () throws -> T) rethrows -> T {
+        try journalStoreWriteLock.withLock(body)
+    }
 
-        if enabled {
-            let cloudKitContainerOptions = NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier)
-            description.cloudKitContainerOptions = cloudKitContainerOptions
-            description.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-            description.configuration = nil
-        } else {
-            description.cloudKitContainerOptions = nil
-            description.setOption(false as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
-            description.configuration = "Local"
-        }
+    @MainActor private(set) static var isJournalOperationInProgress = false
 
-        do {
-            try container.persistentStoreCoordinator.remove(store)
-        } catch {
-            return
+    @MainActor
+    static func beginJournalOperation() throws {
+        guard !isJournalOperationInProgress else { throw JournalOperationError.busy }
+        isJournalOperationInProgress = true
+    }
+
+    @MainActor
+    static func endJournalOperation() {
+        isJournalOperationInProgress = false
+        LeaderboardSyncManager.shared.journalOperationDidEnd()
+    }
+
+    @MainActor
+    func journalEditContext() throws -> NSManagedObjectContext {
+        guard !Self.isJournalOperationInProgress else { throw JournalOperationError.busy }
+        let context = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        context.persistentStoreCoordinator = container.persistentStoreCoordinator
+        return context
+    }
+
+    static func journalObject<T: NSManagedObject>(_ object: T, in context: NSManagedObjectContext) throws -> T {
+        guard let result = try context.existingObject(with: object.objectID) as? T, !result.isDeleted else {
+            throw JournalOperationError.storeUnavailable
         }
-        
-        container.loadPersistentStores { description, error in
-            if let error = error {
-                fatalError("Failed to load Core Data stack: \(error)")
+        return result
+    }
+
+    static func saveJournalChanges(in context: NSManagedObjectContext) throws {
+        Experience.updateSortDates(beforeSaving: context)
+        try context.save()
+    }
+
+    @MainActor
+    func updateCloudKitSyncStatus(_ enabled: Bool) throws {
+        try Self.beginJournalOperation()
+        defer { Self.endJournalOperation() }
+        if viewContext.hasChanges { try viewContext.save() }
+
+        let coordinator = container.persistentStoreCoordinator
+        let original = container.persistentStoreDescriptions
+        guard let store = coordinator.persistentStores.first,
+              let description = original.first?.copy() as? NSPersistentStoreDescription else {
+            throw JournalOperationError.storeUnavailable
+        }
+        description.configuration = enabled ? nil : "Local"
+        description.cloudKitContainerOptions = enabled
+            ? NSPersistentCloudKitContainerOptions(containerIdentifier: Self.cloudKitContainerIdentifier) : nil
+        description.setOption(enabled as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
+
+        try Self.withJournalStoreWrite {
+            try coordinator.remove(store)
+            do {
+                try loadStore(using: [description])
+            } catch {
+                try loadStore(using: original)
+                throw error
             }
         }
-        
-        viewContext.automaticallyMergesChangesFromParent = true
-        viewContext.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        UserDefaults.standard.set(enabled, forKey: Self.isICloudSyncEnabledKey)
     }
 
-    func deleteEverything(blockContext: NSManagedObjectContext? = nil) throws {
-        let context = blockContext ?? viewContext
+    private func loadStore(using descriptions: [NSPersistentStoreDescription]) throws {
+        descriptions.forEach { $0.shouldAddStoreAsynchronously = false }
+        container.persistentStoreDescriptions = descriptions
+        var loadError: Error?
+        container.loadPersistentStores { _, error in loadError = error }
+        if let loadError { throw loadError }
+    }
+
+    enum JournalOperationError: LocalizedError {
+        case busy
+        case storeUnavailable
+
+        var errorDescription: String? {
+            switch self {
+            case .busy: "Another journal operation is in progress."
+            case .storeUnavailable: "The journal store is unavailable."
+            }
+        }
+    }
+
+    static func stageJournalDeletion(in context: NSManagedObjectContext) throws {
         // Entities not reached via cascade delete rules are listed explicitly
         let entityNames = [
             "Experience", "Ingestion", "CustomSubstance", "SubstanceCompanion", "CustomUnit", "Spray", "CustomRoa",
@@ -212,26 +240,19 @@ struct PersistenceController {
             request.includesPropertyValues = false
             try context.fetch(request).forEach(context.delete)
         }
-        try context.save()
+    }
 
-        let isICloudSyncEnabled = UserDefaults.standard.bool(forKey: PersistenceController.isICloudSyncEnabledKey)
-        if !isICloudSyncEnabled {
-            let purgeHistoryRequest = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
-            do {
-                try context.execute(purgeHistoryRequest)
-            } catch {
-            }
-        }
+    static func purgeLocalHistory(in context: NSManagedObjectContext) {
+        guard !UserDefaults.standard.bool(forKey: isICloudSyncEnabledKey) else { return }
+        let request = NSPersistentHistoryChangeRequest.deleteHistory(before: Date())
+        _ = try? context.execute(request)
     }
 
     // One-off data fixes, each run once and remembered under its key, in order
-    func runPendingMigrations() {
+    func runPendingMigrations() throws {
         let defaults = UserDefaults.standard
-        let migrations: [(key: String, run: () -> Void)] = [
-            (Self.hasBeenMigrated2Key, {
-                self.migrateCompanionsAndExperienceSortDates()
-                defaults.set(defaults.bool(forKey: Self.isEyeOpenKey1), forKey: Self.isEyeOpenKey2)
-            }),
+        let migrations: [(key: String, run: (NSManagedObjectContext) throws -> Void)] = [
+            (Self.hasBeenMigrated2Key, migrateCompanionsAndExperienceSortDates),
             (Self.hasBeenMigrated3Key, migrateIngestionNamesAndUnits),
             (Self.hasBeenMigrated4Key, migrateColors),
             (Self.hasBeenMigrated5Key, migrateBenzydamineUnits),
@@ -239,184 +260,174 @@ struct PersistenceController {
             (Self.hasBeenMigrated7Key, migrateRemoveDuplicateCompanions),
             (Self.hasBeenMigrated8Key, migrateFillPartialSubstanceOverrides),
             (Self.hasBeenMigrated9Key, migrateColorsToHex),
+            (Self.didRepairMissingSortDatesKey, repairMissingSortDates),
         ]
         for migration in migrations where !defaults.bool(forKey: migration.key) {
-            migration.run()
+            let context = container.newBackgroundContext()
+            try context.performAndWait {
+                try migration.run(context)
+                try context.save()
+            }
+            if migration.key == Self.hasBeenMigrated2Key {
+                defaults.set(defaults.bool(forKey: Self.isEyeOpenKey1), forKey: Self.isEyeOpenKey2)
+            }
             defaults.set(true, forKey: migration.key)
         }
     }
 
-    func migrateCompanionsAndExperienceSortDates() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            var companionsDict: [String: SubstanceCompanion] = [:]
-            for ingestion in allIngestions {
-                guard let name = ingestion.substanceName else { continue }
-                guard let colorUnwrap = ingestion.color else { continue }
-                if let companion = companionsDict[name] {
-                    ingestion.substanceCompanion = companion
-                } else {
-                    let companion = SubstanceCompanion(context: viewContext)
-                    companion.substanceName = name
-                    companion.colorAsText = colorUnwrap
-                    ingestion.substanceCompanion = companion
-                    companionsDict[name] = companion
-                }
+    func migrateCompanionsAndExperienceSortDates(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        var companionsDict: [String: SubstanceCompanion] = [:]
+        for ingestion in allIngestions {
+            guard let name = ingestion.substanceName else { continue }
+            guard let colorUnwrap = ingestion.color else { continue }
+            if let companion = companionsDict[name] {
+                ingestion.substanceCompanion = companion
+            } else {
+                let companion = SubstanceCompanion(context: context)
+                companion.substanceName = name
+                companion.colorAsText = colorUnwrap
+                ingestion.substanceCompanion = companion
+                companionsDict[name] = companion
             }
-            let experienceFetchRequest = Experience.fetchRequest()
-            let allExperiences = (try? viewContext.fetch(experienceFetchRequest)) ?? []
-            for experience in allExperiences {
-                experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
-            }
-            try? viewContext.save()
+        }
+        let experienceFetchRequest = Experience.fetchRequest()
+        let allExperiences = try context.fetch(experienceFetchRequest)
+        for experience in allExperiences {
+            experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
         }
     }
 
-    func migrateIngestionNamesAndUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Psilocybin Mushrooms" {
-                    ingestion.substanceName = "Psilocybin mushrooms"
-                }
-                if ingestion.units == "mg (THC)" {
-                    ingestion.units = "mg"
-                }
-                if ingestion.units == "70" {
-                    ingestion.units = "mg"
-                }
-            }
-            try? viewContext.save()
+    private func repairMissingSortDates(_ context: NSManagedObjectContext) throws {
+        let request = Experience.fetchRequest()
+        request.predicate = NSPredicate(format: "sortDate == nil")
+        for experience in try context.fetch(request) {
+            experience.sortDate = experience.ingestionsSorted.first?.time ?? experience.creationDate
         }
     }
 
-    func migrateBenzydamineUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Benzydamine" && ingestion.units == "g" {
-                    ingestion.units = "mg"
-                    ingestion.dose = ingestion.dose * 1000
-                }
+    func migrateIngestionNamesAndUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Psilocybin Mushrooms" {
+                ingestion.substanceName = "Psilocybin mushrooms"
             }
-            try? viewContext.save()
+            if ingestion.units == "mg (THC)" {
+                ingestion.units = "mg"
+            }
+            if ingestion.units == "70" {
+                ingestion.units = "mg"
+            }
         }
     }
 
-    func migrateCannabisAndMushroomUnits() {
-        viewContext.performAndWait {
-            let ingestionFetchRequest = Ingestion.fetchRequest()
-            let allIngestions = (try? viewContext.fetch(ingestionFetchRequest)) ?? []
-            for ingestion in allIngestions {
-                if ingestion.substanceName == "Cannabis" && ingestion.units == "mg" {
-                    ingestion.units = "mg THC"
-                }
-                if ingestion.substanceName == "Psilocybin mushrooms" && ingestion.units == "mg" {
-                    ingestion.units = "mg Psilocybin"
-                }
+    func migrateBenzydamineUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Benzydamine" && ingestion.units == "g" {
+                ingestion.units = "mg"
+                ingestion.dose = ingestion.dose * 1000
             }
-
-            let customUnitFetchRequest = CustomUnit.fetchRequest()
-            let customUnits = (try? viewContext.fetch(customUnitFetchRequest)) ?? []
-            for customUnit in customUnits {
-                if customUnit.substanceName == "Cannabis" && customUnit.originalUnit == "mg" {
-                    customUnit.originalUnit = "mg THC"
-                }
-                if customUnit.substanceName == "Psilocybin mushrooms" && customUnit.originalUnit == "mg" {
-                    customUnit.originalUnit = "mg Psilocybin"
-                }
-            }
-
-            try? viewContext.save()
         }
     }
 
-    func migrateColors() {
-        viewContext.performAndWait {
-            let companionFetchRequest = SubstanceCompanion.fetchRequest()
-            let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
-            for companion in allCompanions {
-                companion.colorAsText = companion.colorAsText?.uppercased()
+    func migrateCannabisAndMushroomUnits(_ context: NSManagedObjectContext) throws {
+        let ingestionFetchRequest = Ingestion.fetchRequest()
+        let allIngestions = try context.fetch(ingestionFetchRequest)
+        for ingestion in allIngestions {
+            if ingestion.substanceName == "Cannabis" && ingestion.units == "mg" {
+                ingestion.units = "mg THC"
             }
-            let timedNotesFetchRequest = TimedNote.fetchRequest()
-            let allTimedNotes = (try? viewContext.fetch(timedNotesFetchRequest)) ?? []
-            for timedNote in allTimedNotes {
-                timedNote.colorAsText = timedNote.colorAsText?.uppercased()
+            if ingestion.substanceName == "Psilocybin mushrooms" && ingestion.units == "mg" {
+                ingestion.units = "mg Psilocybin"
             }
-            try? viewContext.save()
+        }
+
+        let customUnitFetchRequest = CustomUnit.fetchRequest()
+        let customUnits = try context.fetch(customUnitFetchRequest)
+        for customUnit in customUnits {
+            if customUnit.substanceName == "Cannabis" && customUnit.originalUnit == "mg" {
+                customUnit.originalUnit = "mg THC"
+            }
+            if customUnit.substanceName == "Psilocybin mushrooms" && customUnit.originalUnit == "mg" {
+                customUnit.originalUnit = "mg Psilocybin"
+            }
+        }
+    }
+
+    func migrateColors(_ context: NSManagedObjectContext) throws {
+        let companionFetchRequest = SubstanceCompanion.fetchRequest()
+        let allCompanions = try context.fetch(companionFetchRequest)
+        for companion in allCompanions {
+            companion.colorAsText = companion.colorAsText?.uppercased()
+        }
+        let timedNotesFetchRequest = TimedNote.fetchRequest()
+        let allTimedNotes = try context.fetch(timedNotesFetchRequest)
+        for timedNote in allTimedNotes {
+            timedNote.colorAsText = timedNote.colorAsText?.uppercased()
         }
     }
 
     // Colors were stored as the names of a fixed palette and are hex codes now. Reading still understands the
     // names (iCloud can bring them from older versions), so this only makes the stored values consistent.
-    func migrateColorsToHex() {
-        viewContext.performAndWait {
-            func hex(of text: String?) -> String? {
-                text.flatMap(SubstanceColor.init(rawValue:))?.hex
+    func migrateColorsToHex(_ context: NSManagedObjectContext) throws {
+        func hex(of text: String?) -> String? {
+            text.flatMap(SubstanceColor.init(rawValue:))?.hex
+        }
+        for companion in try context.fetch(SubstanceCompanion.fetchRequest()) {
+            if let hex = hex(of: companion.colorAsText), hex != companion.colorAsText {
+                companion.colorAsText = hex
             }
-            for companion in (try? viewContext.fetch(SubstanceCompanion.fetchRequest())) ?? [] {
-                if let hex = hex(of: companion.colorAsText), hex != companion.colorAsText {
-                    companion.colorAsText = hex
-                }
+        }
+        for ingestion in try context.fetch(Ingestion.fetchRequest()) {
+            if let hex = hex(of: ingestion.color), hex != ingestion.color {
+                ingestion.color = hex
             }
-            for ingestion in (try? viewContext.fetch(Ingestion.fetchRequest())) ?? [] {
-                if let hex = hex(of: ingestion.color), hex != ingestion.color {
-                    ingestion.color = hex
-                }
+        }
+        for timedNote in try context.fetch(TimedNote.fetchRequest()) {
+            if let hex = hex(of: timedNote.colorAsText), hex != timedNote.colorAsText {
+                timedNote.colorAsText = hex
             }
-            for timedNote in (try? viewContext.fetch(TimedNote.fetchRequest())) ?? [] {
-                if let hex = hex(of: timedNote.colorAsText), hex != timedNote.colorAsText {
-                    timedNote.colorAsText = hex
-                }
-            }
-            try? viewContext.save()
         }
     }
 
     // Overrides of PsychonautWiki data with only some phases or dose levels left the rest undrawn
-    func migrateFillPartialSubstanceOverrides() {
-        viewContext.performAndWait {
-            for roa in getAllStandaloneCustomRoas() {
-                guard let name = roa.substanceName, SubstanceRepo.shared.getSubstance(name: name) != nil else { continue }
-                let values = CustomRoaCodable(roa: roa)
-                let filled = values.fillingGaps(from: .psychonautWikiValues(for: name, route: values.administrationRoute))
-                if filled != values {
-                    filled.apply(to: roa)
-                }
+    func migrateFillPartialSubstanceOverrides(_ context: NSManagedObjectContext) throws {
+        for roa in try context.fetch(Self.standaloneCustomRoasRequest()) {
+            guard let name = roa.substanceName, SubstanceRepo.shared.getSubstance(name: name) != nil else { continue }
+            let values = CustomRoaCodable(roa: roa)
+            let filled = values.fillingGaps(from: .psychonautWikiValues(for: name, route: values.administrationRoute))
+            if filled != values {
+                filled.apply(to: roa)
             }
-            try? viewContext.save()
         }
     }
 
-    func migrateRemoveDuplicateCompanions() {
-        viewContext.performAndWait {
-            let companionFetchRequest = SubstanceCompanion.fetchRequest()
-            let allCompanions = (try? viewContext.fetch(companionFetchRequest)) ?? []
+    func migrateRemoveDuplicateCompanions(_ context: NSManagedObjectContext) throws {
+        let companionFetchRequest = SubstanceCompanion.fetchRequest()
+        let allCompanions = try context.fetch(companionFetchRequest)
 
-            var companionsByName: [String: [SubstanceCompanion]] = [:]
-            for companion in allCompanions {
-                guard let name = companion.substanceName else { continue }
-                companionsByName[name, default: []].append(companion)
-            }
+        var companionsByName: [String: [SubstanceCompanion]] = [:]
+        for companion in allCompanions {
+            guard let name = companion.substanceName else { continue }
+            companionsByName[name, default: []].append(companion)
+        }
 
-            for (_, companions) in companionsByName where companions.count > 1 {
-                let keeper = companions[0]
-                let duplicates = companions[1...]
+        for (_, companions) in companionsByName where companions.count > 1 {
+            let keeper = companions[0]
+            let duplicates = companions[1...]
 
-                for duplicate in duplicates {
-                    if let ingestions = duplicate.ingestions as? Set<Ingestion> {
-                        for ingestion in ingestions {
-                            ingestion.substanceCompanion = keeper
-                        }
+            for duplicate in duplicates {
+                if let ingestions = duplicate.ingestions as? Set<Ingestion> {
+                    for ingestion in ingestions {
+                        ingestion.substanceCompanion = keeper
                     }
-                    viewContext.delete(duplicate)
                 }
+                context.delete(duplicate)
             }
-
-            try? viewContext.save()
         }
     }
 
@@ -649,14 +660,18 @@ struct PersistenceController {
         (try? viewContext.fetch(Self.experiencesRequest())) ?? []
     }
 
-    func getExperiences(near date: Date) -> [Experience] {
+    static func experiencesRequest(near date: Date) -> NSFetchRequest<Experience> {
         let window: TimeInterval = 60 * 60 * 60
         let r = Self.experiencesRequest()
         r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             NSPredicate(format: "sortDate > %@", date.addingTimeInterval(-window) as NSDate),
             NSPredicate(format: "sortDate < %@", date.addingTimeInterval(window) as NSDate),
         ])
-        return (try? viewContext.fetch(r)) ?? []
+        return r
+    }
+
+    func getExperiences(near date: Date) -> [Experience] {
+        (try? viewContext.fetch(Self.experiencesRequest(near: date))) ?? []
     }
 
     func getAllCustomSubstances() -> [CustomSubstance] {
@@ -675,10 +690,14 @@ struct PersistenceController {
         (try? viewContext.fetch(Self.formulationsRequest())) ?? []
     }
 
-    func getAllStandaloneCustomRoas() -> [CustomRoa] {
+    static func standaloneCustomRoasRequest() -> NSFetchRequest<CustomRoa> {
         let r = CustomRoa.fetchRequest()
         r.predicate = NSPredicate(format: "customSubstance == nil")
-        return (try? viewContext.fetch(r)) ?? []
+        return r
+    }
+
+    func getAllStandaloneCustomRoas() -> [CustomRoa] {
+        (try? viewContext.fetch(Self.standaloneCustomRoasRequest())) ?? []
     }
 
     func getSubstanceCompanion(for substanceName: String) -> SubstanceCompanion? {
@@ -698,14 +717,14 @@ struct PersistenceController {
         return (try? viewContext.fetch(r)) ?? []
     }
 
-    func getPersonalIngestions(from startDate: Date, to endDate: Date) -> [Ingestion] {
+    static func getPersonalIngestions(from startDate: Date, to endDate: Date, in context: NSManagedObjectContext) throws -> [Ingestion] {
         let r = Self.personalIngestionsRequest()
         r.sortDescriptors = [NSSortDescriptor(keyPath: \Ingestion.time, ascending: true)]
         r.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
             r.predicate!,
             NSPredicate(format: "time >= %@ AND time < %@", startDate as NSDate, endDate as NSDate),
         ])
-        return (try? viewContext.fetch(r)) ?? []
+        return try context.fetch(r)
     }
 
     func saveViewContext() {
@@ -797,13 +816,13 @@ struct PersistenceController {
         resolvedRoa(for: substanceName, route: route).duration
     }
 
-    func renameSubstance(from oldName: String, to newName: String) {
+    static func renameSubstance(from oldName: String, to newName: String, in context: NSManagedObjectContext) throws {
         for entityName in [
             "Ingestion", "SubstanceCompanion", "CustomUnit", "CustomRoa", "SubstanceOverride", "FormulationComponent",
         ] {
             let r = NSFetchRequest<NSManagedObject>(entityName: entityName)
             r.predicate = NSPredicate(format: "substanceName == %@", oldName)
-            ((try? viewContext.fetch(r)) ?? []).forEach { $0.setValue(newName, forKey: "substanceName") }
+            try context.fetch(r).forEach { $0.setValue(newName, forKey: "substanceName") }
         }
     }
 }

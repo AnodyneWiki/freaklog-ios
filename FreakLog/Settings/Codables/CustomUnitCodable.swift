@@ -64,7 +64,7 @@ struct CustomUnitCodable: Codable {
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        id = try values.decode(Int32.self, forKey: .id)
+        id = try values.decodeIfPresent(Int32.self, forKey: .id) ?? 0
         substanceName = try values.decode(String.self, forKey: .substanceName)
         name = try values.decode(String.self, forKey: .name)
         creationDate = try values.decodeMillis(forKey: .creationDate)
@@ -103,9 +103,9 @@ struct CustomUnitCodable: Codable {
 }
 
 extension CustomUnitCodable {
-    init(_ customUnit: CustomUnit) {
+    init(_ customUnit: CustomUnit, id: Int32) {
         self.init(
-            id: customUnit.idForAndroid,
+            id: id,
             substanceName: customUnit.substanceNameUnwrapped,
             name: customUnit.nameUnwrapped,
             creationDate: customUnit.creationDateUnwrapped,

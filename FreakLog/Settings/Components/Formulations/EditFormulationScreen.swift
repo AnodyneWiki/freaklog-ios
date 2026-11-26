@@ -15,10 +15,14 @@ struct EditFormulationScreen: View {
   }
 
   let formulation: Formulation?
+  @State private var isShowingSaveError = false
 
   var body: some View {
     NavigationStack(path: $path) {
       form
+        .alert("Couldn't save formulation changes", isPresented: $isShowingSaveError) {
+          Button("OK", role: .cancel) {}
+        }
         .navigationTitle(formulation == nil ? "Add Formulation" : "Edit Formulation")
         .toolbar {
           ToolbarItem(placement: .cancellationAction) {
@@ -138,23 +142,31 @@ struct EditFormulationScreen: View {
   }
 
   private func save() {
-    let context = PersistenceController.shared.viewContext
-    var trimmed = values
-    trimmed.name = values.name.trimmingCharacters(in: .whitespaces)
-    if let formulation {
-      trimmed.apply(to: formulation)
-    } else {
-      trimmed.insert(into: context)
+    do {
+      let context = try PersistenceController.shared.journalEditContext()
+      var trimmed = values
+      trimmed.name = values.name.trimmingCharacters(in: .whitespaces)
+      if let formulation {
+        trimmed.apply(to: try PersistenceController.journalObject(formulation, in: context))
+      } else {
+        trimmed.insert(into: context)
+      }
+      try context.save()
+      dismiss()
+    } catch {
+      isShowingSaveError = true
     }
-    try? context.save()
-    dismiss()
   }
 
   private func delete(_ formulation: Formulation) {
-    let context = PersistenceController.shared.viewContext
-    context.delete(formulation)
-    try? context.save()
-    dismiss()
+    do {
+      let context = try PersistenceController.shared.journalEditContext()
+      context.delete(try PersistenceController.journalObject(formulation, in: context))
+      try context.save()
+      dismiss()
+    } catch {
+      isShowingSaveError = true
+    }
   }
 }
 

@@ -1,4 +1,5 @@
 import Charts
+import CoreData
 import SwiftUI
 
 struct StatsScreen: View {

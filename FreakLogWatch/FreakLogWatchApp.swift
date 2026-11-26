@@ -19,6 +19,9 @@ struct FreakLogWatchApp: App {
         session.refresh()
       }
     }
+    .backgroundTask(.watchConnectivity) {
+      await session.handleBackgroundDelivery()
+    }
   }
 
   @StateObject private var session = WatchSession.shared
