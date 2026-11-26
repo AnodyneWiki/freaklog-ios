@@ -97,6 +97,49 @@ final class AssistantConversationTests: XCTestCase {
     XCTAssertTrue(enabled.contains("not a general-purpose chatbot"))
   }
 
+  func testSettingsChangeKeepsChatUntilRestart() throws {
+    let defaults = UserDefaults.standard
+    let profilesKey = PersistenceController.assistantProfilesKey
+    let profileIDKey = PersistenceController.assistantActiveProfileKey
+    let webKey = PersistenceController.isAssistantWebAccessEnabledKey
+    let saved = [profilesKey, profileIDKey, webKey].map { ($0, defaults.object(forKey: $0)) }
+    defer {
+      for (key, value) in saved {
+        defaults.set(value, forKey: key)
+      }
+    }
+
+    var profile = AssistantProfile(preset: .ollama)
+    profile.baseURL = "http://127.0.0.1:1/v1"
+    profile.model = "test-model"
+    defaults.set(try JSONEncoder().encode([profile]), forKey: profilesKey)
+    defaults.set(profile.id.uuidString, forKey: profileIDKey)
+    defaults.set(false, forKey: webKey)
+
+    let chat = AssistantChat(experience: nil)
+    defer { chat.cancel() }
+    chat.startIfNeeded()
+    chat.send("What did I log today?")
+    XCTAssertTrue(chat.hasQuestions)
+    let transcript = chat.items
+
+    defaults.set(true, forKey: webKey)
+    chat.startIfNeeded()
+    XCTAssertTrue(chat.requiresRestart)
+    XCTAssertEqual(chat.items, transcript)
+
+    defaults.set(false, forKey: webKey)
+    chat.startIfNeeded()
+    XCTAssertFalse(chat.requiresRestart)
+    XCTAssertEqual(chat.items, transcript)
+
+    defaults.set(true, forKey: webKey)
+    chat.startIfNeeded()
+    chat.start()
+    XCTAssertFalse(chat.requiresRestart)
+    XCTAssertTrue(chat.items.isEmpty)
+  }
+
   private func makeToolbox() -> AssistantToolbox {
     AssistantToolbox(context: PersistenceController(inMemory: true).viewContext, includesAnodyneWiki: false)
   }

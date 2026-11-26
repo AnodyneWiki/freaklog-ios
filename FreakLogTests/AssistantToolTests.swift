@@ -159,6 +159,25 @@ final class AssistantToolTests: XCTestCase {
       from: .object(["error": .object(["message": "Rate limited"])]), textLimit: 800))
   }
 
+  func testWebSearchHandlesSeparateContentBlocksAndLineEndings() throws {
+    let reply: JSONValue = .object([
+      "result": .object([
+        "content": .array([
+          .object(["type": "text", "text": "Title: First\r\nURL: https://example.com/one\r\n\r\n---\r\n\r\nTitle: Second"]),
+          .object(["type": "image", "text": "Ignored"]),
+          .object(["type": "text", "text": "Title: Third\nAuthor: Name\nURL: https://example.com/three"]),
+          .object(["type": "text", "text": "Title: Fourth"]),
+        ]),
+      ]),
+    ])
+    let result = try AssistantWebSearch.result(from: reply, textLimit: 800)
+    XCTAssertEqual(result["results"], .array([
+      "Title: First\nURL: https://example.com/one",
+      "Title: Second",
+      "Title: Third\nAuthor: Name\nURL: https://example.com/three",
+    ]))
+  }
+
   func testAnodyneUserNoteJSONIncludesAnnotationsAndOmitsEmptyFields() throws {
     let note = AnodyneUserNote(
       user: "emily",

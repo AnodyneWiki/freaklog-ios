@@ -32,7 +32,7 @@ enum AssistantWebSearch {
       throw AssistantError("Use a nonempty web search query of up to 600 characters.")
     }
 
-    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query))
+    let events = AssistantHTTP.events(from: endpoint, headers: [:], body: requestBody(query: query), isLookup: true)
     for try await event in events {
       let reply = try AssistantHTTP.json(of: event)
       if reply["id"]?.number == 1 {
@@ -62,11 +62,16 @@ enum AssistantWebSearch {
     guard let result = reply["result"], let content = result["content"]?.array else {
       throw AssistantError("The web search returned an unexpected response.")
     }
-    let text = content.filter { $0["type"]?.string == "text" }.compactMap { $0["text"]?.string }.joined(separator: "\n")
+    let blocks = content.filter { $0["type"]?.string == "text" }.compactMap { $0["text"]?.string }
     if result["isError"]?.bool == true {
+      let text = blocks.joined(separator: "\n")
       throw AssistantError(text.isEmpty ? "Web search failed." : String(text.prefix(textLimit)))
     }
-    let excerpts = text.components(separatedBy: "\n\n---\n\n")
+    let excerpts = blocks.flatMap {
+      $0.replacingOccurrences(of: "\r\n", with: "\n")
+        .replacingOccurrences(of: "\r", with: "\n")
+        .components(separatedBy: "\n\n---\n\n")
+    }
       .filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
       .prefix(3)
       .map { AssistantFormat.text($0, limit: textLimit) }

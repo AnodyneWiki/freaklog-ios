@@ -88,7 +88,8 @@ enum AssistantHTTP {
   static func events(
     from url: URL,
     headers: [String: String],
-    body: JSONValue)
+    body: JSONValue,
+    isLookup: Bool = false)
     -> AsyncThrowingStream<ServerSentEvent, Error>
   {
     AsyncThrowingStream { continuation in
@@ -102,7 +103,7 @@ enum AssistantHTTP {
             request.setValue(value, forHTTPHeaderField: field)
           }
           request.httpBody = Data(body.jsonText.utf8)
-          let (bytes, response) = try await connect { try await session.bytes(for: request) }
+          let (bytes, response) = try await connect { try await (isLookup ? lookupSession : session).bytes(for: request) }
           try await checkStatus(response, bytes: bytes)
           let contentType = (response as? HTTPURLResponse)?.value(forHTTPHeaderField: "Content-Type") ?? ""
           if contentType.localizedCaseInsensitiveContains("json") {
@@ -147,13 +148,13 @@ enum AssistantHTTP {
     }
   }
 
-  static func getJSON(from url: URL, headers: [String: String]) async throws -> JSONValue {
+  static func getJSON(from url: URL, headers: [String: String], isLookup: Bool = false) async throws -> JSONValue {
     var request = URLRequest(url: url)
     request.setValue("application/json", forHTTPHeaderField: "Accept")
     for (field, value) in headers {
       request.setValue(value, forHTTPHeaderField: field)
     }
-    let (bytes, response) = try await connect { try await session.bytes(for: request) }
+    let (bytes, response) = try await connect { try await (isLookup ? lookupSession : session).bytes(for: request) }
     try await checkStatus(response, bytes: bytes)
     let data = try await collect(bytes, limit: maxEventBytes, host: url.host)
     guard let json = try? JSONDecoder().decode(JSONValue.self, from: data) else {
@@ -186,6 +187,13 @@ enum AssistantHTTP {
     // Local models can take minutes before the first token
     configuration.timeoutIntervalForRequest = 300
     configuration.timeoutIntervalForResource = 60 * 60
+    return URLSession(configuration: configuration, delegate: RedirectDelegate(), delegateQueue: nil)
+  }()
+
+  private static let lookupSession: URLSession = {
+    let configuration = URLSessionConfiguration.ephemeral
+    configuration.timeoutIntervalForRequest = 15
+    configuration.timeoutIntervalForResource = 30
     return URLSession(configuration: configuration, delegate: RedirectDelegate(), delegateQueue: nil)
   }()
 

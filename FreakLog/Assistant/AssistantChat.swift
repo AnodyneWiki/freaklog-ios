@@ -77,6 +77,7 @@ final class AssistantChat: ObservableObject {
   @Published private(set) var phase = Phase.ready
   @Published private(set) var items: [AssistantChatItem] = []
   @Published private(set) var isBusy = false
+  @Published private(set) var requiresRestart = false
   // What the assistant is doing, e.g. "Looking through your journal…"
   @Published private(set) var status: String?
   // The last question can be sent again: it was answered, failed or stopped
@@ -130,10 +131,13 @@ final class AssistantChat: ObservableObject {
       return
     }
     profiles = AssistantProfileStore.profiles
-    if phase != .ready || AssistantProfileStore.activeProfile != activeProfile ||
+    let settingsChanged = AssistantProfileStore.activeProfile != activeProfile ||
       allowsWikiLookups != AssistantProfileStore.isAnodyneWikiEnabled ||
       allowsWebSearch != AssistantWebSearch.isEnabled ||
-      activeProfile.map({ AssistantKeychain.key(for: $0.id) }) != activeKey {
+      activeProfile.map({ AssistantKeychain.key(for: $0.id) }) != activeKey
+    if hasQuestions {
+      requiresRestart = settingsChanged
+    } else if phase != .ready || settingsChanged {
       start()
     }
   }
@@ -147,6 +151,7 @@ final class AssistantChat: ObservableObject {
     items = []
     addedToNotes = []
     isBusy = false
+    requiresRestart = false
     status = nil
     canRetry = false
     profiles = AssistantProfileStore.profiles
@@ -199,7 +204,7 @@ final class AssistantChat: ObservableObject {
   }
 
   func selectModel(_ model: String) {
-    guard !isBusy, var profile = activeProfile, model != profile.model else { return }
+    guard !isBusy, !requiresRestart, var profile = activeProfile, model != profile.model else { return }
     profile.choose(model: model)
     AssistantProfileStore.save(profile)
     guard let conversation = conversation as? APIConversation else {
@@ -233,7 +238,7 @@ final class AssistantChat: ObservableObject {
 
   func send(_ text: String) {
     let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-    guard !text.isEmpty, !isBusy, let conversation, let toolbox else { return }
+    guard !text.isEmpty, !isBusy, !requiresRestart, let conversation, let toolbox else { return }
     let reply = AssistantChatItem.Message(isUser: false, text: "", state: .waiting)
     items.append(.message(.init(isUser: true, text: text)))
     items.append(.message(reply))
@@ -284,7 +289,7 @@ final class AssistantChat: ObservableObject {
   // Sends the last question again, in place of the answer it got
   func retry() {
     guard
-      !isBusy, let conversation,
+      !isBusy, !requiresRestart, let conversation,
       let index = items.lastIndex(where: { $0.message?.isUser == true }),
       let question = conversation.rollBackLastTurn() ?? items[index].message?.text
     else { return }
