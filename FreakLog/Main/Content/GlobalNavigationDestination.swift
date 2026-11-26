@@ -22,7 +22,8 @@ enum GlobalNavigationDestination: Hashable {
     case dynamicExperience(ingestions: [Ingestion])
     case chooseExperience(experiences: [Experience])
     case saferHallucinogen
-    case allInteractions(substancesToCheck: [Substance])
+    case allInteractions(substancesToCheck: [Substance], detected: [Interaction] = [])
+    case interactionPair(Interaction)
     case toleranceTexts(substances: [SubstanceWithToleranceAndColor])
     case timeline(timelineModel: TimelineModel, timeDisplayStyle: TimeDisplayStyle)
     case explainExperience

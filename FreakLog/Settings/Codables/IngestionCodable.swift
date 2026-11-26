@@ -15,8 +15,12 @@ struct IngestionCodable: Codable {
     let consumerName: String?
     let customUnitId: Int32?
     let administrationSite: String?
-    let stomachFullness: String?
     let location: LocationCodable?
+    let isHiddenInTimeline: Bool
+    let isShownInTimeline: Bool
+    let isUnconfirmed: Bool
+    let confirmationBatchID: UUID?
+    let stomachFullness: String?
     // The ID is local to the file. Older files only have a name.
     var formulationId: String?
     var formulationName: String?
@@ -36,11 +40,15 @@ struct IngestionCodable: Codable {
         case consumerName
         case customUnitId
         case administrationSite
-        case stomachFullness
         case location
         case formulationName
         case formulationId
         case formulationAmount
+        case isHiddenInTimeline
+        case isShownInTimeline
+        case isUnconfirmed
+        case confirmationBatchID
+        case stomachFullness
     }
 
     init(
@@ -58,6 +66,10 @@ struct IngestionCodable: Codable {
         customUnitId: Int32?,
         administrationSite: String?,
         location: LocationCodable?,
+        isHiddenInTimeline: Bool = false,
+        isShownInTimeline: Bool = false,
+        isUnconfirmed: Bool = false,
+        confirmationBatchID: UUID? = nil,
         stomachFullness: String? = nil
     ) {
         self.substanceName = substanceName
@@ -73,8 +85,12 @@ struct IngestionCodable: Codable {
         self.consumerName = consumerName
         self.customUnitId = customUnitId
         self.administrationSite = administrationSite
-        self.stomachFullness = stomachFullness
         self.location = location
+        self.isHiddenInTimeline = isHiddenInTimeline
+        self.isShownInTimeline = isShownInTimeline
+        self.isUnconfirmed = isUnconfirmed
+        self.confirmationBatchID = isUnconfirmed ? confirmationBatchID : nil
+        self.stomachFullness = stomachFullness
     }
 
     init(from decoder: Decoder) throws {
@@ -97,11 +113,15 @@ struct IngestionCodable: Codable {
         consumerName = try values.decodeIfPresent(String.self, forKey: .consumerName)
         customUnitId = try values.decodeIfPresent(Int32.self, forKey: .customUnitId)
         administrationSite = try values.decodeIfPresent(String.self, forKey: .administrationSite)
-        stomachFullness = try values.decodeIfPresent(String.self, forKey: .stomachFullness)
         location = try values.decodeIfPresent(LocationCodable.self, forKey: .location)
         formulationName = try values.decodeIfPresent(String.self, forKey: .formulationName)
         formulationId = try values.decodeIfPresent(String.self, forKey: .formulationId)
         formulationAmount = try values.decodeIfPresent(Double.self, forKey: .formulationAmount)
+        isHiddenInTimeline = try values.decodeIfPresent(Bool.self, forKey: .isHiddenInTimeline) ?? false
+        isShownInTimeline = try values.decodeIfPresent(Bool.self, forKey: .isShownInTimeline) ?? false
+        isUnconfirmed = try values.decodeIfPresent(Bool.self, forKey: .isUnconfirmed) ?? false
+        confirmationBatchID = isUnconfirmed ? try values.decodeIfPresent(UUID.self, forKey: .confirmationBatchID) : nil
+        stomachFullness = try values.decodeIfPresent(String.self, forKey: .stomachFullness)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -120,10 +140,14 @@ struct IngestionCodable: Codable {
         try container.encode(customUnitId, forKey: .customUnitId)
         try container.encode(administrationSite, forKey: .administrationSite)
         try container.encode(location, forKey: .location)
-        try container.encodeIfPresent(stomachFullness, forKey: .stomachFullness)
         try container.encodeIfPresent(formulationName, forKey: .formulationName)
         try container.encodeIfPresent(formulationId, forKey: .formulationId)
         try container.encodeIfPresent(formulationAmount, forKey: .formulationAmount)
+        try container.encodeIfPresent(isHiddenInTimeline ? true : nil, forKey: .isHiddenInTimeline)
+        try container.encodeIfPresent(isShownInTimeline ? true : nil, forKey: .isShownInTimeline)
+        try container.encodeIfPresent(isUnconfirmed ? true : nil, forKey: .isUnconfirmed)
+        try container.encodeIfPresent(confirmationBatchID, forKey: .confirmationBatchID)
+        try container.encodeIfPresent(stomachFullness, forKey: .stomachFullness)
     }
 }
 
@@ -154,6 +178,10 @@ extension IngestionCodable {
             customUnitId: customUnitId,
             administrationSite: ingestion.administrationSite,
             location: ingestion.location.map(LocationCodable.init),
+            isHiddenInTimeline: ingestion.isHiddenInTimeline,
+            isShownInTimeline: ingestion.isShownInTimeline,
+            isUnconfirmed: ingestion.isUnconfirmed,
+            confirmationBatchID: ingestion.confirmationBatchID,
             stomachFullness: ingestion.stomachFullness
         )
         if let formulation = ingestion.formulation {
@@ -182,8 +210,12 @@ extension IngestionCodable {
         ingestion.note = notes
         ingestion.consumerName = consumerName
         ingestion.administrationSite = administrationSite
-        ingestion.stomachFullness = stomachFullness
         ingestion.formulationAmount = formulationAmount ?? 0
+        ingestion.isHiddenInTimeline = isHiddenInTimeline
+        ingestion.isShownInTimeline = isShownInTimeline
+        ingestion.isUnconfirmed = isUnconfirmed
+        ingestion.confirmationBatchID = confirmationBatchID
+        ingestion.stomachFullness = stomachFullness
         if let location = location ?? fallbackLocation {
             ingestion.location = ExperienceLocation.make(from: location, in: context)
         }

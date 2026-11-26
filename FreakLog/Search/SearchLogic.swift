@@ -184,6 +184,18 @@ struct UnifiedJournalQuery {
         return request
     }
 
+    func timedNotesRequest(limit: Int, details: TimedNoteDetails) -> NSFetchRequest<TimedNote> {
+        let request = PersistenceController.timedNotesRequest()
+        request.fetchLimit = limit
+        request.relationshipKeyPathsForPrefetching = ["experience"]
+        var clauses = terms.map { contains($0, field: "note") }
+        if favoritesOnly { clauses.append(NSPredicate(format: "experience.isFavorite == YES")) }
+        if let mood = details.mood { clauses.append(NSPredicate(format: "mood == %@", mood.rawValue)) }
+        if let energy = details.energy { clauses.append(NSPredicate(format: "energy == %@", energy.rawValue)) }
+        request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: clauses)
+        return request
+    }
+
     private func appendSubstanceMatches(for term: String, field: String, to predicates: inout [NSPredicate]) {
         if let names = substanceNames[term], !names.isEmpty {
             predicates.append(NSPredicate(format: "\(field) IN %@", names))

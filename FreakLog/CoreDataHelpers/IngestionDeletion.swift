@@ -7,16 +7,19 @@ import CoreData
 enum IngestionDeletion {
     struct Request {
         private let selectedID: NSManagedObjectID
+        private let entryIDs: Set<NSManagedObjectID>
         private let stockUseID: NSManagedObjectID?
         let canReturnStock: Bool
 
         var hasStockUse: Bool { stockUseID != nil }
+        var count: Int { entryIDs.count }
         let name: String
         let date: Date?
         let amount: String
 
         init(_ ingestion: Ingestion) {
             selectedID = ingestion.objectID
+            entryIDs = Set(Self.entries(for: ingestion).map(\.objectID))
             stockUseID = ingestion.stockChange?.objectID
             canReturnStock = ingestion.stockChange?.canReverseUse == true
             name = ingestion.substanceDisplayName
@@ -31,7 +34,7 @@ enum IngestionDeletion {
         }
 
         func requiresConfirmation(preferenceEnabled: Bool) -> Bool {
-            preferenceEnabled || hasStockUse
+            preferenceEnabled || hasStockUse || count > 1
         }
 
         func resolve(in context: NSManagedObjectContext) throws -> [Ingestion] {
@@ -41,7 +44,14 @@ enum IngestionDeletion {
                   ingestion.stockChange?.objectID == stockUseID else {
                 throw DeletionError.entryUnavailable
             }
-            return [ingestion]
+            let entries = Self.entries(for: ingestion)
+            guard Set(entries.map(\.objectID)) == entryIDs else { throw DeletionError.entryUnavailable }
+            return entries
+        }
+
+        private static func entries(for ingestion: Ingestion) -> [Ingestion] {
+            let pending = ingestion.pendingConfirmationEntries
+            return pending.isEmpty ? [ingestion] : pending
         }
     }
 
@@ -107,7 +117,7 @@ enum IngestionDeletion {
                         break
                     }
                 }
-                let identifiers = ingestions.compactMap(\.identifier)
+                let identifiers = ingestions.filter { !$0.isUnconfirmed }.compactMap(\.identifier)
                 if returningStock {
                     guard rootObjects.count == 1, let ingestion = rootObjects.first as? Ingestion else {
                         throw InventoryError.cannotReverseUse

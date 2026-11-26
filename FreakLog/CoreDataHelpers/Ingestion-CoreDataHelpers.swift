@@ -1,6 +1,11 @@
 import CoreData
 
 extension Ingestion: Comparable {
+    static var confirmedPredicate: NSPredicate {
+        // Optional for migration and CloudKit. Historical nulls are ordinary confirmed entries.
+        NSPredicate(format: "isUnconfirmed == nil OR isUnconfirmed == NO")
+    }
+
     public static func < (lhs: Ingestion, rhs: Ingestion) -> Bool {
         lhs.timeUnwrapped < rhs.timeUnwrapped
     }
@@ -20,6 +25,51 @@ extension Ingestion: Comparable {
 
     var administrationRouteUnwrapped: AdministrationRoute {
         AdministrationRoute(rawValue: administrationRoute ?? "oral") ?? .oral
+    }
+
+    enum TimelineVisibility: Hashable {
+        case substanceDefault, show, hide
+    }
+
+    var timelineVisibility: TimelineVisibility {
+        get {
+            if isHiddenInTimeline { return .hide }
+            return isShownInTimeline ? .show : .substanceDefault
+        }
+        set {
+            isHiddenInTimeline = newValue == .hide
+            isShownInTimeline = newValue == .show
+        }
+    }
+
+    var isHiddenFromTimeline: Bool {
+        switch timelineVisibility {
+        case .hide: return true
+        case .show: return false
+        case .substanceDefault: return substanceCompanion?.isHiddenInTimeline == true
+        }
+    }
+
+    var pendingConfirmationEntries: [Ingestion] {
+        guard isUnconfirmed else { return [] }
+        guard let confirmationBatchID, let experience else { return [self] }
+        return experience.ingestionsSorted.filter {
+            $0.isUnconfirmed && $0.confirmationBatchID == confirmationBatchID
+        }
+    }
+
+    var inventoryArguments: FinishIngestionScreenArguments {
+        FinishIngestionScreenArguments(
+            substanceName: substanceNameUnwrapped,
+            administrationRoute: administrationRouteUnwrapped,
+            dose: doseUnwrapped,
+            units: unitsUnwrapped,
+            isEstimate: isEstimate,
+            estimatedDoseStandardDeviation: estimatedDoseStandardDeviationUnwrapped,
+            customUnit: customUnit,
+            formulation: formulation,
+            formulationAmount: formulationAmount
+        )
     }
 
     var administrationSiteUnwrapped: String {

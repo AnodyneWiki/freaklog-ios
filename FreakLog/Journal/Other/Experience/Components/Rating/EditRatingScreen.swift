@@ -2,7 +2,8 @@ import SwiftUI
 
 struct EditRatingScreen: View {
     @ObservedObject var rating: ShulginRating
-    @Binding var isHidden: Bool
+    @State private var isHidden = false
+    @State private var showsSaveError = false
 
     @Environment(\.dismiss) var dismiss
     @State private var selectedTime = Date.now
@@ -30,6 +31,7 @@ struct EditRatingScreen: View {
         }.onAppear {
             selectedTime = rating.timeUnwrapped
             selectedRating = rating.optionUnwrapped
+            isHidden = rating.isHiddenInTimeline
         }
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
@@ -44,13 +46,23 @@ struct EditRatingScreen: View {
             }
         }
         .navigationTitle("Edit Rating")
+        .alert("Couldn’t Save the Rating", isPresented: $showsSaveError) {
+            Button("OK", role: .cancel) {}
+        }
     }
 
     func save() {
-        rating.time = selectedTime
-        rating.option = selectedRating.rawValue
-        rating.experience?.objectWillChange.send()
-        PersistenceController.shared.saveViewContext()
+        do {
+            let context = try PersistenceController.shared.journalEditContext()
+            let editable = try PersistenceController.journalObject(rating, in: context)
+            editable.time = selectedTime
+            editable.option = selectedRating.rawValue
+            editable.isHiddenInTimeline = isHidden
+            try context.save()
+            dismiss()
+        } catch {
+            showsSaveError = true
+        }
     }
 
     func delete() {

@@ -161,39 +161,36 @@ extension Experience: Comparable {
     }
 
     func getMyTimeLineModel(
-        hiddenIngestions: Set<ObjectIdentifier>,
-        hiddenRatings: Set<ObjectIdentifier>,
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        combinesComparableRoutes: Bool = UserDefaults.standard.bool(forKey: TimelineModel.combinesComparableRoutesKey)
     ) -> TimelineModel {
         liveActivityState(
-            hiddenIngestions: hiddenIngestions,
-            hiddenRatings: hiddenRatings,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            combinesComparableRoutes: combinesComparableRoutes
         ).timelineModel
     }
 
     // The user's own timeline, in the form sent to the live activity
     func liveActivityState(
-        hiddenIngestions: Set<ObjectIdentifier> = [],
-        hiddenRatings: Set<ObjectIdentifier> = [],
         areRedosesDrawnIndividually: Bool,
-        areSubstanceHeightsIndependent: Bool
+        areSubstanceHeightsIndependent: Bool,
+        combinesComparableRoutes: Bool = UserDefaults.standard.bool(forKey: TimelineModel.combinesComparableRoutesKey)
     ) -> TimelineWidgetAttributes.ContentState {
         TimelineWidgetAttributes.ContentState(
-            substanceGroups: getSubstanceIngestionGroups(ingestions: myIngestionsSorted.filter { !hiddenIngestions.contains($0.id) }),
+            substanceGroups: getSubstanceIngestionGroups(ingestions: myIngestionsSorted),
             everythingForEachRating: ratingsWithTimeSorted
-                .filter { !hiddenRatings.contains($0.id) }
+                .filter { !$0.isHiddenInTimeline }
                 .map { EverythingForOneRating(time: $0.timeUnwrapped, option: $0.optionUnwrapped) },
             everythingForEachTimedNote: timedNotesForTimeline,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            combinesComparableRoutes: combinesComparableRoutes
         )
     }
 
     func getConsumers(
-        hiddenIngestions: Set<ObjectIdentifier>,
         areRedosesDrawnIndividually: Bool,
         areSubstanceHeightsIndependent: Bool
     ) -> [ConsumerWithIngestions] {
@@ -202,7 +199,7 @@ extension Experience: Comparable {
                 consumerName: consumerName,
                 ingestionsSorted: ingestions.sorted(),
                 timelineModel: ExperienceLogic.timelineModel(
-                    from: ingestions.filter { !hiddenIngestions.contains($0.id) },
+                    from: ingestions,
                     areRedosesDrawnIndividually: areRedosesDrawnIndividually,
                     areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
                 )

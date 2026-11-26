@@ -8,7 +8,8 @@ struct TimedNoteRow<Content: View>: View {
         TimedNoteRowContent(
             note: timedNote.noteUnwrapped,
             color: timedNote.color,
-            isPartOfTimeline: timedNote.isPartOfTimeline
+            isPartOfTimeline: timedNote.isPartOfTimeline,
+            details: timedNote.details
         ) {
             timeText
         }
@@ -19,6 +20,7 @@ private struct TimedNoteRowContent<Content: View>: View {
     let note: String
     let color: SubstanceColor
     let isPartOfTimeline: Bool
+    var details = TimedNoteDetails()
     @ViewBuilder var timeText: Content
 
     var body: some View {
@@ -39,7 +41,23 @@ private struct TimedNoteRowContent<Content: View>: View {
                     }
                 }
 
-                Text(note).font(.subheadline)
+                if !note.isEmpty {
+                    Text(note).font(.subheadline)
+                }
+                if !details.isEmpty {
+                    VStack(alignment: .leading, spacing: 4) {
+                        if let mood = details.mood {
+                            Label(mood.title, systemImage: "face.smiling")
+                                .accessibilityLabel(Text("Mood, \(mood.title)"))
+                        }
+                        if let energy = details.energy {
+                            Label(energy.title, systemImage: "bolt")
+                                .accessibilityLabel(Text("Energy, \(energy.title)"))
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                }
             }
         }
     }

@@ -5,10 +5,12 @@ import SwiftUI
 // would join, starting a new experience if there is none
 struct AddTimedNoteScreen: View {
     let experience: Experience?
+    private let startsOnTimeline: Bool
 
     @Environment(\.dismiss) private var dismiss
-    @State private var time = Date.now
+    @State private var time: Date
     @State private var note = ""
+    @State private var details = TimedNoteDetails()
     @State private var color = SubstanceColor.blue
     @State private var isPartOfTimeline = false
     @State private var usedColors: [SubstanceColor] = []
@@ -18,11 +20,18 @@ struct AddTimedNoteScreen: View {
     @FetchRequest(fetchRequest: PersistenceController.enabledWebhookPresetsRequest())
     private var enabledWebhookPresets: FetchedResults<WebhookPreset>
 
+    init(experience: Experience?, initialTime: Date? = nil) {
+        self.experience = experience
+        startsOnTimeline = initialTime != nil
+        _time = State(initialValue: initialTime ?? .now)
+    }
+
     var body: some View {
         NavigationStack {
             TimedNoteScreenContent(
                 time: $time,
                 note: $note,
+                details: $details,
                 color: $color,
                 isPartOfTimeline: $isPartOfTimeline,
                 isTextFieldFocused: $isTextFieldFocused,
@@ -44,7 +53,7 @@ struct AddTimedNoteScreen: View {
         .onAppear {
             isTextFieldFocused = true
             let experience = targetExperience(at: time)
-            isPartOfTimeline = experience?.isCurrent ?? true
+            isPartOfTimeline = startsOnTimeline || (experience?.isCurrent ?? true)
             usedColors = experience?.timedNotesForTimeline.map(\.color) ?? []
             color = SubstanceColor.suggested(avoiding: usedColors)
         }
@@ -72,10 +81,12 @@ struct AddTimedNoteScreen: View {
         newNote.creationDate = Date()
         newNote.time = time
         newNote.note = note
+        newNote.details = details
         newNote.colorAsText = color.rawValue
         newNote.isPartOfTimeline = isPartOfTimeline
         newNote.experience = try targetExperience(at: time).map { try PersistenceController.journalObject($0, in: context) }
             ?? Experience.create(at: time, in: context)
-        try TimedNoteSaving.save(newNote, sendingWebhooksTo: WebhookPreset.defaultPresetObjectIDs())
+        let sendsText = !note.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        try TimedNoteSaving.save(newNote, sendingWebhooksTo: sendsText ? WebhookPreset.defaultPresetObjectIDs() : [])
     }
 }

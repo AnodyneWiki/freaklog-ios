@@ -66,7 +66,11 @@ struct JournalFile: FileDocument, Codable {
         var substanceNames = Set<String>()
         substanceCompanions = experiences.flatMap(\.ingestionsSorted).compactMap { ingestion in
             guard substanceNames.insert(ingestion.substanceNameUnwrapped).inserted else { return nil }
-            return CompanionCodable(substanceName: ingestion.substanceNameUnwrapped, color: ingestion.substanceColor)
+            return CompanionCodable(
+                substanceName: ingestion.substanceNameUnwrapped,
+                color: ingestion.substanceColor,
+                isHiddenInTimeline: ingestion.substanceCompanion?.isHiddenInTimeline == true
+            )
         }
         self.customSubstances = customSubstances.map(CustomSubstanceCodable.init)
         self.customUnits = try customUnits.map { unit in
@@ -219,8 +223,7 @@ struct JournalFile: FileDocument, Codable {
     static func read(_ data: Data) throws -> Self {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
-        var raw = try decoder.decode([String: JSONValue].self, from: data)
-        let omittedUnconfirmed = Self.omitUnconfirmedIngestions(from: &raw)
+        let raw = try decoder.decode([String: JSONValue].self, from: data)
         if let source = header.exportSource {
             guard supportsModernJournalSource(source) else {
                 throw JournalBackupError.unrecognizedFormat
@@ -231,13 +234,11 @@ struct JournalFile: FileDocument, Codable {
                     "PW Journal 18 tag definitions, blend policies and other version-specific settings may be unavailable."
                 ]
             }
-            if omittedUnconfirmed { journal.transferOmissions.append("Unconfirmed ingestions") }
             return journal
         }
         let converted = try AndroidJournalTransfer.imported(raw)
         var journal = try decoder.decode(Self.self, from: JSONEncoder().encode(converted.fields))
         journal.transferOmissions = converted.omissions
-        if omittedUnconfirmed { journal.transferOmissions.append("Unconfirmed ingestions") }
         return journal
     }
 
@@ -253,22 +254,6 @@ struct JournalFile: FileDocument, Codable {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return try encoder.encode(PWJournalTransfer.exported(fields, version: version))
-    }
-
-    // This schema cannot store provisional entries, so don't import them as confirmed.
-    private static func omitUnconfirmedIngestions(from fields: inout [String: JSONValue]) -> Bool {
-        guard let experiences = fields["experiences"]?.array else { return false }
-        var omitted = false
-        fields["experiences"] = .array(experiences.map { experience in
-            guard var record = experience.object, let ingestions = record["ingestions"]?.array else {
-                return experience
-            }
-            let confirmed = ingestions.filter { $0["isUnconfirmed"]?.bool != true }
-            omitted = omitted || confirmed.count != ingestions.count
-            record["ingestions"] = .array(confirmed)
-            return .object(record)
-        })
-        return omitted
     }
 
     private static func supportsModernJournalSource(_ source: String) -> Bool {
@@ -352,6 +337,8 @@ private enum PWJournalTransfer {
             experience["timedNotes"] = .array(try rows(experience["timedNotes"]).map { original in
                 var note = original
                 note.removeValue(forKey: "colorHex")
+                note.removeValue(forKey: "mood")
+                note.removeValue(forKey: "energy")
                 if version == .legacy { try validateLegacyDates(note, keys: ["time", "creationDate"]) }
                 return .object(note)
             })
@@ -395,7 +382,7 @@ private enum PWJournalTransfer {
 
     private static func exportedIngestion(_ source: Fields, version: PWJournalTransferVersion) throws -> JSONValue? {
         var row = source
-        for key in ["administrationSite", "location", "formulationId", "formulationName", "formulationAmount", "confirmationBatchID"] {
+        for key in ["administrationSite", "location", "formulationId", "formulationName", "formulationAmount", "confirmationBatchID", "isShownInTimeline"] {
             row.removeValue(forKey: key)
         }
         if let fullness = row["stomachFullness"]?.string {
@@ -521,7 +508,12 @@ private enum AndroidJournalTransfer {
         fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"], exportedColor)
         fields["experiences"] = try rewrite(fields["experiences"]) { experience in
             var experience = experience
-            experience["timedNotes"] = try rewrite(experience["timedNotes"], exportedColor)
+            experience["timedNotes"] = try rewrite(experience["timedNotes"]) { note in
+                var note = exportedColor(note)
+                note.removeValue(forKey: "mood")
+                note.removeValue(forKey: "energy")
+                return note
+            }
             experience["ratings"] = try rewrite(experience["ratings"]) { rating in
                 var rating = rating
                 rating.removeValue(forKey: "isHiddenInTimeline")
@@ -537,7 +529,7 @@ private enum AndroidJournalTransfer {
             experience["ingestions"] = try rewrite(experience["ingestions"]) { ingestion in
                 var ingestion = ingestion
                 for key in ["location", "formulationId", "formulationName", "formulationAmount",
-                            "isHiddenInTimeline", "isUnconfirmed"] {
+                            "isHiddenInTimeline", "isShownInTimeline", "isUnconfirmed"] {
                     ingestion.removeValue(forKey: key)
                 }
                 if let fullness = ingestion["stomachFullness"]?.string {

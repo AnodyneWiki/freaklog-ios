@@ -130,6 +130,9 @@ extension AssistantToolbox {
             since: Date.now.addingTimeInterval(-Double(days) * 24 * 60 * 60),
             personalOnly: true,
             limit: 20001)
+          request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [
+            request.predicate ?? NSPredicate(value: true), Ingestion.confirmedPredicate,
+          ])
           let fetched = try context.fetch(request)
           let ingestions = fetched.prefix(20000)
           let groups = Dictionary(grouping: ingestions, by: \.substanceNameUnwrapped)
@@ -156,15 +159,21 @@ extension AssistantToolbox {
   }
 
   func experienceOverview(_ experience: Experience) -> JSONValue {
-    let names = experience.ingestionsSorted.map(\.substanceNameUnwrapped).uniqued()
-    return .object([
+    let allEntries = experience.ingestionsSorted
+    let confirmed = allEntries.filter { !$0.isUnconfirmed }
+    let names = confirmed.map(\.substanceNameUnwrapped).uniqued()
+    var overview: [String: JSONValue] = [
       "experience_id": .string(reference(for: experience)),
       "title": .string(experience.titleUnwrapped),
       "date": .string(AssistantFormat.date(experience.sortDateUnwrapped)),
       "is_favorite": .bool(experience.isFavorite),
-      "ingestion_count": .number(Double(experience.ingestionsSorted.count)),
+      "ingestion_count": .number(Double(confirmed.count)),
       "substances": AssistantFormat.strings(names.map(PersistenceController.shared.displayName)),
-    ])
+    ]
+    if allEntries.count > confirmed.count {
+      overview["unconfirmed_ingestion_count"] = .number(Double(allEntries.count - confirmed.count))
+    }
+    return .object(overview)
   }
 
   func experienceDetails(_ experience: Experience, notesLimit: Int) -> JSONValue {
@@ -207,6 +216,7 @@ extension AssistantToolbox {
         json["estimate_deviation"] = AssistantFormat.number(deviation)
       }
     }
+    if ingestion.isUnconfirmed { json["is_unconfirmed"] = .bool(true) }
     if let customUnit = ingestion.customUnit, let dose = ingestion.doseUnwrapped {
       json["custom_unit_dose"] = .string("\(dose.formatted()) \(customUnit.unitUnwrapped) (\(customUnit.nameUnwrapped))")
     }

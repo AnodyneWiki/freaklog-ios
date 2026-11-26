@@ -21,9 +21,13 @@
 		C5066131C812FDC954A3C8FA /* InventoryLabReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9C3E42CBC7894677615D827B /* InventoryLabReport.swift */; };
 		85348E582B036476DE61B10B /* Inventory.swift in Sources */ = {isa = PBXBuildFile; fileRef = F34E1B0857C8764C9DFAEA88 /* Inventory.swift */; };
 		D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */; };
+		D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */; };
+		366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */; };
 		A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */ = {isa = PBXBuildFile; fileRef = 050CB115A621D9CF84A3F1BC /* Backup v3.json */; };
 		1ABAB79F04D93DC4C0EA7FC3 /* Backup v6 Inventory.json in Resources */ = {isa = PBXBuildFile; fileRef = 3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */; };
 		EC45ACB7C9CF1A96E54D3358 /* Backup v5.json in Resources */ = {isa = PBXBuildFile; fileRef = C43624A324205A154F124773 /* Backup v5.json */; };
+		DD9DF1D4B38CCB22FEE88E54 /* Backup v6.json in Resources */ = {isa = PBXBuildFile; fileRef = 6967BC902B6C53371B28C82F /* Backup v6.json */; };
+		768CE416CC914362819D0571 /* Backup v7.json in Resources */ = {isa = PBXBuildFile; fileRef = AEEB73C2F600400AB4B364F6 /* Backup v7.json */; };
 		AB640396DCE202D3D39FF945 /* AssistantMarkdownTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */; };
 		5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */; };
 		A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */; };
@@ -49,9 +53,11 @@
 		9EFE1BBA9B98E50507D25AAB /* Backup v1.json in Resources */ = {isa = PBXBuildFile; fileRef = 99BB092F1DFA4B0ECA850563 /* Backup v1.json */; };
 		5065C2F750814EE7A6A0FD9D /* Backup v2.json in Resources */ = {isa = PBXBuildFile; fileRef = B0DFAA759F8B4CF783A9B54A /* Backup v2.json */; };
 		E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05F86F05078132FF5720396E /* JournalBackupTests.swift */; };
+		6574D6F74D5EC16FB61C4C1B /* IngestionMoveTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17931CAADF28BC0A1061BA25 /* IngestionMoveTests.swift */; };
 		CABA846C38A5B3242D8D9E4A /* IngestionPrefillTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */; };
 		3BEC4D74945B10FCA70D92A3 /* ExperienceReportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */; };
 		083A8FB3A2B702E0CE45DF4C /* UnifiedSearchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0A1564B8642BDA2188908CB /* UnifiedSearchTests.swift */; };
+		BBF0B8FBB365FDB492F1347C /* IngestionBatchTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DD4170EE786512622D9586B /* IngestionBatchTests.swift */; };
 		EF4E564A0BE89F58EAD3C45A /* ExperienceMatchingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A7FB00CCDC8EF345AED63F /* ExperienceMatchingTests.swift */; };
 		2AF144D424AB6DCED839087F /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B357B963A085C666251860 /* JSONValue.swift */; };
 		2A6E1AA66D35EBBDEA649799 /* JournalBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */; };
@@ -285,6 +291,9 @@
 		8E800FDA18791553DD1D74D4 /* EventTimeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */; };
 		EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */; };
 		2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */; };
+		41044E01700C9BF0788B247A /* MoveIngestionsScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95B346727542D064983F7706 /* MoveIngestionsScreen.swift */; };
+		7237676A0514172766E42057 /* ExperienceHeartRateScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */; };
+		62D20C4806206E8AD5724230 /* JournalRemindersScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9837DDCABD6AA63BC2AE9E2 /* JournalRemindersScreen.swift */; };
 		EA4B8A2F2AA6E231009918DE /* TimedNoteCodable.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */; };
 		EA4B8A312AA6FF02009918DE /* LockTimeOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */; };
 		EA50E4E4294B70A400B8D1FC /* EditIngestionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA50E4E3294B70A400B8D1FC /* EditIngestionScreen.swift */; };
@@ -430,6 +439,7 @@
 		EAE4721C26CBA664009FB0EC /* DosePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A026CBA664009FB0EC /* DosePicker.swift */; };
 		EAE4722026CBA664009FB0EC /* ChooseRouteScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A526CBA664009FB0EC /* ChooseRouteScreen.swift */; };
 		EAE4722126CBA664009FB0EC /* FinishIngestionScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A626CBA664009FB0EC /* FinishIngestionScreen.swift */; };
+		0D398B9775EF65EC32650620 /* IngestionBatchScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 228C65D8AB3A894F2E4D78E8 /* IngestionBatchScreen.swift */; };
 		EAE4722226CBA664009FB0EC /* ChooseSubstanceScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A726CBA664009FB0EC /* ChooseSubstanceScreen.swift */; };
 		EAE4722326CBA664009FB0EC /* ChooseDoseScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471A826CBA664009FB0EC /* ChooseDoseScreen.swift */; };
 		EAE4722526CBA664009FB0EC /* JournalScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAE471AA26CBA664009FB0EC /* JournalScreen.swift */; };
@@ -522,6 +532,8 @@
 		9C3E42CBC7894677615D827B /* InventoryLabReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = InventoryLabReport.swift; path = "../Inventory/InventoryLabReport.swift"; sourceTree = "<group>"; };
 		F34E1B0857C8764C9DFAEA88 /* Inventory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = Inventory.swift; path = "../Inventory/Inventory.swift"; sourceTree = "<group>"; };
 		99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InventoryLabReportTests.swift; sourceTree = "<group>"; };
+		0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineModelTests.swift; sourceTree = "<group>"; };
+		F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceTimelineComparison.swift; sourceTree = "<group>"; };
 		050CB115A621D9CF84A3F1BC /* Backup v3.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v3.json"; sourceTree = "<group>"; };
 		3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v6 Inventory.json"; sourceTree = "<group>"; };
 		C43624A324205A154F124773 /* Backup v5.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v5.json"; sourceTree = "<group>"; };
@@ -529,6 +541,10 @@
 		A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 15.xcdatamodel"; sourceTree = "<group>"; };
 		DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16.xcdatamodel"; sourceTree = "<group>"; };
 		80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 16 Inventory.xcdatamodel"; sourceTree = "<group>"; };
+		6967BC902B6C53371B28C82F /* Backup v6.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v6.json"; sourceTree = "<group>"; };
+		AEEB73C2F600400AB4B364F6 /* Backup v7.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v7.json"; sourceTree = "<group>"; };
+		CACEC859F16DDA5BC267C175 /* FreakLog Version 17.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 17.xcdatamodel"; sourceTree = "<group>"; };
+		13C87A6E234046A7A2D0493C /* FreakLog Version 17 Inventory.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "FreakLog Version 17 Inventory.xcdatamodel"; sourceTree = "<group>"; };
 		57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantMarkdownTests.swift; sourceTree = "<group>"; };
 		082EF4F879CCC5D75E96DAD5 /* AssistantConversationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantConversationTests.swift; sourceTree = "<group>"; };
 		43BDCEB67DDBADE13DE31D0D /* AssistantToolTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AssistantToolTests.swift; sourceTree = "<group>"; };
@@ -554,9 +570,11 @@
 		99BB092F1DFA4B0ECA850563 /* Backup v1.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v1.json"; sourceTree = "<group>"; };
 		B0DFAA759F8B4CF783A9B54A /* Backup v2.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = "Backup v2.json"; sourceTree = "<group>"; };
 		05F86F05078132FF5720396E /* JournalBackupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackupTests.swift; sourceTree = "<group>"; };
+		17931CAADF28BC0A1061BA25 /* IngestionMoveTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IngestionMoveTests.swift; sourceTree = "<group>"; };
 		6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IngestionPrefillTests.swift"; sourceTree = "<group>"; };
 		4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceReportTests.swift"; sourceTree = "<group>"; };
 		A0A1564B8642BDA2188908CB /* UnifiedSearchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UnifiedSearchTests.swift; sourceTree = "<group>"; };
+		8DD4170EE786512622D9586B /* IngestionBatchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IngestionBatchTests.swift"; sourceTree = "<group>"; };
 		89A7FB00CCDC8EF345AED63F /* ExperienceMatchingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceMatchingTests.swift"; sourceTree = "<group>"; };
 		A7B357B963A085C666251860 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
 		8F8C2EEC9C77A21B21DE150A /* JournalBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JournalBackup.swift; sourceTree = "<group>"; };
@@ -763,6 +781,9 @@
 		E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTimeText.swift; sourceTree = "<group>"; };
 		EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExperienceToolbarContent.swift; sourceTree = "<group>"; };
 		DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceReportScreen.swift"; sourceTree = "<group>"; };
+		95B346727542D064983F7706 /* MoveIngestionsScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoveIngestionsScreen.swift; sourceTree = "<group>"; };
+		445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ExperienceHeartRateScreen.swift"; sourceTree = "<group>"; };
+		E9837DDCABD6AA63BC2AE9E2 /* JournalRemindersScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "JournalRemindersScreen.swift"; sourceTree = "<group>"; };
 		EA4B8A2E2AA6E231009918DE /* TimedNoteCodable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimedNoteCodable.swift; sourceTree = "<group>"; };
 		EA4B8A302AA6FF02009918DE /* LockTimeOption.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LockTimeOption.swift; sourceTree = "<group>"; };
 		EA50E4E3294B70A400B8D1FC /* EditIngestionScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditIngestionScreen.swift; sourceTree = "<group>"; };
@@ -912,6 +933,7 @@
 		EAE471A026CBA664009FB0EC /* DosePicker.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DosePicker.swift; sourceTree = "<group>"; };
 		EAE471A526CBA664009FB0EC /* ChooseRouteScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChooseRouteScreen.swift; sourceTree = "<group>"; };
 		EAE471A626CBA664009FB0EC /* FinishIngestionScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FinishIngestionScreen.swift; sourceTree = "<group>"; };
+		228C65D8AB3A894F2E4D78E8 /* IngestionBatchScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = IngestionBatchScreen.swift; sourceTree = "<group>"; };
 		EAE471A726CBA664009FB0EC /* ChooseSubstanceScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChooseSubstanceScreen.swift; sourceTree = "<group>"; };
 		EAE471A826CBA664009FB0EC /* ChooseDoseScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ChooseDoseScreen.swift; sourceTree = "<group>"; };
 		EAE471AA26CBA664009FB0EC /* JournalScreen.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = JournalScreen.swift; sourceTree = "<group>"; };
@@ -1219,6 +1241,7 @@
 			isa = PBXGroup;
 			children = (
 				EAE471A626CBA664009FB0EC /* FinishIngestionScreen.swift */,
+				228C65D8AB3A894F2E4D78E8 /* IngestionBatchScreen.swift */,
 				EAB794742D02DA9B00ED37C8 /* TimePointOrRangePicker.swift */,
 				A12FE4E9EC343986EE9056B2 /* IngestionDetailRows.swift */,
 				EAC4BFFD2B890DF600293B44 /* OnFirstAppearModifier.swift */,
@@ -1817,10 +1840,14 @@
 				050CB115A621D9CF84A3F1BC /* Backup v3.json */,
 				3AAE61DD0085F4D2E8AC25A1 /* Backup v6 Inventory.json */,
 				C43624A324205A154F124773 /* Backup v5.json */,
+				6967BC902B6C53371B28C82F /* Backup v6.json */,
+				AEEB73C2F600400AB4B364F6 /* Backup v7.json */,
 				05F86F05078132FF5720396E /* JournalBackupTests.swift */,
+				17931CAADF28BC0A1061BA25 /* IngestionMoveTests.swift */,
 				6C58F2402BD1327460300904 /* IngestionPrefillTests.swift */,
 				4F6A53171C1614E0504D0358 /* ExperienceReportTests.swift */,
 				A0A1564B8642BDA2188908CB /* UnifiedSearchTests.swift */,
+				8DD4170EE786512622D9586B /* IngestionBatchTests.swift */,
 				89A7FB00CCDC8EF345AED63F /* ExperienceMatchingTests.swift */,
 				F3CFD468AAAF1D9995343F20 /* AssistantProviderTests.swift */,
 				57A3CFDD9F8C3C995AB8E4EC /* AssistantMarkdownTests.swift */,
@@ -1832,6 +1859,7 @@
 				EACB6E5127D2592800940291 /* DecodingTests.swift */,
 				EA48F89729E6E27C007DA8C5 /* InteractionTests.swift */,
 				99D0BB80A2800683C4224A48 /* InventoryLabReportTests.swift */,
+				0B88210E5CA8A85131877E36 /* TimelineModelTests.swift */,
 				489EA637E280FBFCD29E9A59 /* AnodyneTests.swift */,
 				32DF0D2E81B1E69E78F902EC /* CustomRoaTests.swift */,
 				877EFE56FF3E44E09BDFB6F1 /* JournalFileTests.swift */,
@@ -2050,6 +2078,7 @@
 				EA557B382942A1A2005740B4 /* EditNotesScreen.swift */,
 				EA4B8A042A952C4B009918DE /* EditTitleScreen.swift */,
 				EA41C61A295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift */,
+				F4615891A7E262AC1668E17D /* ExperienceTimelineComparison.swift */,
 				EA81E0C929508C7E00475DE3 /* CumulativeDoseRow.swift */,
 				EA41C618295AE60C000DA021 /* InteractionPairRow.swift */,
 				EA48F8BA29EE99C4007DA8C5 /* TimelineScreen.swift */,
@@ -2057,6 +2086,9 @@
 				E7E5114CA42F5F5235ECD94E /* EventTimeText.swift */,
 				EA4B8A2A2AA2FF2A009918DE /* ExperienceToolbarContent.swift */,
 				DA58F862488EC9BDAB5CA004 /* ExperienceReportScreen.swift */,
+				95B346727542D064983F7706 /* MoveIngestionsScreen.swift */,
+				445F110258BFCD2AC1657D60 /* ExperienceHeartRateScreen.swift */,
+				E9837DDCABD6AA63BC2AE9E2 /* JournalRemindersScreen.swift */,
 				EA48F8A129E98E88007DA8C5 /* TimeDisplayStyle.swift */,
 				EA48F8A329E991C6007DA8C5 /* DateDifference.swift */,
 			);
@@ -2270,6 +2302,8 @@
 				A0F2111BAF5DC7A542F77698 /* Backup v3.json in Resources */,
 				1ABAB79F04D93DC4C0EA7FC3 /* Backup v6 Inventory.json in Resources */,
 				EC45ACB7C9CF1A96E54D3358 /* Backup v5.json in Resources */,
+				DD9DF1D4B38CCB22FEE88E54 /* Backup v6.json in Resources */,
+				768CE416CC914362819D0571 /* Backup v7.json in Resources */,
 				EA98D9112972968100D94E65 /* Roa.json in Resources */,
 				37BF62276746BAB9CF20CFDC /* Anodyne.json in Resources */,
 			);
@@ -2352,15 +2386,18 @@
 				5305F1441414BECA46C4F2DD /* AssistantConversationTests.swift in Sources */,
 				A68600A1BCBE300400173267 /* AssistantToolTests.swift in Sources */,
 				E213A5DDB00B0DF093406B79 /* JournalBackupTests.swift in Sources */,
+				6574D6F74D5EC16FB61C4C1B /* IngestionMoveTests.swift in Sources */,
 				CABA846C38A5B3242D8D9E4A /* IngestionPrefillTests.swift in Sources */,
 				3BEC4D74945B10FCA70D92A3 /* ExperienceReportTests.swift in Sources */,
 				083A8FB3A2B702E0CE45DF4C /* UnifiedSearchTests.swift in Sources */,
+				BBF0B8FBB365FDB492F1347C /* IngestionBatchTests.swift in Sources */,
 				EF4E564A0BE89F58EAD3C45A /* ExperienceMatchingTests.swift in Sources */,
 				BBA1900C6A266A9D15E36332 /* FormulationTests.swift in Sources */,
 				08AA17335F4E57A79FAAB52D /* WebhookTests.swift in Sources */,
 				09EB66F04CE922480F97A79A /* SubstanceColorTests.swift in Sources */,
 				EA48F89829E6E27C007DA8C5 /* InteractionTests.swift in Sources */,
 				D83A07DAC18A0194DAC8355C /* InventoryLabReportTests.swift in Sources */,
+				D0DF20881907FB9EAAD183BA /* TimelineModelTests.swift in Sources */,
 				69AF3764A4B2D6E290A43037 /* AnodyneTests.swift in Sources */,
 				846242B7270ECB95D4ECB660 /* CustomRoaTests.swift in Sources */,
 				D18F7D908F5AA0D2EBC6D806 /* JournalFileTests.swift in Sources */,
@@ -2546,6 +2583,9 @@
 				EA302E482B381C2F007F113F /* FinishIngestionScreenArguments.swift in Sources */,
 				EA4B8A2B2AA2FF2A009918DE /* ExperienceToolbarContent.swift in Sources */,
 				2D70E45917A9E26939AD4599 /* ExperienceReportScreen.swift in Sources */,
+				41044E01700C9BF0788B247A /* MoveIngestionsScreen.swift in Sources */,
+				7237676A0514172766E42057 /* ExperienceHeartRateScreen.swift in Sources */,
+				62D20C4806206E8AD5724230 /* JournalRemindersScreen.swift in Sources */,
 				EA4189FD2966DA4500DEA663 /* MDMAOptimalDoseSection.swift in Sources */,
 				EA55CEB92A3F290900FE1A44 /* DotRows.swift in Sources */,
 				EA4B8A192A9B2A89009918DE /* TimedNoteRow.swift in Sources */,
@@ -2577,6 +2617,7 @@
 				EA48F85F29DB27A0007DA8C5 /* ShulginRating-CoreDataHelpers.swift in Sources */,
 				EA418A39296CEEBD00DEA663 /* Authenticator.swift in Sources */,
 				EAE4722126CBA664009FB0EC /* FinishIngestionScreen.swift in Sources */,
+				0D398B9775EF65EC32650620 /* IngestionBatchScreen.swift in Sources */,
 				EAA9C3772A50802C00869E5A /* ToleranceChartScreen.swift in Sources */,
 				EA302E562B385D22007F113F /* ChooseOtherRouteScreenArguments.swift in Sources */,
 				EAC25C02295600F20002D68F /* DosageClassificationScreen.swift in Sources */,
@@ -2719,6 +2760,7 @@
 				EAD1D0042B5271BD00EC0D70 /* CustomUnitRow.swift in Sources */,
 				EA41C621295C1E9E000DA021 /* Settings-ViewModel.swift in Sources */,
 				EA41C61B295AF03D000DA021 /* GoThroughAllInteractionsScreen.swift in Sources */,
+				366B419D7B99F560F8224914 /* ExperienceTimelineComparison.swift in Sources */,
 				EA4793602B4A72D700685EAA /* CustomUnitMinInfo.swift in Sources */,
 				EA014F9527E5DB5200077FB2 /* WebViewRepresentable.swift in Sources */,
 				EA41C627295EB65C000DA021 /* SubstanceOverview.swift in Sources */,
@@ -3235,6 +3277,8 @@
 				A23C137F959DCC9D4355808F /* FreakLog Version 15.xcdatamodel */,
 				DD455530AFF036FB99EC33FB /* FreakLog Version 16.xcdatamodel */,
 				80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */,
+				CACEC859F16DDA5BC267C175 /* FreakLog Version 17.xcdatamodel */,
+				13C87A6E234046A7A2D0493C /* FreakLog Version 17 Inventory.xcdatamodel */,
 				7CCC97BA21ECBCC5F1E66EBE /* PW Version 12.xcdatamodel */,
 				73538AF08CBF40984C833D66 /* PW Version 11.xcdatamodel */,
 				E913DC5E30B8C8B0C0EF1866 /* PW Version 10.xcdatamodel */,
@@ -3249,7 +3293,7 @@
 				EA83D75127C91DB5004F1E0C /* PW Version 1.xcdatamodel */,
 				EAE4715726CBA664009FB0EC /* Goya.xcdatamodel */,
 			);
-			currentVersion = 80A1DB0B5A4D61D71B29D041 /* FreakLog Version 16 Inventory.xcdatamodel */;
+			currentVersion = 13C87A6E234046A7A2D0493C /* FreakLog Version 17 Inventory.xcdatamodel */;
 			path = Main.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

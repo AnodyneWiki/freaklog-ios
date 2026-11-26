@@ -55,8 +55,10 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             }
         case .saferHallucinogen:
             SaferHallucinogenScreen()
-        case let .allInteractions(substancesToCheck):
-            GoThroughAllInteractionsScreen(substancesToCheck: substancesToCheck)
+        case let .allInteractions(substancesToCheck, detected):
+            GoThroughAllInteractionsScreen(substancesToCheck: substancesToCheck, detected: detected)
+        case let .interactionPair(interaction):
+            InteractionPairDetailScreen(interaction: interaction)
         case let .toleranceTexts(substances):
             ToleranceTextsScreen(substances: substances)
         case .toleranceChartExplanation:

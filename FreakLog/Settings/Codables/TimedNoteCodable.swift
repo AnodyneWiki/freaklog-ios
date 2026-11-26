@@ -7,13 +7,18 @@ struct TimedNoteCodable: Codable {
     let note: String
     let color: SubstanceColor
     let isPartOfTimeline: Bool
+    let details: TimedNoteDetails
 
-    init(creationDate: Date, time: Date, note: String, color: SubstanceColor, isPartOfTimeline: Bool) {
+    init(
+        creationDate: Date, time: Date, note: String, color: SubstanceColor,
+        isPartOfTimeline: Bool, details: TimedNoteDetails = .init()
+    ) {
         self.creationDate = creationDate
         self.time = time
         self.note = note
         self.color = color
         self.isPartOfTimeline = isPartOfTimeline
+        self.details = details
     }
 
     enum CodingKeys: String, CodingKey {
@@ -23,6 +28,8 @@ struct TimedNoteCodable: Codable {
         case color
         case colorHex
         case isPartOfTimeline
+        case mood
+        case energy
     }
 
     init(from decoder: Decoder) throws {
@@ -33,6 +40,10 @@ struct TimedNoteCodable: Codable {
         color = try values.decodeIfPresent(SubstanceColor.self, forKey: .colorHex)
             ?? values.decode(SubstanceColor.self, forKey: .color)
         isPartOfTimeline = try values.decode(Bool.self, forKey: .isPartOfTimeline)
+        details = TimedNoteDetails(
+            mood: try values.decodeIfPresent(String.self, forKey: .mood).flatMap(TimedNoteMood.init(rawValue:)),
+            energy: try values.decodeIfPresent(String.self, forKey: .energy).flatMap(TimedNoteEnergy.init(rawValue:))
+        )
     }
 
     func encode(to encoder: Encoder) throws {
@@ -43,6 +54,8 @@ struct TimedNoteCodable: Codable {
         try container.encode(color.exportValue, forKey: .color)
         try container.encodeIfPresent(color.isInPalette ? nil : color.rawValue, forKey: .colorHex)
         try container.encode(isPartOfTimeline, forKey: .isPartOfTimeline)
+        try container.encodeIfPresent(details.mood?.rawValue, forKey: .mood)
+        try container.encodeIfPresent(details.energy?.rawValue, forKey: .energy)
     }
 }
 
@@ -53,7 +66,8 @@ extension TimedNoteCodable {
             time: timedNote.timeUnwrapped,
             note: timedNote.noteUnwrapped,
             color: timedNote.color,
-            isPartOfTimeline: timedNote.isPartOfTimeline
+            isPartOfTimeline: timedNote.isPartOfTimeline,
+            details: timedNote.details
         )
     }
 
@@ -64,6 +78,7 @@ extension TimedNoteCodable {
         timedNote.note = note
         timedNote.colorAsText = color.rawValue
         timedNote.isPartOfTimeline = isPartOfTimeline
+        timedNote.details = details
         return timedNote
     }
 }

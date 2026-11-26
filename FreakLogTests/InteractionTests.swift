@@ -2,6 +2,17 @@
 import XCTest
 
 final class InteractionTests: XCTestCase {
+    func testInteractionSourcesFollowTheMatchedReference() throws {
+        let pair = try XCTUnwrap(InteractionChecker.getInteractionBetween(aName: "MDMA", bName: "25I-NBOMe"))
+        let reversed = try XCTUnwrap(
+            InteractionChecker.getInteractionBetween(aName: pair.bName, bName: pair.aName)
+        )
+
+        let sources = InteractionChecker.documentedSources(for: pair).map(\.name)
+        XCTAssertFalse(sources.isEmpty)
+        XCTAssertEqual(Set(sources), Set(InteractionChecker.documentedSources(for: reversed).map(\.name)))
+    }
+
     func testInteractions() throws {
         XCTAssertFalse(InteractionChecker.hasXAndMatches(wordWithX: "Dox", matchWith: "Oxycodone"))
         XCTAssertEqual(InteractionChecker.getInteractionTypeBetween(aName: "MDMA", bName: "Tramadol"), .dangerous)

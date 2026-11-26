@@ -16,7 +16,6 @@ struct AllIngestionsView: View {
 
     @State private var sheetToShow: SheetOption?
     @State private var deletionRequest: IngestionDeletion.Request?
-    @State private var hiddenIngestions: Set<ObjectIdentifier> = []
 
     var body: some View {
         List {
@@ -64,10 +63,7 @@ struct AllIngestionsView: View {
         .sheet(item: $sheetToShow) { sheet in
             switch sheet {
             case .editIngestion(let ingestion):
-                EditIngestionScreen(
-                    ingestion: ingestion,
-                    isHidden: $hiddenIngestions.contains(ingestion.id)
-                )
+                EditIngestionScreen(ingestion: ingestion)
             case .editTimedNote(let timedNote, let experience):
                 EditTimedNoteScreen(timedNote: timedNote, experience: experience)
             }
@@ -220,7 +216,15 @@ private extension AllIngestionsView {
             Button {
                 sheetToShow = .editIngestion(ingestion)
             } label: {
-                Label("Edit", systemImage: "pencil")
+                Label(ingestion.isUnconfirmed ? "Review Unconfirmed Entry" : "Edit", systemImage: "pencil")
+            }
+
+            if let start = ingestion.time {
+                Button {
+                    Navigator.shared.showAddIngestionFullScreenCover(startingAt: start, endingAt: ingestion.endTime)
+                } label: {
+                    Label("Add Ingestion at Same Time", systemImage: "clock.badge.plus")
+                }
             }
 
             Button(role: .destructive) {

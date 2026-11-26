@@ -27,8 +27,8 @@ struct JournalBackup: Codable {
   static let format = "FreakLog Backup"
   private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
   private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
-  static let formatVersion = 6
-  static let dataModelVersion = "FreakLog Version 16 Inventory"
+  static let formatVersion = 7
+  static let dataModelVersion = "FreakLog Version 17 Inventory"
   static let localOperationEntities: Set<String> = ["WatchLogReceipt", "WebhookDeletion"]
 
   // Settings that belong to the journal. Ones about this device (iCloud sync, the last unlock, the welcome screen,
@@ -45,6 +45,8 @@ struct JournalBackup: Codable {
     PersistenceController.areRedosesDrawnIndividuallyKey,
     PersistenceController.shouldAutomaticallyStartLiveActivityKey,
     PersistenceController.independentSubstanceHeightKey,
+    TimelineModel.combinesComparableRoutesKey,
+    TimelineModel.showsQuantityDetailsKey,
     PersistenceController.fabButtonPositionKey,
     PersistenceController.dynamicExperienceRangeHoursKey,
     PersistenceController.showsDueTodayKey,
@@ -127,6 +129,25 @@ struct JournalBackup: Codable {
         attributes["labReportID"] = .null
       }
       backup = try replacing("dataModel", with: .string("FreakLog Version 16 Inventory"), in: backup)
+    },
+    6: { backup in
+      switch backup.object?["dataModel"]?.string {
+      case "FreakLog Version 16 Inventory":
+        updateRecordFields(of: "TimedNote", in: &backup) { attributes in
+          attributes["mood"] = .null
+          attributes["energy"] = .null
+        }
+      case "FreakLog Version 17":
+        updateRecordFields(of: "StockContainer", in: &backup) { attributes in
+          attributes["labReportID"] = .null
+        }
+      default:
+        throw JournalBackupError.invalidContainer
+      }
+      updateRecordFields(of: "Ingestion", in: &backup) { attributes in
+        attributes["isShownInTimeline"] = .bool(false)
+      }
+      backup = try replacing("dataModel", with: .string(dataModelVersion), in: backup)
     },
   ]
 

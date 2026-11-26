@@ -9,6 +9,7 @@ struct TimelineWidgetAttributes: ActivityAttributes {
         var everythingForEachTimedNote: [EverythingForOneTimedNote]
         var areRedosesDrawnIndividually: Bool
         var areSubstanceHeightsIndependent: Bool
+        var combinesComparableRoutes: Bool? = nil
     }
 
     // Fixed non-changing properties about your activity go here!
@@ -24,7 +25,8 @@ extension TimelineWidgetAttributes.ContentState {
             everythingForEachRating: everythingForEachRating,
             everythingForEachTimedNote: everythingForEachTimedNote,
             areRedosesDrawnIndividually: areRedosesDrawnIndividually,
-            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent
+            areSubstanceHeightsIndependent: areSubstanceHeightsIndependent,
+            combinesComparableRoutes: combinesComparableRoutes ?? false
         )
     }
 }

@@ -46,6 +46,12 @@ private struct IngestionRowContent<Content: View>: View {
                 HStack {
                     timeText.font(.caption)
                     Spacer()
+                    if ingestion.isHiddenFromTimeline {
+                        Label("Hidden from Timeline", systemImage: "eye.slash")
+                            .labelStyle(.iconOnly)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     if let location = ingestion.location {
                         Group {
                             Text(Image(systemName: "mappin")) + Text(" ") + Text(location.nameUnwrapped)
@@ -57,6 +63,11 @@ private struct IngestionRowContent<Content: View>: View {
                 Text(title)
                     .font(.headline)
                     .foregroundColor(.primary)
+                if ingestion.isUnconfirmed {
+                    Label("Unconfirmed", systemImage: "questionmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 doseRow
                 Group {
                     if !ingestion.noteUnwrapped.isEmpty {
@@ -161,12 +172,14 @@ extension View {
             get: { request.wrappedValue != nil },
             set: { if !$0 { request.wrappedValue = nil } }
         ), titleVisibility: .visible, presenting: request.wrappedValue) { deletion in
-            Button(deletion.hasStockUse ? "Delete Entry, Keep Stock Use" : "Delete Entry", role: .destructive) {
+            let title = deletion.count > 1 ? "Delete \(deletion.count) Entries"
+                : deletion.hasStockUse ? "Delete Entry, Keep Stock Use" : "Delete Entry"
+            Button(title, role: .destructive) {
                 Task {
                     if await IngestionDeletion.delete(deletion) { onDeleted() }
                 }
             }
-            if deletion.canReturnStock {
+            if deletion.count == 1, deletion.canReturnStock {
                 Button("Delete Entry and Return Stock", role: .destructive) {
                     Task {
                         if await IngestionDeletion.delete(deletion, returningStock: true) { onDeleted() }
@@ -178,6 +191,9 @@ extension View {
             let time = deletion.date?.formatted(date: .abbreviated, time: .standard)
             let details = [deletion.name, deletion.amount, time].compactMap { $0 }.joined(separator: " · ")
             Text(details)
+            if deletion.count > 1 {
+                Text("All entries in this unconfirmed batch will be removed.")
+            }
         }
     }
 }

@@ -5,21 +5,25 @@ struct RatingCodable: Codable {
     let creationDate: Date?
     let time: Date?
     let option: ShulginRatingOption
+    let isHiddenInTimeline: Bool
 
     init(
         creationDate: Date,
         time: Date?,
-        option: ShulginRatingOption
+        option: ShulginRatingOption,
+        isHiddenInTimeline: Bool = false
     ) {
         self.creationDate = creationDate
         self.time = time
         self.option = option
+        self.isHiddenInTimeline = isHiddenInTimeline
     }
 
     enum CodingKeys: String, CodingKey {
         case creationDate
         case time
         case option
+        case isHiddenInTimeline
     }
 
     init(from decoder: Decoder) throws {
@@ -27,6 +31,7 @@ struct RatingCodable: Codable {
         creationDate = try values.decodeMillisIfPresent(forKey: .creationDate)
         time = try values.decodeMillisIfPresent(forKey: .time)
         option = try values.decode(ShulginRatingOption.self, forKey: .option)
+        isHiddenInTimeline = try values.decodeIfPresent(Bool.self, forKey: .isHiddenInTimeline) ?? false
     }
 
     func encode(to encoder: Encoder) throws {
@@ -34,12 +39,18 @@ struct RatingCodable: Codable {
         try container.encodeMillis(creationDate, forKey: .creationDate)
         try container.encodeMillis(time, forKey: .time)
         try container.encode(option, forKey: .option)
+        try container.encodeIfPresent(isHiddenInTimeline ? true : nil, forKey: .isHiddenInTimeline)
     }
 }
 
 extension RatingCodable {
     init(_ rating: ShulginRating) {
-        self.init(creationDate: rating.creationDateUnwrapped, time: rating.time, option: rating.optionUnwrapped)
+        self.init(
+            creationDate: rating.creationDateUnwrapped,
+            time: rating.time,
+            option: rating.optionUnwrapped,
+            isHiddenInTimeline: rating.isHiddenInTimeline
+        )
     }
 
     func insert(into context: NSManagedObjectContext, fallbackDate: Date) -> ShulginRating {
@@ -47,6 +58,7 @@ extension RatingCodable {
         rating.creationDate = creationDate ?? time ?? fallbackDate
         rating.time = time
         rating.option = option.rawValue
+        rating.isHiddenInTimeline = isHiddenInTimeline
         return rating
     }
 }
