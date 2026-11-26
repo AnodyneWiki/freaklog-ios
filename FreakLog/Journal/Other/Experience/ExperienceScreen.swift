@@ -31,6 +31,7 @@ struct ExperienceScreen: View {
         case addTimedNote
         case editTimedNote(timedNote: TimedNote)
         case editIngestion(ingestion: Ingestion)
+        case shareExperience
         // The assistant about this experience, asking the prompt right away if there is one
         case assistant(prompt: String?)
 
@@ -235,6 +236,8 @@ struct ExperienceScreen: View {
                         isHidden: $hiddenIngestions.contains(ingestion.id))
                 case let .assistant(prompt):
                     AssistantScreen(experience: experience, initialPrompt: prompt)
+                case .shareExperience:
+                    ExperienceReportScreen(experience: experience, includesRatings: isEyeOpen)
                 }
             })
         .navigationTitle(experience.titleUnwrapped)

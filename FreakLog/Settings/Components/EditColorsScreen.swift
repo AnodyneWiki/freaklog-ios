@@ -6,6 +6,7 @@ struct EditColorsScreen: View {
     var substanceCompanions: FetchedResults<SubstanceCompanion>
 
     @State private var companionToEdit: SubstanceCompanion?
+    @State private var isImportingPalette = false
     @State private var search = ""
 
     private var visibleCompanions: [SubstanceCompanion] {
@@ -45,14 +46,15 @@ struct EditColorsScreen: View {
         })
         .navigationTitle("Substance Colors")
         .searchable(text: $search, prompt: "Find a substance")
-        .onAppear {
-            for substanceCompanion in substanceCompanions {
-                if substanceCompanion.ingestionsUnwrapped.isEmpty {
-                    PersistenceController.shared.viewContext.delete(substanceCompanion)
-                }
-                PersistenceController.shared.saveViewContext()
+        .toolbar {
+            Menu {
+                NavigationLink("Share Palette") { PalettePresetExportScreen() }
+                Button("Import Palette") { isImportingPalette = true }
+            } label: {
+                Label("Palette", systemImage: "ellipsis.circle")
             }
         }
+        .modifier(JournalPresetImporter(isPresented: $isImportingPalette, scope: .palette))
     }
 }
 

@@ -49,6 +49,11 @@ struct ExperienceToolbarContent: View {
                     }
                 }
                 Button {
+                    sheetToShow = .shareExperience
+                } label: {
+                    Label("Share Experience", systemImage: "square.and.arrow.up")
+                }
+                Button {
                     sheetToShow = .editNotes
                 } label: {
                     Label("Edit Notes", systemImage: "pencil")

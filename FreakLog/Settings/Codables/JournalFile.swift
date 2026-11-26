@@ -3,6 +3,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 enum JournalFileError: LocalizedError, Equatable {
+    case noJournalData
     case duplicateCustomUnit(Int32)
     case duplicateFormulation(String)
     case missingCustomUnit(String)
@@ -11,6 +12,8 @@ enum JournalFileError: LocalizedError, Equatable {
 
     var errorDescription: String? {
         switch self {
+        case .noJournalData:
+            "This file doesn’t contain a recognized journal."
         case .duplicateCustomUnit(let id):
             "The journal contains duplicate custom-unit ID \(id)."
         case .duplicateFormulation(let id):
@@ -34,6 +37,7 @@ struct JournalFile: FileDocument, Codable {
     let customUnits: [CustomUnitCodable]
     let substanceDataOverrides: [SubstanceDataOverrideCodable]
     let formulations: [FormulationCodable]
+    private(set) var transferOmissions: [String] = []
 
     init(
         experiences: [Experience],
@@ -215,11 +219,70 @@ struct JournalFile: FileDocument, Codable {
     static func read(_ data: Data) throws -> Self {
         let decoder = JSONDecoder()
         let header = try decoder.decode(Header.self, from: data)
-        guard let source = header.exportSource else { return try decoder.decode(Self.self, from: data) }
-        guard source == "iOS Journal" || source == "Android Journal" else {
-            throw JournalBackupError.unrecognizedFormat
+        var raw = try decoder.decode([String: JSONValue].self, from: data)
+        let omittedUnconfirmed = Self.omitUnconfirmedIngestions(from: &raw)
+        if let source = header.exportSource {
+            guard supportsModernJournalSource(source) else {
+                throw JournalBackupError.unrecognizedFormat
+            }
+            var journal = try decoder.decode(Self.self, from: Version12Journal.convert(raw))
+            if source.hasPrefix("iOS Journal 18.") {
+                journal.transferOmissions = [
+                    "PW Journal 18 tag definitions, blend policies and other version-specific settings may be unavailable."
+                ]
+            }
+            if omittedUnconfirmed { journal.transferOmissions.append("Unconfirmed ingestions") }
+            return journal
         }
-        return try decoder.decode(Self.self, from: Version12Journal.convert(data))
+        let converted = try AndroidJournalTransfer.imported(raw)
+        var journal = try decoder.decode(Self.self, from: JSONEncoder().encode(converted.fields))
+        journal.transferOmissions = converted.omissions
+        if omittedUnconfirmed { journal.transferOmissions.append("Unconfirmed ingestions") }
+        return journal
+    }
+
+    func androidTransferData() throws -> Data {
+        let fields = try JSONDecoder().decode([String: JSONValue].self, from: JSONEncoder().encode(self))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(AndroidJournalTransfer.exported(fields))
+    }
+
+    func pwJournalTransferData(_ version: PWJournalTransferVersion) throws -> Data {
+        let fields = try JSONDecoder().decode([String: JSONValue].self, from: JSONEncoder().encode(self))
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return try encoder.encode(PWJournalTransfer.exported(fields, version: version))
+    }
+
+    // This schema cannot store provisional entries, so don't import them as confirmed.
+    private static func omitUnconfirmedIngestions(from fields: inout [String: JSONValue]) -> Bool {
+        guard let experiences = fields["experiences"]?.array else { return false }
+        var omitted = false
+        fields["experiences"] = .array(experiences.map { experience in
+            guard var record = experience.object, let ingestions = record["ingestions"]?.array else {
+                return experience
+            }
+            let confirmed = ingestions.filter { $0["isUnconfirmed"]?.bool != true }
+            omitted = omitted || confirmed.count != ingestions.count
+            record["ingestions"] = .array(confirmed)
+            return .object(record)
+        })
+        return omitted
+    }
+
+    private static func supportsModernJournalSource(_ source: String) -> Bool {
+        if source == "iOS Journal" || source == "Android Journal" { return true }
+        // Recent iOS exports can append an app version to the source marker.
+        let prefix = "iOS Journal "
+        guard source.hasPrefix(prefix) else { return false }
+        let version = source.dropFirst(prefix.count).split(separator: ".", omittingEmptySubsequences: false)
+        guard (2...3).contains(version.count), let major = Int(version[0]), (12...18).contains(major) else {
+            return false
+        }
+        return version.allSatisfy { component in
+            !component.isEmpty && component.allSatisfy { $0.isASCII && $0.isNumber }
+        }
     }
 
     init(from decoder: Decoder) throws {
@@ -234,15 +297,291 @@ struct JournalFile: FileDocument, Codable {
         formulations = try values.decodeIfPresent([FormulationCodable].self, forKey: .formulations) ?? []
         guard hasExperiences || !substanceCompanions.isEmpty || !customSubstances.isEmpty || !customUnits.isEmpty
             || !substanceDataOverrides.isEmpty || !formulations.isEmpty else {
-            throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "The file has no journal data"))
+            throw JournalFileError.noJournalData
         }
         try validateReferences()
     }
 }
 
+enum PWJournalTransferVersion: Equatable, Sendable {
+    case current
+    case legacy
+
+    var name: String {
+        switch self {
+        case .current: "PW Journal 18.0"
+        case .legacy: "PW Journal 11.11"
+        }
+    }
+}
+
+private enum PWJournalTransfer {
+    typealias Fields = [String: JSONValue]
+
+    private enum ExportError: LocalizedError {
+        case dateBeforeUnixEpoch
+
+        var errorDescription: String? {
+            "PW Journal 11.11 only supports dates from 1970 onward. Choose another export format to keep these dates."
+        }
+    }
+
+    // PW Journal 18 coding keys follow the Swift metadata in the 18.0 build.
+    // The 11.11 decoder is available in this repository's upstream history.
+    static func exported(_ source: Fields, version: PWJournalTransferVersion) throws -> Fields {
+        let companions = rows(source["substanceCompanions"]).map { original in
+            var companion = original
+            companion.removeValue(forKey: "colorHex")
+            if version == .current {
+                companion["tags"] = .array([])
+                companion["isHiddenInTimeline"] = companion["isHiddenInTimeline"] ?? .bool(false)
+            }
+            return JSONValue.object(companion)
+        }
+        let experiences = try rows(source["experiences"]).map { original in
+            var experience = original
+            let ingestions = rows(experience["ingestions"]).filter {
+                version == .current || $0["isUnconfirmed"]?.bool != true
+            }
+            if let location = ingestions.first?["location"], location != .null {
+                experience["location"] = location
+            }
+            experience["ingestions"] = .array(try ingestions.compactMap { ingestion in
+                try exportedIngestion(ingestion, version: version)
+            })
+            experience["timedNotes"] = .array(try rows(experience["timedNotes"]).map { original in
+                var note = original
+                note.removeValue(forKey: "colorHex")
+                if version == .legacy { try validateLegacyDates(note, keys: ["time", "creationDate"]) }
+                return .object(note)
+            })
+            experience["ratings"] = .array(try rows(experience["ratings"]).map { original in
+                var rating = original
+                if rating["creationDate"] == nil || rating["creationDate"] == .null {
+                    rating["creationDate"] = rating["time"]?.number.map(JSONValue.number) ?? experience["creationDate"]
+                }
+                if version == .legacy { try validateLegacyDates(rating, keys: ["time", "creationDate"]) }
+                return .object(rating)
+            })
+            if version == .legacy { try validateLegacyDates(experience, keys: ["creationDate", "sortDate"]) }
+            return JSONValue.object(experience)
+        }
+        let units = rows(source["customUnits"])
+        var result: Fields = [
+            "experiences": .array(experiences),
+            "substanceCompanions": .array(companions)
+        ]
+        switch version {
+        case .current:
+            result["exportSource"] = .string("iOS Journal 18.0")
+            result["tags"] = .array([])
+            let pairs = companions.compactMap { companion -> (String, JSONValue)? in
+                guard let name = companion["substanceName"]?.string, let color = companion["color"] else { return nil }
+                return (name, color)
+            }
+            let colors = Dictionary(pairs, uniquingKeysWith: { first, _ in first })
+            result["customUnits"] = .array(units.map { modernUnit($0, colors: colors) })
+        case .legacy:
+            for unit in units { try validateLegacyDates(unit, keys: ["creationDate"]) }
+            result["customUnits"] = .array(units.map(JSONValue.object))
+            result["customSubstances"] = .array(rows(source["customSubstances"]).map { original in
+                var substance = original
+                substance.removeValue(forKey: "roas")
+                return .object(substance)
+            })
+        }
+        return result
+    }
+
+    private static func exportedIngestion(_ source: Fields, version: PWJournalTransferVersion) throws -> JSONValue? {
+        var row = source
+        for key in ["administrationSite", "location", "formulationId", "formulationName", "formulationAmount", "confirmationBatchID"] {
+            row.removeValue(forKey: key)
+        }
+        if let fullness = row["stomachFullness"]?.string {
+            let normalized = fullness.uppercased().filter(\.isLetter)
+            row["stomachFullness"] = ["EMPTY", "QUARTERFULL", "HALFFULL", "FULL", "VERYFULL"].contains(normalized)
+                ? .string(normalized) : .null
+        }
+        if version == .current {
+            row["isHiddenInTimeline"] = row["isHiddenInTimeline"] ?? .bool(false)
+            row["isUnconfirmed"] = row["isUnconfirmed"] ?? .bool(false)
+        } else {
+            guard row.removeValue(forKey: "isUnconfirmed")?.bool != true else { return nil }
+            try validateLegacyDates(row, keys: ["time", "endTime", "creationDate"])
+        }
+        return .object(row)
+    }
+
+    private static func modernUnit(_ unit: Fields, colors: [String: JSONValue]) -> JSONValue {
+        let name = unit["substanceName"]?.string ?? ""
+        let component: Fields = [
+            "id": unit["id"] ?? .number(0),
+            "creationDate": unit["creationDate"] ?? .number(0),
+            "dose": unit["dose"] ?? .null,
+            "estimatedDoseStandardDeviation": unit["estimatedDoseStandardDeviation"] ?? .null,
+            "isEstimate": unit["isEstimate"] ?? .bool(false),
+            "notes": .null,
+            "substanceName": .string(name),
+            "substanceUnit": unit["originalUnit"] ?? .string(""),
+            "customUnitId": .null,
+            "isHiddenInTimeline": .bool(false)
+        ]
+        var result = unit.filter { ["id", "name", "creationDate", "isArchived", "unit", "unitPlural", "note"].contains($0.key) }
+        result["color"] = colors[name] ?? .string(SubstanceColor.fallback.exportValue)
+        result["areTimelinesOfSubcomponentsShown"] = .bool(true)
+        result["areTolerancesOfSubcomponentsShown"] = .bool(true)
+        result["roaInfos"] = .array([])
+        result["doseComponents"] = .array([.object(component)])
+        result["tags"] = .array([])
+        result["isHiddenInTimeline"] = .bool(false)
+        return .object(result)
+    }
+
+    private static func rows(_ value: JSONValue?) -> [Fields] {
+        value?.array?.compactMap(\.object) ?? []
+    }
+
+    private static func validateLegacyDates(_ fields: Fields, keys: [String]) throws {
+        if keys.contains(where: { (fields[$0]?.number ?? 0) < 0 }) {
+            throw ExportError.dateBeforeUnixEpoch
+        }
+    }
+}
+
+/// The headerless JournalExport shape used by FreakLog Android 11.36.
+private enum AndroidJournalTransfer {
+    typealias Fields = [String: JSONValue]
+
+    private static let fullnessValues: Set<String> = ["EMPTY", "QUARTERFULL", "HALFFULL", "FULL", "VERYFULL"]
+
+    static func imported(_ fields: Fields) throws -> (fields: Fields, omissions: [String]) {
+        var fields = fields
+        var omissions: [String] = []
+        let unsupported: [(String, String)] = [
+            ("customRecipes", "Recipes"), ("customFormulations", "Release profiles"), ("reminders", "Reminders"),
+            ("webhooks", "Webhooks"), ("intakeLimits", "Intake limits"), ("substanceGroups", "Substance groups"),
+            ("customSubstanceDetails", "Advanced substance profiles")
+        ]
+        for (key, label) in unsupported where fields[key]?.array?.isEmpty == false {
+            omissions.append(label)
+        }
+        let importedAt = Double(Date.now.millisecondsSince1970)
+        fields["customUnits"] = try rewrite(fields["customUnits"]) { unit in
+            var unit = unit
+            // Kotlin defaults an omitted creation date to the time the record is decoded.
+            if unit["creationDate"] == nil { unit["creationDate"] = .number(importedAt) }
+            return unit
+        }
+        fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"]) { companion in
+            var companion = companion
+            // Android omits its default BLUE value when encoding a companion.
+            if companion["color"] == nil, companion["colorHex"] == nil { companion["color"] = .string("BLUE") }
+            return importedColor(companion)
+        }
+        var omittedPressure = false
+        var omittedIngestionDetails = false
+        fields["experiences"] = try rewrite(fields["experiences"]) { experience in
+            var experience = experience
+            if experience["bloodPressure"]?.array?.isEmpty == false { omittedPressure = true }
+            experience["timedNotes"] = try rewrite(experience["timedNotes"], importedColor)
+            experience["ingestions"] = try rewrite(experience["ingestions"]) { ingestion in
+                var ingestion = ingestion
+                if ["customFormulationId", "saltForm", "category"].contains(where: {
+                    ingestion[$0].map { $0 != .null } == true
+                }) {
+                    omittedIngestionDetails = true
+                }
+                // A named release profile is not a FreakLog iOS blend.
+                if ingestion["customFormulationId"] != nil {
+                    ingestion.removeValue(forKey: "formulationName")
+                }
+                return ingestion
+            }
+            return experience
+        }
+        if omittedPressure { omissions.append("Blood pressure records") }
+        if omittedIngestionDetails { omissions.append("Ingestion release profiles, salt forms or categories") }
+        if fields["customUnits"]?.array?.contains(where: { $0["defaultCategory"]?.string != nil }) == true
+            || fields["substanceCompanions"]?.array?.contains(where: { $0["defaultCategory"]?.string != nil }) == true {
+            omissions.append("Default ingestion categories")
+        }
+        return (fields, omissions)
+    }
+
+    static func exported(_ fields: Fields) throws -> Fields {
+        var fields = fields
+        fields.removeValue(forKey: "substanceDataOverrides")
+        fields.removeValue(forKey: "formulations")
+        fields["customSubstances"] = try rewrite(fields["customSubstances"]) { substance in
+            var substance = substance
+            substance.removeValue(forKey: "roas")
+            return substance
+        }
+        fields["substanceCompanions"] = try rewrite(fields["substanceCompanions"], exportedColor)
+        fields["experiences"] = try rewrite(fields["experiences"]) { experience in
+            var experience = experience
+            experience["timedNotes"] = try rewrite(experience["timedNotes"], exportedColor)
+            experience["ratings"] = try rewrite(experience["ratings"]) { rating in
+                var rating = rating
+                rating.removeValue(forKey: "isHiddenInTimeline")
+                return rating
+            }
+            if let ingestions = experience["ingestions"]?.array {
+                let confirmed = ingestions.filter { $0["isUnconfirmed"]?.bool != true }
+                if let location = confirmed.first?["location"], location != .null {
+                    experience["location"] = location
+                }
+                experience["ingestions"] = .array(confirmed)
+            }
+            experience["ingestions"] = try rewrite(experience["ingestions"]) { ingestion in
+                var ingestion = ingestion
+                for key in ["location", "formulationId", "formulationName", "formulationAmount",
+                            "isHiddenInTimeline", "isUnconfirmed"] {
+                    ingestion.removeValue(forKey: key)
+                }
+                if let fullness = ingestion["stomachFullness"]?.string {
+                    let name = fullness.uppercased().filter(\.isLetter)
+                    ingestion["stomachFullness"] = fullnessValues.contains(name) ? .string(name) : nil
+                }
+                return ingestion
+            }
+            return experience
+        }
+        return fields
+    }
+
+    private static func importedColor(_ fields: Fields) -> Fields {
+        guard let color = fields["color"]?.string,
+              color.hasPrefix("CUSTOM_"), color.utf8.count == 15,
+              color.dropFirst(7).allSatisfy(\.isHexDigit),
+              let exact = SubstanceColor(hex: String(color.suffix(6))) else { return fields }
+        var fields = fields
+        fields["color"] = .string(exact.rawValue)
+        return fields
+    }
+
+    private static func exportedColor(_ fields: Fields) -> Fields {
+        var fields = fields
+        if let exact = fields.removeValue(forKey: "colorHex")?.string {
+            fields["color"] = .string("CUSTOM_FF" + exact.dropFirst())
+        }
+        fields.removeValue(forKey: "isHiddenInTimeline")
+        return fields
+    }
+
+    private static func rewrite(_ value: JSONValue?, _ transform: (Fields) throws -> Fields) throws -> JSONValue? {
+        guard let value, let rows = value.array else { return value }
+        return .array(try rows.map { row in
+            guard let fields = row.object else { return row }
+            return .object(try transform(fields))
+        })
+    }
+}
+
 // PW Journal v12 represents custom units as definitions that can contain several doses or refer to other units.
 private struct Version12Journal {
-    private typealias Fields = [String: JSONValue]
+    typealias Fields = [String: JSONValue]
 
     private enum ImportError: LocalizedError {
         case invalid(String)
@@ -315,8 +654,7 @@ private struct Version12Journal {
     private var resolved: [String: [Ingredient]] = [:]
     private var resolving = Set<String>()
 
-    static func convert(_ data: Data) throws -> Data {
-        let original = try JSONDecoder().decode(Fields.self, from: data)
+    static func convert(_ original: Fields) throws -> Data {
         let rows = try records(original["customUnits"], key: "customUnits")
         var definitions: [String: Fields] = [:]
         var order: [String] = []
@@ -358,7 +696,11 @@ private struct Version12Journal {
             }
             let ingredients = try resolve(id)
             let route = try Self.route(definition["administrationRoute"])
-            let defaultRoute = route ?? observedRoutes[id] ?? .oral
+            let profileRoutes = Set((definition["roaInfos"]?.array ?? []).compactMap { profile in
+                profile["administrationRoute"]?.string.flatMap { AdministrationRoute(rawValue: $0.lowercased()) }
+            })
+            let onlyProfileRoute = profileRoutes.count == 1 ? profileRoutes.first : nil
+            let defaultRoute = route ?? observedRoutes[id] ?? onlyProfileRoute ?? .oral
             let unit = definition["unit"]?.string ?? ""
             let note = definition["note"]?.string ?? ""
             let created = definition["creationDate"]?.number.flatMap(Int64.init(exactly:))
@@ -371,7 +713,8 @@ private struct Version12Journal {
                     estimatedDoseStandardDeviation: ingredient.quantity.deviation, isEstimate: ingredient.quantity.isEstimate,
                     isArchived: definition["isArchived"]?.bool ?? false, unit: unit, unitPlural: definition["unitPlural"]?.string,
                     originalUnit: ingredient.units, note: note))
-                targets[id] = .unit(id: localId, name: ingredient.name, units: unit, route: ingredient.route ?? route)
+                targets[id] = .unit(
+                    id: localId, name: ingredient.name, units: unit, route: ingredient.route ?? route ?? onlyProfileRoute)
                 if let color = definition["color"]?.string, companionNames.insert(ingredient.name).inserted {
                     companions.append(["substanceName": .string(ingredient.name), "color": .string(color)])
                 }
@@ -386,7 +729,7 @@ private struct Version12Journal {
                     name: name, note: note, creationDate: created,
                     components: ingredients.map { $0.formulationComponent(defaultRoute: defaultRoute) }, id: localId)
                 formulations.append(try JSONValue(encoding: formulation))
-                targets[id] = .formulation(id: localId, name: name, ingredients: ingredients, route: route)
+                targets[id] = .formulation(id: localId, name: name, ingredients: ingredients, route: route ?? onlyProfileRoute)
             }
         }
 
@@ -427,7 +770,8 @@ private struct Version12Journal {
                 guard let substance = component["substanceName"]?.string, !substance.isEmpty else {
                     throw ImportError.invalid("A component of \(name) is missing its substance name.")
                 }
-                let units = component["units"]?.string ?? component["unit"]?.string ?? component["originalUnit"]?.string ?? ""
+                let units = component["substanceUnit"]?.string ?? component["units"]?.string
+                    ?? component["unit"]?.string ?? component["originalUnit"]?.string ?? ""
                 ingredients.append(try Ingredient(name: substance, fields: component, units: units))
             }
         }

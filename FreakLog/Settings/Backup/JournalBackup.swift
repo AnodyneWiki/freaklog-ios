@@ -18,6 +18,10 @@ struct JournalBackup: Codable {
     var attributes: [String: JSONValue]
     // A to-one relationship is an id or null, a to-many one a list of ids
     var relationships: [String: JSONValue]
+
+    func date(for attribute: String) -> Date? {
+      attributes[attribute]?.string.flatMap(BackupDate.date(from:))
+    }
   }
 
   static let format = "FreakLog Backup"
@@ -332,6 +336,19 @@ extension JournalBackup {
     })
     root["entities"] = .object(entities)
     backup = .object(root)
+  }
+
+  // Run the real restore against an isolated store. This also checks the parts of
+  // the CoreData model that only get validated when the context saves.
+  func validateContents(in model: NSManagedObjectModel) throws {
+    let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+    try coordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: nil)
+    let context = NSManagedObjectContext(concurrencyType: .privateQueueConcurrencyType)
+    context.persistentStoreCoordinator = coordinator
+    try context.performAndWait {
+      try restore(into: context)
+      try context.save()
+    }
   }
 
   // Replaces everything in the context with the backup's objects. Nothing is changed for good until the caller saves,

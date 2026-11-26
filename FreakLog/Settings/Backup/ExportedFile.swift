@@ -3,11 +3,12 @@ import UniformTypeIdentifiers
 
 extension UTType {
   static let freakLogBackup = UTType(exportedAs: "woof.freaklog.backup", conformingTo: .data)
+  static let androidEncryptedJournal = UTType(filenameExtension: "enc", conformingTo: .data) ?? .data
 }
 
 // A file to export: a backup or a journal file, already encoded
 struct ExportedFile: FileDocument {
-  static let readableContentTypes: [UTType] = [.json, .freakLogBackup]
+  static let readableContentTypes: [UTType] = [.json, .freakLogBackup, .androidEncryptedJournal]
 
   let data: Data
   let filename: String
