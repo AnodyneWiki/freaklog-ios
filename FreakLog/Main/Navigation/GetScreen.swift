@@ -39,6 +39,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             List {
                 TimelineExplanationTexts()
             }.navigationTitle("Timeline Info")
+        case .unifiedSearch:
+            JournalSearchScreen(favoritesOnly: Navigator.shared.isFavoriteFilterEnabled)
         case .calendar:
             JournalCalendarScreen()
         case let .experience(experience):

@@ -12,8 +12,8 @@ struct ToxicitySection: View {
                 ForEach(toxicities, id: \.self) { toxicity in
                     Text(toxicity)
                 }
-                if let substance, !toxicities.isEmpty,
-                   let toxicityURL = URL(string: substance.url.absoluteString + "#Toxicity_and_harm_potential") {
+                if let url = substance?.url, !toxicities.isEmpty,
+                   let toxicityURL = URL(string: url.absoluteString + "#Toxicity_and_harm_potential") {
                     NavigationLink(value: GlobalNavigationDestination.webView(articleURL: toxicityURL)) {
                         Label("More Info", systemImage: "info.circle")
                     }

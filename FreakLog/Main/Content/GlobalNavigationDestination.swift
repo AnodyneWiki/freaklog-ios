@@ -15,6 +15,7 @@ enum GlobalNavigationDestination: Hashable {
     case anodyneLinks(title: String, links: [AnodyneSubstance.Link])
 
     // journal tab mainly
+    case unifiedSearch
     case calendar
     case experience(experience: Experience)
     case dynamicExperience(ingestions: [Ingestion])

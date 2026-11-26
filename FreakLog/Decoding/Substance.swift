@@ -2,6 +2,18 @@ import CoreData
 import Foundation
 
 struct Substance: Decodable, Identifiable, Hashable {
+    enum ReferenceSource: String, Decodable {
+        case psychonautWiki
+        case fdaSubstanceRegistry
+
+        var title: String {
+            switch self {
+            case .psychonautWiki: "PsychonautWiki"
+            case .fdaSubstanceRegistry: "FDA Substance Registry"
+            }
+        }
+    }
+
     static func == (lhs: Substance, rhs: Substance) -> Bool {
         lhs.name == rhs.name
     }
@@ -15,9 +27,10 @@ struct Substance: Decodable, Identifiable, Hashable {
     }
 
     let name: String
-    let url: URL
+    let url: URL?
+    let referenceSource: ReferenceSource
     let commonNames: [String]
-    let isApproved: Bool
+    private let isApproved: Bool?
     let tolerance: Tolerance?
     let crossTolerances: [String]
     let addictionPotential: String?
@@ -35,6 +48,7 @@ struct Substance: Decodable, Identifiable, Hashable {
     enum CodingKeys: String, CodingKey {
         case name
         case url
+        case referenceSource
         case commonNames
         case isApproved
         case tolerance
@@ -56,9 +70,10 @@ struct Substance: Decodable, Identifiable, Hashable {
         // need custom decoder because some keys might be missing so we need decodeIfPresent
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = try container.decode(String.self, forKey: .name)
-        url = try container.decode(URL.self, forKey: .url)
+        url = try container.decodeIfPresent(URL.self, forKey: .url)
+        referenceSource = try container.decodeIfPresent(ReferenceSource.self, forKey: .referenceSource) ?? .psychonautWiki
         commonNames = try container.decode([String].self, forKey: .commonNames)
-        isApproved = try container.decode(Bool.self, forKey: .isApproved)
+        isApproved = try container.decodeIfPresent(Bool.self, forKey: .isApproved)
         roas = try container.decode([Roa].self, forKey: .roas)
         tolerance = try? container.decodeIfPresent(Tolerance.self, forKey: .tolerance)
         crossTolerances = (try? container.decodeIfPresent([String].self, forKey: .crossTolerances)) ?? []
@@ -81,6 +96,14 @@ struct Substance: Decodable, Identifiable, Hashable {
         generalRisks = try? container.decodeIfPresent(String.self, forKey: .generalRisks)
         longtermRisks = try? container.decodeIfPresent(String.self, forKey: .longtermRisks)
         saferUse = (try? container.decodeIfPresent([String].self, forKey: .saferUse)) ?? []
+    }
+
+    var usesWikiReferences: Bool {
+        referenceSource == .psychonautWiki
+    }
+
+    var hasUnapprovedWikiReference: Bool {
+        usesWikiReferences && isApproved == false
     }
 
     var administrationRoutesUnwrapped: [AdministrationRoute] {

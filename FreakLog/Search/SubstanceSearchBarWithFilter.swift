@@ -1,104 +1,123 @@
 import SwiftUI
 
-struct SubstanceSearchBarWithFilter: View {
-    @Binding var text: String
-    var isFocused: FocusState<Bool>.Binding
-    let allCategories: [String]
-    let toggleCategory: (String) -> Void
-    let selectedCategories: [String]
-    let clearCategories: () -> Void
+struct UnifiedSearchFilters {
+    enum JournalType: CaseIterable {
+        case all, experiences, ingestions
 
-    @Environment(\.colorScheme) var colorScheme
-    private let horizontalPadding: CGFloat = 16
+        var title: String {
+            switch self {
+            case .all: String(localized: "All Entries")
+            case .experiences: String(localized: "Experiences")
+            case .ingestions: String(localized: "Ingestions")
+            }
+        }
+    }
+
+    enum LibraryType: CaseIterable {
+        case all, bundled, custom
+
+        var title: String {
+            switch self {
+            case .all: String(localized: "All Substances")
+            case .bundled: String(localized: "Bundled Substances")
+            case .custom: String(localized: "Custom Substances")
+            }
+        }
+    }
+
+    var journalType = JournalType.all
+    var ingestionKind = UnifiedJournalQuery.IngestionKind.any
+    var libraryType = LibraryType.all
+    var categories: Set<String> = []
+    var personalTag: String?
+    var untaggedOnly = false
+
+    var libraryIsFiltered: Bool {
+        libraryType != .all || !categories.isEmpty || personalTag != nil || untaggedOnly
+    }
+
+    mutating func clearLibrary() {
+        libraryType = .all
+        categories.removeAll()
+        personalTag = nil
+        untaggedOnly = false
+    }
+}
+
+struct UnifiedSearchFilterScreen: View {
+    let scope: UnifiedSearchScope
+    @Binding var filters: UnifiedSearchFilters
+    @Binding var favoritesOnly: Bool
+    let categories: [String]
+    let tags: [String]
+
+    @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        HStack {
-            HStack {
-                Image(systemName: "magnifyingglass").foregroundColor(.secondary)
-                TextField("Search substances",
-                          text: $text,
-                          prompt: Text("Search substances"))
-                    .focused(isFocused)
-                    .disableAutocorrection(true)
-                    .submitLabel(.search)
-                if !text.isEmpty {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundColor(Color(.systemGray))
-                        .onTapGesture {
-                            withAnimation {
-                                text = ""
+        NavigationStack {
+            Form {
+                if scope.includesJournal {
+                    Section("Journal") {
+                        Picker("Result Type", selection: $filters.journalType) {
+                            ForEach(UnifiedSearchFilters.JournalType.allCases, id: \.self) { type in
+                                Text(type.title).tag(type)
                             }
                         }
-                } else {
-                    Menu(content: {
-                        ForEach(allCategories, id: \.self) { cat in
-                            Button {
-                                withAnimation {
-                                    toggleCategory(cat)
+                        Picker("Logged As", selection: $filters.ingestionKind) {
+                            ForEach(UnifiedJournalQuery.IngestionKind.allCases, id: \.self) { kind in
+                                Text(kind.title).tag(kind)
+                            }
+                        }
+                        Toggle("Favorite Experiences Only", isOn: $favoritesOnly)
+                    }
+                }
+                if scope.includesLibrary {
+                    Section("Library") {
+                        Picker("Result Type", selection: $filters.libraryType) {
+                            ForEach(UnifiedSearchFilters.LibraryType.allCases, id: \.self) { type in
+                                Text(type.title).tag(type)
+                            }
+                        }
+                        NavigationLink {
+                            List {
+                                ForEach(categories, id: \.self) { category in
+                                    Toggle(category.localizedCapitalized, isOn: categoryBinding(category))
                                 }
-                            } label: {
-                                if selectedCategories.contains(cat) {
-                                    Label(cat, systemImage: "checkmark")
-                                } else {
-                                    Text(cat)
+                            }
+                            .navigationTitle("Categories")
+                        } label: {
+                            LabeledContent("Categories", value: filters.categories.isEmpty
+                                           ? String(localized: "All") : filters.categories.count.formatted())
+                        }
+                        Toggle("Untagged Only", isOn: $filters.untaggedOnly)
+                            .onChange(of: filters.untaggedOnly) { isUntagged in
+                                if isUntagged { filters.personalTag = nil }
+                            }
+                        if !tags.isEmpty && !filters.untaggedOnly {
+                            Picker("Personal Tag", selection: $filters.personalTag) {
+                                Text("All Tags").tag(nil as String?)
+                                ForEach(tags, id: \.self) { tag in
+                                    Text(tag).tag(Optional(tag))
                                 }
                             }
                         }
-                    }, label: {
-                        Label("Filter", systemImage: selectedCategories.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-                            .labelStyle(.iconOnly)
-                    })
+                    }
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 7)
-            .background(backgroundColor)
-            .cornerRadius(12)
-            .padding(.leading, horizontalPadding)
-            .padding(.trailing, isFocused.wrappedValue ? 0 : horizontalPadding)
-            if isFocused.wrappedValue {
-                Button("Cancel") {
-                    withAnimation {
-                        text = ""
-                        clearCategories()
-                        isFocused.wrappedValue = false
-                    }
-                }.padding(.horizontal, horizontalPadding)
+            .navigationTitle("Search Filters")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
             }
         }
-        .animation(.default, value: isFocused.wrappedValue)
     }
 
-    var backgroundColor: Color {
-        if colorScheme == .dark {
-            return Color(.systemGray5)
-        } else {
-            return Color(.systemGray6)
-        }
-    }
-}
-
-private struct SearchBarContainer: View {
-    @FocusState private var isSearchFocused: Bool
-
-    var body: some View {
-        SubstanceSearchBarWithFilter(
-            text: .constant("d"),
-            isFocused: $isSearchFocused,
-            allCategories: ["psychedelic", "opioid"],
-            toggleCategory: { _ in },
-            selectedCategories: [],
-            clearCategories: {}
-        )
-    }
-}
-
-#Preview {
-    NavigationStack {
-        VStack {
-            SearchBarContainer()
-            Spacer()
-        }
-        .navigationTitle("Substances")
+    private func categoryBinding(_ category: String) -> Binding<Bool> {
+        Binding(get: { filters.categories.contains(category) }, set: { isSelected in
+            if isSelected { filters.categories.insert(category) }
+            else { filters.categories.remove(category) }
+        })
     }
 }

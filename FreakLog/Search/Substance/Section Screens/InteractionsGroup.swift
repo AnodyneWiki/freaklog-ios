@@ -47,10 +47,13 @@ private struct LinkOrLabel<Label: View>: View {
     let label: () -> Label
 
     var body: some View {
-        if let interactionURL = URL(string: substance.url.absoluteString + "#Dangerous_interactions") {
+        if let url = substance.url,
+           let interactionURL = URL(string: url.absoluteString + "#Dangerous_interactions") {
             NavigationLink(value: GlobalNavigationDestination.webViewInteractions(substanceName: substance.name, articleURL: interactionURL)) {
                 label()
             }
+        } else {
+            label()
         }
     }
 }
