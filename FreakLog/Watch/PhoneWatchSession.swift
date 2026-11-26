@@ -31,6 +31,7 @@ final class PhoneWatchSession: NSObject {
   }
 
   private var lastSentSuggestions: Data?
+  private var lastSentRoutine: Data?
   private var pendingUpdate: Task<Void, Never>?
 
   // Saves often come in bursts, e.g. while editing or importing
@@ -43,38 +44,45 @@ final class PhoneWatchSession: NSObject {
     }
   }
 
-  private func sendSuggestions() {
+  func sendRoutineUpdate(_ routine: RoutineQuickSnapshot) {
+    sendSuggestions(routine: routine)
+  }
+
+  private func sendSuggestions(routine: RoutineQuickSnapshot? = nil) {
+    guard WCSession.isSupported() else { return }
     let session = WCSession.default
-    guard
-      session.activationState == .activated, session.isPaired, session.isWatchAppInstalled,
-      let data = try? WatchQuickLog.encode(WatchQuickLogging.suggestions()),
-      data != lastSentSuggestions
-    else { return }
+    guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
+    let suggestions = (routine != nil ? lastSentSuggestions : nil)
+      ?? (try? WatchQuickLog.encode(WatchQuickLogging.suggestions()))
+    guard let suggestions,
+          let snapshot = try? WatchQuickLog.encode(routine ?? RoutineQuickLogging.currentSnapshot()),
+          suggestions != lastSentSuggestions || snapshot != lastSentRoutine else { return }
     do {
-      try session.updateApplicationContext([WatchQuickLog.suggestionsKey: data])
-      lastSentSuggestions = data
+      try session.updateApplicationContext([
+        WatchQuickLog.suggestionsKey: suggestions,
+        WatchQuickLog.routineSnapshotKey: snapshot
+      ])
+      lastSentSuggestions = suggestions
+      lastSentRoutine = snapshot
     } catch {
       print("Failed to send watch suggestions: \(error)")
     }
   }
 
   private func handle(_ message: [String: Any]) -> [String: Any] {
-    let kind: WatchRequestKind
-    if message[WatchQuickLog.logKey] != nil {
-      kind = .log
-    } else if message[WatchQuickLog.undoKey] != nil {
-      kind = .undo
-    } else if message[WatchQuickLog.refreshKey] != nil,
-      let data = try? WatchQuickLog.encode(WatchQuickLogging.suggestions())
-    {
-      return [WatchQuickLog.suggestionsKey: data]
-    } else {
+    let kinds = [WatchRequestKind.log, .undo, .routineTaken].filter { message[$0.messageKey] != nil }
+    if kinds.isEmpty, message[WatchQuickLog.refreshKey] != nil,
+       let suggestions = try? WatchQuickLog.encode(WatchQuickLogging.suggestions()),
+       let snapshot = try? WatchQuickLog.encode(RoutineQuickLogging.currentSnapshot()) {
+      return [WatchQuickLog.suggestionsKey: suggestions, WatchQuickLog.routineSnapshotKey: snapshot]
+    }
+    guard let kind = kinds.first else {
       return [WatchQuickLog.errorKey: WatchQuickLogError.invalidRequest.localizedDescription]
     }
 
     let id = (message[WatchQuickLog.requestIDKey] as? String).flatMap(UUID.init(uuidString:))
     guard
-      message[WatchQuickLog.logKey] == nil || message[WatchQuickLog.undoKey] == nil,
+      kinds.count == 1,
       let request = WatchRequest(kind: kind, payload: message[kind.messageKey]),
       message[WatchQuickLog.requestIDKey] == nil || id == request.id
     else {
@@ -100,9 +108,17 @@ final class PhoneWatchSession: NSObject {
         let source: WatchQuickLogging.UndoSource = message[kind.messageKey] is [String] ? .legacyTransfer : .current
         try WatchQuickLogging.undo(undo, source: source)
         return reply(id: undo.id, kind: kind, status: .undone)
+      case .routineTaken(let request):
+        try RoutineQuickLogging.markTaken(request)
+        return reply(id: request.id, kind: kind, status: .saved)
       }
     } catch let error as WatchQuickLogError {
       return reply(id: request.id, kind: kind, status: .rejected, detail: error.localizedDescription)
+    } catch let error as MarkRoutineTakenError {
+      return reply(id: request.id, kind: kind, status: .rejected, detail: error.localizedDescription)
+    } catch RoutineSchedules.StorageError.skipped {
+      return reply(id: request.id, kind: kind, status: .rejected,
+                   detail: RoutineSchedules.StorageError.skipped.localizedDescription)
     } catch {
       return reply(id: request.id, kind: kind, status: .retry, detail: error.localizedDescription)
     }

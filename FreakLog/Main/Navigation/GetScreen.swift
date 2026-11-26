@@ -43,6 +43,8 @@ func getScreen(from destination: GlobalNavigationDestination) -> some View {
             JournalSearchScreen(favoritesOnly: Navigator.shared.isFavoriteFilterEnabled)
         case .calendar:
             JournalCalendarScreen()
+        case .dueToday:
+            RoutineDayScreen()
         case let .experience(experience):
             ExperienceScreen(experience: experience)
         case let .dynamicExperience(ingestions):

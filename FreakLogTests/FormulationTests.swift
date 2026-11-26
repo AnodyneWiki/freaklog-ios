@@ -237,3 +237,203 @@ extension FormulationCodable.Component {
     return copy
   }
 }
+
+@MainActor
+final class RoutineOccurrenceTests: XCTestCase {
+  private var calendar: Calendar {
+    var result = Calendar(identifier: .gregorian)
+    result.timeZone = TimeZone(secondsFromGMT: 0)!
+    return result
+  }
+
+  func testLegacyRoutineStillSchedulesAndTimeEditRetainsOccurrenceIdentity() throws {
+    let data = Data(#"{"id":"37E9A223-1E5B-4191-A16A-7785D8A196AC","name":"Routine","hour":9,"minute":0,"reminds":false}"#.utf8)
+    var schedule = try JSONDecoder().decode(RoutineSchedule.self, from: data)
+    XCTAssertTrue(schedule.isValid)
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let initial = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    XCTAssertNil(schedule.productKind)
+    schedule.hour = 10
+    let changed = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    XCTAssertEqual(initial.id, changed.id)
+    XCTAssertNotEqual(initial.scheduledAt, changed.scheduledAt)
+  }
+
+  func testRoutineAndProductLinksSurviveBackupAndDuplicateLogIsRejected() throws {
+    let source = PersistenceController(inMemory: true).viewContext
+    let schedule = RoutineSchedule(name: "Routine", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1)
+    let record = RoutineRecord(context: source)
+    record.id = schedule.id
+    record.scheduleData = try JSONEncoder().encode(schedule)
+    let unit = CustomUnit(context: source)
+    unit.name = "Saved Product"
+    record.customUnit = unit
+
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let slot = try XCTUnwrap(schedule.slot(on: day, calendar: calendar))
+    let occurrence = try XCTUnwrap(RoutineSchedules.stageLog(for: slot, in: source, calendar: calendar))
+    let ingestion = Ingestion(context: source)
+    ingestion.time = slot.scheduledAt.addingTimeInterval(60)
+    ingestion.experience = Experience.create(at: try XCTUnwrap(ingestion.time), title: "Example", in: source)
+    ingestion.customUnit = unit
+    ingestion.routineOccurrence = occurrence
+    try source.save()
+
+    let data = try JournalBackup(context: source, appVersion: "test").fileData()
+    let target = PersistenceController(inMemory: true).viewContext
+    try XCTUnwrap(JournalBackup.read(data)).restore(into: target)
+    let imported = try XCTUnwrap(target.fetch(Ingestion.fetchRequest()).first)
+    XCTAssertEqual(imported.routineOccurrence?.scheduledAt, slot.scheduledAt)
+    XCTAssertEqual(imported.routineOccurrence?.loggedExperience?.title, "Example")
+    XCTAssertEqual(imported.routineOccurrence?.routine?.schedule, schedule)
+    XCTAssertEqual(imported.routineOccurrence?.routine?.customUnit, imported.customUnit)
+    XCTAssertNil(try RoutineSchedules.stageLog(for: slot, in: target, calendar: calendar))
+    XCTAssertEqual(try target.count(for: RoutineOccurrence.fetchRequest()), 1)
+
+    target.delete(imported)
+    try target.save()
+    XCTAssertNotNil(try RoutineSchedules.stageLog(for: slot, in: target, calendar: calendar))
+  }
+
+  func testFixedIntervalsUseCalendarDaysAcrossDaylightSaving() throws {
+    var calendar = self.calendar
+    calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "America/Los_Angeles"))
+    let anchor = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 3, day: 7)))
+    let schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, intervalDays: 2, anchorDay: .init(anchor, calendar: calendar))
+    XCTAssertTrue(schedule.isValid)
+    let first = try XCTUnwrap(schedule.slot(on: anchor, calendar: calendar))
+    let skippedDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: anchor))
+    XCTAssertNil(schedule.slot(on: skippedDay, calendar: calendar))
+    let second = try XCTUnwrap(schedule.nextSlots(after: first.scheduledAt, calendar: calendar, limit: 1).first)
+    XCTAssertEqual(calendar.component(.day, from: second.scheduledAt), 9)
+    XCTAssertEqual(calendar.component(.hour, from: second.scheduledAt), 9)
+    XCTAssertEqual(second.scheduledAt.timeIntervalSince(first.scheduledAt), 47 * 60 * 60)
+  }
+
+  func testAdditionalTimesHaveStableIndependentOccurrences() throws {
+    var schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, additionalTimes: [.init(hour: 18, minute: 0)])
+    let day = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let original = schedule.slots(on: day, calendar: calendar)
+    XCTAssertEqual(original.count, 2)
+    XCTAssertNotEqual(original[0].id, original[1].id)
+    schedule.additionalTimes?[0].hour = 19
+    let edited = schedule.slots(on: day, calendar: calendar)
+    XCTAssertEqual(original.map(\.id), edited.map(\.id))
+    XCTAssertNotEqual(original[1].scheduledAt, edited[1].scheduledAt)
+    schedule.additionalTimes?[0].hour = 9
+    XCTAssertFalse(schedule.isValid)
+  }
+
+  func testRoutinePauseEndDateAndSlotAmounts() throws {
+    let firstDay = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 25)))
+    let lastDay = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: firstDay))
+    let afterEnd = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: lastDay))
+    var schedule = RoutineSchedule(
+      name: "Routine", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1,
+      additionalTimes: [.init(hour: 18, minute: 0, productAmount: 2)],
+      endDay: .init(lastDay, calendar: calendar))
+    let first = schedule.slots(on: firstDay, calendar: calendar)
+    XCTAssertEqual(first.map(schedule.amount(for:)), [1, 2])
+    XCTAssertEqual(schedule.slots(on: lastDay, calendar: calendar).count, 2)
+    XCTAssertTrue(schedule.slots(on: afterEnd, calendar: calendar).isEmpty)
+
+    let noon = try XCTUnwrap(calendar.date(bySettingHour: 12, minute: 0, second: 0, of: firstDay))
+    schedule.setPaused(true, at: noon)
+    XCTAssertEqual(schedule.slots(on: firstDay, calendar: calendar).map(\.id), [first[0].id])
+    XCTAssertTrue(schedule.slots(on: lastDay, calendar: calendar).isEmpty)
+    schedule.setPaused(false, at: lastDay)
+    XCTAssertEqual(schedule.slots(on: firstDay, calendar: calendar).map(\.id), [first[0].id])
+    XCTAssertEqual(schedule.slots(on: lastDay, calendar: calendar).count, 2)
+
+    let copy = schedule.duplicate(at: firstDay, calendar: calendar)
+    XCTAssertNotEqual(copy.id, schedule.id)
+    XCTAssertNotEqual(copy.additionalTimes?.first?.id, schedule.additionalTimes?.first?.id)
+    XCTAssertEqual(copy.slots(on: firstDay, calendar: calendar).map(copy.amount(for:)), [1, 2])
+  }
+
+  func testMonthlyRoutineClampsToLastDayAndAppearsInQuickPreview() throws {
+    let january = try XCTUnwrap(calendar.date(from: DateComponents(year: 2028, month: 1, day: 31)))
+    let schedule = RoutineSchedule(
+      name: "Monthly", hour: 9, minute: 0, anchorDay: .init(january, calendar: calendar), monthlyDay: 31)
+    let upcoming = schedule.nextSlots(after: january, calendar: calendar, limit: 3)
+    XCTAssertEqual(upcoming.map { calendar.component(.day, from: $0.scheduledAt) }, [31, 29, 31])
+    XCTAssertEqual(upcoming.map { calendar.component(.month, from: $0.scheduledAt) }, [1, 2, 3])
+    let february = try XCTUnwrap(calendar.date(from: DateComponents(year: 2028, month: 2, day: 1)))
+    XCTAssertTrue(schedule.slots(on: february, calendar: calendar).isEmpty)
+
+    let persistence = PersistenceController(inMemory: true)
+    let record = RoutineRecord(context: persistence.viewContext)
+    record.id = schedule.id
+    record.scheduleData = try JSONEncoder().encode(schedule)
+    try persistence.viewContext.save()
+    let snapshot = try RoutineQuickLogging.snapshot(in: persistence, at: february, calendar: calendar)
+    XCTAssertEqual(snapshot.next(at: february)?.scheduledAt, upcoming[1].scheduledAt)
+  }
+
+  func testWeekdayRestrictionDoesNotResetTheInterval() throws {
+    let monday = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 23)))
+    let friday = try XCTUnwrap(calendar.date(byAdding: .day, value: 4, to: monday))
+    var schedule = RoutineSchedule(
+      name: "Every other day", hour: 9, minute: 0, weekdays: [6], intervalDays: 2,
+      anchorDay: .init(monday, calendar: calendar))
+    let upcoming = schedule.nextSlots(after: monday, calendar: calendar, limit: 2)
+    XCTAssertEqual(upcoming.map { calendar.component(.weekday, from: $0.scheduledAt) }, [6, 6])
+    XCTAssertEqual(calendar.startOfDay(for: try XCTUnwrap(upcoming.first).scheduledAt), friday)
+    XCTAssertEqual(try XCTUnwrap(upcoming.last).scheduledAt.timeIntervalSince(try XCTUnwrap(upcoming.first).scheduledAt),
+                   14 * 24 * 60 * 60)
+    let tuesday = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: monday))
+    let copy = schedule.duplicate(at: tuesday, calendar: calendar)
+    XCTAssertEqual(copy.nextSlots(after: tuesday, calendar: calendar, limit: 2).map(\.scheduledAt),
+                   upcoming.map(\.scheduledAt))
+    schedule.intervalDays = 14
+    XCTAssertFalse(schedule.intervalCanReachSelectedDays(calendar: calendar))
+    XCTAssertTrue(schedule.nextSlots(after: monday, calendar: calendar, limit: 2).isEmpty)
+    schedule.intervalDays = 0
+    XCTAssertTrue(schedule.nextSlots(after: monday, calendar: calendar, limit: 2).isEmpty)
+  }
+
+  func testEditsKeepHistoricalCadenceAndAmountWithoutExposingAChangedProduct() throws {
+    let first = try XCTUnwrap(calendar.date(from: DateComponents(year: 2026, month: 11, day: 23)))
+    let second = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: first))
+    let third = try XCTUnwrap(calendar.date(byAdding: .day, value: 1, to: second))
+    let original = RoutineSchedule(name: "Example", hour: 9, minute: 0, productKind: .customUnit, productAmount: 1)
+    var schedule = original
+    schedule.hour = 12
+    schedule.productAmount = 2
+    schedule.preserveSchedule(original, productChanged: false, at: second, calendar: calendar)
+
+    let historicalSlot = try XCTUnwrap(schedule.slots(on: first, calendar: calendar).first)
+    XCTAssertEqual(historicalSlot, original.slots(on: first, calendar: calendar).first)
+    XCTAssertEqual(schedule.amount(for: historicalSlot, calendar: calendar), 1)
+    XCTAssertTrue(try XCTUnwrap(schedule.revision(on: first, calendar: calendar)).preservesProduct)
+    XCTAssertEqual(calendar.component(.hour, from: try XCTUnwrap(schedule.slots(on: second, calendar: calendar).first).scheduledAt), 12)
+
+    let previous = schedule
+    schedule.preserveSchedule(previous, productChanged: true, at: third, calendar: calendar)
+    XCTAssertFalse(try XCTUnwrap(schedule.revision(on: first, calendar: calendar)).preservesProduct)
+    XCTAssertFalse(try XCTUnwrap(schedule.revision(on: second, calendar: calendar)).preservesProduct)
+    XCTAssertEqual(try JSONDecoder().decode(RoutineSchedule.self, from: JSONEncoder().encode(schedule)), schedule)
+  }
+
+  func testAsNeededHasNoScheduledRemindersAndEachManualReviewHasItsOwnIdentity() throws {
+    let now = Date.now
+    let schedule = RoutineSchedule(name: "Manual", hour: 9, minute: 0, asNeeded: true)
+    let first = try XCTUnwrap(schedule.manualSlot(at: now, calendar: calendar))
+    let second = try XCTUnwrap(schedule.manualSlot(at: now, calendar: calendar))
+    XCTAssertTrue(first.isManual)
+    XCTAssertNotEqual(first.id, second.id)
+    XCTAssertTrue(schedule.slots(on: now, calendar: calendar).isEmpty)
+    XCTAssertTrue(schedule.nextSlots(after: now, calendar: calendar, limit: 3).isEmpty)
+
+    let context = PersistenceController(inMemory: true).viewContext
+    let record = RoutineRecord(context: context)
+    record.id = schedule.id
+    record.scheduleData = try JSONEncoder().encode(schedule)
+    let ingestion = Ingestion(context: context)
+    ingestion.routineOccurrence = try XCTUnwrap(RoutineSchedules.stageLog(for: first, in: context, calendar: calendar))
+    XCTAssertNil(try RoutineSchedules.stageLog(for: first, in: context, calendar: calendar))
+    XCTAssertNotNil(try RoutineSchedules.stageLog(for: second, in: context, calendar: calendar))
+  }
+}

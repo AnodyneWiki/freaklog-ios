@@ -17,6 +17,7 @@ enum GlobalNavigationDestination: Hashable {
     // journal tab mainly
     case unifiedSearch
     case calendar
+    case dueToday
     case experience(experience: Experience)
     case dynamicExperience(ingestions: [Ingestion])
     case chooseExperience(experiences: [Experience])

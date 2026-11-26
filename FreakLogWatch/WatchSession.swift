@@ -21,6 +21,9 @@ final class WatchSession: NSObject, ObservableObject {
   @Published private(set) var rejections: [WatchRequestOutbox.Rejection] = []
   @Published private(set) var latestAcknowledgement: WatchAcknowledgement?
   @Published private(set) var queueError: String?
+  @Published private(set) var routineSnapshot: RoutineQuickSnapshot = .empty
+  @Published private(set) var pendingRoutineIDs: Set<UUID> = []
+  @Published private(set) var completedRoutineIDs: Set<UUID> = []
 
   func activate() {
     loadOutbox()
@@ -48,6 +51,12 @@ final class WatchSession: NSObject, ObservableObject {
 
   func undo(_ request: WatchLogRequest) async -> LogOutcome {
     await submit(.undo(WatchUndoRequest(log: request)))
+  }
+
+  func markTaken(_ action: RoutineQuickAction) async -> LogOutcome {
+    let request = RoutineTakenRequest(action: action, recordedAt: .now)
+    guard !pendingRoutineIDs.contains(request.id) else { return .queued }
+    return await submit(.routineTaken(request))
   }
 
   func dismissRejection(_ id: UUID) {
@@ -85,7 +94,7 @@ final class WatchSession: NSObject, ObservableObject {
   private static let retryInterval: TimeInterval = 15
 
   private static func queuedOutcome(for kind: WatchRequestKind) -> LogOutcome {
-    kind == .log ? .queued : .undoQueued
+    kind == .undo ? .undoQueued : .queued
   }
 
   private func loadOutbox() {
@@ -174,6 +183,9 @@ final class WatchSession: NSObject, ObservableObject {
 
     do {
       guard try outbox?.acknowledge(acknowledgement) == true else { return nil }
+      if acknowledgement.kind == .routineTaken, acknowledgement.status == .saved {
+        completedRoutineIDs.insert(acknowledgement.id)
+      }
       lastTransfer[acknowledgement.id] = nil
       cancelTransfers(id: acknowledgement.id, kind: acknowledgement.kind)
       updateQueue()
@@ -214,6 +226,10 @@ final class WatchSession: NSObject, ObservableObject {
   }
 
   private func receiveSuggestions(_ context: [String: Any]) {
+    if let snapshot = WatchQuickLog.decode(RoutineQuickSnapshot.self, from: context[WatchQuickLog.routineSnapshotKey]) {
+      routineSnapshot = snapshot
+      completedRoutineIDs.formIntersection(snapshot.previews.compactMap { $0.action?.slot.receiptID })
+    }
     guard let suggestions = WatchQuickLog.decode([WatchSuggestion].self, from: context[WatchQuickLog.suggestionsKey])
     else { return }
     self.suggestions = suggestions
@@ -223,6 +239,7 @@ final class WatchSession: NSObject, ObservableObject {
   private func updateQueue() {
     queuedCount = outbox?.pending.count ?? 0
     rejections = outbox?.rejections ?? []
+    pendingRoutineIDs = Set(outbox?.pending.values.filter { $0.kind == .routineTaken }.map(\.id) ?? [])
     queueError = nil
     if queuedCount == 0 {
       retryTask?.cancel()
@@ -256,6 +273,7 @@ final class WatchSession: NSObject, ObservableObject {
   private static func request(in info: [String: Any]) -> WatchRequest? {
     WatchRequest(kind: .log, payload: info[WatchQuickLog.logKey])
       ?? WatchRequest(kind: .undo, payload: info[WatchQuickLog.undoKey])
+      ?? WatchRequest(kind: .routineTaken, payload: info[WatchQuickLog.routineTakenKey])
   }
 
   private static func requestID(in info: [String: Any], kind: WatchRequestKind) -> UUID? {

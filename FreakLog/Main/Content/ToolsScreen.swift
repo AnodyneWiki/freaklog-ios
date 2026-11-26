@@ -18,6 +18,11 @@ struct ToolsScreen: View {
         List {
             Section {
                 NavigationLink {
+                    RoutinesScreen()
+                } label: {
+                    Label("Routines", systemImage: "calendar.badge.clock")
+                }
+                NavigationLink {
                     InventoryScreen()
                 } label: {
                     Label("Inventory", systemImage: "archivebox")

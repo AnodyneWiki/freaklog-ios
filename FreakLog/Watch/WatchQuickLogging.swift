@@ -190,6 +190,7 @@ enum WatchQuickLogging {
         ingestion.formulation = formulation
         ingestion.formulationAmount = request.dose.amount ?? 0
       }
+      ingestion.isHiddenInTimeline = part.isHiddenInTimeline
       ingestion.dose = part.dose.amount ?? 0
       ingestion.units = part.units
       ingestion.isEstimate = part.dose.isEstimate
@@ -347,7 +348,7 @@ enum WatchQuickLogging {
     receipt.record = try WatchQuickLog.encode(record)
   }
 
-  private typealias LogPart = (substanceName: String, route: String, units: String, dose: WatchDose)
+  private typealias LogPart = (substanceName: String, route: String, units: String, dose: WatchDose, isHiddenInTimeline: Bool)
 
   private static func validatedParts(for request: WatchLogRequest) throws -> [LogPart] {
     let suggestion = request.suggestion
@@ -363,9 +364,9 @@ enum WatchQuickLogging {
             formulation.components.allSatisfy({ isValid($0.dose) }) else {
         throw WatchQuickLogError.invalidRequest
       }
-      parts = formulation.components.map { ($0.substanceName, $0.route, $0.units, $0.dose(for: amount)) }
+      parts = formulation.components.map { ($0.substanceName, $0.route, $0.units, $0.dose(for: amount), $0.isHiddenInTimeline == true) }
     } else {
-      parts = [(suggestion.substanceName, suggestion.route, suggestion.units, request.dose)]
+      parts = [(suggestion.substanceName, suggestion.route, suggestion.units, request.dose, false)]
     }
     guard parts.allSatisfy({
       !$0.substanceName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -451,7 +452,8 @@ enum WatchQuickLogging {
           dose: WatchDose(
             amount: component.doseUnwrapped,
             isEstimate: component.isEstimate,
-            standardDeviation: component.estimatedDoseStandardDeviationUnwrapped))
+            standardDeviation: component.estimatedDoseStandardDeviationUnwrapped),
+          isHiddenInTimeline: component.isHiddenInTimeline ? true : nil)
       }))
   }
 
