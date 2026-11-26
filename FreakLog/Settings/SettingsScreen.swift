@@ -82,6 +82,11 @@ struct SettingsContent: View {
                 } label: {
                     Label("Help", systemImage: "questionmark.circle")
                 }
+                NavigationLink {
+                    WhatsNewScreen(isEyeOpen: isEyeOpen)
+                } label: {
+                    Label("What’s New", systemImage: "sparkles")
+                }
             }
             if isEyeOpen {
                 Section("Communication") {
@@ -190,6 +195,186 @@ private struct JournalHelpScreen: View {
         }
         .navigationTitle("Help")
     }
+}
+
+private struct WhatsNewScreen: View {
+    let isEyeOpen: Bool
+    @Environment(\.locale) private var locale
+
+    var body: some View {
+        let installedVersion = getCurrentAppVersion()
+        let previous = Self.releases.filter {
+            $0.version.compare(installedVersion, options: .numeric) == .orderedAscending
+                && !visibleHighlights(for: $0).isEmpty
+        }
+
+        List {
+            if let current = Self.releases.first(where: { $0.version == installedVersion }) {
+                if visibleHighlights(for: current).isEmpty {
+                    Section {
+                        releaseLabel(for: current)
+                    }
+                } else {
+                    Section {
+                        highlights(for: current)
+                    } header: {
+                        releaseLabel(for: current)
+                    }
+                }
+            }
+            if !previous.isEmpty {
+                Section("Version History") {
+                    ForEach(previous) { release in
+                        DisclosureGroup {
+                            highlights(for: release)
+                        } label: {
+                            releaseLabel(for: release)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle("What’s New")
+    }
+
+    private func releaseLabel(for release: Release) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Version \(release.version)")
+            Text(release.date, format: Date.FormatStyle(
+                date: .abbreviated, time: .omitted, locale: locale, timeZone: Release.dateTimeZone
+            ))
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .textCase(nil)
+        }
+        .accessibilityElement(children: .combine)
+    }
+
+    private func visibleHighlights(for release: Release) -> [Highlight] {
+        release.highlights.filter {
+            (!$0.requiresOpenEye || isEyeOpen)
+                && (!$0.requiresAlternateIcons || UIApplication.shared.supportsAlternateIcons)
+        }
+    }
+
+    private func highlights(for release: Release) -> some View {
+        let highlights = visibleHighlights(for: release)
+        return ForEach(highlights.indices, id: \.self) { index in
+            let highlight = highlights[index]
+            VStack(alignment: .leading, spacing: 4) {
+                Text(highlight.title)
+                    .font(.headline)
+                Text(highlight.description)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            .accessibilityElement(children: .combine)
+        }
+    }
+
+    private struct Release: Identifiable {
+        static let dateTimeZone = TimeZone(secondsFromGMT: 0)!
+
+        let version: String
+        let date: Date
+        let highlights: [Highlight]
+
+        var id: String { version }
+
+        init(version: String, year: Int, month: Int, day: Int, highlights: [Highlight]) {
+            var calendar = Calendar(identifier: .gregorian)
+            // Preserve the commit's calendar date across time zones.
+            calendar.timeZone = Self.dateTimeZone
+            self.version = version
+            self.date = calendar.date(from: DateComponents(year: year, month: month, day: day))!
+            self.highlights = highlights
+        }
+    }
+
+    private struct Highlight {
+        let title: LocalizedStringKey
+        let description: LocalizedStringKey
+        var requiresOpenEye = false
+        var requiresAlternateIcons = false
+    }
+
+    // Highlights follow the release that first included them, dated by its version bump.
+    private static let releases: [Release] = [
+        .init(version: "1.5.3", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Journal Assistant",
+                  description: "Ask about your journal and include AnodyneWiki contributor annotations in reference lookups.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.5.2", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Wikipedia Lookups",
+                  description: "The Assistant can look up established facts on Wikipedia when you enable online lookups.",
+                  requiresOpenEye: true),
+            .init(title: "Community and Issue Reporting",
+                  description: "Find community and issue-reporting links together in Settings.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.5.1", year: 2026, month: 11, day: 25, highlights: [
+            .init(title: "Optional Web Search",
+                  description: "Search the web directly from Assistant chat with supported models.",
+                  requiresOpenEye: true),
+            .init(title: "Assistant Model Backups",
+                  description: "Full journal backups include your Assistant model settings.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.5.0", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Journal Backups",
+                  description: "Export and restore a FreakLog backup with your journal and settings."),
+            .init(title: "Journal Assistant",
+                  description: "Choose a model, ask about your journal, and summarize a session.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.4.2", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Custom Colors",
+                  description: "Choose a swatch, use the system color picker, or enter a hex code. Suggestions are picked to stand apart."),
+        ]),
+        .init(version: "1.4.1", year: 2026, month: 11, day: 24, highlights: [
+            .init(title: "Apple Watch", description: "Quickly log from your watch."),
+            .init(title: "Timed Notes",
+                  description: "See timed notes alongside entries and add one by holding the Add button."),
+            .init(title: "Formulations",
+                  description: "Save combinations and log them together. Recently used formulations appear in suggestions.",
+                  requiresOpenEye: true),
+            .init(title: "Journal Settings", description: "Find journal and timeline display controls together in Settings."),
+        ]),
+        .init(version: "1.3.1", year: 2026, month: 11, day: 22, highlights: [
+            .init(title: "Journal Navigation",
+                  description: "Use the same toolbar and filters in both journal tabs. Switching views keeps your default tab."),
+            .init(title: "Custom Substance Details",
+                  description: "Set display names and categories and edit reference data for individual routes.",
+                  requiresOpenEye: true),
+            .init(title: "AnodyneWiki",
+                  description: "Compare reference sources, browse notes and reports, and choose your preferred instance.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.2", year: 2025, month: 9, day: 14, highlights: [
+            .init(title: "FreakLog",
+                  description: "The journal took on its FreakLog name, with iCloud sync and a choice of which tabs appear."),
+            .init(title: "All Ingestions",
+                  description: "Browse individual entries, see their timeline, and open the related experience."),
+            .init(title: "Journal Imports", description: "Added support for version 12 journal exports."),
+            .init(title: "Logging Details",
+                  description: "Record an administration site or location with each ingestion.",
+                  requiresOpenEye: true),
+            .init(title: "Webhooks and Leaderboards",
+                  description: "Configure multiple webhook destinations and opt in to leaderboard sync.",
+                  requiresOpenEye: true),
+        ]),
+        .init(version: "1.1", year: 2025, month: 9, day: 10, highlights: [
+            .init(title: "Journal Lock", description: "Keep journal content hidden while the app is locked."),
+            .init(title: "Journal Exports", description: "Export filenames use sortable dates and times."),
+        ]),
+        .init(version: "1.0", year: 2025, month: 9, day: 6, highlights: [
+            .init(title: "Welcome and Privacy",
+                  description: "Added a welcome screen, privacy information, and help for the journal."),
+            .init(title: "Live Activity",
+                  description: "Fixed a crash when the device restarted while a Live Activity was running."),
+        ]),
+    ]
 }
 
 private struct JournalDataSettings: View {
