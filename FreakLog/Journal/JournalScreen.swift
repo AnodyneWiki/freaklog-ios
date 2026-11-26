@@ -2,8 +2,6 @@ import SwiftUI
 
 struct JournalScreen: View {
 
-    @Binding var searchText: String
-    @Binding var isSearchPresented: Bool
     @Binding var isFavoriteFilterEnabled: Bool
 
     @State private var journalWidth: CGFloat = 0
@@ -15,8 +13,6 @@ struct JournalScreen: View {
     @AppStorage(PersistenceController.defaultJournalViewKey) private var defaultTab: JournalViewOption = .allIngestions
     // The tab switched to in the journal, nil while on the default. It doesn't change the default tab setting.
     @State private var switchedTab: JournalViewOption?
-    // The experience list builds a new fetch for each search, so it only follows the text once typing pauses
-    @State private var experienceSearchText = ""
     @State private var isAddingTimedNote = false
     @State private var isShowingAssistant = false
     @ObservedObject private var tabs = TabManager.shared
@@ -33,38 +29,36 @@ struct JournalScreen: View {
 
     var body: some View {
         FabPosition(alignment: fabButtonPosition.alignment) {
-            if !isSearchPresented {
-                VStack(spacing: 12) {
-                    if isAssistantEnabled {
-                        Button {
-                            isShowingAssistant = true
-                        } label: {
-                            Label("Assistant", systemImage: "text.bubble")
-                                .labelStyle(FabLabelStyle(isSecondary: true))
-                        }
-                        .buttonStyle(.plain)
+            VStack(spacing: 12) {
+                if isAssistantEnabled {
+                    Button {
+                        isShowingAssistant = true
+                    } label: {
+                        Label("Assistant", systemImage: "text.bubble")
+                            .labelStyle(FabLabelStyle(isSecondary: true))
                     }
-                    AddFabButton {
-                        Navigator.shared.showAddIngestionFullScreenCover()
-                    } addTimedNote: {
-                        isAddingTimedNote = true
-                    }
+                    .buttonStyle(.plain)
+                }
+                AddFabButton {
+                    Navigator.shared.showAddIngestionFullScreenCover()
+                } addTimedNote: {
+                    isAddingTimedNote = true
                 }
             }
         } screen: {
             Group {
                 if selectedTab == .experiences {
                     ExperiencesList(
-                        searchText: experienceSearchText,
+                        searchText: "",
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
                         timeDisplayStyle: timeDisplayStyle
                     )
                 } else {
                     AllIngestionsView(
-                        searchText: searchText,
+                        searchText: "",
                         isFavoriteFilterEnabled: isFavoriteFilterEnabled,
                         timeDisplayStyle: timeDisplayStyle,
-                        showsTimeline: !isSearchPresented && !isFavoriteFilterEnabled
+                        showsTimeline: !isFavoriteFilterEnabled
                     )
                 }
             }
@@ -80,7 +74,7 @@ struct JournalScreen: View {
                         .frame(minHeight: 44)
                         .background(.bar)
                     }
-                    if !showsDirectActions, isSearchPresented || isFavoriteFilterEnabled {
+                    if !showsDirectActions, isFavoriteFilterEnabled {
                         HStack {
                             favoriteButton
                                 .labelStyle(.titleAndIcon)
@@ -92,26 +86,6 @@ struct JournalScreen: View {
                     }
                 }
             }
-            .task(id: searchText) {
-                if !searchText.isEmpty {
-                    try? await Task.sleep(nanoseconds: 300_000_000)
-                    guard !Task.isCancelled else { return }
-                }
-                experienceSearchText = searchText
-            }
-            .modify {
-                let prompt = selectedTab == .experiences ? "Search experiences" : "Search ingestions"
-                if isSearchPresented {
-                    if #available(iOS 17.0, *) {
-                        $0.searchable(text: $searchText, isPresented: $isSearchPresented, placement: .automatic, prompt: prompt)
-                    } else {
-                        $0.searchable(text: $searchText, placement: .automatic, prompt: prompt)
-                    }
-                } else {
-                    $0
-                }
-            }
-            .disableAutocorrection(true)
         }
         .background {
             GeometryReader { geometry in
@@ -143,9 +117,7 @@ struct JournalScreen: View {
 
             ToolbarItem(placement: .navigationBarLeading) {
                 HStack(spacing: 4) {
-                    Button {
-                        isSearchPresented = true
-                    } label: {
+                    NavigationLink(value: GlobalNavigationDestination.unifiedSearch) {
                         Label("Search", systemImage: "magnifyingglass")
                     }
                     if showsDirectActions { favoriteButton }

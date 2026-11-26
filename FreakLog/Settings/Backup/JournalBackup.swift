@@ -55,6 +55,7 @@ struct JournalBackup: Codable {
     PersistenceController.webhookIsHyperlinkedKey,
     PersistenceController.webhookSubstanceInfoUrlKey,
     PersistenceController.isAnodyneAutoLoadEnabledKey,
+    PersistenceController.showsAnodyneUserNotesKey,
     PersistenceController.doseSourceKey,
     PersistenceController.anodyneInstanceURLKey,
     PersistenceController.defaultJournalViewKey,

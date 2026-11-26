@@ -13,11 +13,16 @@ final class AnodyneLoadModel: ObservableObject {
     case failed
   }
 
-  @Published private(set) var phase = Phase.idle
+  @Published private var loadedPhase = Phase.idle
   // What AnodyneWiki's users wrote about the substance on their userpages
   @Published private(set) var userNotes: [AnodyneUserNote] = []
   let name: String
   let otherNames: [String]
+  private var context: AnodyneClient.RequestContext?
+
+  var phase: Phase {
+    context?.baseURL == AnodyneSubstance.baseURL ? loadedPhase : .idle
+  }
 
   init(name: String, otherNames: [String] = []) {
     self.name = name
@@ -29,35 +34,83 @@ final class AnodyneLoadModel: ObservableObject {
   }
 
   func start(loadingIfNotCached: Bool = AnodyneClient.isAutomaticLoadingEnabled) async {
+    guard let context = await prepareContext() else { return }
+    if case .found = phase {
+      await loadUserNotes(online: loadingIfNotCached, using: context)
+      return
+    }
     guard phase == .idle else { return }
-    if let cached = await AnodyneClient.shared.cachedLookup(for: name) {
-      phase = Self.makePhase(for: cached)
-      await loadUserNotes(online: loadingIfNotCached)
+    let cached = await AnodyneClient.shared.cachedLookup(for: name, using: context)
+    guard await canPresent(context), phase == .idle else { return }
+    if let cached, cached != .notFound || otherNames.isEmpty {
+      loadedPhase = Self.makePhase(for: cached)
+      await loadUserNotes(online: loadingIfNotCached, using: context)
     } else if loadingIfNotCached {
-      await load()
+      await load(using: context)
     }
   }
 
   func load() async {
-    phase = .loading
+    guard let context = await prepareContext(), phase != .loading else { return }
+    await load(using: context)
+  }
+
+  private func load(using context: AnodyneClient.RequestContext) async {
+    loadedPhase = .loading
     do {
-      phase = Self.makePhase(for: try await AnodyneClient.shared.lookup(name, otherNames: otherNames))
+      let lookup = try await AnodyneClient.shared.lookup(name, otherNames: otherNames, using: context)
+      guard await canPresent(context) else { return }
+      loadedPhase = Self.makePhase(for: lookup)
     } catch {
-      phase = .failed
+      guard await canPresent(context) else { return }
+      loadedPhase = .failed
     }
-    await loadUserNotes()
+    await loadUserNotes(online: true, using: context)
+  }
+
+  private func prepareContext() async -> AnodyneClient.RequestContext? {
+    let current = await AnodyneClient.shared.requestContext()
+    guard !Task.isCancelled, current.baseURL == AnodyneSubstance.baseURL else { return nil }
+    if context != current {
+      context = current
+      loadedPhase = .idle
+      userNotes = []
+    }
+    return current
+  }
+
+  private func canPresent(_ request: AnodyneClient.RequestContext) async -> Bool {
+    let current = await AnodyneClient.shared.isCurrent(request)
+    guard context == request else { return false }
+    guard current, request.baseURL == AnodyneSubstance.baseURL, !Task.isCancelled else {
+      loadedPhase = .idle
+      userNotes = []
+      return false
+    }
+    return true
   }
 
   // Userpages name substances by their AnodyneWiki title, sometimes by an abbreviation. Offline, the
   // notes saved last are shown, however old.
-  private func loadUserNotes(online: Bool = true) async {
+  private func loadUserNotes(online: Bool, using context: AnodyneClient.RequestContext) async {
+    guard Self.showsUserNotes else {
+      userNotes = []
+      return
+    }
     guard let substance else { return }
     let names = [substance.title, name] + substance.abbreviations
-    if online {
-      userNotes = (try? await AnodyneClient.shared.userNotes(matching: names)) ?? []
+    let notes: [AnodyneUserNote]
+    if online, let refreshed = try? await AnodyneClient.shared.userNotes(matching: names, using: context) {
+      notes = refreshed
     } else {
-      userNotes = await AnodyneClient.shared.cachedUserNotes(matching: names)
+      notes = await AnodyneClient.shared.cachedUserNotes(matching: names, using: context)
     }
+    guard await canPresent(context) else { return }
+    userNotes = Self.showsUserNotes ? notes : []
+  }
+
+  private static var showsUserNotes: Bool {
+    UserDefaults.standard.object(forKey: PersistenceController.showsAnodyneUserNotesKey) as? Bool ?? true
   }
 
   private static func makePhase(for lookup: AnodyneClient.Lookup) -> Phase {
@@ -68,26 +121,48 @@ final class AnodyneLoadModel: ObservableObject {
   }
 }
 
-// Offers to load AnodyneWiki's data while it isn't there. Once loaded, the data shows in the
-// screen's topics, so this section disappears.
-struct AnodyneLoadSection: View {
+struct AnodyneSourcesMenu: View {
+  @ObservedObject var model: AnodyneLoadModel
+  var psychonautWikiURL: URL?
+
+  var body: some View {
+    Menu {
+      if let psychonautWikiURL {
+        Button {
+          Navigator.shared.openInCurrentTab(.webView(articleURL: psychonautWikiURL))
+        } label: {
+          Label("PsychonautWiki Article", systemImage: "doc.text")
+        }
+      }
+      switch model.phase {
+      case .idle, .failed:
+        Button {
+          Task { await model.load() }
+        } label: {
+          Label(model.phase == .failed ? "Retry AnodyneWiki" : "Load AnodyneWiki", systemImage: "arrow.down.circle")
+        }
+      case .loading:
+        Text("Loading AnodyneWiki…")
+      case .notFound:
+        Text("No AnodyneWiki Page")
+      case let .found(substance):
+        Button {
+          Navigator.shared.openInCurrentTab(.webView(articleURL: substance.pageURL))
+        } label: {
+          Label("AnodyneWiki Page", systemImage: "books.vertical")
+        }
+      }
+    } label: {
+      Label("Sources", systemImage: "books.vertical")
+    }
+  }
+}
+
+struct AnodyneLoadStatus: View {
   @ObservedObject var model: AnodyneLoadModel
 
   var body: some View {
     switch model.phase {
-    case .idle:
-      Section {
-        Button {
-          Task { await model.load() }
-        } label: {
-          Label("More from AnodyneWiki", systemImage: "books.vertical")
-        }
-      } footer: {
-        Text(
-          "Adds logged doses, legal status, reagent tests, experience reports and more from AnodyneWiki. "
-            + "To load it on every substance page, turn on Load Automatically in Settings > AnodyneWiki."
-        )
-      }
     case .loading:
       Section {
         HStack(spacing: 12) {
@@ -98,16 +173,10 @@ struct AnodyneLoadSection: View {
       }
     case .failed:
       Section {
-        HStack {
-          Text("AnodyneWiki couldn't be loaded.")
-            .foregroundStyle(.secondary)
-          Spacer()
-          Button("Try Again") {
-            Task { await model.load() }
-          }
-        }
+        Text("AnodyneWiki couldn't be loaded.")
+          .foregroundStyle(.secondary)
       }
-    case .found, .notFound:
+    case .idle, .found, .notFound:
       EmptyView()
     }
   }
@@ -474,12 +543,14 @@ struct AnodynePharmacologySection: View {
 struct AnodyneReportsSection: View {
   let anodyne: AnodyneSubstance
   var userNotes: [AnodyneUserNote] = []
+  @AppStorage(PersistenceController.showsAnodyneUserNotesKey) private var showsUserNotes = true
 
   // One row per source, so the page stays short however many reports there are
   var body: some View {
-    if !userNotes.isEmpty || !anodyne.erowidReports.isEmpty || !anodyne.redditReports.isEmpty {
+    let hasUserNotes = showsUserNotes && !userNotes.isEmpty
+    if hasUserNotes || !anodyne.erowidReports.isEmpty || !anodyne.redditReports.isEmpty {
       Section("Experience Reports") {
-        if !userNotes.isEmpty {
+        if hasUserNotes {
           NavigationLink(value: GlobalNavigationDestination.anodyneUserNotes(notes: userNotes)) {
             LabeledContent("AnodyneWiki User Notes", value: userNotes.count.formatted())
           }

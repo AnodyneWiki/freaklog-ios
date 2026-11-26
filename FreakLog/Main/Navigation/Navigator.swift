@@ -25,15 +25,9 @@ class Navigator: ObservableObject {
 
     @Published var isSubstanceSearchFocused = false
     @Published var substanceSearchText = ""
-    @Published var selectedCategories: [String] = []
+    @Published var substanceSearchScope = UnifiedSearchScope.library
 
-    @Published var isJournalSearchFocused = false
     @Published var isFavoriteFilterEnabled = false
-    @Published var journalSearchText = ""
-
-    func clearCategories() {
-        selectedCategories.removeAll()
-    }
 
     static func pathKeyPath(for tab: Tab) -> ReferenceWritableKeyPath<Navigator, NavigationPath> {
         switch tab {
@@ -45,26 +39,12 @@ class Navigator: ObservableObject {
         }
     }
 
-    // Tapping the selected tab again goes back one screen, or on the tab's root resets and focuses its search
+    // Preserve the navigation stack and search when reselecting a tab.
     @MainActor
     var binding: Binding<Tab> {
         Binding {
             self.selectedTab
         } set: { newValue in
-            if self.selectedTab == newValue {
-                let path = Self.pathKeyPath(for: newValue)
-                if !self[keyPath: path].isEmpty {
-                    self[keyPath: path].removeLast()
-                } else if newValue == .journal {
-                    self.journalSearchText = ""
-                    self.isFavoriteFilterEnabled = false
-                    self.isJournalSearchFocused = true
-                } else if newValue == .substances {
-                    self.substanceSearchText = ""
-                    self.clearCategories()
-                    self.isSubstanceSearchFocused = true
-                }
-            }
             self.selectedTab = newValue
         }
     }
@@ -87,10 +67,14 @@ class Navigator: ObservableObject {
 
     // The info page of a substance by its stored name, nil for a custom substance that no longer exists
     static func substanceInfoDestination(for substanceName: String) -> GlobalNavigationDestination? {
-        if let substance = SubstanceRepo.shared.getSubstance(name: substanceName) {
-            return .substance(substance: substance)
+        let bundled = SubstanceRepo.shared.getSubstance(name: substanceName)
+        if let bundled, bundled.usesWikiReferences {
+            return .substance(substance: bundled)
         }
-        return PersistenceController.shared.getCustomSubstance(name: substanceName).map { .customSubstance(customSubstance: $0) }
+        if let custom = PersistenceController.shared.getCustomSubstance(name: substanceName) {
+            return .customSubstance(customSubstance: custom)
+        }
+        return bundled.map { .substance(substance: $0) }
     }
 
     // Opens on top of the current tab, where the swipe or tap asking for it happened
@@ -103,8 +87,8 @@ class Navigator: ObservableObject {
         let isEyeOpen = UserDefaults.standard.bool(forKey: PersistenceController.isEyeOpenKey2)
         if isEyeOpen {
             substancesTabPath.removeLast(substancesTabPath.count)
-            clearCategories()
             substanceSearchText = ""
+            substanceSearchScope = .library
             isSubstanceSearchFocused = true
         }
     }

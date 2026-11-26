@@ -55,6 +55,27 @@ final class AnodyneTests: XCTestCase {
         XCTAssertTrue(amphetamine.effectGroups.contains { $0.name == "Physical Effects" && $0.effects.contains("Stimulation") })
     }
 
+    func testIndexClassFiltersCombineWithTextSearchAndPreservePrefixRanking() throws {
+        let entries = try [
+            ["Title": "Sample extract", "Classes": ["Plant"]],
+            ["Title": "First", "Abr": "Sample", "Classes": [" Extract ", "Plant"]],
+            ["Title": "Other sample", "Classes": ["extract"]],
+            ["Title": "Sample blend", "Classes": ["Blend"]],
+            ["Title": "Sample", "Classes": []],
+        ].map { try XCTUnwrap(AnodyneIndexEntry(apiJSON: $0)) }
+
+        XCTAssertEqual(AnodyneIndexEntry.classOptions(in: entries), ["Blend", "Extract", "Plant"])
+        XCTAssertEqual(
+            AnodyneIndexEntry.search(entries, text: " sample\n", classKeys: ["extract", "blend"]).map(\.title),
+            ["First", "Sample blend", "Other sample"]
+        )
+        XCTAssertEqual(
+            AnodyneIndexEntry.search(entries, text: "plant", classKeys: ["extract"]).map(\.title),
+            ["First"]
+        )
+        XCTAssertEqual(AnodyneIndexEntry.search(entries, text: "", classKeys: []), entries)
+    }
+
     func testRemovesWikiMarkup() throws {
         let json: [String: Any] = [
             "Title": "Methylhexanamine",
@@ -156,13 +177,13 @@ final class AnodyneTests: XCTestCase {
     }
 
     func testFallbackStoreFindsSubstancesByTheirAppName() throws {
-        let store = AnodyneFallbackStore()
-        store.clear()
+        let instance = AnodyneSubstance.defaultBaseURL
+        let store = AnodyneFallbackStore(cacheRoot: temporaryCacheRoot(), configuredInstance: { instance })
         let mdma = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
-        store.record(mdma, lookedUpAs: "MDMA")
+        store.record(mdma, lookedUpAs: "MDMA", from: instance)
         // The duration of action applies to every route
         XCTAssertEqual(store.duration(for: "MDMA", route: .insufflated)?.total, DurationRange(min: 3, max: 6, units: .hours))
-        store.record(AnodyneUserNote.notes(fromUserJSON: try fixture("userEmily")))
+        store.record(AnodyneUserNote.notes(fromUserJSON: try fixture("userEmily")), from: instance)
         XCTAssertNotNil(store.duration(for: "mdma", route: .oral))
         XCTAssertNil(store.duration(for: "LSD", route: .oral))
         // Doses come from the dose tiers per route
@@ -171,9 +192,26 @@ final class AnodyneTests: XCTestCase {
         XCTAssertEqual(store.routesWithData(for: "MDMA"), [.oral, .insufflated, .rectal])
     }
 
+    func testIdentityOnlyCatalogEntryDoesNotUseWikiFallbacks() throws {
+        let instance = AnodyneSubstance.defaultBaseURL
+        let store = AnodyneFallbackStore(cacheRoot: temporaryCacheRoot(), configuredInstance: { instance })
+        let substance = try XCTUnwrap(SubstanceRepo.shared.getSubstance(name: "Progesterone"))
+        XCTAssertEqual(substance.referenceSource, .fdaSubstanceRegistry)
+        XCTAssertEqual(substance.administrationRoutesUnwrapped, [.oral, .rectal])
+        XCTAssertNil(substance.getDose(for: .oral))
+        XCTAssertNil(substance.getDuration(for: .rectal))
+
+        // A stale alias from the cache must not become the route reference.
+        let cachedReference = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
+        store.record(cachedReference, lookedUpAs: "Progesterone", from: instance)
+        XCTAssertNil(store.dose(for: "Progesterone", route: .oral))
+        XCTAssertNil(store.duration(for: "progesterone", route: .oral))
+        XCTAssertTrue(store.routesWithData(for: "Progesterone").isEmpty)
+    }
+
     func testFallbackStoreMergesTimingsNotedUnderAnyAlias() throws {
-        let store = AnodyneFallbackStore()
-        store.clear()
+        let instance = AnodyneSubstance.defaultBaseURL
+        let store = AnodyneFallbackStore(cacheRoot: temporaryCacheRoot(), configuredInstance: { instance })
         let mdma = try XCTUnwrap(AnodyneSubstance(apiJSON: fixture("mdma")))
         XCTAssertEqual(mdma.title, "3,4-Methylenedioxymethamphetamine")
         // One user names it by its abbreviation, the other by its title; recorded before the substance is known
@@ -188,11 +226,233 @@ final class AnodyneTests: XCTestCase {
                 substanceName: mdma.title,
                 routes: [AnodyneUserNote.Route(name: "Oral", dosage: nil, onset: "40 min", comeup: nil, duration: nil)]
             ),
-        ])
-        store.record(mdma, lookedUpAs: "MDMA")
+        ], from: instance)
+        store.record(mdma, lookedUpAs: "MDMA", from: instance)
         XCTAssertEqual(store.duration(for: "MDMA", route: .oral)?.onset, DurationRange(min: 20, max: 40, units: .minutes))
         XCTAssertEqual(store.duration(for: mdma.title, route: .oral)?.onset, DurationRange(min: 20, max: 40, units: .minutes))
         XCTAssertEqual(store.routesWithTimings(for: "MDMA"), [.oral])
+    }
+
+    func testFailedUserNotesRefreshPreservesCachedNotesAndTimings() async throws {
+        let instance = AnodyneSubstance.defaultBaseURL
+        let root = temporaryCacheRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let files = AnodyneCacheFiles(root: root, instance: instance)
+        let previous = AnodyneUserNote(
+            user: "A",
+            substanceName: "Example",
+            routes: [.init(name: "Oral", dosage: nil, onset: "20 min", comeup: nil, duration: nil)]
+        )
+        let notes = try JSONSerialization.jsonObject(with: JSONEncoder().encode([previous]))
+        let cached = try JSONSerialization.data(withJSONObject: ["date": 0, "notes": notes])
+        try FileManager.default.createDirectory(at: files.directory, withIntermediateDirectories: true)
+        try cached.write(to: files.userNotes)
+
+        let fallback = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { instance })
+        let onset = DurationRange(min: 20, max: 20, units: .minutes)
+        XCTAssertEqual(fallback.duration(for: "Example", route: .oral)?.onset, onset)
+
+        let malformedIndex = AnodyneClient(cacheRoot: root, configuredInstance: { instance }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            let data = Data("{}".utf8)
+            return (data, URLResponse(url: url, mimeType: "application/json", expectedContentLength: data.count, textEncodingName: nil))
+        }
+        do {
+            _ = try await malformedIndex.userNotes(matching: ["Example"])
+            XCTFail("A response with no entries field must fail")
+        } catch let error as URLError {
+            XCTAssertEqual(error.code, .cannotParseResponse)
+        }
+        let savedNotes = await malformedIndex.cachedUserNotes(matching: ["Example"])
+        XCTAssertEqual(savedNotes, [previous])
+        XCTAssertEqual(try Data(contentsOf: files.userNotes), cached)
+        XCTAssertEqual(fallback.duration(for: "Example", route: .oral)?.onset, onset)
+
+        let malformedPage = AnodyneClient(cacheRoot: root, configuredInstance: { instance }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            let body = url.path.hasSuffix("/api/index/user")
+                ? #"{"Entries":[{"Title":"A"}]}"#
+                : #"{"Title":"A","TriedSubstances":{}}"#
+            let data = Data(body.utf8)
+            return (data, URLResponse(url: url, mimeType: "application/json", expectedContentLength: data.count, textEncodingName: nil))
+        }
+        let refreshed = try await malformedPage.userNotes(matching: ["Example"])
+        XCTAssertEqual(refreshed, [previous])
+        XCTAssertEqual(try Data(contentsOf: files.userNotes), cached)
+        XCTAssertEqual(fallback.duration(for: "Example", route: .oral)?.onset, onset)
+    }
+
+    func testCachedMissStillLooksUpNewAliases() async throws {
+        let instance = try XCTUnwrap(URL(string: "https://wiki.example.org"))
+        let root = temporaryCacheRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fallback = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { instance })
+        let client = AnodyneClient(cacheRoot: root, configuredInstance: { instance }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            let body: String
+            switch url.path {
+            case "/api/index/substance": body = #"{"Entries":[{"Title":"Alias"}]}"#
+            case "/api/substance/Alias": body = #"{"Title":"Alias"}"#
+            default: body = #"{"NotFound":true}"#
+            }
+            let data = Data(body.utf8)
+            return (data, URLResponse(url: url, mimeType: "application/json", expectedContentLength: data.count, textEncodingName: nil))
+        }
+
+        let initial = try await client.lookup("Primary")
+        XCTAssertEqual(initial, .notFound)
+        let resolved = try await client.lookup("Primary", otherNames: ["Alias"])
+        guard case let .found(substance) = resolved else {
+            return XCTFail("The alias should resolve after a cached miss")
+        }
+        XCTAssertEqual(substance.title, "Alias")
+        let cached = await client.cachedLookup(for: "Primary")
+        XCTAssertEqual(cached, resolved)
+    }
+
+    func testIndexRestoresCanonicalCapitalization() async throws {
+        let instance = try XCTUnwrap(URL(string: "https://wiki.example.org"))
+        let root = temporaryCacheRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fallback = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { instance })
+        let client = AnodyneClient(cacheRoot: root, configuredInstance: { instance }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            let body: String
+            switch url.path {
+            case "/api/index/substance": body = #"{"Entries":[{"Title":"Example"}]}"#
+            case "/api/substance/Example": body = #"{"Title":"Example"}"#
+            default: body = #"{"NotFound":true}"#
+            }
+            let data = Data(body.utf8)
+            return (data, URLResponse(url: url, mimeType: "application/json", expectedContentLength: data.count, textEncodingName: nil))
+        }
+
+        guard case let .found(substance) = try await client.lookup("example") else {
+            return XCTFail("The title from the index should be tried with its original capitalization")
+        }
+        XCTAssertEqual(substance.title, "Example")
+    }
+
+    func testInFlightLookupIsDiscardedEvenAfterSwitchingBack() async throws {
+        let first = try XCTUnwrap(URL(string: "https://wiki.example.org/first"))
+        let second = try XCTUnwrap(URL(string: "https://wiki.example.org/second"))
+        let settings = InstanceSettings(first)
+        let root = temporaryCacheRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fallback = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { settings.url })
+        let payload = try JSONSerialization.data(withJSONObject: fixture("mdma"))
+        let server = PausedResponse(payload: payload)
+        let client = AnodyneClient(cacheRoot: root, configuredInstance: { settings.url }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            return (await server.load(url), URLResponse(url: url, mimeType: "application/json", expectedContentLength: payload.count, textEncodingName: nil))
+        }
+
+        let pending = Task { try await client.lookup("MDMA") }
+        let requestedURL = await server.firstRequest()
+        XCTAssertEqual(requestedURL.absoluteString, first.absoluteString + "/api/substance/MDMA")
+        await client.applyInstanceChange { settings.url = second }
+        await client.applyInstanceChange { settings.url = first }
+        await server.release()
+
+        do {
+            _ = try await pending.value
+            XCTFail("A response from before the instance switch must be discarded")
+        } catch is CancellationError {
+        }
+        let cached = await client.cachedLookup(for: "MDMA")
+        XCTAssertNil(cached)
+        XCTAssertNil(fallback.dose(for: "MDMA", route: .oral))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: AnodyneCacheFiles(root: root, instance: first).directory.path))
+    }
+
+    @MainActor
+    func testBackupInstanceSwitchRefreshesDiskAndOfflineData() async throws {
+        let first = try XCTUnwrap(URL(string: "https://wiki.example.org/first"))
+        let second = try XCTUnwrap(URL(string: "https://wiki.example.org/second"))
+        let settings = InstanceSettings(first)
+        let root = temporaryCacheRoot()
+        defer { try? FileManager.default.removeItem(at: root) }
+        let fallback = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { settings.url })
+        let payload = try JSONSerialization.data(withJSONObject: fixture("mdma"))
+        let client = AnodyneClient(cacheRoot: root, configuredInstance: { settings.url }, fallbackStore: fallback) { request in
+            let url = try XCTUnwrap(request.url)
+            return (payload, URLResponse(url: url, mimeType: "application/json", expectedContentLength: payload.count, textEncodingName: nil))
+        }
+
+        let original = try await client.lookup("MDMA")
+        XCTAssertNotNil(fallback.dose(for: "MDMA", route: .oral))
+        let originalFiles = AnodyneCacheFiles(root: root, instance: first)
+        let newFiles = AnodyneCacheFiles(root: root, instance: second)
+        XCTAssertNotEqual(originalFiles.directory, newFiles.directory)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: originalFiles.lookupFile(for: "mdma").path))
+
+        let persistence = PersistenceController(inMemory: true)
+        var backup = try JournalBackup(context: persistence.viewContext, defaults: settings.defaults, appVersion: "test")
+        backup.settings[PersistenceController.anodyneInstanceURLKey] = .string(second.absoluteString)
+        let restored = backup
+        await client.applyInstanceChange { restored.restoreSettings(to: settings.defaults) }
+
+        XCTAssertEqual(settings.url, second)
+        let cached = await client.cachedLookup(for: "MDMA")
+        XCTAssertNil(cached)
+        XCTAssertNil(fallback.dose(for: "MDMA", route: .oral))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: originalFiles.directory.path))
+
+        let fresh = try await client.lookup("MDMA")
+        XCTAssertEqual(fresh, original)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: newFiles.lookupFile(for: "mdma").path))
+        let reloaded = AnodyneFallbackStore(cacheRoot: root, configuredInstance: { settings.url })
+        XCTAssertNotNil(reloaded.dose(for: "MDMA", route: .oral))
+    }
+
+    private func temporaryCacheRoot() -> URL {
+        URL.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+    }
+
+    private final class InstanceSettings: @unchecked Sendable {
+        private let suite = "AnodyneTests.\(UUID())"
+        let defaults: UserDefaults
+
+        init(_ url: URL) {
+            defaults = UserDefaults(suiteName: suite)!
+            self.url = url
+        }
+
+        deinit { defaults.removePersistentDomain(forName: suite) }
+
+        var url: URL {
+            get {
+                defaults.string(forKey: PersistenceController.anodyneInstanceURLKey)
+                    .flatMap(AnodyneSubstance.instanceURL(from:)) ?? AnodyneSubstance.defaultBaseURL
+            }
+            set { defaults.set(newValue.absoluteString, forKey: PersistenceController.anodyneInstanceURLKey) }
+        }
+    }
+
+    private actor PausedResponse {
+        let payload: Data
+        private var requestedURL: URL?
+        private var requestWaiter: CheckedContinuation<URL, Never>?
+        private var responseWaiter: CheckedContinuation<Data, Never>?
+
+        init(payload: Data) { self.payload = payload }
+
+        func load(_ url: URL) async -> Data {
+            requestedURL = url
+            requestWaiter?.resume(returning: url)
+            requestWaiter = nil
+            return await withCheckedContinuation { responseWaiter = $0 }
+        }
+
+        func firstRequest() async -> URL {
+            if let requestedURL { return requestedURL }
+            return await withCheckedContinuation { requestWaiter = $0 }
+        }
+
+        func release() {
+            responseWaiter?.resume(returning: payload)
+            responseWaiter = nil
+        }
     }
 
     func testReadsInstanceAddresses() {

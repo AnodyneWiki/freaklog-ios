@@ -156,8 +156,10 @@ extension AssistantToolbox {
     let limit = limits.maxTextCharacters
     return Self.success([
       "name": .string(persistence.displayName(for: name)),
-      "source": "PsychonautWiki data bundled with the app, with the user's own dose and duration changes",
-      "url": .string(substance.url.absoluteString),
+      "source": .string(substance.usesWikiReferences
+        ? "PsychonautWiki data bundled with the app, with the user's own dose and duration changes"
+        : substance.referenceSource.title + " identity record"),
+      "url": substance.url.map { .string($0.absoluteString) } ?? .null,
       "common_names": AssistantFormat.strings(Array(substance.commonNames.prefix(10))),
       "categories": AssistantFormat.strings(persistence.categories(for: name)),
       "summary": AssistantFormat.optionalText(substance.summary, limit: limit),
@@ -352,7 +354,10 @@ extension AssistantToolbox {
   // The index is downloaded whole and searched here, so the query never leaves the device
   private func searchAnodyneWiki(_ query: String) async throws -> JSONValue {
     guard !query.isEmpty else { return Self.error("'query' is required.") }
-    let entries = try await AnodyneClient.shared.indexEntries()
+    let client = AnodyneClient.shared
+    let request = await client.requestContext()
+    let entries = try await client.indexEntries(using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
     let matches = entries
       .filter { entry in
         entry.matches(query) || entry.title.localizedCaseInsensitiveContains(query)
@@ -360,7 +365,7 @@ extension AssistantToolbox {
       }
       .prefix(limits.defaultListLength)
     return Self.success([
-      "source": .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki"),
+      "source": .string(request.baseURL.host ?? "AnodyneWiki"),
       "matches": .array(matches.map { entry in
         .object([
           "title": .string(entry.title),
@@ -375,59 +380,71 @@ extension AssistantToolbox {
   // Userpages are fetched as a whole and filtered locally, so checking them also never leaks custom substance names.
   private func lookUpAnodyneWiki(_ query: String) async throws -> JSONValue {
     guard !query.isEmpty else { return Self.error("'substance' is required.") }
-    let entries = try await AnodyneClient.shared.indexEntries()
+    let client = AnodyneClient.shared
+    let request = await client.requestContext()
+    let entries = try await client.indexEntries(using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
     let pwName = storedSubstanceName(for: query).flatMap { SubstanceRepo.shared.getSubstance(name: $0)?.name }
     let entry = entries.first(where: { $0.matches(query) }) ?? pwName
       .flatMap { name in entries.first { $0.matches(name) } }
-    if let entry, case .found(let substance) = try await AnodyneClient.shared.lookup(entry.title) {
+    if let entry, case .found(let substance) = try await client.lookup(entry.title, using: request) {
       let noteNames = [substance.title, query] + substance.abbreviations + (pwName.map { [$0] } ?? [])
-      let userNotes = await loadAnodyneUserNotes(matching: noteNames)
+      let userNotes = await loadAnodyneUserNotes(matching: noteNames, using: request)
+      guard await client.isCurrent(request) else { throw CancellationError() }
       var page = Self.trimmed((try? JSONValue(encoding: substance)) ?? .null, textLimit: limits.maxTextCharacters * 2)
         .object ?? [:]
-      page["source"] = .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki")
-      page["url"] = .string(substance.pageURL.absoluteString)
-      Self.attachUserNotes(userNotes, to: &page, limits: limits)
+      page["source"] = .string(request.baseURL.host ?? "AnodyneWiki")
+      page["url"] = .string(AnodyneSubstance.pageURL(for: substance.title, at: request.baseURL).absoluteString)
+      Self.attachUserNotes(userNotes, to: &page, limits: limits, instance: request.baseURL)
       return Self.success(page)
     }
     let noteNames = [query] + (pwName.map { [$0] } ?? [])
-    let userNotes = await loadAnodyneUserNotes(matching: noteNames)
+    let userNotes = await loadAnodyneUserNotes(matching: noteNames, using: request)
+    guard await client.isCurrent(request) else { throw CancellationError() }
     guard !userNotes.isEmpty else {
       let missing = entry?.title ?? query
       return Self.error("AnodyneWiki has no page or user annotations for '\(missing)'. Try search_anodyne_wiki first.")
     }
     var page: [String: JSONValue] = [
-      "source": .string(AnodyneSubstance.baseURL.host ?? "AnodyneWiki"),
+      "source": .string(request.baseURL.host ?? "AnodyneWiki"),
       "note": "No main AnodyneWiki substance page was found; returning matching AnodyneWiki user annotations.",
     ]
-    Self.attachUserNotes(userNotes, to: &page, limits: limits)
+    Self.attachUserNotes(userNotes, to: &page, limits: limits, instance: request.baseURL)
     return Self.success(page)
   }
 
-  private func loadAnodyneUserNotes(matching names: [String]) async -> [AnodyneUserNote] {
-    if let fetched = try? await AnodyneClient.shared.userNotes(matching: names) {
+  private func loadAnodyneUserNotes(
+    matching names: [String], using request: AnodyneClient.RequestContext
+  ) async -> [AnodyneUserNote] {
+    if let fetched = try? await AnodyneClient.shared.userNotes(matching: names, using: request) {
       return fetched
     }
-    return await AnodyneClient.shared.cachedUserNotes(matching: names)
+    return await AnodyneClient.shared.cachedUserNotes(matching: names, using: request)
   }
 
   private static func attachUserNotes(
     _ notes: [AnodyneUserNote],
     to page: inout [String: JSONValue],
-    limits: Limits)
-  {
+    limits: Limits,
+    instance: URL
+  ) {
     guard !notes.isEmpty else { return }
     let shown = Array(notes.prefix(limits.defaultListLength))
-    page["user_notes"] = .array(shown.map { anodyneUserNoteJSON($0, textLimit: limits.maxTextCharacters) })
+    page["user_notes"] = .array(shown.map {
+      anodyneUserNoteJSON($0, textLimit: limits.maxTextCharacters, instance: instance)
+    })
     if notes.count > shown.count {
       page["user_notes_total"] = .number(Double(notes.count))
     }
   }
 
-  static func anodyneUserNoteJSON(_ note: AnodyneUserNote, textLimit: Int) -> JSONValue {
+  static func anodyneUserNoteJSON(
+    _ note: AnodyneUserNote, textLimit: Int, instance: URL = AnodyneSubstance.baseURL
+  ) -> JSONValue {
     var json: [String: JSONValue] = [
       "user": .string(note.user),
       "substance": .string(note.substanceName),
-      "url": .string(note.userPageURL.absoluteString),
+      "url": .string(note.userPageURL(at: instance).absoluteString),
     ]
     if !note.routes.isEmpty {
       json["routes"] = .array(note.routes.map { route in

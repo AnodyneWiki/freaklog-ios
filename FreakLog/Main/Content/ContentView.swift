@@ -23,7 +23,7 @@ struct ContentScreen: View {
 
     @ObservedObject var navigator = Navigator.shared
     @ObservedObject var tabManager = TabManager.shared
-    @FocusState var isSearchFocused: Bool
+    @State private var searchFavoritesOnly = false
     @EnvironmentObject var authenticator: Authenticator
 
     var body: some View {
@@ -79,20 +79,14 @@ struct ContentScreen: View {
         case .stats:
             StatsScreen()
         case .journal:
-            JournalScreen(
-                searchText: $navigator.journalSearchText,
-                isSearchPresented: $navigator.isJournalSearchFocused,
-                isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled
-            )
+            JournalScreen(isFavoriteFilterEnabled: $navigator.isFavoriteFilterEnabled)
         case .substances:
             SearchScreen(
-                isSearchFocused: _isSearchFocused,
                 searchText: $navigator.substanceSearchText,
-                selectedCategories: $navigator.selectedCategories,
-                clearCategories: navigator.clearCategories)
-            .onAppear { self.isSearchFocused = navigator.isSubstanceSearchFocused }
-            .onChange(of: isSearchFocused) { navigator.isSubstanceSearchFocused = $0 }
-            .onChange(of: navigator.isSubstanceSearchFocused) { isSearchFocused = $0 }
+                scope: $navigator.substanceSearchScope,
+                isSearchPresented: $navigator.isSubstanceSearchFocused,
+                favoritesOnly: $searchFavoritesOnly
+            )
         case .tools:
             ToolsScreen()
         case .settings:

@@ -13,6 +13,7 @@ struct FreakLog: App {
     init() {
         // Reads AnodyneWiki's cached data before the first timeline or dose display asks for it
         Task.detached(priority: .utility) {
+            AnodyneCacheFiles.discardLegacyCache()
             AnodyneFallbackStore.shared.preload()
         }
     }

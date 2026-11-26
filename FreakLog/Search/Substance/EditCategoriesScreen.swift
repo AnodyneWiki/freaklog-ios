@@ -2,7 +2,7 @@ import CoreData
 import SwiftUI
 
 // Picks the categories of a substance. They are saved as the user's own only while they differ from
-// PsychonautWiki's (custom substances have none to start from).
+// the bundled catalog defaults (custom substances have none to start from).
 struct EditCategoriesScreen: View {
   let substanceName: String
   @State private var selection: [String] = []
@@ -18,7 +18,7 @@ struct EditCategoriesScreen: View {
     PersistenceController.shared.substanceOverride(for: substanceName)
   }
 
-  private var psychonautWikiCategories: [String] {
+  private var defaultCategories: [String] {
     SubstanceRepo.shared.getSubstance(name: substanceName)?.categories ?? []
   }
 
@@ -52,10 +52,10 @@ struct EditCategoriesScreen: View {
             + "such as stimulants or opioids."
         )
       }
-      if override?.categories != nil, !psychonautWikiCategories.isEmpty {
+      if override?.categories != nil, !defaultCategories.isEmpty {
         Section {
-          Button("Reset to PsychonautWiki Categories", role: .destructive) {
-            selection = psychonautWikiCategories
+          Button("Reset to Default Categories", role: .destructive) {
+            selection = defaultCategories
             save()
           }
         }
@@ -74,7 +74,7 @@ struct EditCategoriesScreen: View {
   }
 
   private func save() {
-    let isDefault = Set(selection) == Set(psychonautWikiCategories)
+    let isDefault = Set(selection) == Set(defaultCategories)
     PersistenceController.shared.setSubstanceOverride(
       for: substanceName,
       displayName: override?.displayName,

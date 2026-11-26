@@ -392,7 +392,7 @@ extension SettingsScreen {
                     LeaderboardSyncManager.shared.journalWasReplaced()
                     if removePublishedCopies { IngestionDeletion.didDelete(identifiers: removed) }
                     if case .backup(let backup) = review.contents {
-                        backup.restoreSettings()
+                        await AnodyneClient.shared.applyInstanceChange { backup.restoreSettings() }
                         TabManager.shared.reload()
                         LeaderboardServerStore.shared.reload()
                     }

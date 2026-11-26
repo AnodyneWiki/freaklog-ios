@@ -43,7 +43,7 @@ struct CustomUnitsChooseDoseScreen: View {
                         dose: dose,
                         isEstimate: isEstimate,
                         estimatedDoseStandardDeviation: estimatedDoseStandardDeviation)
-                    if !(customUnit.substance?.isApproved ?? true) {
+                    if customUnit.substance?.hasUnapprovedWikiReference == true {
                         Text("Info is not approved by the moderators of the data source.")
                     }
                 }

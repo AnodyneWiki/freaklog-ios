@@ -5,6 +5,7 @@ import SwiftUI
 // screens. Substances that are neither in PsychonautWiki nor custom yet can be added as custom substances.
 struct AnodyneSubstanceScreen: View {
   let title: String
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
   @StateObject private var model: AnodyneLoadModel
   @State private var isShowingAddSheet = false
   @FetchRequest(fetchRequest: PersistenceController.customSubstancesRequest())
@@ -53,6 +54,9 @@ struct AnodyneSubstanceScreen: View {
     }
     .navigationTitle(model.substance?.commonName ?? title)
     .toolbar {
+      ToolbarItem(placement: .topBarTrailing) {
+        AnodyneSourcesMenu(model: model)
+      }
       if let substance = model.substance, existingDestination(for: substance) == nil {
         ToolbarItem(placement: .primaryAction) {
           Button("Add") {
@@ -61,7 +65,7 @@ struct AnodyneSubstanceScreen: View {
         }
       }
     }
-    .task {
+    .task(id: instanceURL) {
       // Opening the screen asks for the substance, so it is loaded even without automatic loading
       await model.start(loadingIfNotCached: true)
     }
@@ -70,11 +74,15 @@ struct AnodyneSubstanceScreen: View {
   // The app's own substance of the same name, if there is one
   private func existingDestination(for substance: AnodyneSubstance) -> GlobalNavigationDestination? {
     for name in [substance.title] + substance.abbreviations {
-      if let pwSubstance = SubstanceRepo.shared.getSubstance(name: name) {
-        return .substance(substance: pwSubstance)
+      let bundled = SubstanceRepo.shared.getSubstance(name: name)
+      if let bundled, bundled.usesWikiReferences {
+        return .substance(substance: bundled)
       }
       if let custom = customSubstances.first(where: { $0.nameUnwrapped.caseInsensitiveCompare(name) == .orderedSame }) {
         return .customSubstance(customSubstance: custom)
+      }
+      if let bundled {
+        return .substance(substance: bundled)
       }
     }
     return nil

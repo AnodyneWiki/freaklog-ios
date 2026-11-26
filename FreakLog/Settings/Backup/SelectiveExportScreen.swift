@@ -44,6 +44,7 @@ struct SelectiveExportScreen: View {
     @State private var startDate: Date
     @State private var endDate: Date
     @State private var substance: String?
+    @State private var tag: String?
     @State private var route: AdministrationRoute?
     @State private var person: Person
     @State private var options: SelectiveJournalReport.Options
@@ -89,6 +90,14 @@ struct SelectiveExportScreen: View {
                     Text("All Substances").tag(nil as String?)
                     ForEach(substances, id: \.self) { name in
                         Text(PersistenceController.shared.displayName(for: name)).tag(Optional(name))
+                    }
+                }
+                if !tags.isEmpty {
+                    Picker("Tag", selection: $tag) {
+                        Text("All Tags").tag(nil as String?)
+                        ForEach(tags, id: \.self) { name in
+                            Text(name).tag(Optional(name))
+                        }
                     }
                 }
                 Picker("Route", selection: $route) {
@@ -157,6 +166,11 @@ struct SelectiveExportScreen: View {
         return AdministrationRoute.allCases.filter(recorded.contains)
     }
 
+    private var tags: [String] {
+        PersonalSubstanceTags(substances.flatMap { PersistenceController.shared.personalTags(for: $0).names }).names
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
     private var people: [String] {
         Set(participants).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
@@ -176,15 +190,19 @@ struct SelectiveExportScreen: View {
     private var selection: (ingestions: [Ingestion], experiences: Set<Experience>) {
         let range = selectedRange
         let all = ingestions
+        let taggedNames = tag.map { tag in
+            Set(substances.filter { PersistenceController.shared.personalTags(for: $0).contains(tag) })
+        }
         let selected = all.filter {
             (substance == nil || $0.substanceNameUnwrapped == substance)
+                && (taggedNames?.contains($0.substanceNameUnwrapped) ?? true)
                 && (route == nil || ReportMarkdown.recordedRoute($0) == route)
                 && person.matches($0)
                 && (options.unconfirmed || !$0.isUnconfirmed)
                 && SelectiveJournalReport.includes($0.time, in: range)
         }
         let selectedExperiences = Set(selected.compactMap(\.experience))
-        guard substance == nil, route == nil, person == .everyone else {
+        guard substance == nil, tag == nil, route == nil, person == .everyone else {
             return (selected, selectedExperiences)
         }
         if range == nil, let sourceExperiences {

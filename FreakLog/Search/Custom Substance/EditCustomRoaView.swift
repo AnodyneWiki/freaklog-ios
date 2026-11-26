@@ -6,6 +6,7 @@ struct EditCustomRoaView: View {
   let route: AdministrationRoute
   var customSubstance: CustomSubstance? = nil
   @Environment(\.managedObjectContext) private var context
+  @AppStorage(PersistenceController.anodyneInstanceURLKey) private var instanceURL = ""
 
   // Saved form state; durations are always in minutes here
   @State private var values: CustomRoaCodable
@@ -98,7 +99,7 @@ struct EditCustomRoaView: View {
     .scrollDismissesKeyboard(.interactively)
     .navigationTitle(route.rawValue.localizedCapitalized)
     .onAppear(perform: load)
-    .task {
+    .task(id: instanceURL) {
       await loadAnodyneSources()
     }
     .onChange(of: values) { _ in saveDebounced() }
@@ -288,12 +289,18 @@ struct EditCustomRoaView: View {
 
   // AnodyneWiki's doses per route, if they are cached or load automatically
   private func loadAnodyneSources() async {
+    anodyneSources = []
+    if pendingCopy?.isDoseOnly == true { pendingCopy = nil }
+    guard SubstanceRepo.shared.usesWikiReferences(for: substanceName) else { return }
     let otherNames = customSubstance == nil ? SubstanceRepo.shared.getSubstance(name: substanceName)?.commonNames ?? [] : []
-    var lookup = await AnodyneClient.shared.cachedLookup(for: substanceName)
+    let client = AnodyneClient.shared
+    let request = await client.requestContext()
+    var lookup = await client.cachedLookup(for: substanceName, using: request)
     if lookup == nil, AnodyneClient.isAutomaticLoadingEnabled {
-      lookup = try? await AnodyneClient.shared.lookup(substanceName, otherNames: otherNames)
+      lookup = try? await client.lookup(substanceName, otherNames: otherNames, using: request)
     }
-    guard case let .found(substance) = lookup else { return }
+    guard case let .found(substance) = lookup,
+          await client.isCurrent(request), !Task.isCancelled, request.baseURL == AnodyneSubstance.baseURL else { return }
     var seenRoutes = Set<AdministrationRoute>()
     anodyneSources = substance.dosing.compactMap { dosing in
       guard let dosingRoute = dosing.route, seenRoutes.insert(dosingRoute).inserted else { return nil }
