@@ -14,15 +14,31 @@ struct SuggestionsScreen: View {
         }
         if session.queuedCount > 0 {
           Section {
-            Label(queuedText, systemImage: "iphone.slash")
+            Label(queuedText, systemImage: "clock")
               .font(.footnote)
               .foregroundStyle(.secondary)
               .listRowBackground(Color.clear)
           }
         }
+        if let error = session.queueError {
+          Label(error, systemImage: "exclamationmark.triangle")
+            .font(.footnote)
+        }
+        ForEach(session.rejections) { rejection in
+          VStack(alignment: .leading) {
+            Text(rejection.request.kind == .undo ? "Couldn't Undo" : "Couldn't Log")
+              .font(.headline)
+            Text(rejection.message)
+              .font(.footnote)
+            Button("Dismiss") {
+              session.dismissRejection(rejection.id)
+            }
+            .font(.footnote)
+          }
+        }
       }
       .overlay {
-        if session.suggestions.isEmpty {
+        if session.suggestions.isEmpty, session.queuedCount == 0, session.rejections.isEmpty, session.queueError == nil {
           emptyView
         }
       }
@@ -37,7 +53,12 @@ struct SuggestionsScreen: View {
       }
     }
     .sheet(item: $model.logging) { logging in
-      LoggedScreen(logging: logging)
+      LoggedScreen(request: logging.request)
+    }
+    .onReceive(session.$latestAcknowledgement) { acknowledgement in
+      if let acknowledgement {
+        model.acknowledge(acknowledgement)
+      }
     }
   }
 
@@ -46,8 +67,8 @@ struct SuggestionsScreen: View {
 
   private var queuedText: String {
     session.queuedCount == 1
-      ? "1 ingestion is added once your iPhone is reachable"
-      : "\(session.queuedCount) ingestions are added once your iPhone is reachable"
+      ? "1 request awaiting iPhone confirmation"
+      : "\(session.queuedCount) requests awaiting iPhone confirmation"
   }
 
   @ViewBuilder

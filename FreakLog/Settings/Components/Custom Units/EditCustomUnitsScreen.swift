@@ -73,9 +73,10 @@ struct EditCustomUnitsScreen: View {
 
     private func delete() {
         Task {
-            await IngestionDeletion.delete(customUnit: customUnit)
+            if await IngestionDeletion.delete(customUnit: customUnit) {
+                dismiss()
+            }
         }
-        dismiss()
     }
 }
 

@@ -21,6 +21,7 @@ struct TimedNoteCodable: Codable {
         case time
         case note
         case color
+        case colorHex
         case isPartOfTimeline
     }
 
@@ -29,7 +30,8 @@ struct TimedNoteCodable: Codable {
         creationDate = try values.decodeMillis(forKey: .creationDate)
         time = try values.decodeMillis(forKey: .time)
         note = try values.decode(String.self, forKey: .note)
-        color = try values.decode(SubstanceColor.self, forKey: .color)
+        color = try values.decodeIfPresent(SubstanceColor.self, forKey: .colorHex)
+            ?? values.decode(SubstanceColor.self, forKey: .color)
         isPartOfTimeline = try values.decode(Bool.self, forKey: .isPartOfTimeline)
     }
 
@@ -39,6 +41,7 @@ struct TimedNoteCodable: Codable {
         try container.encodeMillis(time, forKey: .time)
         try container.encode(note, forKey: .note)
         try container.encode(color.exportValue, forKey: .color)
+        try container.encodeIfPresent(color.isInPalette ? nil : color.rawValue, forKey: .colorHex)
         try container.encode(isPartOfTimeline, forKey: .isPartOfTimeline)
     }
 }

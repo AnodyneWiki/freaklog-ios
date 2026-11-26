@@ -1,17 +1,14 @@
 import UIKit
 import CoreData
+import Combine
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, ObservableObject {
+    @Published private(set) var isJournalReady = false
     private var cloudKitBackgroundTaskID: UIBackgroundTaskIdentifier = .invalid
 
     func application(_ app: UIApplication, willFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey : Any]? = nil) -> Bool {
-        PersistenceController.shared.loadData(app)
-        if #available(iOS 16.2, *) {
-            // Picks up a running live activity so it follows journal changes from launch on
-            _ = ActivityManager.shared
-        }
         setupCloudKitBackgroundTaskHandling()
-        PhoneWatchSession.shared.activate()
+        prepareJournal()
         return true
     }
 
@@ -23,6 +20,37 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func applicationWillEnterForeground(_ application: UIApplication) {
         // End the background task when app comes to foreground
         endCloudKitBackgroundTask()
+        if isJournalReady {
+            PhoneWatchSession.shared.retryPendingUndos()
+            retryPendingRemoteDeletions()
+        } else {
+            prepareJournal()
+        }
+    }
+
+    func prepareJournal() {
+        guard !isJournalReady else { return }
+        do {
+            let persistence = PersistenceController.shared
+            try persistence.loadData()
+            try persistence.runPendingMigrations()
+            if #available(iOS 16.2, *) {
+                _ = ActivityManager.shared
+            }
+            isJournalReady = true
+            PhoneWatchSession.shared.activate()
+            retryPendingRemoteDeletions()
+        } catch {
+            print("Could not open journal: \(error)")
+        }
+    }
+
+    private func retryPendingRemoteDeletions() {
+        Task { @MainActor in
+            async let webhooks = WebhookManager.shared.retryPendingDeletions()
+            async let leaderboards: Void = LeaderboardSyncManager.shared.retryPendingDeletions()
+            _ = await (webhooks, leaderboards)
+        }
     }
 
     private func setupCloudKitBackgroundTaskHandling() {

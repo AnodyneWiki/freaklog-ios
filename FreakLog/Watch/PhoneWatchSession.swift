@@ -14,6 +14,7 @@ final class PhoneWatchSession: NSObject {
     guard WCSession.isSupported() else { return }
     WCSession.default.delegate = self
     WCSession.default.activate()
+    retryPendingUndos()
     let context = PersistenceController.shared.viewContext
     let center = NotificationCenter.default
     for name in [NSManagedObjectContext.didSaveObjectsNotification, NSManagedObjectContext.didMergeChangesObjectIDsNotification] {
@@ -23,6 +24,10 @@ final class PhoneWatchSession: NSObject {
         }
       }
     }
+  }
+
+  func retryPendingUndos() {
+    WatchQuickLogging.retryPendingUndos()
   }
 
   private var lastSentSuggestions: Data?
@@ -53,13 +58,30 @@ final class PhoneWatchSession: NSObject {
     }
   }
 
-  // Returns the reply for the watch
-  private func handle(_ message: [String: Any]) async -> [String: Any] {
-    if message[WatchQuickLog.refreshKey] != nil {
-      guard let data = try? WatchQuickLog.encode(WatchQuickLogging.suggestions()) else { return [:] }
+  private func handle(_ message: [String: Any]) -> [String: Any] {
+    let kind: WatchRequestKind
+    if message[WatchQuickLog.logKey] != nil {
+      kind = .log
+    } else if message[WatchQuickLog.undoKey] != nil {
+      kind = .undo
+    } else if message[WatchQuickLog.refreshKey] != nil,
+      let data = try? WatchQuickLog.encode(WatchQuickLogging.suggestions())
+    {
       return [WatchQuickLog.suggestionsKey: data]
+    } else {
+      return [WatchQuickLog.errorKey: WatchQuickLogError.invalidRequest.localizedDescription]
     }
-    // Webhooks and leaderboards are sent after saving, which needs time when launched in the background
+
+    let id = (message[WatchQuickLog.requestIDKey] as? String).flatMap(UUID.init(uuidString:))
+    guard
+      message[WatchQuickLog.logKey] == nil || message[WatchQuickLog.undoKey] == nil,
+      let request = WatchRequest(kind: kind, payload: message[kind.messageKey]),
+      message[WatchQuickLog.requestIDKey] == nil || id == request.id
+    else {
+      return reply(id: id, kind: kind, status: .rejected, detail: WatchQuickLogError.invalidRequest.localizedDescription)
+    }
+
+    // Webhooks and leaderboards may continue after a background delivery has been acknowledged.
     let backgroundTask = UIApplication.shared.beginBackgroundTask()
     defer {
       Task {
@@ -67,17 +89,37 @@ final class PhoneWatchSession: NSObject {
         UIApplication.shared.endBackgroundTask(backgroundTask)
       }
     }
-    if let request = WatchQuickLog.decode(WatchLogRequest.self, from: message[WatchQuickLog.logKey]) {
-      do {
-        try WatchQuickLogging.log(request)
-      } catch {
-        PersistenceController.shared.viewContext.rollback()
-        return [WatchQuickLog.errorKey: error.localizedDescription]
+
+    do {
+      switch request {
+      case .log(let log):
+        let status = try WatchQuickLogging.log(log)
+        let detail = status == .undone ? "This watch quick log was already undone" : nil
+        return reply(id: log.id, kind: kind, status: status, detail: detail)
+      case .undo(let undo):
+        let source: WatchQuickLogging.UndoSource = message[kind.messageKey] is [String] ? .legacyTransfer : .current
+        try WatchQuickLogging.undo(undo, source: source)
+        return reply(id: undo.id, kind: kind, status: .undone)
       }
-    } else if let identifiers = message[WatchQuickLog.undoKey] as? [String] {
-      await WatchQuickLogging.undo(ingestionsWithIdentifiers: identifiers.compactMap(UUID.init(uuidString:)))
+    } catch let error as WatchQuickLogError {
+      return reply(id: request.id, kind: kind, status: .rejected, detail: error.localizedDescription)
+    } catch {
+      return reply(id: request.id, kind: kind, status: .retry, detail: error.localizedDescription)
     }
-    return [:]
+  }
+
+  private func reply(id: UUID?, kind: WatchRequestKind, status: WatchAcknowledgement.Status, detail: String? = nil)
+    -> [String: Any]
+  {
+    var reply: [String: Any] = [:]
+    if let id, let encoded = try? WatchQuickLog.encode(
+      WatchAcknowledgement(id: id, kind: kind, status: status, message: detail))
+    {
+      reply[WatchQuickLog.acknowledgementKey] = encoded
+    }
+    // Older watches still expect an error string or an empty successful reply.
+    reply[WatchQuickLog.errorKey] = detail
+    return reply
   }
 }
 
@@ -111,14 +153,18 @@ extension PhoneWatchSession: WCSessionDelegate {
     replyHandler: @escaping ([String: Any]) -> Void)
   {
     Task { @MainActor in
-      replyHandler(await handle(message))
+      replyHandler(handle(message))
     }
   }
 
-  // Logs and undos the watch queued while the iPhone wasn't reachable, in order
-  nonisolated func session(_: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
+  nonisolated func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {
     Task { @MainActor in
-      _ = await handle(userInfo)
+      let reply = handle(userInfo)
+      if let acknowledgement = reply[WatchQuickLog.acknowledgementKey] as? Data {
+        session.transferUserInfo([WatchQuickLog.acknowledgementKey: acknowledgement])
+      } else if let error = reply[WatchQuickLog.errorKey] as? String {
+        print("Queued watch request failed: \(error)")
+      }
     }
   }
 }

@@ -66,9 +66,13 @@ struct SubstanceColor: Hashable, Identifiable, Sendable {
         palette?.name ?? hex
     }
 
-    // Journal files keep the names of palette colors, which the Android app reads
+    // Legacy readers only understand palette names. The journal also writes the exact custom color separately.
     var exportValue: String {
-        palette?.rawValue ?? hex
+        if let palette { return palette.rawValue }
+        let lab = oklab
+        return PaletteColor.allCases.min {
+            SubstanceColor($0).oklab.distance(to: lab) < SubstanceColor($1).oklab.distance(to: lab)
+        }?.rawValue ?? PaletteColor.purple.rawValue
     }
 
     var isInPalette: Bool {

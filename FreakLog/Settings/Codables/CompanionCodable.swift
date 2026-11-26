@@ -8,6 +8,7 @@ struct CompanionCodable: Codable {
     enum CodingKeys: String, CodingKey {
         case substanceName
         case color
+        case colorHex
     }
 
     init(substanceName: String, color: SubstanceColor) {
@@ -18,13 +19,15 @@ struct CompanionCodable: Codable {
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         substanceName = try values.decode(String.self, forKey: .substanceName)
-        color = try values.decode(SubstanceColor.self, forKey: .color)
+        color = try values.decodeIfPresent(SubstanceColor.self, forKey: .colorHex)
+            ?? values.decode(SubstanceColor.self, forKey: .color)
     }
 
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(substanceName, forKey: .substanceName)
         try container.encode(color.exportValue, forKey: .color)
+        try container.encodeIfPresent(color.isInPalette ? nil : color.rawValue, forKey: .colorHex)
     }
 }
 

@@ -50,11 +50,16 @@ struct ExperienceCodable: Codable {
         let values = try decoder.container(keyedBy: CodingKeys.self)
         title = try values.decode(String.self, forKey: .title)
         text = try values.decode(String.self, forKey: .text)
-        creationDate = try values.decodeMillis(forKey: .creationDate)
+        let explicitSortDate = try values.decodeMillisIfPresent(forKey: .sortDate)
         isFavorite = try (values.decodeIfPresent(Bool.self, forKey: .isFavorite)) ?? false
         let ingestionCodables = try values.decodeIfPresent([IngestionCodable].self, forKey: .ingestions) ?? []
         ingestions = ingestionCodables
-        sortDate = try values.decodeMillisIfPresent(forKey: .sortDate) ?? ingestionCodables.map(\.time).min()
+        sortDate = explicitSortDate ?? ingestionCodables.map(\.time).min()
+        if let date = try values.decodeMillisIfPresent(forKey: .creationDate) ?? sortDate {
+            creationDate = date
+        } else {
+            creationDate = try values.decodeMillis(forKey: .creationDate)
+        }
         ratings = try (values.decodeIfPresent([RatingCodable].self, forKey: .ratings)) ?? []
         timedNotes = try (values.decodeIfPresent([TimedNoteCodable].self, forKey: .timedNotes)) ?? []
         location = try values.decodeIfPresent(LocationCodable.self, forKey: .location)
@@ -65,7 +70,7 @@ struct ExperienceCodable: Codable {
         try container.encode(title, forKey: .title)
         try container.encode(text, forKey: .text)
         try container.encodeMillis(creationDate, forKey: .creationDate)
-        try container.encodeMillis(sortDate, forKey: .sortDate)
+        try container.encodeMillis(sortDate ?? creationDate, forKey: .sortDate)
         try container.encode(isFavorite, forKey: .isFavorite)
         try container.encode(ratings, forKey: .ratings)
         try container.encode(timedNotes, forKey: .timedNotes)
@@ -75,14 +80,20 @@ struct ExperienceCodable: Codable {
 }
 
 extension ExperienceCodable {
-    init(_ experience: Experience) {
-        self.init(
+    init(
+        _ experience: Experience,
+        customUnitIds: [NSManagedObjectID: Int32],
+        formulationIds: [NSManagedObjectID: String]
+    ) throws {
+        try self.init(
             title: experience.titleUnwrapped,
             text: experience.textUnwrapped,
             creationDate: experience.creationDateUnwrapped,
             sortDate: experience.sortDate,
             isFavorite: experience.isFavorite,
-            ingestions: experience.ingestionsSorted.map(IngestionCodable.init),
+            ingestions: experience.ingestionsSorted.map { ingestion in
+                try IngestionCodable(ingestion, customUnitIds: customUnitIds, formulationIds: formulationIds)
+            },
             ratings: experience.ratingsUnwrapped.map(RatingCodable.init),
             timedNotes: experience.timedNotesSorted.map(TimedNoteCodable.init),
             experienceLocation: experience.legacyLocation
@@ -94,7 +105,8 @@ extension ExperienceCodable {
         into context: NSManagedObjectContext,
         companion: (String) -> SubstanceCompanion,
         customUnits: [Int32: CustomUnit],
-        formulations: [String: Formulation] = [:]
+        formulationsById: [String: Formulation],
+        formulationsByName: [String: Formulation]
     ) -> Experience {
         let experience = Experience(context: context)
         experience.title = title
@@ -106,11 +118,15 @@ extension ExperienceCodable {
             let ingestion = ingestionCodable.insert(into: context, fallbackLocation: location)
             ingestion.substanceCompanion = companion(ingestionCodable.substanceName)
             ingestion.customUnit = ingestionCodable.customUnitId.flatMap { customUnits[$0] }
-            ingestion.formulation = ingestionCodable.formulationName.flatMap { formulations[$0] }
+            if let id = ingestionCodable.formulationId {
+                ingestion.formulation = formulationsById[id]
+            } else {
+                ingestion.formulation = ingestionCodable.formulationName.flatMap { formulationsByName[$0] }
+            }
             experience.addToIngestions(ingestion)
         }
         for ratingCodable in ratings {
-            ratingCodable.insert(into: context).experience = experience
+            ratingCodable.insert(into: context, fallbackDate: creationDate).experience = experience
         }
         for timedNoteCodable in timedNotes {
             timedNoteCodable.insert(into: context).experience = experience

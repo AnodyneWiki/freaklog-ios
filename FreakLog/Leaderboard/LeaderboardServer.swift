@@ -64,7 +64,10 @@ final class LeaderboardServerStore: ObservableObject {
 
   @Published private(set) var servers: [LeaderboardServer] = []
 
-  private init() {
+  private let defaults: UserDefaults
+
+  init(defaults: UserDefaults = .standard) {
+    self.defaults = defaults
     load()
   }
 
@@ -98,7 +101,7 @@ final class LeaderboardServerStore: ObservableObject {
   }
 
   private func load() {
-    guard let data = UserDefaults.standard.data(forKey: PersistenceController.leaderboardServersKey) else { return }
+    guard let data = defaults.data(forKey: PersistenceController.leaderboardServersKey) else { return }
     if let decoded = try? JSONDecoder().decode([LeaderboardServer].self, from: data) {
       servers = decoded
     }
@@ -106,7 +109,7 @@ final class LeaderboardServerStore: ObservableObject {
 
   private func save() {
     if let data = try? JSONEncoder().encode(servers) {
-      UserDefaults.standard.set(data, forKey: PersistenceController.leaderboardServersKey)
+      defaults.set(data, forKey: PersistenceController.leaderboardServersKey)
     }
   }
 }

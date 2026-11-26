@@ -2,7 +2,7 @@ import CoreData
 import Foundation
 
 struct RatingCodable: Codable {
-    let creationDate: Date
+    let creationDate: Date?
     let time: Date?
     let option: ShulginRatingOption
 
@@ -24,7 +24,7 @@ struct RatingCodable: Codable {
 
     init(from decoder: Decoder) throws {
         let values = try decoder.container(keyedBy: CodingKeys.self)
-        creationDate = try values.decodeMillis(forKey: .creationDate)
+        creationDate = try values.decodeMillisIfPresent(forKey: .creationDate)
         time = try values.decodeMillisIfPresent(forKey: .time)
         option = try values.decode(ShulginRatingOption.self, forKey: .option)
     }
@@ -42,9 +42,9 @@ extension RatingCodable {
         self.init(creationDate: rating.creationDateUnwrapped, time: rating.time, option: rating.optionUnwrapped)
     }
 
-    func insert(into context: NSManagedObjectContext) -> ShulginRating {
+    func insert(into context: NSManagedObjectContext, fallbackDate: Date) -> ShulginRating {
         let rating = ShulginRating(context: context)
-        rating.creationDate = creationDate
+        rating.creationDate = creationDate ?? time ?? fallbackDate
         rating.time = time
         rating.option = option.rawValue
         return rating

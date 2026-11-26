@@ -9,6 +9,11 @@ enum JSONValue: Codable, Hashable, Sendable {
   case array([JSONValue])
   case object([String: JSONValue])
 
+  init(encoding value: some Encodable) throws {
+    let data = try JSONEncoder().encode(value)
+    self = try JSONDecoder().decode(JSONValue.self, from: data)
+  }
+
   init(from decoder: Decoder) throws {
     let container = try decoder.singleValueContainer()
     if container.decodeNil() {

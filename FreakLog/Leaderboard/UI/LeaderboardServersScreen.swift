@@ -8,6 +8,20 @@ struct LeaderboardServersScreen: View {
 
   var body: some View {
     List {
+      if let error = syncManager.publicationRecordError {
+        Text(error)
+          .foregroundStyle(.red)
+      }
+      if syncManager.pendingDeletionCount > 0 {
+        Section("Pending Deletions") {
+          Text("\(syncManager.pendingDeletionCount) leaderboard entries to remove")
+          if let error = syncManager.deletionError {
+            Text(error)
+              .font(.caption)
+              .foregroundStyle(.red)
+          }
+        }
+      }
       if store.servers.isEmpty {
         Text("No servers yet. Add one to start sharing your journal.")
           .foregroundStyle(.secondary)

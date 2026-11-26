@@ -1,3 +1,4 @@
+import CoreData
 import SwiftUI
 
 // Adds a note to the experience, or without one to the experience a new ingestion at the note's time
@@ -58,22 +59,23 @@ struct AddTimedNoteScreen: View {
             do {
                 try save()
                 toastViewModel.showSuccessToast(message: "Note Added")
+                dismiss()
             } catch {
                 toastViewModel.showErrorToast(message: "Failed to add note")
             }
-            dismiss()
         }
     }
 
     func save() throws {
-        let context = PersistenceController.shared.viewContext
+        let context = try PersistenceController.shared.journalEditContext()
         let newNote = TimedNote(context: context)
         newNote.creationDate = Date()
         newNote.time = time
         newNote.note = note
         newNote.colorAsText = color.rawValue
         newNote.isPartOfTimeline = isPartOfTimeline
-        newNote.experience = targetExperience(at: time) ?? Experience.create(at: time, in: context)
+        newNote.experience = try targetExperience(at: time).map { try PersistenceController.journalObject($0, in: context) }
+            ?? Experience.create(at: time, in: context)
         try TimedNoteSaving.save(newNote, sendingWebhooksTo: WebhookPreset.defaultPresetObjectIDs())
     }
 }

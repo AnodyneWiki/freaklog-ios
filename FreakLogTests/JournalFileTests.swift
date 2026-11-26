@@ -4,6 +4,269 @@ import XCTest
 
 @MainActor
 final class JournalFileTests: XCTestCase {
+    func testAbortedReplacementLeavesJournalIntactAfterAnotherSave() throws {
+        enum TestError: Error { case abort }
+
+        let persistence = PersistenceController(inMemory: true)
+        let viewContext = persistence.viewContext
+        let original = Experience.create(at: .now, title: "Original", in: viewContext)
+        try viewContext.save()
+
+        do {
+            let edit = try persistence.journalEditContext()
+            XCTAssertThrowsError(try SettingsScreen.ViewModel.replaceJournal(in: edit, removePublishedCopies: true) {
+                try PersistenceController.stageJournalDeletion(in: edit)
+                throw TestError.abort
+            })
+        }
+
+        original.title = "Edited after failure"
+        try viewContext.save()
+        let check = try persistence.journalEditContext()
+        XCTAssertEqual(try check.fetch(Experience.fetchRequest()).map(\.title), ["Edited after failure"])
+    }
+
+    func testReplacementQueuesOnlyDiscardedPublicationsWhenSelected() throws {
+        for removePublishedCopies in [true, false] {
+            let persistence = PersistenceController(inMemory: true)
+            let context = persistence.viewContext
+            let oldID = UUID()
+            let retainedID = UUID()
+            let url = "https://example.invalid/webhooks/test"
+
+            func insert(ingestionID: UUID, messageID: String, in context: NSManagedObjectContext) {
+                let ingestion = Ingestion(context: context)
+                ingestion.identifier = ingestionID
+                let message = WebhookMessage(context: context)
+                message.ingestion = ingestion
+                message.messageId = messageID
+                message.destinationURL = url
+            }
+
+            insert(ingestionID: oldID, messageID: "discarded", in: context)
+            insert(ingestionID: retainedID, messageID: "retained", in: context)
+            try context.save()
+
+            let edit = try persistence.journalEditContext()
+            let removed = try SettingsScreen.ViewModel.replaceJournal(in: edit, removePublishedCopies: removePublishedCopies) {
+                try PersistenceController.stageJournalDeletion(in: edit)
+                insert(ingestionID: retainedID, messageID: "retained", in: edit)
+            }
+
+            let check = try persistence.journalEditContext()
+            XCTAssertEqual(removed, removePublishedCopies ? [oldID] : [])
+            XCTAssertEqual(try check.fetch(WebhookDeletion.fetchRequest()).compactMap(\.messageId),
+                           removePublishedCopies ? ["discarded"] : [])
+        }
+    }
+
+    func testIsolatedDeletionUpdatesStoredExperienceSortDate() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let context = persistence.viewContext
+        let firstTime = Date(timeIntervalSince1970: 1_700_000_000)
+        let secondTime = firstTime.addingTimeInterval(3_600)
+        let experience = Experience.create(at: firstTime, in: context)
+        let first = Ingestion(context: context)
+        first.time = firstTime
+        first.experience = experience
+        let second = Ingestion(context: context)
+        second.time = secondTime
+        second.experience = experience
+        try context.save()
+
+        let edit = try persistence.journalEditContext()
+        edit.delete(try PersistenceController.journalObject(first, in: edit))
+        try PersistenceController.saveJournalChanges(in: edit)
+
+        let check = try persistence.journalEditContext()
+        XCTAssertEqual(try PersistenceController.journalObject(experience, in: check).sortDate, secondTime)
+    }
+
+    func testJournalImportRejectsAnEmptyUnidentifiedFile() throws {
+        let decoder = JSONDecoder()
+        for json in ["{}", #"{"customUnits":[]}"#, #"{"experiences":null}"#, #"{"experiences":{}}"#] {
+            XCTAssertThrowsError(try decoder.decode(JournalFile.self, from: Data(json.utf8)), json)
+        }
+        let emptyJournal = try decoder.decode(JournalFile.self, from: Data(#"{"experiences":[]}"#.utf8))
+        XCTAssertTrue(emptyJournal.experiences.isEmpty)
+    }
+
+    func testLegacyAndroidImportsCustomDataWithoutExperiencesAndOptionalFields() throws {
+        let customOnly = try JournalFile.read(Data(#"{"customSubstances":[{"name":"Example","units":"g","description":""}]}"#.utf8))
+        XCTAssertEqual(customOnly.customSubstances.map(\.name), ["Example"])
+        XCTAssertTrue(customOnly.experiences.isEmpty)
+
+        let legacy = try JournalFile.read(Data(#"""
+          {"experiences":[{"title":"Example","text":"","sortDate":1700000000000,
+          "ingestions":[{"substanceName":"Example","time":1700000000000,"administrationRoute":"ORAL","isDoseAnEstimate":false}],
+          "ratings":[{"option":"twoPlus","creationDate":null}]}]}
+          """#.utf8))
+        let experience = try XCTUnwrap(legacy.experiences.first)
+        let ingestion = try XCTUnwrap(experience.ingestions.first)
+        XCTAssertEqual(ingestion.units, "")
+        XCTAssertEqual(ingestion.notes, "")
+        XCTAssertEqual(experience.creationDate, Date(millisecondsSince1970: 1_700_000_000_000))
+        let context = PersistenceController(inMemory: true).viewContext
+        try legacy.replaceJournal(in: context)
+        XCTAssertEqual(try context.fetch(ShulginRating.fetchRequest()).first?.creationDate, experience.creationDate)
+    }
+
+    func testV12PreservesSingleUnitsAndAllMixtureComponents() throws {
+        let json = #"""
+          {"exportSource":"Android Journal",
+          "customSubstances":[{"name":"Existing custom","units":"g","description":"Original"}],
+          "customUnits":[
+            {"id":"7","name":"Single","unit":"scoop","doseComponents":[{"substanceName":"Ingredient A","dose":10,"units":"mg"}]},
+            {"id":"blend","name":"Blend","unit":"serving","doseComponents":[
+              {"customUnitId":7,"dose":2},{"substanceName":"Ingredient B","amount":5,"unit":"mg"},
+              {"substanceName":"Ingredient C","units":"mg"}]}],
+          "experiences":[{"title":"Example","text":"","creationDate":1700000000000,"ingestions":[
+            {"time":1700000000000,"administrationRoute":"ORAL","dose":2,"customUnitId":"7"},
+            {"time":1700000001000,"administrationRoute":"ORAL","dose":3,"customUnitId":"blend"}]}]}
+          """#
+        for source in ["Android Journal", "iOS Journal"] {
+            let journal = try JournalFile.read(Data(json.replacingOccurrences(of: "Android Journal", with: source).utf8))
+            XCTAssertEqual(journal.customSubstances.map(\.name), ["Existing custom"])
+            XCTAssertEqual(journal.customUnits.map(\.name), ["Single"])
+            XCTAssertEqual(journal.formulations.first?.components.map(\.substanceName), ["Ingredient A", "Ingredient B", "Ingredient C"])
+            let context = PersistenceController(inMemory: true).viewContext
+            try journal.replaceJournal(in: context)
+            let ingestions = try context.fetch(Ingestion.fetchRequest())
+            XCTAssertEqual(ingestions.count, 4)
+            let single = try XCTUnwrap(ingestions.first { $0.customUnit != nil })
+            XCTAssertEqual(single.customUnit?.name, "Single")
+            XCTAssertEqual(single.pureSubstanceDose, 20)
+            let blend = Dictionary(uniqueKeysWithValues: ingestions.filter { $0.formulation != nil }.map { ($0.substanceNameUnwrapped, $0) })
+            XCTAssertEqual(blend["Ingredient A"]?.doseUnwrapped, 60)
+            XCTAssertEqual(blend["Ingredient B"]?.doseUnwrapped, 15)
+            XCTAssertNil(blend["Ingredient C"]?.doseUnwrapped)
+            XCTAssertEqual(blend["Ingredient C"]?.formulationAmount, 3)
+        }
+    }
+
+    func testV12RejectsUnresolvableUnitReferences() {
+        let json = #"""
+          {"exportSource":"iOS Journal","experiences":[],"customUnits":[
+            {"id":7,"name":"Cycle","doseComponents":[{"customUnitId":"7","dose":1}]}]}
+          """#
+        XCTAssertThrowsError(try JournalFile.read(Data(json.utf8)))
+        XCTAssertThrowsError(try JournalFile.read(Data(#"{"exportSource":"Other Journal","experiences":[]}"#.utf8)))
+    }
+
+    func testRejectsDuplicateAndDanglingReferenceIDs() {
+        let unit = #"{"id":7,"name":"Spoon","substanceName":"Example","creationDate":1700000000000,"administrationRoute":"ORAL","isEstimate":false,"isArchived":false,"unit":"spoon","originalUnit":"mg","note":""}"#
+        let formulation = #"{"id":"blend","name":"Blend","creationDate":1700000000000,"note":"","components":[]}"#
+        let cases: [(String, String, String, JournalFileError)] = [
+            ("[\(unit),\(unit)]", "[]", "", .duplicateCustomUnit(7)),
+            ("[]", "[\(formulation),\(formulation)]", "", .duplicateFormulation("blend")),
+            ("[\(unit)]", "[]", #","customUnitId":8"#, .missingCustomUnit("8")),
+            ("[]", "[\(formulation)]", #","formulationId":"missing","formulationName":"Blend""#, .missingFormulation("missing")),
+        ]
+        for (units, formulations, reference, expected) in cases {
+            let json = """
+                {"customUnits":\(units),"formulations":\(formulations),"experiences":[
+                  {"title":"Example","text":"","creationDate":1700000000000,"ingestions":[
+                    {"substanceName":"Example","time":1700000000000,"administrationRoute":"ORAL","isDoseAnEstimate":false\(reference)}]}]}
+                """
+            XCTAssertThrowsError(try JournalFile.read(Data(json.utf8))) { error in
+                XCTAssertEqual(error as? JournalFileError, expected)
+            }
+        }
+    }
+
+    func testExportRejectsRelationshipsOmittedFromTheFile() throws {
+        let context = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: .now, title: "Example", in: context)
+        let ingestion = Ingestion(context: context)
+        ingestion.experience = experience
+        let unit = CustomUnit(context: context)
+        unit.idForAndroid = 7
+        ingestion.customUnit = unit
+        XCTAssertThrowsError(try JournalFile(experiences: [experience], customSubstances: [], customUnits: [])) { error in
+            XCTAssertEqual(error as? JournalFileError, .missingCustomUnit("7"))
+        }
+        let formulation = Formulation(context: context)
+        formulation.name = "Blend"
+        ingestion.formulation = formulation
+        XCTAssertThrowsError(try JournalFile(experiences: [experience], customSubstances: [], customUnits: [unit])) { error in
+            XCTAssertEqual(error as? JournalFileError, .missingFormulation("Blend"))
+        }
+    }
+
+    func testExportAssignsFileLocalIDsToCollidingUnits() throws {
+        let source = PersistenceController(inMemory: true).viewContext
+        let experience = Experience.create(at: .now, title: "Example", in: source)
+        let ids: [Int32] = [0, 0, 1, 7, 7, -1]
+        let units = ids.enumerated().map { index, id in
+            let unit = CustomUnit(context: source)
+            unit.idForAndroid = id
+            unit.name = "Unit \(index)"
+            unit.substanceName = "Example"
+            let ingestion = Ingestion(context: source)
+            ingestion.substanceName = "Example"
+            ingestion.time = Date(timeIntervalSince1970: 1_700_000_000 + Double(index))
+            ingestion.note = unit.name
+            ingestion.customUnit = unit
+            ingestion.experience = experience
+            return unit
+        }
+        let file = try JournalFile(experiences: [experience], customSubstances: [], customUnits: units)
+        XCTAssertEqual(file.customUnits.map(\.id), [0, 2, 1, 7, 3, -1])
+        XCTAssertEqual(units.map(\.idForAndroid), ids)
+
+        let decoded = try JournalFile.read(JSONEncoder().encode(file))
+        let target = PersistenceController(inMemory: true).viewContext
+        decoded.insert(into: target)
+        let ingestions = try target.fetch(Ingestion.fetchRequest())
+        XCTAssertEqual(ingestions.count, units.count)
+        for ingestion in ingestions {
+            XCTAssertEqual(ingestion.customUnit?.name, ingestion.note)
+        }
+    }
+
+    func testPortableLocationRoundTripDistinguishesZeroFromMissing() throws {
+        let json = #"""
+            {"experiences":[{"title":"Example","text":"","creationDate":1700000000000,"ingestions":[
+              {"substanceName":"Example","time":1700000000000,"administrationRoute":"ORAL","isDoseAnEstimate":false,
+              "location":{"name":"Equator","latitude":0}}
+            ]}]}
+            """#
+        let context = PersistenceController(inMemory: true).viewContext
+        try JournalFile.read(Data(json.utf8)).replaceJournal(in: context)
+        let experience = try XCTUnwrap(context.fetch(Experience.fetchRequest()).first)
+        let exported = try JournalFile(experiences: [experience], customSubstances: [], customUnits: [])
+        let decoded = try JournalFile.read(JSONEncoder().encode(exported))
+        let location = try XCTUnwrap(decoded.experiences.first?.ingestions.first?.location)
+        XCTAssertEqual(location.latitude, 0)
+        XCTAssertNil(location.longitude)
+    }
+
+    func testFailedJournalReplacementKeepsSavedEntries() throws {
+        let persistence = PersistenceController(inMemory: true)
+        let savedContext = persistence.viewContext
+        _ = Experience.create(at: .now, title: "Original", in: savedContext)
+        try savedContext.save()
+
+        let importContext = FailingImportContext(concurrencyType: .mainQueueConcurrencyType)
+        importContext.persistentStoreCoordinator = persistence.container.persistentStoreCoordinator
+        let sourceContext = PersistenceController(inMemory: true).viewContext
+        let replacement = Experience.create(at: .now, title: "Replacement", in: sourceContext)
+        let journal = try JournalFile(experiences: [replacement], customSubstances: [], customUnits: [])
+
+        XCTAssertThrowsError(try journal.replaceJournal(in: importContext))
+        XCTAssertFalse(importContext.hasChanges)
+        XCTAssertEqual(try importContext.fetch(Experience.fetchRequest()).map(\.title), ["Original"])
+    }
+
+    private final class FailingImportContext: NSManagedObjectContext, @unchecked Sendable {
+        override func save() throws {
+            if !insertedObjects.isEmpty {
+                throw CocoaError(.fileWriteOutOfSpace)
+            }
+            try super.save()
+        }
+    }
+
     func testDatesAreWrittenAsWholeMilliseconds() throws {
         let json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(
             TimedNoteCodable(
@@ -59,7 +322,7 @@ final class JournalFileTests: XCTestCase {
         pwOverride.substanceName = "Ketamine"
         pwOverride.displayName = "K"
 
-        let file = JournalFile(
+        let file = try JournalFile(
             experiences: [experience],
             customSubstances: [customSubstance],
             customUnits: [unit],

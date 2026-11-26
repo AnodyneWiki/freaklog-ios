@@ -18,15 +18,8 @@ struct SettingsScreen: View {
             exportData: {
                 viewModel.exportData()
             },
-            importData: { data in
-                viewModel.importData(data: data)
-            },
-            deleteEverything: {
-                Task {
-                    viewModel.deleteEverything()
-                    await WebhookManager.shared.deleteAllPresetsAndMessages()
-                }
-            }
+            importFile: viewModel.importFile,
+            deleteEverything: viewModel.deleteEverything
         )
         .onAppear {
             viewModel.toastViewModel = toastViewModel
@@ -42,12 +35,13 @@ struct SettingsContent: View {
     @AppStorage(PersistenceController.isICloudSyncEnabledKey) var isICloudSyncEnabled: Bool = false
     let isFaceIDAvailable: Bool
     @State var isImporting = false
+    @State private var removePublishedCopies = false
     @Binding var isExporting: Bool
     let exportedFile: ExportedFile
     @EnvironmentObject private var toastViewModel: ToastViewModel
     let exportBackup: () -> Void
     let exportData: () -> Void
-    let importData: (Data) -> Void
+    let importFile: (URL, Bool) -> Void
     let deleteEverything: () -> Void
 
     @State private var isShowingDeleteConfirmation = false
@@ -73,10 +67,13 @@ struct SettingsContent: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 }
-                Toggle("iCloud Sync", isOn: $isICloudSyncEnabled.animation()).tint(Color.accentColor)
-                    .onChange(of: isICloudSyncEnabled) { newValue in
-                        PersistenceController.shared.updateCloudKitSyncStatus(newValue)
+                Toggle("iCloud Sync", isOn: Binding(get: { isICloudSyncEnabled }, set: { enabled in
+                    do {
+                        try PersistenceController.shared.updateCloudKitSyncStatus(enabled)
+                    } catch {
+                        toastViewModel.showErrorToast(message: "Couldn't Change iCloud Sync")
                     }
+                })).tint(Color.accentColor)
             }
             if isEyeOpen {
                 Section("UI") {
@@ -111,7 +108,7 @@ struct SettingsContent: View {
             }
             Section(
                 header: Text("Journal Data"),
-                footer: Text("A backup holds all your data and settings and restores them exactly, also in later versions of the app. It includes your webhook addresses and leaderboard servers, so keep it private. The JSON export leaves out settings, webhooks and more, and can be imported by the Android app. Importing reads both.")
+                footer: Text("Use a FreakLog backup to restore your journal and settings in FreakLog. Backups include webhook addresses and leaderboard servers, so keep them private. Export JSON to share your journal with compatible apps. FreakLog can import both formats.")
             ) {
                 Button {
                     exportBackup()
@@ -129,17 +126,22 @@ struct SettingsContent: View {
                     Label("Import Data", systemImage: "arrow.down.doc")
                 }
                 .confirmationDialog(
-                    "Are you sure?",
+                    "Replace Journal?",
                     isPresented: $isShowingImportAlert,
                     titleVisibility: .visible,
                     actions: {
-                        Button("Import", role: .destructive) {
-                            isImporting.toggle()
+                        Button("Import and Keep Published Copies", role: .destructive) {
+                            removePublishedCopies = false
+                            isImporting = true
+                        }
+                        Button("Import and Remove Discarded Copies", role: .destructive) {
+                            removePublishedCopies = true
+                            isImporting = true
                         }
                         Button("Cancel", role: .cancel) {}
                     },
                     message: {
-                        Text("Importing will delete all the data currently in the app and replace it with the imported data. A backup also replaces your settings.")
+                        Text("Import replaces your local journal. A FreakLog backup also replaces settings. Portable JSON has no publication IDs, so it can republish entries on the next leaderboard sync if you keep their old copies.")
                     }
                 )
                 Button {
@@ -194,17 +196,10 @@ struct SettingsContent: View {
         }
         .fileImporter(
             isPresented: $isImporting,
-            allowedContentTypes: [.json]
+            allowedContentTypes: ExportedFile.readableContentTypes
         ) { result in
             do {
-                let selectedFile: URL = try result.get()
-                if selectedFile.startAccessingSecurityScopedResource() {
-                    let data = try Data(contentsOf: selectedFile)
-                    importData(data)
-                } else {
-                    toastViewModel.showErrorToast(message: "Permission Denied")
-                }
-                selectedFile.stopAccessingSecurityScopedResource()
+                importFile(try result.get(), removePublishedCopies)
             } catch {
                 toastViewModel.showErrorToast(message: "Import Failed")
             }
@@ -212,7 +207,7 @@ struct SettingsContent: View {
         .fileExporter(
             isPresented: $isExporting,
             document: exportedFile,
-            contentType: .json,
+            contentType: exportedFile.contentType,
             defaultFilename: exportedFile.filename
         ) { result in
             if case .success = result {
@@ -256,7 +251,7 @@ struct SettingsContent: View {
         exportedFile: ExportedFile(),
         exportBackup: {},
         exportData: {},
-        importData: { _ in },
+        importFile: { _, _ in },
         deleteEverything: {}
     )
     .accentColor(Color.blue)

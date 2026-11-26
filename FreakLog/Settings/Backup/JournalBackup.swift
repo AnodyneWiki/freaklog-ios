@@ -3,14 +3,13 @@ import Foundation
 
 // MARK: - JournalBackup
 
-// A complete copy of the journal and its settings that restores exactly, written as JSON. Every entity and attribute
-// of the data model is written as it is, so nothing is left out when the model grows, and relationships refer to the
-// ids the backup gives its objects. JournalFile stays for the format the Android app reads, which leaves things out.
+// A complete copy of the journal and its settings. Relationships refer to the IDs the backup gives its objects.
+// JournalFile stays for the format the Android app reads.
 //
 // Compatibility: a backup names its format version, and newer versions of the app read older backups by running the
 // steps in `upgrades` on them first. When the data model or the settings written change, bump `formatVersion`, set
-// `dataModelVersion`, add a step if older backups need changing (added attributes, entities and settings need none;
-// removed or renamed ones do) and add a backup of the new version to the test fixtures. Fixtures are never edited,
+// `dataModelVersion`, add a step to fill in, remove or rename model keys as needed, and add a backup of the new
+// version to the test fixtures. Fixtures are never edited,
 // so every older version keeps importing.
 struct JournalBackup: Codable {
   struct Record: Codable, Equatable {
@@ -22,9 +21,11 @@ struct JournalBackup: Codable {
   }
 
   static let format = "FreakLog Backup"
+  private static let containerPrefix = Data("FREAKLOG-BACKUP/".utf8)
+  private static let containerHeader = Data("FREAKLOG-BACKUP/1\n".utf8)
   static let formatVersion = 2
-  // The data model this format version mirrors; a test fails once the current one differs
-  static let dataModelVersion = "PW Version 12"
+  static let dataModelVersion = "PW Version 13"
+  static let localOperationEntities: Set<String> = ["WatchLogReceipt", "WebhookDeletion"]
 
   // Settings that belong to the journal. Ones about this device (iCloud sync, the last unlock, the welcome screen,
   // migrations and the CloudKit schema) stay as they are.
@@ -63,7 +64,18 @@ struct JournalBackup: Codable {
   // Steps that bring a backup of an older format version to the next one, keyed by the version they upgrade from.
   // They work on the raw JSON, so they can follow any change, e.g. renaming an attribute in every record:
   // `2: { backup in try JournalBackup.renameAttribute("old", to: "new", of: "Ingestion", in: &backup) }`
-  static let upgrades: [Int: (inout JSONValue) throws -> Void] = [:]
+  static let upgrades: [Int: (inout JSONValue) throws -> Void] = [
+    1: { backup in
+      updateAttributes(of: "ExperienceLocation", in: &backup) { attributes in
+        attributes["hasExplicitLatitude"] = .bool(false)
+        attributes["hasExplicitLongitude"] = .bool(false)
+      }
+      updateAttributes(of: "WebhookMessage", in: &backup) { attributes in
+        attributes["destinationURL"] = .null
+      }
+      backup = try replacing("dataModel", with: .string("PW Version 13"), in: backup)
+    },
+  ]
 
   var format: String
   var formatVersion: Int
@@ -74,29 +86,49 @@ struct JournalBackup: Codable {
   var settings: [String: JSONValue]
   // Records by entity name
   var entities: [String: [Record]]
+  private var requiresCompleteRecords = true
+
+  private enum CodingKeys: String, CodingKey {
+    case format, formatVersion, dataModel, appVersion, created, settings, entities
+  }
 }
 
 // MARK: - JournalBackupError
 
 enum JournalBackupError: LocalizedError, Equatable {
+  case invalidContainer
+  case unrecognizedFormat
   case newerFormat(Int)
   case unsupportedFormat(Int)
+  case invalidAssistantSettings
   case unknownEntity(String)
+  case missingEntity(String)
   case unknownProperty(entity: String, name: String)
+  case missingProperty(entity: String, name: String)
   case invalidValue(entity: String, name: String)
   case unknownObject(String)
   case duplicateObject(String)
 
   var errorDescription: String? {
     switch self {
+    case .invalidContainer:
+      "This FreakLog backup file is damaged or uses an unsupported container."
+    case .unrecognizedFormat:
+      "This file format isn't supported by FreakLog."
     case .newerFormat:
       "This backup is from a newer version of FreakLog. Update the app to import it."
     case .unsupportedFormat(let version):
       "Backups of format version \(version) can't be read."
+    case .invalidAssistantSettings:
+      "This backup contains invalid Assistant provider settings."
     case .unknownEntity(let name):
       "The backup contains unknown data (\(name))."
+    case .missingEntity(let name):
+      "The backup is incomplete and is missing \(name)."
     case .unknownProperty(let entity, let name):
       "The backup contains unknown data (\(entity).\(name))."
+    case .missingProperty(let entity, let name):
+      "The backup is incomplete and is missing \(entity).\(name)."
     case .invalidValue(let entity, let name):
       "The backup has an invalid value for \(entity).\(name)."
     case .unknownObject(let id), .duplicateObject(let id):
@@ -119,8 +151,7 @@ extension JournalBackup {
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
     var objectsByEntity: [String: [NSManagedObject]] = [:]
     var ids: [NSManagedObjectID: String] = [:]
-    for entity in model.entities {
-      guard let name = entity.name else { continue }
+    for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
       request.includesSubentities = false
       let objects = try context.fetch(request).sorted {
@@ -152,6 +183,7 @@ extension JournalBackup {
     if let activeProfile = defaults.string(forKey: PersistenceController.assistantActiveProfileKey) {
       settings[PersistenceController.assistantActiveProfileKey] = .string(activeProfile)
     }
+    _ = try assistantSettings()
   }
 
   // Pretty printed with sorted keys, so backups can be read and compared
@@ -161,7 +193,18 @@ extension JournalBackup {
     return try encoder.encode(self)
   }
 
+  // A non-JSON header keeps older journal importers from opening this as an empty journal.
+  func fileData() throws -> Data {
+    try Self.containerHeader + data()
+  }
+
   private static func record(of object: NSManagedObject, ids: [NSManagedObjectID: String]) throws -> Record {
+    func id(of object: NSManagedObject) throws -> String {
+      guard let id = ids[object.objectID] else {
+        throw JournalBackupError.unknownObject(object.objectID.uriRepresentation().absoluteString)
+      }
+      return id
+    }
     let entity = object.entity
     var attributes: [String: JSONValue] = [:]
     for (name, attribute) in entity.attributesByName where !attribute.isTransient {
@@ -171,16 +214,16 @@ extension JournalBackup {
     for (name, relationship) in entity.relationshipsByName where isWritten(relationship) {
       if relationship.isOrdered {
         let related = (object.value(forKey: name) as? NSOrderedSet)?.array as? [NSManagedObject] ?? []
-        relationships[name] = .array(related.compactMap { ids[$0.objectID] }.map(JSONValue.string))
+        relationships[name] = .array(try related.map(id(of:)).map(JSONValue.string))
       } else if relationship.isToMany {
         let related = (object.value(forKey: name) as? Set<NSManagedObject>) ?? []
-        relationships[name] = .array(related.compactMap { ids[$0.objectID] }.sorted().map(JSONValue.string))
+        relationships[name] = .array(try related.map(id(of:)).sorted().map(JSONValue.string))
       } else {
         let related = object.value(forKey: name) as? NSManagedObject
-        relationships[name] = related.flatMap { ids[$0.objectID] }.map(JSONValue.string) ?? .null
+        relationships[name] = try related.map { try .string(id(of: $0)) } ?? .null
       }
     }
-    return Record(id: ids[object.objectID] ?? UUID().uuidString, attributes: attributes, relationships: relationships)
+    return try Record(id: id(of: object), attributes: attributes, relationships: relationships)
   }
 
   // One side of each relationship is enough: the to-one side, both sides of a one-to-one, and to-many relationships
@@ -233,33 +276,55 @@ extension JournalBackup {
 extension JournalBackup {
   // The backup in the data, upgraded to the current format, or nil for other files such as a JournalFile
   static func read(_ data: Data) throws -> JournalBackup? {
-    guard
-      var json = try? JSONDecoder().decode(JSONValue.self, from: data),
-      json.object?["format"]?.string == format
-    else { return nil }
+    let wrapped = data.starts(with: containerPrefix)
+    if wrapped, !data.starts(with: containerHeader) { throw JournalBackupError.invalidContainer }
+    let payload = wrapped ? data.dropFirst(containerHeader.count) : data
+    guard var json = try? JSONDecoder().decode(JSONValue.self, from: payload), let root = json.object else {
+      if wrapped { throw JournalBackupError.invalidContainer }
+      return nil
+    }
+    guard root["format"] != nil || root["formatVersion"] != nil || wrapped else { return nil }
+    guard root["format"]?.string == format else { throw JournalBackupError.unrecognizedFormat }
     guard let version = json.object?["formatVersion"]?.number.flatMap({ Int(exactly: $0) }) else {
       throw JournalBackupError.unsupportedFormat(0)
     }
     guard version <= formatVersion else { throw JournalBackupError.newerFormat(version) }
     guard version >= 1 else { throw JournalBackupError.unsupportedFormat(version) }
-    for step in version ..< formatVersion {
+    // GitHub’s original version 2 only added assistant settings and kept the version 12 model.
+    let legacyVersion2 = !wrapped && version == 2 && root["dataModel"]?.string == "PW Version 12"
+    for step in (legacyVersion2 ? 1 : version) ..< formatVersion {
       try upgrades[step]?(&json)
       json = try replacing("formatVersion", with: .number(Double(step + 1)), in: json)
     }
-    return try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
+    var backup = try JSONDecoder().decode(JournalBackup.self, from: JSONEncoder().encode(json))
+    // The early bare JSON backups can omit properties and use the model’s defaults.
+    backup.requiresCompleteRecords = wrapped || (version > 1 && !legacyVersion2)
+    _ = try backup.assistantSettings()
+    return backup
   }
 
   // For upgrade steps: renames an attribute in every record of the entity
   static func renameAttribute(_ old: String, to new: String, of entity: String, in backup: inout JSONValue) throws {
+    updateAttributes(of: entity, in: &backup) { attributes in
+      if let value = attributes.removeValue(forKey: old) {
+        attributes[new] = value
+      }
+    }
+  }
+
+  private static func updateAttributes(
+    of entity: String,
+    in backup: inout JSONValue,
+    update: (inout [String: JSONValue]) -> Void)
+  {
     guard case .object(var root) = backup, case .object(var entities) = root["entities"] else { return }
     guard case .array(let records) = entities[entity] else { return }
     entities[entity] = .array(records.map { record in
       guard
         case .object(var fields) = record,
-        case .object(var attributes) = fields["attributes"],
-        let value = attributes.removeValue(forKey: old)
+        case .object(var attributes) = fields["attributes"]
       else { return record }
-      attributes[new] = value
+      update(&attributes)
       fields["attributes"] = .object(attributes)
       return .object(fields)
     })
@@ -270,9 +335,10 @@ extension JournalBackup {
   // Replaces everything in the context with the backup's objects. Nothing is changed for good until the caller saves,
   // so on an error the context can be thrown away with the journal untouched.
   func restore(into context: NSManagedObjectContext) throws {
+    _ = try assistantSettings()
     let model = context.persistentStoreCoordinator?.managedObjectModel ?? NSManagedObjectModel()
-    for entity in model.entities {
-      guard let name = entity.name else { continue }
+    try validateCompleteness(in: model)
+    for name in model.entitiesByName.keys where !Self.localOperationEntities.contains(name) {
       let request = NSFetchRequest<NSManagedObject>(entityName: name)
       request.includesPropertyValues = false
       request.includesSubentities = false
@@ -310,7 +376,7 @@ extension JournalBackup {
             return related
           }
           switch json {
-          case .null:
+          case .null where !relationship.isToMany:
             object.setValue(nil, forKey: name)
           case .string where !relationship.isToMany:
             try object.setValue(related(json), forKey: name)
@@ -329,6 +395,24 @@ extension JournalBackup {
     }
   }
 
+  private func validateCompleteness(in model: NSManagedObjectModel) throws {
+    for name in entities.keys where model.entitiesByName[name] == nil || Self.localOperationEntities.contains(name) {
+      throw JournalBackupError.unknownEntity(name)
+    }
+    for (name, entity) in model.entitiesByName where !Self.localOperationEntities.contains(name) {
+      guard let records = entities[name] else { throw JournalBackupError.missingEntity(name) }
+      guard requiresCompleteRecords else { continue }
+      let attributes = Set(entity.attributesByName.values.filter { !$0.isTransient }.map(\.name))
+      let relationships = Set(entity.relationshipsByName.values.filter(Self.isWritten).map(\.name))
+      for record in records {
+        if let key = attributes.subtracting(record.attributes.keys).sorted().first
+          ?? relationships.subtracting(record.relationships.keys).sorted().first {
+          throw JournalBackupError.missingProperty(entity: name, name: key)
+        }
+      }
+    }
+  }
+
   // Replaces the journal's settings with the backup's; ones the backup doesn't have go back to their defaults
   func restoreSettings(to defaults: UserDefaults = .standard) {
     for key in Self.settingKeys {
@@ -338,12 +422,29 @@ extension JournalBackup {
         defaults.removeObject(forKey: key)
       }
     }
-    if let profiles = settings[PersistenceController.assistantProfilesKey] {
+    if let assistant = try? assistantSettings() {
       AssistantProfileStore.restore(
-        profilesFrom: profiles.propertyList as? Data,
-        activeID: settings[PersistenceController.assistantActiveProfileKey]?.string,
+        profilesFrom: assistant.profiles,
+        activeID: assistant.activeID,
         to: defaults)
     }
+  }
+
+  private func assistantSettings() throws -> (profiles: Data?, activeID: String?)? {
+    guard let field = settings[PersistenceController.assistantProfilesKey] else { return nil }
+    if field == .null { return (nil, nil) }
+    guard let data = field.propertyList as? Data,
+          let profiles = try? JSONDecoder().decode([AssistantProfile].self, from: data),
+          Set(profiles.map(\.id)).count == profiles.count
+    else { throw JournalBackupError.invalidAssistantSettings }
+    let active = settings[PersistenceController.assistantActiveProfileKey]
+    if let active, active != .null {
+      guard let id = active.string.flatMap(UUID.init(uuidString:)) else {
+        throw JournalBackupError.invalidAssistantSettings
+      }
+      return (data, id.uuidString)
+    }
+    return (data, nil)
   }
 
   private static func replacing(_ key: String, with value: JSONValue, in json: JSONValue) throws -> JSONValue {
@@ -411,8 +512,8 @@ enum BackupDate {
 
   static func date(from string: String) -> Date? {
     guard string.hasSuffix("Z") else { return nil }
-    let parts = string.dropLast().split(separator: ".", maxSplits: 1)
-    guard let base = formatter.date(from: String(parts[0]) + "Z") else { return nil }
+    let parts = string.dropLast().split(separator: ".", maxSplits: 1, omittingEmptySubsequences: false)
+    guard let seconds = parts.first, let base = formatter.date(from: String(seconds) + "Z") else { return nil }
     guard parts.count == 2 else { return base }
     let digits = parts[1]
     guard

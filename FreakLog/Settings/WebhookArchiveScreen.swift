@@ -1,7 +1,8 @@
+import CoreData
 import SwiftUI
 
 struct WebhookArchiveScreen: View {
-    @Environment(\.managedObjectContext) private var viewContext
+    @EnvironmentObject private var toastViewModel: ToastViewModel
     
     @FetchRequest(fetchRequest: PersistenceController.archivedWebhookPresetsRequest(), animation: .default)
     private var archivedPresets: FetchedResults<WebhookPreset>
@@ -84,7 +85,13 @@ struct WebhookArchiveScreen: View {
     
     private func deletePreset(_ preset: WebhookPreset, deleteMessages: Bool) {
         Task {
-            await WebhookManager.shared.deletePreset(preset, deletingMessages: deleteMessages)
+            do {
+                if try await !WebhookManager.shared.deletePreset(preset, deletingMessages: deleteMessages) {
+                    toastViewModel.showErrorToast(message: "Webhook cleanup is pending. It will be retried.")
+                }
+            } catch {
+                toastViewModel.showErrorToast(message: "Couldn't delete the webhook preset.")
+            }
         }
     }
 }

@@ -7,13 +7,18 @@ struct WebhookResult {
 }
 
 struct WebhookService {
+    enum DeliveryError: Error {
+        case rejected
+        case unknownDelivery
+    }
+
+    typealias LoadData = (URLRequest) async throws -> (Data, URLResponse)
+
     static let defaultTemplate = "[{user}: ][{dose} {unit} ]{substance} via {route}[ ({site})][\n> {note}]"
     static let defaultNoteTemplate = "[{user}: ]{note}"
 
     static func deleteWebhookMessage(url: String, messageId: String) async -> Bool {
-        guard let webhookUrl = URL(string: url) else { return false }
-
-        let requestUrl = webhookUrl.appendingPathComponent("messages").appendingPathComponent(messageId)
+        guard let requestUrl = requestURL(url, messageId: messageId) else { return false }
         var request = URLRequest(url: requestUrl)
         request.httpMethod = "DELETE"
 
@@ -78,78 +83,83 @@ struct WebhookService {
         processTemplate(settings.noteTemplate, values: ["user": settings.username, "note": note])
     }
 
-    // Posts a new message, or edits the message with the given ID
     static func sendWebhookWithRetry(url: String, content: String, editing messageId: String? = nil) async -> WebhookResult {
-        let isEdit = messageId != nil
-        let payload: [String: Any] = ["content": content]
+        await sendWebhookWithRetry(url: url, content: content, editing: messageId) {
+            try await URLSession.shared.data(for: $0)
+        }
+    }
 
-        let maxRetries = 3
+    static func sendWebhookWithRetry(
+        url: String,
+        content: String,
+        editing messageId: String? = nil,
+        loadData: LoadData
+    ) async -> WebhookResult {
+        guard let requestUrl = requestURL(url, messageId: messageId),
+              let body = try? JSONEncoder().encode(MessageBody(content: content)) else {
+            return WebhookResult(success: false, messageId: nil, error: URLError(.badURL))
+        }
+        var request = URLRequest(url: requestUrl)
+        request.httpMethod = messageId == nil ? "POST" : "PATCH"
+        request.httpBody = body
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        // Only PATCH is safe to retry. A POST's response can be lost after the message is created.
+        let attempts = messageId == nil ? 1 : 3
         var lastError: Error?
-
-        for attempt in 0..<maxRetries {
+        for attempt in 0..<attempts {
             do {
-                let result = try await performWebhookRequest(
-                    url: url,
-                    payload: payload,
-                    isEdit: isEdit,
-                    messageId: messageId
-                )
-                return WebhookResult(success: true, messageId: result, error: nil)
+                let (data, response) = try await loadData(request)
+                guard let response = response as? HTTPURLResponse else { throw DeliveryError.unknownDelivery }
+                guard (200...299).contains(response.statusCode) else {
+                    if (400...499).contains(response.statusCode), response.statusCode != 408 {
+                        throw DeliveryError.rejected
+                    }
+                    throw DeliveryError.unknownDelivery
+                }
+                if let messageId {
+                    return WebhookResult(success: true, messageId: messageId, error: nil)
+                }
+                guard let posted = try? JSONDecoder().decode(PostedMessage.self, from: data), !posted.id.isEmpty else {
+                    throw DeliveryError.unknownDelivery
+                }
+                return WebhookResult(success: true, messageId: posted.id, error: nil)
             } catch {
-                lastError = error
-                if attempt < maxRetries - 1 {
+                if messageId == nil && error as? DeliveryError != .rejected {
+                    lastError = DeliveryError.unknownDelivery
+                } else {
+                    lastError = error
+                }
+                if attempt < attempts - 1 {
                     let delay = Double(1 << attempt)
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 }
             }
         }
-
         return WebhookResult(success: false, messageId: nil, error: lastError)
     }
 
-    private static func performWebhookRequest(
-        url: String,
-        payload: [String: Any],
-        isEdit: Bool,
-        messageId: String?
-    ) async throws -> String? {
-        guard let webhookUrl = URL(string: url) else {
-            throw URLError(.badURL)
+    private struct MessageBody: Encodable {
+        let content: String
+    }
+
+    private struct PostedMessage: Decodable {
+        let id: String
+    }
+
+    private static func requestURL(_ url: String, messageId: String?) -> URL? {
+        guard var components = URLComponents(string: url),
+              let scheme = components.scheme?.lowercased(),
+              scheme == "https" || scheme == "http",
+              let host = components.host, !host.isEmpty else { return nil }
+        components.fragment = nil
+        if let messageId {
+            return components.url?.appendingPathComponent("messages").appendingPathComponent(messageId)
         }
-
-        var requestUrl = webhookUrl
-        if isEdit, let messageId = messageId {
-            requestUrl = webhookUrl.appendingPathComponent("messages").appendingPathComponent(messageId)
-        } else {
-            let separator = requestUrl.absoluteString.contains("?") ? "&" : "?"
-            guard let urlWithWait = URL(string: requestUrl.absoluteString + separator + "wait=true") else {
-                throw URLError(.badURL)
-            }
-            requestUrl = urlWithWait
-        }
-
-        let jsonData = try JSONSerialization.data(withJSONObject: payload)
-        var request = URLRequest(url: requestUrl)
-        request.httpMethod = isEdit ? "PATCH" : "POST"
-        request.httpBody = jsonData
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw URLError(.badServerResponse)
-        }
-
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw URLError(.badServerResponse)
-        }
-
-        if !isEdit, let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-           let messageId = json["id"] as? String {
-            return messageId
-        }
-
-        return nil
+        var query = (components.queryItems ?? []).filter { $0.name != "wait" }
+        query.append(URLQueryItem(name: "wait", value: "true"))
+        components.queryItems = query
+        return components.url
     }
 
     private static let templateRegex: NSRegularExpression? = {
