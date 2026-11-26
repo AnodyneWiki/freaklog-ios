@@ -8,14 +8,16 @@ The journal includes offline harm reduction reference data, experience timelines
 
 ## Highlights
 
-- **Assistant.** Ask about your journal or summarize an experience and save the summary to your notes. Use Apple Intelligence on supported devices running iOS 26 or connect your own OpenAI-compatible, Anthropic, or Gemini provider. Optional web access includes dedicated Wikipedia lookups and general web search via Exa.
-- **Apple Watch quick logging.** Log recent substances and formulations, adjust the amount with the Digital Crown, and undo an entry. The watch queues entries while the iPhone is unreachable.
-- **Formulations.** Save mixtures as presets and scale every ingredient from a single amount when you log them.
-- **All Ingestions.** Browse individual entries and timed notes alongside a timeline with a configurable time range. Switch between ingestions and experiences, or filter either view to favorite experiences. Record an administration site and location per entry, and see ingestion counts over time in Statistics.
-- **Substance customization.** Rename substances, set categories, override dose and duration data by route, and choose colors with suggested swatches, the system color picker, or hex codes.
-- **AnodyneWiki integration.** Look up substances on an instance of your choice and see logged dose tiers, timings, notes, legal status, reagent tests, molecular structures, and experience reports alongside PsychonautWiki data. [AnodyneWiki](https://anodyne.wiki)
-- **iCloud sync and backups.** Sync your journal with iCloud or export a backup of your journal, substance customizations, app settings, and assistant model profiles. Assistant API keys stay in the device Keychain.
-- **Webhooks and leaderboards.** Send ingestion and timed-note updates to multiple Discord-compatible webhooks, or opt in to sharing ingestions with leaderboard servers you select.
+- **Journal and logging.** Review and correct entries, log a batch with individual timestamps, or open a draft by scanning a paired package. Move entries between experiences with Undo.
+- **Search and Stats.** Search entries and substances together. Browse date ranges, compare recorded amounts, and open the entries behind a chart. Save commonly used filters.
+- **Experience timelines.** Inspect entries and notes on one time axis. Optionally display heart-rate measurements from Apple Health.
+- **Products and inventory.** Build formulations from saved products and custom units. Track stock by container, preview stock transfers, and keep local lab report PDFs with a container.
+- **Routines and Apple Watch.** See what’s due, schedule reminders, and log from iPhone or Apple Watch. The Home Screen widget can mark eligible occurrences as taken on iOS 17 or later.
+- **Backups and transfers.** Review a file before replacing your journal. Protect FreakLog backups with a passphrase, verify them before restoring, and preview transfers for FreakLog Android and PW Journal. Assistant API keys and inventory PDFs stay on the device.
+- **Reports.** Review and share a selected part of your journal, an editable experience report, or a clinician summary.
+- **Substance reference.** Compare route information from PsychonautWiki and [AnodyneWiki](https://anodyne.wiki), and keep personal overrides for doses and timings.
+- **Assistant.** Ask about your journal or summarize an experience. Use Apple Intelligence on supported devices running iOS 26 or configure a model provider. Optional online lookups provide context within the conversation.
+- **Sync and sharing.** Sync through iCloud, send selected updates to Discord-compatible webhooks, or opt in to sharing entries with selected leaderboard servers.
 
 **Triple-tap the closed eye in Settings to show all PsychonautWiki substances.**
 
@@ -27,4 +29,4 @@ For substance information, we recommend [AnodyneWiki](https://anodyne.wiki), wit
 
 ## Installation and Building
 
-Open `FreakLog.xcodeproj` in Xcode. The app targets iOS 16.2 and watchOS 10 or later. Dependencies are resolved by Swift Package Manager.
+Open `FreakLog.xcodeproj` in Xcode. The iPhone app requires iOS 16 or later. Its widget extension requires iOS 16.2 or later, and the Watch app requires watchOS 10 or later. Dependencies are resolved by Swift Package Manager.
